@@ -27,6 +27,24 @@ namespace TTKDGP.ProjectManager.Infrastructure
             return bool.TryParse(Get(key), out result) ? result : fallback;
         }
 
+        /// <summary>Địa chỉ người dùng truy cập hệ thống, đính kèm cuối mỗi tin nhắc.</summary>
+        public static string PublicUrl { get { return Get("App:PublicUrl", "pmncpt.cenit.vn"); } }
+
+        /// <summary>Địa chỉ đầy đủ có giao thức, dùng làm href trong tin nhắn.</summary>
+        public static string PublicLink
+        {
+            get
+            {
+                var url = PublicUrl;
+                if (string.IsNullOrWhiteSpace(url)) return null;
+
+                return url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                       url.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+                    ? url
+                    : "http://" + url;
+            }
+        }
+
         public static class Telegram
         {
             public static bool Enabled { get { return GetBool("Telegram:Enabled", false); } }

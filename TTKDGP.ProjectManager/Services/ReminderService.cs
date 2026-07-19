@@ -126,6 +126,7 @@ namespace TTKDGP.ProjectManager.Services
             sb.AppendLine();
             sb.AppendLine(string.Format("<i>Tổng {0} dự án chưa báo cáo trên {1} dự án đang chạy.</i>",
                 report.MissingProjectCount, report.TotalOpenProjects));
+            AppendLink(sb);
 
             return sb.ToString().TrimEnd();
         }
@@ -145,20 +146,30 @@ namespace TTKDGP.ProjectManager.Services
             sb.AppendLine("<b>Các PM chưa báo cáo</b>");
             sb.AppendLine();
 
+            // Anh Tân chỉ cần biết PM nào còn nợ và nợ bao nhiêu, không cần liệt kê từng dự án.
             foreach (var group in report.Groups)
             {
-                foreach (var project in group.Projects)
-                {
-                    sb.AppendLine(string.Format("{0} - {1}",
-                        Escape(group.PmName), Escape(project.ProjectName)));
-                }
+                sb.AppendLine(string.Format("{0} - {1} dự án",
+                    Escape(group.PmName), group.Projects.Count));
             }
 
             sb.AppendLine();
             sb.AppendLine(string.Format("<i>{0} PM, {1} dự án chưa báo cáo trên {2} dự án đang chạy.</i>",
                 report.Groups.Count, report.MissingProjectCount, report.TotalOpenProjects));
+            AppendLink(sb);
 
             return sb.ToString().TrimEnd();
+        }
+
+        /// <summary>Đính kèm địa chỉ hệ thống ở cuối tin để người nhận vào cập nhật ngay.</summary>
+        private static void AppendLink(StringBuilder sb)
+        {
+            var link = AppSettings.PublicLink;
+            if (string.IsNullOrWhiteSpace(link)) return;
+
+            sb.AppendLine();
+            sb.AppendLine(string.Format("Vui lòng truy cập: <a href=\"{0}\">{1}</a>",
+                Escape(link), Escape(AppSettings.PublicUrl)));
         }
 
         /// <summary>
