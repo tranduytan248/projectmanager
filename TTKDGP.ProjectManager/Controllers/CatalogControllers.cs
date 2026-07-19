@@ -55,7 +55,10 @@ namespace TTKDGP.ProjectManager.Controllers
                     Description = "Danh mục dùng cho ô \"Trạng thái hiện tại\" của dự án. "
                                   + "Độ ưu tiên quyết định dự án nào nổi lên đầu ở màn hình tổng hợp.",
                     ControllerName = "ProjectStatuses",
-                    ShowPriority = true
+                    ShowPriority = true,
+                    ShowExcludeFlag = true,
+                    ExcludeLabel = "Coi như đã dừng",
+                    ExcludeHint = "Dự án ở trạng thái này coi như đã dừng, không bị nhắc báo cáo hàng tuần."
                 };
             }
         }
@@ -87,8 +90,13 @@ namespace TTKDGP.ProjectManager.Controllers
                     ItemLabel = "trạng thái tham gia",
                     NameLabel = "Tên trạng thái",
                     UsageHeader = "Số phân công",
-                    Description = "Danh mục dùng cho trạng thái công việc của thành viên trong dự án.",
-                    ControllerName = "WorkStatuses"
+                    Description = "Danh mục dùng cho trạng thái công việc của thành viên trong dự án. "
+                                  + "Chỉ thành viên ở trạng thái cần báo cáo mới bị nhắc hàng tuần.",
+                    ControllerName = "WorkStatuses",
+                    ShowExcludeFlag = true,
+                    ExcludeLabel = "Không cần báo cáo",
+                    ExcludeHint = "Thành viên ở trạng thái này không phải ghi nhật ký tuần, "
+                                  + "nên không bị nhắc. Thường chỉ để trống cho \"Đang thực hiện\"."
                 };
             }
         }

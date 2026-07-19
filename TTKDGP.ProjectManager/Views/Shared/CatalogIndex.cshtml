@@ -27,6 +27,9 @@
                         @if (Model.Config.ShowPriority)
                         {
                             <th class="num">Độ ưu tiên</th>
+                        }
+                        @if (Model.Config.ShowExcludeFlag)
+                        {
                             <th>Nhắc báo cáo</th>
                         }
                         <th>@Model.Config.NameLabel</th>
@@ -45,14 +48,17 @@
                             @if (Model.Config.ShowPriority)
                             {
                                 <td class="num"><span class="badge badge-doing">@item.Priority</span></td>
+                            }
+                            @if (Model.Config.ShowExcludeFlag)
+                            {
                                 <td>
                                     @if (item.IsClosed)
                                     {
-                                        <span class="badge badge-inactive" title="Không bị nhắc báo cáo hàng tuần">Đã dừng</span>
+                                        <span class="badge badge-inactive" title="@Model.Config.ExcludeLabel">Bỏ qua</span>
                                     }
                                     else
                                     {
-                                        <span class="muted">—</span>
+                                        <span class="badge badge-doing">Cần báo cáo</span>
                                     }
                                 </td>
                             }

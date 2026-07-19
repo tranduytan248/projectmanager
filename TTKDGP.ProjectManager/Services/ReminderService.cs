@@ -34,7 +34,7 @@ namespace TTKDGP.ProjectManager.Services
                 WeekTo = WeekHelper.LastDayOfWeek(year, week)
             };
 
-            // Trạng thái nào coi như dự án đã dừng thì không nhắc nữa.
+            // Trạng thái được đánh dấu "coi như đã dừng" thì không cần báo cáo.
             var closedStatuses = new HashSet<string>(
                 Repository.ProjectStatuses.All().Where(s => s.IsClosed).Select(s => s.Name),
                 StringComparer.CurrentCultureIgnoreCase);
@@ -43,21 +43,65 @@ namespace TTKDGP.ProjectManager.Services
                 .Where(p => string.IsNullOrWhiteSpace(p.CurrentStatus) || !closedStatuses.Contains(p.CurrentStatus))
                 .ToList();
 
-            // Dự án được coi là đã báo cáo nếu có ít nhất một dòng nhật ký trong tuần đó.
-            var reportedProjectIds = new HashSet<int>(
+            // Trạng thái công việc nào được đánh dấu không cần báo cáo thì bỏ qua.
+            var skipWorkStatuses = new HashSet<string>(
+                Repository.WorkStatuses.All().Where(s => s.IsClosed).Select(s => s.Name),
+                StringComparer.CurrentCultureIgnoreCase);
+
+            // Chỉ xét người còn tham gia và đang ở trạng thái công việc phải báo cáo.
+            var activeAssignments = Repository.Assignments.All()
+                .Where(a => a.IsActive)
+                .Where(a => string.IsNullOrWhiteSpace(a.WorkStatus) || !skipWorkStatuses.Contains(a.WorkStatus))
+                .ToList();
+
+            // Nhật ký tính theo từng phân công, không tính theo dự án: hai người cùng một dự án
+            // thì một người ghi không thay được cho người kia.
+            var reportedAssignmentIds = new HashSet<int>(
                 Repository.WorkLogs.All()
                     .Where(w => w.Year == year && w.Week == week)
-                    .Select(w => w.ProjectId));
+                    .Select(w => w.AssignmentId));
 
-            var missing = openProjects.Where(p => !reportedProjectIds.Contains(p.Id)).ToList();
+            var memberNames = Repository.Members.All().ToDictionary(m => m.Id, m => m.FullName);
+
+            var missing = new List<MissingProject>();
+            var missingByProjectId = new Dictionary<int, MissingProject>();
+
+            foreach (var project in openProjects)
+            {
+                var team = activeAssignments.Where(a => a.ProjectId == project.Id).ToList();
+
+                var notYet = team
+                    .Where(a => !reportedAssignmentIds.Contains(a.Id))
+                    .Select(a => memberNames.ContainsKey(a.MemberId)
+                        ? memberNames[a.MemberId]
+                        : a.MemberName)
+                    .OrderBy(n => n, StringComparer.CurrentCulture)
+                    .ToList();
+
+                // Không còn ai thiếu báo cáo thì bỏ qua. Trường hợp dự án chưa phân công ai
+                // cũng rơi vào đây: không có người nào để nhắc nên không đưa vào tin.
+                if (notYet.Count == 0) continue;
+
+                var entry = new MissingProject
+                {
+                    ProjectId = project.Id,
+                    ProjectName = project.Name,
+                    Customer = project.Customer,
+                    Status = project.CurrentStatus,
+                    ActiveMemberCount = team.Count,
+                    MissingMembers = notYet
+                };
+
+                missing.Add(entry);
+                missingByProjectId[project.Id] = entry;
+            }
 
             report.TotalOpenProjects = openProjects.Count;
             report.ReportedProjects = openProjects.Count - missing.Count;
             report.MissingProjectCount = missing.Count;
 
-            var memberNames = Repository.Members.All().ToDictionary(m => m.Id, m => m.FullName);
-
-            report.Groups = missing
+            report.Groups = openProjects
+                .Where(p => missingByProjectId.ContainsKey(p.Id))
                 .GroupBy(p => p.PmMemberId)
                 .Select(g => new MissingByPm
                 {
@@ -65,13 +109,7 @@ namespace TTKDGP.ProjectManager.Services
                     PmName = memberNames.ContainsKey(g.Key) ? memberNames[g.Key] : "(chưa gán PM)",
                     Projects = g
                         .OrderBy(p => p.Name, StringComparer.CurrentCulture)
-                        .Select(p => new MissingProject
-                        {
-                            ProjectId = p.Id,
-                            ProjectName = p.Name,
-                            Customer = p.Customer,
-                            Status = p.CurrentStatus
-                        })
+                        .Select(p => missingByProjectId[p.Id])
                         .ToList()
                 })
                 .OrderByDescending(g => g.Projects.Count)
@@ -119,7 +157,10 @@ namespace TTKDGP.ProjectManager.Services
                 foreach (var project in group.Projects)
                 {
                     index++;
-                    sb.AppendLine(string.Format("{0}. {1}", index, Escape(project.ProjectName)));
+                    sb.AppendLine(string.Format("{0}. {1} ({2})",
+                        index,
+                        Escape(project.ProjectName),
+                        Escape(project.MissingMembersText)));
                 }
             }
 

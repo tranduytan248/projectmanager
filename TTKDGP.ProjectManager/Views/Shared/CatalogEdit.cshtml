@@ -38,17 +38,22 @@
                 @Html.ValidationMessageFor(m => m.Description, "", new { @class = "field-error" })
             </div>
 
-            if (Model.Config.ShowPriority)
+            if (Model.Config.ShowExcludeFlag)
             {
                 <div class="check-inline">
-                    @Html.CheckBoxFor(m => m.IsClosed)
-                    @Html.LabelFor(m => m.IsClosed)
+                    <input type="checkbox" id="IsClosed" name="IsClosed" value="true" checked="@Model.IsClosed" />
+                    <label for="IsClosed">@Model.Config.ExcludeLabel</label>
                 </div>
-                <span class="hint">
-                    Dự án ở trạng thái này coi như đã dừng: không bị nhắc báo cáo hàng tuần
-                    qua Telegram. Thường đánh dấu cho <em>Tạm dừng</em> và <em>Hoàn thành</em>.
-                </span>
+                <input type="hidden" name="IsClosed" value="false" />
+                <span class="hint">@Model.Config.ExcludeHint</span>
+            }
+            else
+            {
+                @Html.HiddenFor(m => m.IsClosed)
+            }
 
+            if (Model.Config.ShowPriority)
+            {
                 <div class="form-field">
                     @Html.LabelFor(m => m.Priority)
                     @Html.TextBoxFor(m => m.Priority, new { type = "number", min = "1", step = "1" })
@@ -62,7 +67,6 @@
             else
             {
                 @Html.HiddenFor(m => m.Priority)
-                @Html.HiddenFor(m => m.IsClosed)
             }
 
             <div class="form-field">

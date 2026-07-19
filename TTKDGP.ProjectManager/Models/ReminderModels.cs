@@ -19,13 +19,33 @@ namespace TTKDGP.ProjectManager.Models
         SaturdayAdminSummary = 3
     }
 
-    /// <summary>Một dự án chưa báo cáo trong kỳ đang xét.</summary>
+    /// <summary>Một dự án còn thiếu báo cáo trong kỳ đang xét.</summary>
     public class MissingProject
     {
         public int ProjectId { get; set; }
         public string ProjectName { get; set; }
         public string Customer { get; set; }
         public string Status { get; set; }
+
+        /// <summary>
+        /// Những thành viên đang tham gia dự án mà tuần này chưa ghi nhật ký.
+        /// Chỉ cần một người thiếu là cả dự án bị tính là chưa báo cáo.
+        /// </summary>
+        public List<string> MissingMembers { get; set; }
+
+        /// <summary>Tổng số thành viên đang tham gia dự án này.</summary>
+        public int ActiveMemberCount { get; set; }
+
+        /// <summary>Phần trong ngoặc sau tên dự án, các tên nối nhau bằng dấu chấm phẩy.</summary>
+        public string MissingMembersText
+        {
+            get { return string.Join("; ", MissingMembers); }
+        }
+
+        public MissingProject()
+        {
+            MissingMembers = new List<string>();
+        }
     }
 
     /// <summary>Nhóm các dự án chưa báo cáo theo từng PM phụ trách.</summary>

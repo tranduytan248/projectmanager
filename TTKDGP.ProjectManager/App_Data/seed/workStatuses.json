@@ -4,6 +4,7 @@
         "Name":  "Đang thực hiện",
         "Description":  "Thành viên đang trực tiếp làm",
         "Priority":  0,
+        "IsClosed":  false,
         "IsActive":  true,
         "SortOrder":  10
     },
@@ -12,6 +13,7 @@
         "Name":  "Đang hỗ trợ",
         "Description":  "Thành viên hỗ trợ khi có phát sinh",
         "Priority":  0,
+        "IsClosed":  false,
         "IsActive":  true,
         "SortOrder":  20
     },
@@ -20,6 +22,7 @@
         "Name":  "Đang thử nghiệm",
         "Description":  "Đang kiểm thử phần việc được giao",
         "Priority":  0,
+        "IsClosed":  true,
         "IsActive":  true,
         "SortOrder":  30
     },
@@ -28,6 +31,7 @@
         "Name":  "Đang chờ",
         "Description":  "Chờ đầu vào từ bên khác",
         "Priority":  0,
+        "IsClosed":  true,
         "IsActive":  true,
         "SortOrder":  40
     },
@@ -36,6 +40,7 @@
         "Name":  "Tạm dừng",
         "Description":  "Tạm ngưng phần việc này",
         "Priority":  0,
+        "IsClosed":  true,
         "IsActive":  true,
         "SortOrder":  50
     },
@@ -44,6 +49,7 @@
         "Name":  "Hoàn thành",
         "Description":  "Đã xong phần việc được giao",
         "Priority":  0,
+        "IsClosed":  true,
         "IsActive":  true,
         "SortOrder":  60
     }

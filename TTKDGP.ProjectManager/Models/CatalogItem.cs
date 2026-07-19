@@ -30,10 +30,11 @@ namespace TTKDGP.ProjectManager.Models
         public int Priority { get; set; }
 
         /// <summary>
-        /// Chỉ dùng cho trạng thái dự án: đánh dấu dự án coi như đã dừng (tạm dừng, hoàn thành).
-        /// Dự án ở trạng thái này không bị nhắc báo cáo hàng tuần.
+        /// Loại trừ khỏi việc nhắc báo cáo hàng tuần. Ý nghĩa tuỳ danh mục:
+        ///  - Trạng thái dự án: dự án coi như đã dừng, không nhắc nữa.
+        ///  - Trạng thái tham gia: thành viên ở trạng thái này không phải báo cáo.
         /// </summary>
-        [Display(Name = "Coi như đã dừng")]
+        [Display(Name = "Không cần báo cáo")]
         public bool IsClosed { get; set; }
 
         [Display(Name = "Đang sử dụng")]
@@ -76,10 +77,17 @@ namespace TTKDGP.ProjectManager.Models
         /// <summary>Tên controller của màn hình này, để dựng link.</summary>
         public string ControllerName { get; set; }
 
-        /// <summary>
-        /// Chỉ danh mục trạng thái dự án mới hiện cột Độ ưu tiên và cờ "Coi như đã dừng".
-        /// </summary>
+        /// <summary>Chỉ danh mục trạng thái dự án mới hiện cột Độ ưu tiên.</summary>
         public bool ShowPriority { get; set; }
+
+        /// <summary>Hiện cờ loại trừ khỏi nhắc báo cáo (trạng thái dự án và trạng thái tham gia).</summary>
+        public bool ShowExcludeFlag { get; set; }
+
+        /// <summary>Nhãn của cờ loại trừ, khác nhau giữa hai danh mục.</summary>
+        public string ExcludeLabel { get; set; }
+
+        /// <summary>Câu giải thích dưới ô đánh dấu.</summary>
+        public string ExcludeHint { get; set; }
     }
 
     /// <summary>Dữ liệu cho màn hình danh sách danh mục.</summary>
@@ -118,7 +126,7 @@ namespace TTKDGP.ProjectManager.Models
         [Range(0, 999, ErrorMessage = "Độ ưu tiên từ 0 đến 999")]
         public int Priority { get; set; }
 
-        [Display(Name = "Coi như đã dừng")]
+        [Display(Name = "Không cần báo cáo")]
         public bool IsClosed { get; set; }
 
         [Display(Name = "Đang sử dụng")]
