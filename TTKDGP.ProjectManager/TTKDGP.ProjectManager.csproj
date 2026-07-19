@@ -108,6 +108,9 @@
   <ItemGroup>
     <Content Include="Global.asax" />
     <Content Include="Web.config" />
+    <Content Include="Web.Release.config">
+      <DependentUpon>Web.config</DependentUpon>
+    </Content>
     <Content Include="Content\site.css" />
     <Content Include="Content\lib\select2.min.css" />
     <Content Include="Scripts\lib\jquery.min.js" />

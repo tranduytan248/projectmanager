@@ -75,6 +75,14 @@ namespace TTKDGP.ProjectManager.Infrastructure
 
         public static class Reminder
         {
+            /// <summary>
+            /// Cho phép lịch tự động gửi hay không.
+            /// Đặt false ở máy phát triển để không bắn tin vào nhóm khi đang chạy thử;
+            /// bản publish (Release) được chuyển thành true qua Web.Release.config.
+            /// Nút gửi thủ công trên màn hình Thông báo không phụ thuộc cờ này.
+            /// </summary>
+            public static bool AutoSend { get { return GetBool("Reminder:AutoSend", false); } }
+
             /// <summary>Giờ gửi nhắc sáng thứ Hai (nhắc về tuần trước).</summary>
             public static int MondayHour { get { return Clamp(GetInt("Reminder:MondayHour", 8)); } }
 

@@ -26,6 +26,10 @@ namespace TTKDGP.ProjectManager.Infrastructure
 
         public static void Start()
         {
+            // Máy phát triển để Reminder:AutoSend = false nên không dựng bộ hẹn giờ,
+            // tránh việc chạy thử ở local lại bắn tin thật vào nhóm.
+            if (!AppSettings.Reminder.AutoSend) return;
+
             lock (Sync)
             {
                 if (_timer != null) return;
@@ -65,6 +69,10 @@ namespace TTKDGP.ProjectManager.Infrastructure
         /// </summary>
         public static int RunDue(DateTime now)
         {
+            // Endpoint kích hoạt từ Task Scheduler cũng tôn trọng cờ này, để một máy
+            // cấu hình nhầm không gửi trùng tin của máy chủ thật.
+            if (!AppSettings.Reminder.AutoSend) return 0;
+
             var sent = 0;
 
             if (IsDue(now, DayOfWeek.Monday, AppSettings.Reminder.MondayHour, ReminderKind.MondayPreviousWeek))

@@ -111,6 +111,7 @@ namespace TTKDGP.ProjectManager.Controllers
                 MondayHour = AppSettings.Reminder.MondayHour,
                 FridayHour = AppSettings.Reminder.FridayHour,
                 SaturdayHour = AppSettings.Reminder.SaturdayHour,
+                AutoSend = AppSettings.Reminder.AutoSend,
                 MondayPreview = ReminderService.Build(ReminderKind.MondayPreviousWeek, now),
                 FridayPreview = ReminderService.Build(ReminderKind.FridayCurrentWeek, now),
                 SaturdayPreview = ReminderService.Build(ReminderKind.SaturdayAdminSummary, now),

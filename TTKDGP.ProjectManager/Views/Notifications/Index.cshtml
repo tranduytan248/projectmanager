@@ -48,6 +48,25 @@
             </div>
             <div><strong>Token:</strong><br />@Model.MaskedToken</div>
             <div><strong>Chat id nhóm:</strong><br />@Model.ChatId</div>
+            <div class="full">
+                <strong>Lịch tự động:</strong>
+                @if (Model.AutoSend)
+                {
+                    <span class="badge badge-active">Đang bật</span>
+                    <span class="muted">
+                        — tự gửi thứ Hai @Model.MondayHour giờ, thứ Sáu @Model.FridayHour giờ,
+                        thứ Bảy @Model.SaturdayHour giờ.
+                    </span>
+                }
+                else
+                {
+                    <span class="badge badge-inactive">Đang tắt</span>
+                    <span class="muted">
+                        — chỉ gửi khi bấm nút bên dưới. Bản publish Release tự bật lịch;
+                        máy phát triển để tắt cho khỏi bắn tin thật vào nhóm.
+                    </span>
+                }
+            </div>
         </div>
 
         @if (!Model.TelegramEnabled || !Model.HasToken || !Model.HasChatId)

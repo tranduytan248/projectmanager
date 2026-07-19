@@ -153,6 +153,9 @@ namespace TTKDGP.ProjectManager.Models
         public int FridayHour { get; set; }
         public int SaturdayHour { get; set; }
 
+        /// <summary>Lịch tự động có đang chạy không. Ở máy phát triển thường là tắt.</summary>
+        public bool AutoSend { get; set; }
+
         /// <summary>Xem trước nội dung của các kỳ nhắc, tính trên dữ liệu hiện tại.</summary>
         public ReminderReport MondayPreview { get; set; }
         public ReminderReport FridayPreview { get; set; }
