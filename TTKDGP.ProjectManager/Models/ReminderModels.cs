@@ -3,14 +3,20 @@ using System.Collections.Generic;
 
 namespace TTKDGP.ProjectManager.Models
 {
-    /// <summary>Hai loại nhắc báo cáo.</summary>
+    /// <summary>Các kỳ nhắc báo cáo.</summary>
     public enum ReminderKind
     {
-        /// <summary>Sáng thứ Hai — điểm lại các dự án chưa báo cáo của tuần trước.</summary>
+        /// <summary>Sáng thứ Hai — điểm lại các dự án chưa báo cáo của tuần trước. Gửi vào nhóm.</summary>
         MondayPreviousWeek = 1,
 
-        /// <summary>Chiều thứ Sáu — nhắc các dự án chưa báo cáo của tuần này.</summary>
-        FridayCurrentWeek = 2
+        /// <summary>Chiều thứ Sáu — nhắc các dự án chưa báo cáo của tuần này. Gửi vào nhóm.</summary>
+        FridayCurrentWeek = 2,
+
+        /// <summary>
+        /// Sáng thứ Bảy — tổng hợp PM nào chưa báo cáo, dạng danh sách phẳng
+        /// "Tên PM - Dự án" để anh Tân theo dõi. Cũng gửi vào nhóm.
+        /// </summary>
+        SaturdayAdminSummary = 3
     }
 
     /// <summary>Một dự án chưa báo cáo trong kỳ đang xét.</summary>
@@ -65,9 +71,12 @@ namespace TTKDGP.ProjectManager.Models
         {
             get
             {
-                return Kind == ReminderKind.MondayPreviousWeek
-                    ? "Sáng thứ Hai — rà soát tuần trước"
-                    : "Chiều thứ Sáu — rà soát tuần này";
+                switch (Kind)
+                {
+                    case ReminderKind.MondayPreviousWeek: return "Sáng thứ Hai — rà soát tuần trước";
+                    case ReminderKind.FridayCurrentWeek: return "Chiều thứ Sáu — rà soát tuần này";
+                    default: return "Sáng thứ Bảy — báo cáo cho anh Tân";
+                }
             }
         }
 
@@ -122,10 +131,12 @@ namespace TTKDGP.ProjectManager.Models
 
         public int MondayHour { get; set; }
         public int FridayHour { get; set; }
+        public int SaturdayHour { get; set; }
 
-        /// <summary>Xem trước nội dung của hai kỳ nhắc, tính trên dữ liệu hiện tại.</summary>
+        /// <summary>Xem trước nội dung của các kỳ nhắc, tính trên dữ liệu hiện tại.</summary>
         public ReminderReport MondayPreview { get; set; }
         public ReminderReport FridayPreview { get; set; }
+        public ReminderReport SaturdayPreview { get; set; }
 
         public List<ReminderLog> History { get; set; }
 

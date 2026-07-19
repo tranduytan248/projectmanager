@@ -110,8 +110,10 @@ namespace TTKDGP.ProjectManager.Controllers
                 ChatId = AppSettings.Telegram.HasChatId ? AppSettings.Telegram.ChatId : "(chưa đặt)",
                 MondayHour = AppSettings.Reminder.MondayHour,
                 FridayHour = AppSettings.Reminder.FridayHour,
+                SaturdayHour = AppSettings.Reminder.SaturdayHour,
                 MondayPreview = ReminderService.Build(ReminderKind.MondayPreviousWeek, now),
                 FridayPreview = ReminderService.Build(ReminderKind.FridayCurrentWeek, now),
+                SaturdayPreview = ReminderService.Build(ReminderKind.SaturdayAdminSummary, now),
                 History = Repository.ReminderLogs.All()
                     .OrderByDescending(l => l.SentAt)
                     .Take(20)

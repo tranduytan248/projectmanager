@@ -8,9 +8,10 @@
     <div>
         <h1>Nhắc báo cáo qua Telegram</h1>
         <p>
-            Sáng thứ Hai lúc @Model.MondayHour giờ rà soát tuần trước,
-            chiều thứ Sáu lúc @Model.FridayHour giờ rà soát tuần đang chạy.
-            Dự án ở trạng thái <em>coi như đã dừng</em> không bị nhắc.
+            Thứ Hai @Model.MondayHour giờ rà soát tuần trước ·
+            thứ Sáu @Model.FridayHour giờ rà soát tuần này ·
+            thứ Bảy @Model.SaturdayHour giờ tổng hợp cho anh Tân.
+            Tất cả gửi vào nhóm. Dự án ở trạng thái <em>coi như đã dừng</em> không bị nhắc.
         </p>
     </div>
 </div>
@@ -104,7 +105,7 @@
     </div>
 </div>
 
-@foreach (var preview in new[] { Model.FridayPreview, Model.MondayPreview })
+@foreach (var preview in new[] { Model.SaturdayPreview, Model.FridayPreview, Model.MondayPreview })
 {
     <div class="card">
         <div class="card-head">

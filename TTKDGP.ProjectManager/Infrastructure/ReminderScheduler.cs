@@ -79,6 +79,12 @@ namespace TTKDGP.ProjectManager.Infrastructure
                 sent++;
             }
 
+            if (IsDue(now, DayOfWeek.Saturday, AppSettings.Reminder.SaturdayHour, ReminderKind.SaturdayAdminSummary))
+            {
+                ReminderService.Run(ReminderKind.SaturdayAdminSummary, now, false, null);
+                sent++;
+            }
+
             return sent;
         }
 

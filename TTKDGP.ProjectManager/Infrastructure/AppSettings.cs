@@ -63,6 +63,9 @@ namespace TTKDGP.ProjectManager.Infrastructure
             /// <summary>Giờ gửi nhắc chiều thứ Sáu (nhắc về tuần này).</summary>
             public static int FridayHour { get { return Clamp(GetInt("Reminder:FridayHour", 15)); } }
 
+            /// <summary>Giờ gửi tổng hợp sáng thứ Bảy (báo cáo cho anh Tân, về tuần này).</summary>
+            public static int SaturdayHour { get { return Clamp(GetInt("Reminder:SaturdayHour", 9)); } }
+
             public static string TriggerKey { get { return Get("Reminder:TriggerKey"); } }
 
             private static int Clamp(int hour)

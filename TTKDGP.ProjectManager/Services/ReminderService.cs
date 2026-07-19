@@ -90,6 +90,14 @@ namespace TTKDGP.ProjectManager.Services
         {
             if (!report.HasSomethingToSend) return string.Empty;
 
+            return report.Kind == ReminderKind.SaturdayAdminSummary
+                ? BuildAdminSummary(report)
+                : BuildGroupMessage(report);
+        }
+
+        /// <summary>Tin gửi vào nhóm: gom theo PM, mỗi PM một danh sách đánh số.</summary>
+        private static string BuildGroupMessage(ReminderReport report)
+        {
             var sb = new StringBuilder();
 
             var heading = report.Kind == ReminderKind.MondayPreviousWeek
@@ -100,7 +108,7 @@ namespace TTKDGP.ProjectManager.Services
             sb.AppendLine(string.Format("Tuần {0}/{1} ({2:dd/MM} – {3:dd/MM/yyyy})",
                 report.Week, report.Year, report.WeekFrom, report.WeekTo));
             sb.AppendLine();
-            sb.AppendLine("<b>Nội dung:</b> Các dự án chưa dừng lại mà bạn chưa báo cáo");
+            sb.AppendLine("<b>Nội dung cần báo cáo</b>");
 
             foreach (var group in report.Groups)
             {
@@ -118,6 +126,37 @@ namespace TTKDGP.ProjectManager.Services
             sb.AppendLine();
             sb.AppendLine(string.Format("<i>Tổng {0} dự án chưa báo cáo trên {1} dự án đang chạy.</i>",
                 report.MissingProjectCount, report.TotalOpenProjects));
+
+            return sb.ToString().TrimEnd();
+        }
+
+        /// <summary>
+        /// Tin tổng hợp sáng thứ Bảy gửi lên nhóm, dành cho người phụ trách theo dõi:
+        /// danh sách phẳng theo mẫu "Tên PM - Dự án".
+        /// </summary>
+        private static string BuildAdminSummary(ReminderReport report)
+        {
+            var sb = new StringBuilder();
+
+            sb.AppendLine("<b>Báo cáo cho anh Tân</b>");
+            sb.AppendLine(string.Format("Tuần {0}/{1} ({2:dd/MM} – {3:dd/MM/yyyy})",
+                report.Week, report.Year, report.WeekFrom, report.WeekTo));
+            sb.AppendLine();
+            sb.AppendLine("<b>Các PM chưa báo cáo</b>");
+            sb.AppendLine();
+
+            foreach (var group in report.Groups)
+            {
+                foreach (var project in group.Projects)
+                {
+                    sb.AppendLine(string.Format("{0} - {1}",
+                        Escape(group.PmName), Escape(project.ProjectName)));
+                }
+            }
+
+            sb.AppendLine();
+            sb.AppendLine(string.Format("<i>{0} PM, {1} dự án chưa báo cáo trên {2} dự án đang chạy.</i>",
+                report.Groups.Count, report.MissingProjectCount, report.TotalOpenProjects));
 
             return sb.ToString().TrimEnd();
         }
