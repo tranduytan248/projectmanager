@@ -1,0 +1,106 @@
+﻿@using TTKDGP.ProjectManager.Infrastructure
+@{
+    var currentUser = ViewBag.CurrentUser as AppIdentity;
+    var isAdmin = ViewBag.IsAdmin != null && (bool)ViewBag.IsAdmin;
+    var controller = ViewContext.RouteData.Values["controller"] as string ?? "";
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewBag.Title - Quản lý dự án NCPT</title>
+
+    <link rel="icon" href="@Url.Content("~/favicon.ico")" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="@Url.Content("~/Content/img/favicon-32x32.png")" />
+    <link rel="icon" type="image/png" sizes="16x16" href="@Url.Content("~/Content/img/favicon-16x16.png")" />
+    <link rel="apple-touch-icon" sizes="180x180" href="@Url.Content("~/Content/img/apple-touch-icon.png")" />
+    <link rel="manifest" href="@Url.Content("~/site.webmanifest")" />
+    <meta name="theme-color" content="#1a56a8" />
+
+    <link rel="stylesheet" href="@Url.Content("~/Content/lib/select2.min.css")" />
+    <link rel="stylesheet" href="@Url.Content("~/Content/site.css")" />
+</head>
+<body>
+    <header class="topbar">
+        <div class="container topbar-inner">
+            <a class="brand" href="@Url.Action("Index", "Home")">
+                <span class="brand-mark">NCPT</span>
+                <span class="brand-text">Quản lý dự án &amp; nhân sự</span>
+            </a>
+
+            <nav class="nav">
+                <a href="@Url.Action("Index", "Home")" class="@(controller == "Home" ? "active" : "")">Tổng hợp</a>
+                @if (currentUser != null)
+                {
+                    <a href="@Url.Action("Index", "Projects")" class="@(controller == "Projects" ? "active" : "")">Dự án</a>
+                    <a href="@Url.Action("Index", "Members")" class="@(controller == "Members" ? "active" : "")">Thành viên</a>
+                    <a href="@Url.Action("Index", "Assignments")" class="@(controller == "Assignments" ? "active" : "")">Phân công</a>
+
+                    var catalogControllers = new[] { "ProjectTypes", "ProjectStatuses", "WorkStatuses", "MemberRoles" };
+                    var inCatalog = catalogControllers.Contains(controller);
+
+                    <span class="nav-group @(inCatalog ? "open" : "")">
+                        <span class="nav-group-label @(inCatalog ? "active" : "")">Danh mục ▾</span>
+                        <span class="nav-group-menu">
+                            <a href="@Url.Action("Index", "ProjectTypes")" class="@(controller == "ProjectTypes" ? "active" : "")">Loại dự án</a>
+                            <a href="@Url.Action("Index", "ProjectStatuses")" class="@(controller == "ProjectStatuses" ? "active" : "")">Trạng thái dự án</a>
+                            <a href="@Url.Action("Index", "WorkStatuses")" class="@(controller == "WorkStatuses" ? "active" : "")">Trạng thái tham gia</a>
+                            <a href="@Url.Action("Index", "MemberRoles")" class="@(controller == "MemberRoles" ? "active" : "")">Vai trò</a>
+                        </span>
+                    </span>
+                    if (isAdmin)
+                    {
+                        <a href="@Url.Action("Index", "Users")" class="@(controller == "Users" ? "active" : "")">Người dùng</a>
+                    }
+                }
+            </nav>
+
+            <div class="user-area">
+                @if (currentUser != null)
+                {
+                    <a class="user-chip" href="@Url.Action("Profile", "Account")" title="Thông tin cá nhân">
+                        @currentUser.FullName
+                        <em>@(currentUser.Role == "Admin" ? "Quản trị" : "Quản lý")</em>
+                    </a>
+                    using (Html.BeginForm("Logout", "Account", FormMethod.Post, new { @class = "inline-form" }))
+                    {
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-ghost btn-sm">Đăng xuất</button>
+                    }
+                }
+                else
+                {
+                    <a class="btn btn-primary btn-sm" href="@Url.Action("Login", "Account")">Đăng nhập</a>
+                }
+            </div>
+        </div>
+    </header>
+
+    <main class="container main">
+        @if (TempData["Flash"] != null)
+        {
+            <div class="alert alert-success">@TempData["Flash"]</div>
+        }
+        @if (TempData["FlashError"] != null)
+        {
+            <div class="alert alert-danger">@TempData["FlashError"]</div>
+        }
+
+        @RenderBody()
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            Tổ NCPT &mdash; Trung tâm Kinh doanh Giải pháp, VNPT Khánh Hòa
+        </div>
+    </footer>
+
+    @* Thư viện đóng gói sẵn trong project, không phụ thuộc CDN nên chạy được cả khi server không có internet *@
+    <script src="@Url.Content("~/Scripts/lib/jquery.min.js")"></script>
+    <script src="@Url.Content("~/Scripts/lib/select2.min.js")"></script>
+    <script src="@Url.Content("~/Scripts/lib/select2.vi.js")"></script>
+    <script src="@Url.Content("~/Scripts/app.js")"></script>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

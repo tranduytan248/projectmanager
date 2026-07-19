@@ -1,0 +1,134 @@
+﻿@model TTKDGP.ProjectManager.Models.Project
+@{
+    var isNew = Model.Id == 0;
+    ViewBag.Title = isNew ? "Thêm dự án" : "Sửa dự án";
+    var members = ViewBag.Members as List<TTKDGP.ProjectManager.Models.Member> ?? new List<TTKDGP.ProjectManager.Models.Member>();
+}
+
+<div class="page-head">
+    <div>
+        <h1>@ViewBag.Title</h1>
+        @if (!isNew)
+        {
+            <p>@Model.Name</p>
+        }
+    </div>
+    <a class="btn btn-default" href="@Url.Action("Index", "Projects")">&larr; Danh sách dự án</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        @using (Html.BeginForm("Edit", "Projects", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            @Html.HiddenFor(m => m.Id)
+            @Html.ValidationSummary(true)
+
+            <div class="form-grid">
+                <div class="form-field full">
+                    @Html.LabelFor(m => m.Name)
+                    @Html.TextBoxFor(m => m.Name, new { autofocus = "autofocus" })
+                    @Html.ValidationMessageFor(m => m.Name, "", new { @class = "field-error" })
+                </div>
+
+                <div class="form-field">
+                    @Html.LabelFor(m => m.Customer)
+                    @Html.TextBoxFor(m => m.Customer)
+                </div>
+
+                <div class="form-field">
+                    @Html.LabelFor(m => m.PmMemberId)
+                    @Html.DropDownListFor(m => m.PmMemberId,
+                        new SelectList(members, "Id", "FullName", Model.PmMemberId),
+                        "— Chọn PM phụ trách —")
+                    @Html.ValidationMessageFor(m => m.PmMemberId, "", new { @class = "field-error" })
+                </div>
+
+                <div class="form-field">
+                    @Html.LabelFor(m => m.ProjectType)
+                    @Html.DropDownListFor(m => m.ProjectType,
+                        new SelectList(ViewBag.ProjectTypes as List<string> ?? new List<string>(), Model.ProjectType),
+                        "— Chọn loại dự án —")
+                    <span class="hint">
+                        Quản lý danh mục tại mục <a href="@Url.Action("Index", "ProjectTypes")">Loại dự án</a>.
+                    </span>
+                </div>
+
+                <div class="form-field">
+                    @Html.LabelFor(m => m.CurrentStatus)
+                    @Html.DropDownListFor(m => m.CurrentStatus,
+                        new SelectList(ViewBag.ProjectStatuses as List<string> ?? new List<string>(), Model.CurrentStatus),
+                        "— Chọn trạng thái —")
+                    <span class="hint">
+                        Quản lý danh mục tại mục <a href="@Url.Action("Index", "ProjectStatuses")">Trạng thái dự án</a>.
+                    </span>
+                </div>
+
+                <div class="form-field">
+                    @Html.LabelFor(m => m.ContractStatus)
+                    @Html.TextBoxFor(m => m.ContractStatus)
+                </div>
+
+                <div class="form-field">
+                    @Html.LabelFor(m => m.ExpectedRevenue)
+                    @Html.TextBoxFor(m => m.ExpectedRevenue)
+                </div>
+
+                <div class="form-field full">
+                    @Html.LabelFor(m => m.Note)
+                    @Html.TextAreaFor(m => m.Note)
+                </div>
+
+                <div class="form-field">
+                    @Html.LabelFor(m => m.Redmine)
+                    @Html.TextBoxFor(m => m.Redmine)
+                </div>
+
+                <div class="form-field">
+                    @Html.LabelFor(m => m.Svn)
+                    @Html.TextBoxFor(m => m.Svn)
+                </div>
+
+                <div class="form-field">
+                    @Html.LabelFor(m => m.Github)
+                    @Html.TextBoxFor(m => m.Github)
+                </div>
+
+                <div class="form-field">
+                    @Html.LabelFor(m => m.GeneralReport)
+                    @Html.TextBoxFor(m => m.GeneralReport)
+                </div>
+
+                <div class="form-field full">
+                    @Html.LabelFor(m => m.ParticipantIds)
+                    <div class="checkbox-grid">
+                        @foreach (var m in members)
+                        {
+                            var checkedAttr = Model.ParticipantIds != null && Model.ParticipantIds.Contains(m.Id);
+                            <label class="checkbox-item @(m.IsActive ? "" : "is-inactive")"
+                                   title="@m.FullName@(m.IsActive ? "" : " (đã nghỉ)")">
+                                <input type="checkbox" name="ParticipantIds" value="@m.Id" checked="@checkedAttr" />
+                                <span>
+                                    @m.FullName
+                                    @if (!m.IsActive)
+                                    {
+                                        <em>(đã nghỉ)</em>
+                                    }
+                                </span>
+                            </label>
+                        }
+                    </div>
+                    <span class="hint">
+                        Danh sách nhân sự khai báo cho dự án. Vai trò và công việc cụ thể của từng người
+                        được ghi ở mục <a href="@Url.Action("Index", "Assignments")">Phân công</a>.
+                    </span>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">@(isNew ? "Thêm dự án" : "Lưu thay đổi")</button>
+                <a class="btn btn-default" href="@Url.Action("Index", "Projects")">Huỷ</a>
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,50 @@
+[
+    {
+        "Id":  1,
+        "Name":  "Đang thực hiện",
+        "Description":  "Thành viên đang trực tiếp làm",
+        "Priority":  0,
+        "IsActive":  true,
+        "SortOrder":  10
+    },
+    {
+        "Id":  2,
+        "Name":  "Đang hỗ trợ",
+        "Description":  "Thành viên hỗ trợ khi có phát sinh",
+        "Priority":  0,
+        "IsActive":  true,
+        "SortOrder":  20
+    },
+    {
+        "Id":  3,
+        "Name":  "Đang thử nghiệm",
+        "Description":  "Đang kiểm thử phần việc được giao",
+        "Priority":  0,
+        "IsActive":  true,
+        "SortOrder":  30
+    },
+    {
+        "Id":  4,
+        "Name":  "Đang chờ",
+        "Description":  "Chờ đầu vào từ bên khác",
+        "Priority":  0,
+        "IsActive":  true,
+        "SortOrder":  40
+    },
+    {
+        "Id":  5,
+        "Name":  "Tạm dừng",
+        "Description":  "Tạm ngưng phần việc này",
+        "Priority":  0,
+        "IsActive":  true,
+        "SortOrder":  50
+    },
+    {
+        "Id":  6,
+        "Name":  "Hoàn thành",
+        "Description":  "Đã xong phần việc được giao",
+        "Priority":  0,
+        "IsActive":  true,
+        "SortOrder":  60
+    }
+]

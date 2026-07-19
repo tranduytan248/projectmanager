@@ -1,0 +1,148 @@
+﻿@model TTKDGP.ProjectManager.Models.AssignmentListViewModel
+@using TTKDGP.ProjectManager.Infrastructure
+@{
+    ViewBag.Title = "Phân công";
+
+    // Khi vào từ một dự án cụ thể, giữ ngữ cảnh dự án đó cho tiêu đề và nút thêm mới.
+    var filteredProject = Model.ProjectId.HasValue
+        ? Model.Projects.FirstOrDefault(p => p.Id == Model.ProjectId.Value)
+        : null;
+
+    var logCounts = ViewBag.LogCounts as Dictionary<int, int> ?? new Dictionary<int, int>();
+}
+
+<div class="page-head">
+    <div>
+        @if (filteredProject != null)
+        {
+            <h1>Phân công &mdash; @filteredProject.Name</h1>
+            <p>
+                Đang lọc theo dự án này.
+                <a href="@Url.Action("Index", "Assignments")">Xem toàn bộ phân công</a> &middot;
+                <a href="@Url.Action("Edit", "Projects", new { id = filteredProject.Id })">Sửa dự án</a>
+            </p>
+        }
+        else
+        {
+            <h1>Phân công</h1>
+            <p>Thành viên tham gia dự án nào, làm công việc gì, trạng thái tham gia ra sao.</p>
+        }
+    </div>
+    <a class="btn btn-primary"
+       href="@Url.Action("Edit", "Assignments", new { projectId = Model.ProjectId })">+ Thêm phân công</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        @using (Html.BeginForm("Index", "Assignments", FormMethod.Get))
+        {
+            <div class="filters">
+                <div class="filter-field grow">
+                    <label for="keyword">Tìm kiếm</label>
+                    <input type="search" id="keyword" name="keyword" value="@Model.Keyword"
+                           placeholder="Thành viên, dự án, vai trò, nội dung công việc..." />
+                </div>
+                <div class="filter-field">
+                    <label for="memberId">Thành viên</label>
+                    <select id="memberId" name="memberId">
+                        <option value="">— Tất cả —</option>
+                        @foreach (var m in Model.Members)
+                        {
+                            <option value="@m.Id" selected="@(Model.MemberId == m.Id)">@m.FullName</option>
+                        }
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label for="projectId">Dự án</label>
+                    <select id="projectId" name="projectId">
+                        <option value="">— Tất cả —</option>
+                        @foreach (var p in Model.Projects)
+                        {
+                            <option value="@p.Id" selected="@(Model.ProjectId == p.Id)">@p.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="btn-row" style="padding-bottom:1px">
+                    <button type="submit" class="btn btn-primary">Lọc</button>
+                    <a class="btn btn-default" href="@Url.Action("Index", "Assignments")">Xoá lọc</a>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-head">
+        <span>Danh sách phân công</span>
+        <span class="muted" style="font-weight:400">@Model.Rows.Count dòng</span>
+    </div>
+
+    @if (Model.Rows.Count == 0)
+    {
+        <div class="empty-state">Chưa có phân công nào phù hợp.</div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th>Thành viên</th>
+                        <th>Dự án</th>
+                        <th>Vai trò</th>
+                        <th>Nội dung công việc</th>
+                        <th>Trạng thái công việc</th>
+                        <th>Tham gia</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.Rows)
+                    {
+                        <tr>
+                            <td><strong>@row.MemberName</strong></td>
+                            <td>@row.ProjectName</td>
+                            <td><span class="badge badge-role">@ViewHelpers.OrDash(row.Role)</span></td>
+                            <td class="wrap-text muted">@ViewHelpers.OrDash(row.WorkContent)</td>
+                            <td><span class="badge @ViewHelpers.StatusBadgeClass(row.WorkStatus)">@ViewHelpers.OrDash(row.WorkStatus)</span></td>
+                            <td>
+                                @using (Html.BeginForm("ToggleActive", "Assignments", new { id = row.AssignmentId }, FormMethod.Post, new { @class = "inline-form" }))
+                                {
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-ghost btn-sm" style="padding:0;border:0;background:none"
+                                            title="Bấm để đổi trạng thái tham gia">
+                                        @if (row.IsActive)
+                                        {
+                                            <span class="badge badge-active">Đang tham gia</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-inactive">Đã ngừng</span>
+                                        }
+                                    </button>
+                                }
+                            </td>
+                            <td class="actions">
+                                @{ var logCount = logCounts.ContainsKey(row.AssignmentId) ? logCounts[row.AssignmentId] : 0; }
+                                <a class="btn btn-default btn-sm"
+                                   href="@Url.Action("Timeline", "WorkLogs", new { id = row.AssignmentId })"
+                                   title="Timeline tiến trình thực hiện theo tuần">
+                                    Tiến trình@(logCount > 0 ? " (" + logCount + ")" : "")
+                                </a>
+                                <a class="btn btn-default btn-sm" href="@Url.Action("Edit", "Assignments", new { id = row.AssignmentId })">Sửa</a>
+                                @using (Html.BeginForm("Delete", "Assignments", new { id = row.AssignmentId }, FormMethod.Post, new { @class = "inline-form" }))
+                                {
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-danger btn-sm"
+                                            onclick="return confirm('Gỡ &quot;@row.MemberName&quot; khỏi dự án &quot;@row.ProjectName&quot;?');">
+                                        Gỡ
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

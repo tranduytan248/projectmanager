@@ -1,0 +1,138 @@
+﻿@model List<TTKDGP.ProjectManager.Models.Project>
+@using TTKDGP.ProjectManager.Infrastructure
+@{
+    ViewBag.Title = "Dự án";
+    var counts = ViewBag.ActiveCounts as Dictionary<int, int> ?? new Dictionary<int, int>();
+    var statuses = ViewBag.Statuses as List<string> ?? new List<string>();
+    var currentStatus = ViewBag.Status as string;
+    var projectTypes = ViewBag.ProjectTypes as List<string> ?? new List<string>();
+    var currentType = ViewBag.ProjectType as string;
+    var memberNames = ViewBag.MemberNames as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var pmOptions = ViewBag.PmOptions as List<TTKDGP.ProjectManager.Models.Member> ?? new List<TTKDGP.ProjectManager.Models.Member>();
+    var currentPm = ViewBag.PmMemberId as int?;
+}
+
+<div class="page-head">
+    <div>
+        <h1>Dự án</h1>
+        <p>Khai báo dự án của tổ. Tổng cộng @Model.Count dự án.</p>
+    </div>
+    <a class="btn btn-primary" href="@Url.Action("Edit", "Projects")">+ Thêm dự án</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        @using (Html.BeginForm("Index", "Projects", FormMethod.Get))
+        {
+            <div class="filters">
+                <div class="filter-field grow">
+                    <label for="keyword">Tìm kiếm</label>
+                    <input type="search" id="keyword" name="keyword" value="@ViewBag.Keyword"
+                           placeholder="Tên dự án, khách hàng, PM, loại dự án..." />
+                </div>
+                <div class="filter-field">
+                    <label for="status">Trạng thái</label>
+                    <select id="status" name="status">
+                        <option value="">— Tất cả —</option>
+                        @foreach (var s in statuses)
+                        {
+                            <option value="@s" selected="@(currentStatus == s)">@s</option>
+                        }
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label for="pmMemberId">PM phụ trách</label>
+                    <select id="pmMemberId" name="pmMemberId">
+                        <option value="">— Tất cả —</option>
+                        @foreach (var pm in pmOptions)
+                        {
+                            <option value="@pm.Id" selected="@(currentPm == pm.Id)">@pm.FullName</option>
+                        }
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label for="projectType">Loại dự án</label>
+                    <select id="projectType" name="projectType">
+                        <option value="">— Tất cả —</option>
+                        @foreach (var t in projectTypes)
+                        {
+                            <option value="@t" selected="@(currentType == t)">@t</option>
+                        }
+                    </select>
+                </div>
+                <div class="btn-row" style="padding-bottom:1px">
+                    <button type="submit" class="btn btn-primary">Lọc</button>
+                    <a class="btn btn-default" href="@Url.Action("Index", "Projects")">Xoá lọc</a>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="card">
+    @if (Model.Count == 0)
+    {
+        <div class="empty-state">Chưa có dự án nào phù hợp.</div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th>Tên dự án</th>
+                        <th>Khách hàng</th>
+                        <th>Loại dự án</th>
+                        <th>PM</th>
+                        <th>Trạng thái</th>
+                        <th class="num">Thành viên</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in Model)
+                    {
+                        <tr>
+                            <td>
+                                <strong>@p.Name</strong>
+                                @if (!string.IsNullOrWhiteSpace(p.Note))
+                                {
+                                    <div class="muted" style="font-size:12.5px">@p.Note</div>
+                                }
+                            </td>
+                            <td class="muted">@ViewHelpers.OrDash(p.Customer)</td>
+                            <td class="muted">@ViewHelpers.OrDash(p.ProjectType)</td>
+                            <td class="muted">@ViewHelpers.OrDash(memberNames.ContainsKey(p.PmMemberId) ? memberNames[p.PmMemberId] : null)</td>
+                            <td><span class="badge @ViewHelpers.StatusBadgeClass(p.CurrentStatus)">@ViewHelpers.OrDash(p.CurrentStatus)</span></td>
+                            <td class="num">
+                                @{ var memberCount = counts.ContainsKey(p.Id) ? counts[p.Id] : 0; }
+                                @if (memberCount > 0)
+                                {
+                                    <a href="@Url.Action("Index", "Assignments", new { projectId = p.Id })"
+                                       title="Xem phân công của dự án này">@memberCount</a>
+                                }
+                                else
+                                {
+                                    <span class="muted">0</span>
+                                }
+                            </td>
+                            <td class="actions">
+                                <a class="btn btn-default btn-sm"
+                                   href="@Url.Action("Index", "Assignments", new { projectId = p.Id })">Phân công</a>
+                                <a class="btn btn-default btn-sm" href="@Url.Action("Edit", "Projects", new { id = p.Id })">Sửa</a>
+                                @using (Html.BeginForm("Delete", "Projects", new { id = p.Id }, FormMethod.Post, new { @class = "inline-form" }))
+                                {
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-danger btn-sm"
+                                            onclick="return confirm('Xoá dự án &quot;@p.Name&quot;? Các phân công thuộc dự án này cũng sẽ bị xoá.');">
+                                        Xoá
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

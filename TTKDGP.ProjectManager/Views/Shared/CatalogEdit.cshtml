@@ -1,0 +1,76 @@
+﻿@model TTKDGP.ProjectManager.Models.CatalogEditViewModel
+@{
+    ViewBag.Title = (Model.IsNew ? "Thêm " : "Sửa ") + Model.Config.ItemLabel;
+}
+
+<div class="page-head">
+    <div>
+        <h1>@ViewBag.Title</h1>
+        @if (!Model.IsNew)
+        {
+            <p>@Model.Name</p>
+        }
+    </div>
+    <a class="btn btn-default" href="@Url.Action("Index", Model.Config.ControllerName)">&larr; @Model.Config.Title</a>
+</div>
+
+<div class="card form-narrow">
+    <div class="card-body">
+        @using (Html.BeginForm("Edit", Model.Config.ControllerName, FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            @Html.HiddenFor(m => m.Id)
+            @Html.ValidationSummary(true)
+
+            <div class="form-field">
+                <label for="Name">@Model.Config.NameLabel</label>
+                @Html.TextBoxFor(m => m.Name, new { autofocus = "autofocus" })
+                @Html.ValidationMessageFor(m => m.Name, "", new { @class = "field-error" })
+                @if (!Model.IsNew)
+                {
+                    <span class="hint">Đổi tên ở đây sẽ tự động cập nhật cho mọi bản ghi đang dùng giá trị này.</span>
+                }
+            </div>
+
+            <div class="form-field">
+                @Html.LabelFor(m => m.Description)
+                @Html.TextAreaFor(m => m.Description)
+                @Html.ValidationMessageFor(m => m.Description, "", new { @class = "field-error" })
+            </div>
+
+            @if (Model.Config.ShowPriority)
+            {
+                <div class="form-field">
+                    @Html.LabelFor(m => m.Priority)
+                    @Html.TextBoxFor(m => m.Priority, new { type = "number", min = "1", step = "1" })
+                    @Html.ValidationMessageFor(m => m.Priority, "", new { @class = "field-error" })
+                    <span class="hint">
+                        Số nhỏ là ưu tiên cao. Dự án ở trạng thái ưu tiên cao nhất được hiện ngay
+                        trên màn hình tổng hợp, phần còn lại gập sau nút &quot;Xem thêm&quot;.
+                    </span>
+                </div>
+            }
+            else
+            {
+                @Html.HiddenFor(m => m.Priority)
+            }
+
+            <div class="form-field">
+                @Html.LabelFor(m => m.SortOrder)
+                @Html.TextBoxFor(m => m.SortOrder, new { type = "number", step = "10" })
+                <span class="hint">Số nhỏ hiển thị trước trong danh sách chọn.</span>
+            </div>
+
+            <div class="check-inline">
+                @Html.CheckBoxFor(m => m.IsActive)
+                @Html.LabelFor(m => m.IsActive)
+            </div>
+            <span class="hint">Bỏ đánh dấu để ẩn khỏi danh sách chọn mà vẫn giữ nguyên các bản ghi cũ.</span>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">@(Model.IsNew ? "Thêm" : "Lưu thay đổi")</button>
+                <a class="btn btn-default" href="@Url.Action("Index", Model.Config.ControllerName)">Huỷ</a>
+            </div>
+        }
+    </div>
+</div>

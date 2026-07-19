@@ -1,0 +1,40 @@
+# ---- Kết quả biên dịch ----
+bin/
+obj/
+*.dll
+*.pdb
+*.cache
+
+# ---- Visual Studio ----
+.vs/
+*.user
+*.suo
+*.userprefs
+*.csproj.user
+*.sln.docstates
+
+# ---- Thư mục publish ----
+# Thư mục build là kết quả đóng gói, không đưa vào lịch sử mã nguồn.
+# Riêng danh sách file thay đổi mỗi lần publish thì giữ lại để đối chiếu.
+build/app/
+build/manifest.json
+!build/changes/
+!build/changes/*.md
+
+# ---- NuGet ----
+packages/
+*.nupkg
+
+# ---- Dữ liệu vận hành ----
+# App_Data chứa dữ liệu thật (dự án, khách hàng, nhân sự, tài khoản) nên không đưa
+# vào kho mã nguồn. Thay vào đó chỉ commit dữ liệu mẫu trong App_Data/seed;
+# lần đầu chạy, JsonStore tự chép từ seed sang nếu file thật chưa có.
+TTKDGP.ProjectManager/App_Data/*.json
+TTKDGP.ProjectManager/App_Data/*.tmp
+TTKDGP.ProjectManager/App_Data/*.bak
+!TTKDGP.ProjectManager/App_Data/seed/
+
+# ---- Khác ----
+Thumbs.db
+desktop.ini
+*.log

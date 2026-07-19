@@ -1,0 +1,76 @@
+﻿@model TTKDGP.ProjectManager.Models.UserEditViewModel
+@{
+    ViewBag.Title = Model.IsNew ? "Tạo người dùng" : "Sửa người dùng";
+    var roleOptions = new List<SelectListItem>
+    {
+        new SelectListItem { Value = "Manager", Text = "Quản lý — cập nhật dự án, thành viên, phân công" },
+        new SelectListItem { Value = "Admin",   Text = "Quản trị — toàn quyền, gồm quản lý người dùng" }
+    };
+}
+
+<div class="page-head">
+    <div>
+        <h1>@ViewBag.Title</h1>
+        @if (!Model.IsNew)
+        {
+            <p>@Model.UserName</p>
+        }
+    </div>
+    <a class="btn btn-default" href="@Url.Action("Index", "Users")">&larr; Danh sách người dùng</a>
+</div>
+
+<div class="card form-narrow">
+    <div class="card-body">
+        @using (Html.BeginForm("Edit", "Users", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            @Html.HiddenFor(m => m.Id)
+            @Html.ValidationSummary(true)
+
+            <div class="form-field">
+                @Html.LabelFor(m => m.UserName)
+                @Html.TextBoxFor(m => m.UserName, new { autofocus = "autofocus", autocomplete = "off" })
+                @Html.ValidationMessageFor(m => m.UserName, "", new { @class = "field-error" })
+            </div>
+
+            <div class="form-field">
+                @Html.LabelFor(m => m.FullName)
+                @Html.TextBoxFor(m => m.FullName)
+                @Html.ValidationMessageFor(m => m.FullName, "", new { @class = "field-error" })
+            </div>
+
+            <div class="form-field">
+                @Html.LabelFor(m => m.Role)
+                @Html.DropDownListFor(m => m.Role, roleOptions, "— Chọn phân quyền —")
+                @Html.ValidationMessageFor(m => m.Role, "", new { @class = "field-error" })
+            </div>
+
+            <div class="form-field">
+                @Html.LabelFor(m => m.Password)
+                @Html.PasswordFor(m => m.Password, new { autocomplete = "new-password" })
+                @Html.ValidationMessageFor(m => m.Password, "", new { @class = "field-error" })
+                <span class="hint">
+                    @(Model.IsNew ? "Tối thiểu 6 ký tự." : "Để trống nếu không muốn đổi mật khẩu.")
+                </span>
+            </div>
+
+            <div class="form-field">
+                @Html.LabelFor(m => m.ConfirmPassword)
+                @Html.PasswordFor(m => m.ConfirmPassword, new { autocomplete = "new-password" })
+                @Html.ValidationMessageFor(m => m.ConfirmPassword, "", new { @class = "field-error" })
+            </div>
+
+            <div class="check-inline">
+                @Html.CheckBoxFor(m => m.IsActive)
+                @Html.LabelFor(m => m.IsActive)
+            </div>
+            @Html.ValidationMessageFor(m => m.IsActive, "", new { @class = "field-error" })
+            <span class="hint">Bỏ đánh dấu để khoá đăng nhập mà không xoá tài khoản.</span>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">@(Model.IsNew ? "Tạo người dùng" : "Lưu thay đổi")</button>
+                <a class="btn btn-default" href="@Url.Action("Index", "Users")">Huỷ</a>
+            </div>
+        }
+    </div>
+</div>

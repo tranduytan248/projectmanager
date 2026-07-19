@@ -1,0 +1,82 @@
+﻿@model List<TTKDGP.ProjectManager.Models.User>
+@using TTKDGP.ProjectManager.Infrastructure
+@{
+    ViewBag.Title = "Người dùng";
+    var currentUser = ViewBag.CurrentUser as AppIdentity;
+}
+
+<div class="page-head">
+    <div>
+        <h1>Người dùng</h1>
+        <p>Tài khoản đăng nhập để cập nhật dữ liệu. Tổng cộng @Model.Count tài khoản.</p>
+    </div>
+    <a class="btn btn-primary" href="@Url.Action("Edit", "Users")">+ Tạo người dùng</a>
+</div>
+
+<div class="card">
+    <div class="table-wrap">
+        <table class="data">
+            <thead>
+                <tr>
+                    <th>Tên đăng nhập</th>
+                    <th>Họ và tên</th>
+                    <th>Phân quyền</th>
+                    <th>Trạng thái</th>
+                    <th>Ngày tạo</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var u in Model)
+                {
+                    var isSelf = currentUser != null && currentUser.UserId == u.Id;
+                    <tr>
+                        <td>
+                            <strong>@u.UserName</strong>
+                            @if (isSelf)
+                            {
+                                <span class="muted"> (bạn)</span>
+                            }
+                        </td>
+                        <td>@u.FullName</td>
+                        <td>
+                            @if (u.IsAdmin)
+                            {
+                                <span class="badge badge-role">Quản trị</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-doing">Quản lý</span>
+                            }
+                        </td>
+                        <td>
+                            @if (u.IsActive)
+                            {
+                                <span class="badge badge-active">Đang hoạt động</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-inactive">Đã khoá</span>
+                            }
+                        </td>
+                        <td class="muted">@u.CreatedAt.ToString("dd/MM/yyyy")</td>
+                        <td class="actions">
+                            <a class="btn btn-default btn-sm" href="@Url.Action("Edit", "Users", new { id = u.Id })">Sửa</a>
+                            @if (!isSelf)
+                            {
+                                using (Html.BeginForm("Delete", "Users", new { id = u.Id }, FormMethod.Post, new { @class = "inline-form" }))
+                                {
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-danger btn-sm"
+                                            onclick="return confirm('Xoá tài khoản &quot;@u.UserName&quot;?');">
+                                        Xoá
+                                    </button>
+                                }
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

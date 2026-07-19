@@ -1,0 +1,50 @@
+[
+    {
+        "Id":  1,
+        "Name":  "Đang thực hiện",
+        "Description":  "Đang trong quá trình phát triển",
+        "Priority":  1,
+        "IsActive":  true,
+        "SortOrder":  10
+    },
+    {
+        "Id":  2,
+        "Name":  "Đang hỗ trợ",
+        "Description":  "Đã bàn giao, đang hỗ trợ vận hành",
+        "Priority":  2,
+        "IsActive":  true,
+        "SortOrder":  20
+    },
+    {
+        "Id":  3,
+        "Name":  "Đang thử nghiệm",
+        "Description":  "Đang chạy thử với khách hàng",
+        "Priority":  3,
+        "IsActive":  true,
+        "SortOrder":  30
+    },
+    {
+        "Id":  4,
+        "Name":  "Đang chờ",
+        "Description":  "Chờ khách hàng hoặc chờ điều kiện khác",
+        "Priority":  4,
+        "IsActive":  true,
+        "SortOrder":  40
+    },
+    {
+        "Id":  5,
+        "Name":  "Tạm dừng",
+        "Description":  "Tạm ngưng, chưa có kế hoạch tiếp",
+        "Priority":  5,
+        "IsActive":  true,
+        "SortOrder":  50
+    },
+    {
+        "Id":  6,
+        "Name":  "Hoàn thành",
+        "Description":  "Đã kết thúc",
+        "Priority":  6,
+        "IsActive":  true,
+        "SortOrder":  60
+    }
+]

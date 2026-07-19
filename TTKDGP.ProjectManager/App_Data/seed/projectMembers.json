@@ -1,0 +1,101 @@
+[
+    {
+        "Id":  1,
+        "ProjectId":  1,
+        "ProjectName":  "Cổng thông tin điện tử mẫu",
+        "MemberId":  1,
+        "MemberName":  "Nguyễn Văn An",
+        "Role":  "Lead",
+        "WorkStatus":  "Đang thực hiện",
+        "WorkContent":  "Rà soát yêu cầu và phân rã công việc",
+        "IsActive":  true
+    },
+    {
+        "Id":  2,
+        "ProjectId":  1,
+        "ProjectName":  "Cổng thông tin điện tử mẫu",
+        "MemberId":  2,
+        "MemberName":  "Trần Thị Bình",
+        "Role":  "Dev",
+        "WorkStatus":  "Đang thực hiện",
+        "WorkContent":  "Dựng giao diện trang chủ",
+        "IsActive":  true
+    },
+    {
+        "Id":  3,
+        "ProjectId":  1,
+        "ProjectName":  "Cổng thông tin điện tử mẫu",
+        "MemberId":  3,
+        "MemberName":  "Lê Hoàng Cường",
+        "Role":  "Dev",
+        "WorkStatus":  "Đang thực hiện",
+        "WorkContent":  "Xây dựng chức năng đăng tin",
+        "IsActive":  true
+    },
+    {
+        "Id":  4,
+        "ProjectId":  2,
+        "ProjectName":  "Phần mềm quản lý kho mẫu",
+        "MemberId":  2,
+        "MemberName":  "Trần Thị Bình",
+        "Role":  "Lead",
+        "WorkStatus":  "Đang thực hiện",
+        "WorkContent":  "Thiết kế cấu trúc dữ liệu kho",
+        "IsActive":  true
+    },
+    {
+        "Id":  5,
+        "ProjectId":  2,
+        "ProjectName":  "Phần mềm quản lý kho mẫu",
+        "MemberId":  4,
+        "MemberName":  "Phạm Minh Dũng",
+        "Role":  "Dev",
+        "WorkStatus":  "Đang thực hiện",
+        "WorkContent":  "Nhập xuất tồn",
+        "IsActive":  true
+    },
+    {
+        "Id":  6,
+        "ProjectId":  3,
+        "ProjectName":  "Ứng dụng chấm công mẫu",
+        "MemberId":  3,
+        "MemberName":  "Lê Hoàng Cường",
+        "Role":  "Lead",
+        "WorkStatus":  "Đang hỗ trợ",
+        "WorkContent":  "Hỗ trợ xử lý sự cố đồng bộ máy chấm công",
+        "IsActive":  true
+    },
+    {
+        "Id":  7,
+        "ProjectId":  3,
+        "ProjectName":  "Ứng dụng chấm công mẫu",
+        "MemberId":  4,
+        "MemberName":  "Phạm Minh Dũng",
+        "Role":  "Dev",
+        "WorkStatus":  "Đang hỗ trợ",
+        "WorkContent":  "",
+        "IsActive":  true
+    },
+    {
+        "Id":  8,
+        "ProjectId":  4,
+        "ProjectName":  "Hệ thống báo cáo mẫu",
+        "MemberId":  1,
+        "MemberName":  "Nguyễn Văn An",
+        "Role":  "Lead",
+        "WorkStatus":  "Đang hỗ trợ",
+        "WorkContent":  "Bổ sung biểu đồ theo tháng",
+        "IsActive":  true
+    },
+    {
+        "Id":  9,
+        "ProjectId":  5,
+        "ProjectName":  "Website giới thiệu mẫu",
+        "MemberId":  2,
+        "MemberName":  "Trần Thị Bình",
+        "Role":  "Dev",
+        "WorkStatus":  "Đang thử nghiệm",
+        "WorkContent":  "Kiểm thử trên trình duyệt di động",
+        "IsActive":  true
+    }
+]

@@ -1,0 +1,20 @@
+[
+    {
+        "Id":  1,
+        "UserName":  "admin",
+        "FullName":  "Quản trị hệ thống",
+        "Role":  "Admin",
+        "PasswordHash":  "100000.UjbkFmRFQgoL3K7Xzp/741eyY4jx1OBQ/7vQvUPRY5Y=.jnP5p19gG+kCLNQOJ44nOAyoWDXem2uVVFF/RxuAR20=",
+        "IsActive":  true,
+        "CreatedAt":  "2026-01-01T00:00:00"
+    },
+    {
+        "Id":  2,
+        "UserName":  "manager",
+        "FullName":  "Người quản lý mẫu",
+        "Role":  "Manager",
+        "PasswordHash":  "100000.borcWS2tV1u5kdqcf+YNxlRv8z7KnH53g33omnoZyXs=.gCduH1uoqHJ52XYynHr7QIduWUyLh4GdHbjGKff/orA=",
+        "IsActive":  true,
+        "CreatedAt":  "2026-01-01T00:00:00"
+    }
+]

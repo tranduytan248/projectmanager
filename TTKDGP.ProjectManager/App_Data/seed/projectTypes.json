@@ -1,0 +1,42 @@
+[
+    {
+        "Id":  1,
+        "Name":  "Dự án khách hàng bên ngoài",
+        "Description":  "Dự án ký với khách hàng ngoài đơn vị",
+        "Priority":  0,
+        "IsActive":  true,
+        "SortOrder":  10
+    },
+    {
+        "Id":  2,
+        "Name":  "Dự án khối chính quyền",
+        "Description":  "Dự án cho cơ quan nhà nước",
+        "Priority":  0,
+        "IsActive":  true,
+        "SortOrder":  20
+    },
+    {
+        "Id":  3,
+        "Name":  "Dự án nội bộ",
+        "Description":  "Sản phẩm, công cụ dùng trong nội bộ",
+        "Priority":  0,
+        "IsActive":  true,
+        "SortOrder":  30
+    },
+    {
+        "Id":  4,
+        "Name":  "OS của tỉnh khác",
+        "Description":  "Hỗ trợ vận hành hệ thống của đơn vị khác",
+        "Priority":  0,
+        "IsActive":  true,
+        "SortOrder":  40
+    },
+    {
+        "Id":  5,
+        "Name":  "Outsource sản phẩm DAS",
+        "Description":  "Gia công theo đơn đặt hàng",
+        "Priority":  0,
+        "IsActive":  true,
+        "SortOrder":  50
+    }
+]

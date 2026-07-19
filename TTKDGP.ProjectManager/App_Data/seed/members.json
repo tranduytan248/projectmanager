@@ -1,0 +1,27 @@
+[
+    {
+        "Id":  1,
+        "FullName":  "Nguyễn Văn An",
+        "IsActive":  true
+    },
+    {
+        "Id":  2,
+        "FullName":  "Trần Thị Bình",
+        "IsActive":  true
+    },
+    {
+        "Id":  3,
+        "FullName":  "Lê Hoàng Cường",
+        "IsActive":  true
+    },
+    {
+        "Id":  4,
+        "FullName":  "Phạm Minh Dũng",
+        "IsActive":  true
+    },
+    {
+        "Id":  5,
+        "FullName":  "Vũ Thị Hạnh",
+        "IsActive":  false
+    }
+]

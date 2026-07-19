@@ -1,0 +1,93 @@
+[
+    {
+        "Id":  1,
+        "AssignmentId":  1,
+        "ProjectId":  1,
+        "MemberId":  1,
+        "Year":  2026,
+        "Week":  27,
+        "Content":  "Họp chốt phạm vi với khách hàng, lập danh sách chức năng.",
+        "Status":  "Đang thực hiện",
+        "CreatedBy":  "admin",
+        "CreatedAt":  "2026-01-05T08:00:00",
+        "UpdatedAt":  null
+    },
+    {
+        "Id":  2,
+        "AssignmentId":  1,
+        "ProjectId":  1,
+        "MemberId":  1,
+        "Year":  2026,
+        "Week":  28,
+        "Content":  "Phân rã công việc, giao việc cho nhóm.",
+        "Status":  "Đang thực hiện",
+        "CreatedBy":  "admin",
+        "CreatedAt":  "2026-01-05T08:00:00",
+        "UpdatedAt":  null
+    },
+    {
+        "Id":  3,
+        "AssignmentId":  1,
+        "ProjectId":  1,
+        "MemberId":  1,
+        "Year":  2026,
+        "Week":  29,
+        "Content":  "Rà soát yêu cầu và phân rã công việc",
+        "Status":  "Đang thực hiện",
+        "CreatedBy":  "admin",
+        "CreatedAt":  "2026-01-05T08:00:00",
+        "UpdatedAt":  null
+    },
+    {
+        "Id":  4,
+        "AssignmentId":  2,
+        "ProjectId":  1,
+        "MemberId":  2,
+        "Year":  2026,
+        "Week":  29,
+        "Content":  "Dựng giao diện trang chủ",
+        "Status":  "Đang thực hiện",
+        "CreatedBy":  "admin",
+        "CreatedAt":  "2026-01-05T08:00:00",
+        "UpdatedAt":  null
+    },
+    {
+        "Id":  5,
+        "AssignmentId":  4,
+        "ProjectId":  2,
+        "MemberId":  2,
+        "Year":  2026,
+        "Week":  29,
+        "Content":  "Thiết kế cấu trúc dữ liệu kho",
+        "Status":  "Đang thực hiện",
+        "CreatedBy":  "admin",
+        "CreatedAt":  "2026-01-05T08:00:00",
+        "UpdatedAt":  null
+    },
+    {
+        "Id":  6,
+        "AssignmentId":  6,
+        "ProjectId":  3,
+        "MemberId":  3,
+        "Year":  2026,
+        "Week":  28,
+        "Content":  "Tiếp nhận sự cố đồng bộ, xác định nguyên nhân do lệch giờ máy chủ.",
+        "Status":  "Đang hỗ trợ",
+        "CreatedBy":  "admin",
+        "CreatedAt":  "2026-01-05T08:00:00",
+        "UpdatedAt":  null
+    },
+    {
+        "Id":  7,
+        "AssignmentId":  6,
+        "ProjectId":  3,
+        "MemberId":  3,
+        "Year":  2026,
+        "Week":  29,
+        "Content":  "Hỗ trợ xử lý sự cố đồng bộ máy chấm công",
+        "Status":  "Đang hỗ trợ",
+        "CreatedBy":  "admin",
+        "CreatedAt":  "2026-01-05T08:00:00",
+        "UpdatedAt":  null
+    }
+]

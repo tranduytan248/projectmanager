@@ -1,0 +1,158 @@
+﻿@model TTKDGP.ProjectManager.Models.TimelineViewModel
+@using TTKDGP.ProjectManager.Infrastructure
+@{
+    ViewBag.Title = "Tiến trình thực hiện";
+    var currentUser = ViewBag.CurrentUser as AppIdentity;
+    var canEdit = currentUser != null;
+}
+
+<div class="page-head">
+    <div>
+        <h1>Tiến trình thực hiện</h1>
+        <p>
+            <strong>@Model.MemberName</strong>
+            @if (!string.IsNullOrWhiteSpace(Model.Role))
+            {
+                <span class="badge badge-role">@Model.Role</span>
+            }
+            &nbsp;·&nbsp;
+            <a href="@Url.Action("Project", "Home", new { id = Model.ProjectId })">@Model.ProjectName</a>
+            @if (!string.IsNullOrWhiteSpace(Model.Customer))
+            {
+                <span class="muted">— @Model.Customer</span>
+            }
+        </p>
+    </div>
+    <div class="btn-row">
+        @if (canEdit)
+        {
+            <a class="btn btn-primary"
+               href="@Url.Action("Edit", "WorkLogs", new { assignmentId = Model.AssignmentId })">
+                @(Model.HasCurrentWeekLog ? "+ Ghi nhật ký tuần khác" : "+ Ghi nhật ký tuần này")
+            </a>
+            <a class="btn btn-default" href="@Url.Action("Index", "Assignments", new { projectId = Model.ProjectId })">Về phân công</a>
+        }
+        else
+        {
+            <a class="btn btn-default" href="@Url.Action("Index", "Home")">Về màn hình tổng hợp</a>
+        }
+    </div>
+</div>
+
+<div class="stats">
+    <div class="stat">
+        <div class="stat-value">@Model.TotalEntries</div>
+        <div class="stat-label">Tuần đã ghi nhận</div>
+    </div>
+    <div class="stat">
+        <div class="stat-value" style="font-size:17px;padding-top:6px">
+            <span class="badge @ViewHelpers.StatusBadgeClass(Model.CurrentStatus)">@ViewHelpers.OrDash(Model.CurrentStatus)</span>
+        </div>
+        <div class="stat-label">Trạng thái hiện tại</div>
+    </div>
+    <div class="stat">
+        <div class="stat-value" style="font-size:17px;padding-top:6px">
+            @if (Model.IsActive)
+            {
+                <span class="badge badge-active">Đang tham gia</span>
+            }
+            else
+            {
+                <span class="badge badge-inactive">Đã ngừng</span>
+            }
+        </div>
+        <div class="stat-label">Trạng thái tham gia</div>
+    </div>
+    <div class="stat">
+        <div class="stat-value" style="font-size:17px;padding-top:6px">
+            <span class="badge @ViewHelpers.StatusBadgeClass(Model.ProjectStatus)">@ViewHelpers.OrDash(Model.ProjectStatus)</span>
+        </div>
+        <div class="stat-label">Trạng thái dự án</div>
+    </div>
+</div>
+
+@if (Model.TotalEntries == 0)
+{
+    <div class="card">
+        <div class="empty-state">
+            Chưa có nhật ký nào cho phân công này.
+            @if (canEdit)
+            {
+                <div style="margin-top:14px">
+                    <a class="btn btn-primary"
+                       href="@Url.Action("Edit", "WorkLogs", new { assignmentId = Model.AssignmentId })">
+                        Ghi nhật ký tuần @WeekHelper.CurrentWeek/@WeekHelper.CurrentYear
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+}
+else
+{
+    foreach (var year in Model.Years)
+    {
+        <div class="section-head">
+            <h2>Năm @year.Year</h2>
+            <span class="muted">@year.Entries.Count tuần</span>
+        </div>
+
+        <ol class="timeline">
+            @foreach (var entry in year.Entries)
+            {
+                <li class="timeline-item @(entry.IsLatest ? "is-latest" : "") @(entry.IsCurrentWeek ? "is-current" : "")">
+                    <div class="timeline-marker"></div>
+
+                    <div class="timeline-body">
+                        <div class="timeline-head">
+                            <div>
+                                <strong class="timeline-week">@entry.WeekLabel</strong>
+                                @if (entry.IsCurrentWeek)
+                                {
+                                    <span class="badge badge-doing">Tuần này</span>
+                                }
+                                else if (entry.IsLatest)
+                                {
+                                    <span class="badge badge-active">Mới nhất</span>
+                                }
+                            </div>
+                            <span class="badge @ViewHelpers.StatusBadgeClass(entry.Log.Status)">@ViewHelpers.OrDash(entry.Log.Status)</span>
+                        </div>
+
+                        <div class="timeline-content">@entry.Log.Content</div>
+
+                        <div class="timeline-foot">
+                            <span class="muted">
+                                @if (!string.IsNullOrWhiteSpace(entry.Log.CreatedBy))
+                                {
+                                    <text>@entry.Log.CreatedBy · </text>
+                                }
+                                ghi ngày @entry.Log.CreatedAt.ToString("dd/MM/yyyy")
+                                @if (entry.Log.UpdatedAt.HasValue)
+                                {
+                                    <text> · sửa @entry.Log.UpdatedAt.Value.ToString("dd/MM/yyyy")</text>
+                                }
+                            </span>
+
+                            @if (canEdit)
+                            {
+                                <span class="btn-row">
+                                    <a class="btn btn-default btn-sm"
+                                       href="@Url.Action("Edit", "WorkLogs", new { id = entry.Log.Id })">Sửa</a>
+                                    @using (Html.BeginForm("Delete", "WorkLogs", new { id = entry.Log.Id }, FormMethod.Post, new { @class = "inline-form" }))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-danger btn-sm"
+                                                onclick="return confirm('Xoá nhật ký tuần @entry.Log.Week/@entry.Log.Year?');">
+                                            Xoá
+                                        </button>
+                                    }
+                                </span>
+                            }
+                        </div>
+                    </div>
+                </li>
+            }
+        </ol>
+    }
+}

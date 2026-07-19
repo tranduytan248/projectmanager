@@ -1,0 +1,115 @@
+[
+    {
+        "Id":  1,
+        "Name":  "Cổng thông tin điện tử mẫu",
+        "PmMemberId":  1,
+        "Customer":  "Đơn vị mẫu A",
+        "ProjectType":  "Dự án khối chính quyền",
+        "CurrentStatus":  "Đang thực hiện",
+        "ContractStatus":  "",
+        "ExpectedRevenue":  "",
+        "Note":  "Dữ liệu mẫu để chạy thử hệ thống",
+        "ParticipantIds":  [
+                               1,
+                               2,
+                               3
+                           ],
+        "Redmine":  "",
+        "Github":  "",
+        "Svn":  "",
+        "GeneralReport":  ""
+    },
+    {
+        "Id":  2,
+        "Name":  "Phần mềm quản lý kho mẫu",
+        "PmMemberId":  1,
+        "Customer":  "Công ty mẫu B",
+        "ProjectType":  "Dự án khách hàng bên ngoài",
+        "CurrentStatus":  "Đang thực hiện",
+        "ContractStatus":  "",
+        "ExpectedRevenue":  "",
+        "Note":  "",
+        "ParticipantIds":  [
+                               2,
+                               4
+                           ],
+        "Redmine":  "",
+        "Github":  "",
+        "Svn":  "",
+        "GeneralReport":  ""
+    },
+    {
+        "Id":  3,
+        "Name":  "Ứng dụng chấm công mẫu",
+        "PmMemberId":  3,
+        "Customer":  "Nội bộ",
+        "ProjectType":  "Dự án nội bộ",
+        "CurrentStatus":  "Đang hỗ trợ",
+        "ContractStatus":  "",
+        "ExpectedRevenue":  "",
+        "Note":  "",
+        "ParticipantIds":  [
+                               3,
+                               4
+                           ],
+        "Redmine":  "",
+        "Github":  "",
+        "Svn":  "",
+        "GeneralReport":  ""
+    },
+    {
+        "Id":  4,
+        "Name":  "Hệ thống báo cáo mẫu",
+        "PmMemberId":  3,
+        "Customer":  "Đơn vị mẫu C",
+        "ProjectType":  "Dự án khối chính quyền",
+        "CurrentStatus":  "Đang hỗ trợ",
+        "ContractStatus":  "",
+        "ExpectedRevenue":  "",
+        "Note":  "",
+        "ParticipantIds":  [
+                               1,
+                               4
+                           ],
+        "Redmine":  "",
+        "Github":  "",
+        "Svn":  "",
+        "GeneralReport":  ""
+    },
+    {
+        "Id":  5,
+        "Name":  "Website giới thiệu mẫu",
+        "PmMemberId":  1,
+        "Customer":  "Công ty mẫu D",
+        "ProjectType":  "Dự án khách hàng bên ngoài",
+        "CurrentStatus":  "Đang thử nghiệm",
+        "ContractStatus":  "",
+        "ExpectedRevenue":  "",
+        "Note":  "",
+        "ParticipantIds":  [
+                               2
+                           ],
+        "Redmine":  "",
+        "Github":  "",
+        "Svn":  "",
+        "GeneralReport":  ""
+    },
+    {
+        "Id":  6,
+        "Name":  "Công cụ đồng bộ dữ liệu mẫu",
+        "PmMemberId":  3,
+        "Customer":  "Nội bộ",
+        "ProjectType":  "Dự án nội bộ",
+        "CurrentStatus":  "Đang chờ",
+        "ContractStatus":  "",
+        "ExpectedRevenue":  "",
+        "Note":  "Chờ chốt yêu cầu",
+        "ParticipantIds":  [
+                               4
+                           ],
+        "Redmine":  "",
+        "Github":  "",
+        "Svn":  "",
+        "GeneralReport":  ""
+    }
+]

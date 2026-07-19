@@ -1,0 +1,43 @@
+﻿@model TTKDGP.ProjectManager.Models.Member
+@{
+    var isNew = Model.Id == 0;
+    ViewBag.Title = isNew ? "Thêm thành viên" : "Sửa thành viên";
+}
+
+<div class="page-head">
+    <div>
+        <h1>@ViewBag.Title</h1>
+    </div>
+    <a class="btn btn-default" href="@Url.Action("Index", "Members")">&larr; Danh sách thành viên</a>
+</div>
+
+<div class="card form-narrow">
+    <div class="card-body">
+        @using (Html.BeginForm("Edit", "Members", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            @Html.HiddenFor(m => m.Id)
+            @Html.ValidationSummary(true)
+
+            <div class="form-field">
+                @Html.LabelFor(m => m.FullName)
+                @Html.TextBoxFor(m => m.FullName, new { autofocus = "autofocus" })
+                @Html.ValidationMessageFor(m => m.FullName, "", new { @class = "field-error" })
+                @if (!isNew)
+                {
+                    <span class="hint">Đổi tên ở đây sẽ tự động cập nhật trong các phân công của thành viên.</span>
+                }
+            </div>
+
+            <div class="check-inline">
+                @Html.CheckBoxFor(m => m.IsActive)
+                @Html.LabelFor(m => m.IsActive)
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">@(isNew ? "Thêm thành viên" : "Lưu thay đổi")</button>
+                <a class="btn btn-default" href="@Url.Action("Index", "Members")">Huỷ</a>
+            </div>
+        }
+    </div>
+</div>

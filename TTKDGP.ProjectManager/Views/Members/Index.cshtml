@@ -1,0 +1,121 @@
+﻿@model List<TTKDGP.ProjectManager.Models.Member>
+@{
+    ViewBag.Title = "Thành viên";
+    var counts = ViewBag.ProjectCounts as Dictionary<int, int> ?? new Dictionary<int, int>();
+    var doing = ViewBag.DoingCounts as Dictionary<int, int> ?? new Dictionary<int, int>();
+    var support = ViewBag.SupportCounts as Dictionary<int, int> ?? new Dictionary<int, int>();
+
+    Func<Dictionary<int, int>, int, int> countOf = (d, id) => d.ContainsKey(id) ? d[id] : 0;
+}
+
+<div class="page-head">
+    <div>
+        <h1>Thành viên</h1>
+        <p>Nhân sự của tổ NCPT. Tổng cộng @Model.Count người.</p>
+    </div>
+    <a class="btn btn-primary" href="@Url.Action("Edit", "Members")">+ Thêm thành viên</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        @using (Html.BeginForm("Index", "Members", FormMethod.Get))
+        {
+            <div class="filters">
+                <div class="filter-field grow">
+                    <label for="keyword">Tìm theo họ tên</label>
+                    <input type="search" id="keyword" name="keyword" value="@ViewBag.Keyword" placeholder="Nhập họ tên..." />
+                </div>
+                <div class="btn-row" style="padding-bottom:1px">
+                    <button type="submit" class="btn btn-primary">Tìm</button>
+                    <a class="btn btn-default" href="@Url.Action("Index", "Members")">Xoá lọc</a>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="card">
+    @if (Model.Count == 0)
+    {
+        <div class="empty-state">Chưa có thành viên nào phù hợp.</div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th>Họ và tên</th>
+                        <th class="num">Đang thực hiện</th>
+                        <th class="num">Đang hỗ trợ</th>
+                        <th class="num">Tổng dự án</th>
+                        <th>Trạng thái</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var m in Model)
+                    {
+                        <tr>
+                            <td><strong>@m.FullName</strong></td>
+                            <td class="num">
+                                @{ var doingCount = countOf(doing, m.Id); }
+                                @if (doingCount > 0)
+                                {
+                                    <span class="badge badge-doing">@doingCount</span>
+                                }
+                                else
+                                {
+                                    <span class="muted">0</span>
+                                }
+                            </td>
+                            <td class="num">
+                                @{ var supportCount = countOf(support, m.Id); }
+                                @if (supportCount > 0)
+                                {
+                                    <span class="badge badge-support">@supportCount</span>
+                                }
+                                else
+                                {
+                                    <span class="muted">0</span>
+                                }
+                            </td>
+                            <td class="num">
+                                @{ var count = countOf(counts, m.Id); }
+                                @if (count > 0)
+                                {
+                                    <a href="@Url.Action("Index", "Assignments", new { memberId = m.Id })">@count</a>
+                                }
+                                else
+                                {
+                                    <span class="muted">0</span>
+                                }
+                            </td>
+                            <td>
+                                @if (m.IsActive)
+                                {
+                                    <span class="badge badge-active">Đang làm việc</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-inactive">Đã nghỉ</span>
+                                }
+                            </td>
+                            <td class="actions">
+                                <a class="btn btn-default btn-sm" href="@Url.Action("Edit", "Members", new { id = m.Id })">Sửa</a>
+                                @using (Html.BeginForm("Delete", "Members", new { id = m.Id }, FormMethod.Post, new { @class = "inline-form" }))
+                                {
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-danger btn-sm"
+                                            onclick="return confirm('Xoá thành viên &quot;@m.FullName&quot;?');">
+                                        Xoá
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

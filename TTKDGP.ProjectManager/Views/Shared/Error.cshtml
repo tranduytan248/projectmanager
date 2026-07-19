@@ -1,0 +1,14 @@
+﻿@{
+    ViewBag.Title = ViewData["Title"] as string ?? "Đã xảy ra lỗi";
+    var message = ViewData["Message"] as string ?? "Hệ thống gặp sự cố khi xử lý yêu cầu của bạn.";
+}
+
+<div class="card form-narrow" style="margin:56px auto">
+    <div class="card-body">
+        <h1 style="margin-top:0;font-size:20px">@ViewBag.Title</h1>
+        <p class="muted">@message</p>
+        <div class="btn-row" style="margin-top:18px">
+            <a class="btn btn-primary" href="@Url.Action("Index", "Home")">Về màn hình tổng hợp</a>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,112 @@
+﻿@model TTKDGP.ProjectManager.Models.ProjectDetailViewModel
+@using TTKDGP.ProjectManager.Infrastructure
+@{
+    ViewBag.Title = Model.Project.Name;
+    var p = Model.Project;
+}
+
+<div class="page-head">
+    <div>
+        <h1>@p.Name</h1>
+        <p>@ViewHelpers.OrDash(p.Customer) &middot; @ViewHelpers.OrDash(p.ProjectType)</p>
+    </div>
+    <a class="btn btn-default" href="@Url.Action("Index", "Home")">&larr; Về màn hình tổng hợp</a>
+</div>
+
+<div class="card">
+    <div class="card-head">Thông tin dự án</div>
+    <div class="card-body">
+        <div class="form-grid">
+            <div><strong>PM phụ trách:</strong> @ViewHelpers.OrDash(ViewBag.PmName as string)</div>
+            <div>
+                <strong>Trạng thái:</strong>
+                <span class="badge @ViewHelpers.StatusBadgeClass(p.CurrentStatus)">@ViewHelpers.OrDash(p.CurrentStatus)</span>
+            </div>
+            <div><strong>Trạng thái hợp đồng:</strong> @ViewHelpers.OrDash(p.ContractStatus)</div>
+            <div><strong>Doanh thu dự kiến:</strong> @ViewHelpers.OrDash(p.ExpectedRevenue)</div>
+
+            @if (!string.IsNullOrWhiteSpace(p.Note))
+            {
+                <div class="full"><strong>Ghi chú:</strong> @p.Note</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(p.Redmine))
+            {
+                <div class="full"><strong>Redmine / Sheet:</strong> <a href="@p.Redmine" target="_blank" rel="noopener noreferrer">@p.Redmine</a></div>
+            }
+            @if (!string.IsNullOrWhiteSpace(p.Svn))
+            {
+                <div class="full"><strong>SVN:</strong> <a href="@p.Svn" target="_blank" rel="noopener noreferrer">@p.Svn</a></div>
+            }
+            @if (!string.IsNullOrWhiteSpace(p.Github))
+            {
+                <div class="full"><strong>Github:</strong> <a href="@p.Github" target="_blank" rel="noopener noreferrer">@p.Github</a></div>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-head">
+        <span>Thành viên tham gia</span>
+        <span class="muted" style="font-weight:400">@Model.Members.Count người</span>
+    </div>
+
+    @if (Model.Members.Count == 0)
+    {
+        <div class="empty-state">Chưa có thành viên nào được phân công vào dự án này.</div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th>Thành viên</th>
+                        <th>Vai trò</th>
+                        <th>Tuần báo cáo</th>
+                        <th>Nội dung tuần mới nhất</th>
+                        <th>Trạng thái công việc</th>
+                        <th>Tham gia</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.Members)
+                    {
+                        <tr>
+                            <td><strong>@row.MemberName</strong></td>
+                            <td><span class="badge badge-role">@ViewHelpers.OrDash(row.Role)</span></td>
+                            <td class="nowrap">
+                                @if (row.HasLog)
+                                {
+                                    <span class="week-tag" title="@row.WeekRange">@row.WeekLabel</span>
+                                }
+                                else
+                                {
+                                    <span class="muted" title="Chưa ghi nhật ký tuần nào">chưa ghi</span>
+                                }
+                            </td>
+                            <td class="wrap-text muted">@ViewHelpers.OrDash(row.WorkContent)</td>
+                            <td><span class="badge @ViewHelpers.StatusBadgeClass(row.WorkStatus)">@ViewHelpers.OrDash(row.WorkStatus)</span></td>
+                            <td>
+                                @if (row.IsActive)
+                                {
+                                    <span class="badge badge-active">Đang tham gia</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-inactive">Đã ngừng</span>
+                                }
+                            </td>
+                            <td class="actions">
+                                <a class="btn btn-default btn-sm"
+                                   href="@Url.Action("Timeline", "WorkLogs", new { id = row.AssignmentId })"
+                                   title="Xem tiến trình thực hiện theo tuần">Tiến trình</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

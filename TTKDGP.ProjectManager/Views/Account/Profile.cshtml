@@ -1,0 +1,90 @@
+﻿@model TTKDGP.ProjectManager.Models.ProfilePageViewModel
+@{
+    ViewBag.Title = "Thông tin cá nhân";
+}
+
+<div class="page-head">
+    <div>
+        <h1>Thông tin cá nhân</h1>
+        <p>Xem thông tin tài khoản, cập nhật họ tên và đổi mật khẩu.</p>
+    </div>
+</div>
+
+<div class="two-col">
+    <div>
+        <div class="card">
+            <div class="card-head">Tài khoản</div>
+            <div class="card-body">
+                <div class="form-grid">
+                    <div>
+                        <strong>Tên đăng nhập:</strong><br />
+                        @Model.UserName
+                    </div>
+                    <div>
+                        <strong>Phân quyền:</strong><br />
+                        <span class="badge @(Model.IsAdmin ? "badge-role" : "badge-doing")">@Model.RoleDisplay</span>
+                    </div>
+                    <div class="full">
+                        <strong>Ngày tạo:</strong> @Model.CreatedAt.ToString("dd/MM/yyyy")
+                    </div>
+                </div>
+                <p class="hint" style="margin:14px 0 0">
+                    Tên đăng nhập và phân quyền do quản trị viên thiết lập, bạn không tự đổi được.
+                </p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-head">Cập nhật thông tin</div>
+            <div class="card-body">
+                @using (Html.BeginForm("UpdateProfile", "Account", FormMethod.Post))
+                {
+                    @Html.AntiForgeryToken()
+
+                    <div class="form-field">
+                        @Html.LabelFor(m => m.Profile.FullName)
+                        @Html.TextBoxFor(m => m.Profile.FullName)
+                        @Html.ValidationMessageFor(m => m.Profile.FullName, "", new { @class = "field-error" })
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Lưu thông tin</button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-head">Đổi mật khẩu</div>
+        <div class="card-body">
+            @using (Html.BeginForm("ChangePassword", "Account", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+
+                <div class="form-field">
+                    @Html.LabelFor(m => m.ChangePassword.CurrentPassword)
+                    @Html.PasswordFor(m => m.ChangePassword.CurrentPassword, new { autocomplete = "current-password" })
+                    @Html.ValidationMessageFor(m => m.ChangePassword.CurrentPassword, "", new { @class = "field-error" })
+                </div>
+
+                <div class="form-field">
+                    @Html.LabelFor(m => m.ChangePassword.NewPassword)
+                    @Html.PasswordFor(m => m.ChangePassword.NewPassword, new { autocomplete = "new-password" })
+                    @Html.ValidationMessageFor(m => m.ChangePassword.NewPassword, "", new { @class = "field-error" })
+                    <span class="hint">Tối thiểu 6 ký tự.</span>
+                </div>
+
+                <div class="form-field">
+                    @Html.LabelFor(m => m.ChangePassword.ConfirmPassword)
+                    @Html.PasswordFor(m => m.ChangePassword.ConfirmPassword, new { autocomplete = "new-password" })
+                    @Html.ValidationMessageFor(m => m.ChangePassword.ConfirmPassword, "", new { @class = "field-error" })
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Đổi mật khẩu</button>
+                </div>
+            }
+        </div>
+    </div>
+</div>

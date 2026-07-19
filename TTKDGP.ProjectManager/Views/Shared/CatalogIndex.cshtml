@@ -1,0 +1,90 @@
+﻿@model TTKDGP.ProjectManager.Models.CatalogListViewModel
+@using TTKDGP.ProjectManager.Infrastructure
+@{
+    ViewBag.Title = Model.Config.Title;
+}
+
+<div class="page-head">
+    <div>
+        <h1>@Model.Config.Title</h1>
+        <p>@Model.Config.Description Tổng cộng @Model.Items.Count mục.</p>
+    </div>
+    <a class="btn btn-primary" href="@Url.Action("Edit", Model.Config.ControllerName)">+ Thêm @Model.Config.ItemLabel</a>
+</div>
+
+<div class="card">
+    @if (Model.Items.Count == 0)
+    {
+        <div class="empty-state">Danh mục đang trống.</div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th class="num">Thứ tự</th>
+                        @if (Model.Config.ShowPriority)
+                        {
+                            <th class="num">Độ ưu tiên</th>
+                        }
+                        <th>@Model.Config.NameLabel</th>
+                        <th>Mô tả</th>
+                        <th class="num">@Model.Config.UsageHeader</th>
+                        <th>Trạng thái</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Items)
+                    {
+                        var inUse = Model.Usage.ContainsKey(item.Name) ? Model.Usage[item.Name] : 0;
+                        <tr>
+                            <td class="num muted">@item.SortOrder</td>
+                            @if (Model.Config.ShowPriority)
+                            {
+                                <td class="num"><span class="badge badge-doing">@item.Priority</span></td>
+                            }
+                            <td><strong>@item.Name</strong></td>
+                            <td class="muted wrap-text">@ViewHelpers.OrDash(item.Description)</td>
+                            <td class="num">
+                                @if (inUse > 0)
+                                {
+                                    <span>@inUse</span>
+                                }
+                                else
+                                {
+                                    <span class="muted">0</span>
+                                }
+                            </td>
+                            <td>
+                                @if (item.IsActive)
+                                {
+                                    <span class="badge badge-active">Đang sử dụng</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-inactive">Đã ẩn</span>
+                                }
+                            </td>
+                            <td class="actions">
+                                <a class="btn btn-default btn-sm"
+                                   href="@Url.Action("Edit", Model.Config.ControllerName, new { id = item.Id })">Sửa</a>
+                                @using (Html.BeginForm("Delete", Model.Config.ControllerName, new { id = item.Id }, FormMethod.Post, new { @class = "inline-form" }))
+                                {
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-danger btn-sm"
+                                            @(inUse > 0 ? "disabled=disabled" : "")
+                                            title="@(inUse > 0 ? "Còn bản ghi đang dùng giá trị này" : "Xoá khỏi danh mục")"
+                                            onclick="return confirm('Xoá @Model.Config.ItemLabel &quot;@item.Name&quot;?');">
+                                        Xoá
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

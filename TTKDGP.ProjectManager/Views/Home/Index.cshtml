@@ -1,0 +1,248 @@
+﻿@model TTKDGP.ProjectManager.Models.SummaryViewModel
+@using TTKDGP.ProjectManager.Infrastructure
+@{
+    ViewBag.Title = "Tổng hợp nhân sự tham gia dự án";
+    var maxLoad = Model.MemberLoads.Count == 0 ? 0 : Model.MemberLoads.Max(m => m.ProjectCount);
+    var maxStatus = Model.StatusBreakdown.Count == 0 ? 0 : Model.StatusBreakdown.Max(s => s.Count);
+}
+
+<div class="page-head">
+    <div>
+        <h1>Tổng hợp nhân sự tham gia dự án</h1>
+        <p>Thành viên nào đang tham gia dự án nào, làm công việc gì và trạng thái tham gia ra sao.</p>
+    </div>
+</div>
+
+<div class="stats">
+    <div class="stat">
+        <div class="stat-value">@Model.TotalAssignments</div>
+        <div class="stat-label">Lượt phân công</div>
+    </div>
+    <div class="stat">
+        <div class="stat-value">@Model.DistinctMembers</div>
+        <div class="stat-label">Thành viên</div>
+    </div>
+    <div class="stat">
+        <div class="stat-value">@Model.DistinctProjects</div>
+        <div class="stat-label">Dự án</div>
+    </div>
+    <div class="stat">
+        <div class="stat-value">@Model.ActiveAssignments</div>
+        <div class="stat-label">Đang tham gia</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        @using (Html.BeginForm("Index", "Home", FormMethod.Get))
+        {
+            <div class="filters">
+                <div class="filter-field grow">
+                    <label for="keyword">Tìm kiếm</label>
+                    <input type="search" id="keyword" name="keyword" value="@Model.Keyword"
+                           placeholder="Tên thành viên, dự án, khách hàng, nội dung công việc..." />
+                </div>
+
+                <div class="filter-field">
+                    <label for="memberId">Thành viên</label>
+                    <select id="memberId" name="memberId">
+                        <option value="">— Tất cả —</option>
+                        @foreach (var m in Model.Members)
+                        {
+                            <option value="@m.Id" selected="@(Model.MemberId == m.Id)">@m.FullName</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label for="projectId">Dự án</label>
+                    <select id="projectId" name="projectId">
+                        <option value="">— Tất cả —</option>
+                        @foreach (var p in Model.Projects)
+                        {
+                            <option value="@p.Id" selected="@(Model.ProjectId == p.Id)">@p.Name</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label for="workStatus">Trạng thái</label>
+                    <select id="workStatus" name="workStatus">
+                        <option value="">— Tất cả —</option>
+                        @foreach (var s in Model.WorkStatuses)
+                        {
+                            <option value="@s" selected="@(Model.WorkStatus == s)">@s</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="check-inline">
+                    <input type="checkbox" id="activeOnly" name="activeOnly" value="true" checked="@Model.ActiveOnly" />
+                    <label for="activeOnly">Chỉ đang tham gia</label>
+                </div>
+
+                <div class="btn-row" style="padding-bottom:1px">
+                    <button type="submit" class="btn btn-primary">Lọc</button>
+                    <a class="btn btn-default" href="@Url.Action("Index", "Home")">Xoá lọc</a>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="two-col">
+    <div class="card">
+        <div class="card-head">Khối lượng theo thành viên</div>
+        <div class="card-body">
+            @if (Model.MemberLoads.Count == 0)
+            {
+                <p class="muted">Không có dữ liệu phù hợp bộ lọc.</p>
+            }
+            else
+            {
+                <div class="bar-list">
+                    @foreach (var load in Model.MemberLoads)
+                    {
+                        <div class="bar-row">
+                            <div class="bar-label" title="@load.MemberName">@load.MemberName</div>
+                            <div class="bar-track">
+                                <div class="bar-fill" style="width:@(ViewHelpers.BarWidth(load.ProjectCount, maxLoad))%"></div>
+                            </div>
+                            <div class="bar-count">@load.ProjectCount</div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-head">Phân bố theo trạng thái</div>
+        <div class="card-body">
+            @if (Model.StatusBreakdown.Count == 0)
+            {
+                <p class="muted">Không có dữ liệu phù hợp bộ lọc.</p>
+            }
+            else
+            {
+                <div class="bar-list">
+                    @foreach (var s in Model.StatusBreakdown)
+                    {
+                        <div class="bar-row">
+                            <div class="bar-label"><span class="badge @ViewHelpers.StatusBadgeClass(s.Status)">@s.Status</span></div>
+                            <div class="bar-track">
+                                <div class="bar-fill" style="width:@(ViewHelpers.BarWidth(s.Count, maxStatus))%"></div>
+                            </div>
+                            <div class="bar-count">@s.Count</div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="section-head">
+    <h2>Chi tiết tham gia</h2>
+    <span class="muted">@Model.ByMember.Count thành viên &middot; @Model.Rows.Count lượt phân công</span>
+</div>
+
+@if (Model.ByMember.Count == 0)
+{
+    <div class="card">
+        <div class="empty-state">Không tìm thấy dữ liệu phù hợp với bộ lọc hiện tại.</div>
+    </div>
+}
+else
+{
+    foreach (var person in Model.ByMember)
+    {
+        var roleText = person.Roles.Count > 0
+            ? string.Join(" · ", person.Roles)
+            : "Chưa đặt vai trò";
+
+        <div class="card member-card">
+            <div class="card-head member-head">
+                <div class="member-id">
+                    <span class="member-avatar">@ViewHelpers.Initials(person.MemberName)</span>
+                    <span>
+                        <strong>@person.MemberName</strong>
+                        <em class="member-roles">@roleText</em>
+                    </span>
+                </div>
+                <span class="muted" style="font-weight:400">
+                    @person.ProjectCount dự án
+                    @if (person.ActiveCount < person.Rows.Count)
+                    {
+                        <text>(@person.ActiveCount đang tham gia)</text>
+                    }
+                </span>
+            </div>
+
+            <div class="table-wrap">
+                <table class="data">
+                    <thead>
+                        <tr>
+                            <th>Dự án</th>
+                            <th>Khách hàng</th>
+                            <th>Vai trò</th>
+                            <th>Tuần báo cáo</th>
+                            <th>Nội dung tuần mới nhất</th>
+                            <th>Trạng thái dự án</th>
+                            <th>Trạng thái công việc</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in person.VisibleRows)
+                        {
+                            @Html.Partial("_ParticipationRow", row)
+                        }
+                    </tbody>
+
+                    @if (person.HiddenRows.Count > 0)
+                    {
+                        <tbody id="more-@person.MemberId" hidden="hidden">
+                            @foreach (var row in person.HiddenRows)
+                            {
+                                @Html.Partial("_ParticipationRow", row)
+                            }
+                        </tbody>
+                    }
+                </table>
+            </div>
+
+            @if (person.HiddenRows.Count > 0)
+            {
+                <div class="card-foot">
+                    <button type="button" class="btn btn-default btn-sm show-more"
+                            data-target="more-@person.MemberId"
+                            data-more="Xem thêm @person.HiddenRows.Count dự án"
+                            data-less="Thu gọn">
+                        Xem thêm @person.HiddenRows.Count dự án
+                    </button>
+                </div>
+            }
+        </div>
+    }
+}
+
+<script>
+    // Gập/mở phần dự án còn lại trong mỗi khối thành viên.
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest('.show-more');
+        if (!btn) return;
+
+        var body = document.getElementById(btn.getAttribute('data-target'));
+        if (!body) return;
+
+        var expanded = !body.hasAttribute('hidden');
+        if (expanded) {
+            body.setAttribute('hidden', 'hidden');
+            btn.textContent = btn.getAttribute('data-more');
+        } else {
+            body.removeAttribute('hidden');
+            btn.textContent = btn.getAttribute('data-less');
+        }
+    });
+</script>

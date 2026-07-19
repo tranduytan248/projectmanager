@@ -1,0 +1,116 @@
+﻿@model TTKDGP.ProjectManager.Models.WorkLogEditViewModel
+@using TTKDGP.ProjectManager.Infrastructure
+@{
+    ViewBag.Title = Model.IsNew ? "Ghi nhật ký tuần" : "Sửa nhật ký tuần";
+    var years = ViewBag.YearOptions as List<int> ?? new List<int>();
+    var workStatuses = ViewBag.WorkStatuses as List<string> ?? new List<string>();
+
+    // Nhãn tuần khác nhau theo từng năm, nên dựng sẵn bảng tra để đổi năm là đổi nhãn ngay,
+    // không phải nạp lại trang. Logic tính tuần ISO vẫn nằm ở phía máy chủ.
+    var weeksByYear = new Dictionary<string, object>();
+    foreach (var y in years)
+    {
+        var list = new List<object>();
+        foreach (var opt in WeekHelper.WeekOptions(y))
+        {
+            list.Add(new { w = opt.Key, label = opt.Value });
+        }
+        weeksByYear[y.ToString()] = list;
+    }
+}
+
+<div class="page-head">
+    <div>
+        <h1>@ViewBag.Title</h1>
+        <p>
+            <strong>@Model.MemberName</strong>
+            @if (!string.IsNullOrWhiteSpace(Model.Role))
+            {
+                <span class="badge badge-role">@Model.Role</span>
+            }
+            &nbsp;·&nbsp; @Model.ProjectName
+        </p>
+    </div>
+    <a class="btn btn-default" href="@Url.Action("Timeline", "WorkLogs", new { id = Model.AssignmentId })">&larr; Về timeline</a>
+</div>
+
+<div class="card form-narrow">
+    <div class="card-body">
+        @using (Html.BeginForm("Edit", "WorkLogs", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            @Html.HiddenFor(m => m.Id)
+            @Html.HiddenFor(m => m.AssignmentId)
+            @Html.ValidationSummary(true)
+
+            <div class="form-grid">
+                <div class="form-field">
+                    @Html.LabelFor(m => m.Year)
+                    @Html.DropDownListFor(m => m.Year, new SelectList(years, Model.Year))
+                    @Html.ValidationMessageFor(m => m.Year, "", new { @class = "field-error" })
+                </div>
+
+                <div class="form-field">
+                    @Html.LabelFor(m => m.Week)
+                    <select id="Week" name="Week">
+                        @foreach (var opt in WeekHelper.WeekOptions(Model.Year))
+                        {
+                            <option value="@opt.Key" selected="@(opt.Key == Model.Week)">@opt.Value</option>
+                        }
+                    </select>
+                    @Html.ValidationMessageFor(m => m.Week, "", new { @class = "field-error" })
+                </div>
+            </div>
+
+            <div class="form-field">
+                @Html.LabelFor(m => m.Status)
+                @Html.DropDownListFor(m => m.Status, new SelectList(workStatuses, Model.Status), "— Chọn trạng thái —")
+                @Html.ValidationMessageFor(m => m.Status, "", new { @class = "field-error" })
+                <span class="hint">
+                    Trạng thái của tuần mới nhất sẽ trở thành trạng thái hiện tại của phân công.
+                </span>
+            </div>
+
+            <div class="form-field">
+                @Html.LabelFor(m => m.Content)
+                @Html.TextAreaFor(m => m.Content, new { rows = 6, placeholder = "Tuần này làm gì, kết quả ra sao, vướng mắc gì..." })
+                @Html.ValidationMessageFor(m => m.Content, "", new { @class = "field-error" })
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">@(Model.IsNew ? "Ghi nhật ký" : "Lưu thay đổi")</button>
+                <a class="btn btn-default" href="@Url.Action("Timeline", "WorkLogs", new { id = Model.AssignmentId })">Huỷ</a>
+            </div>
+        }
+    </div>
+</div>
+
+<script type="application/json" id="weeks-by-year">@Html.Raw(Json.Encode(weeksByYear))</script>
+
+@section Scripts {
+    <script>
+        (function ($) {
+            var data = JSON.parse(document.getElementById('weeks-by-year').textContent);
+            var $year = $('#Year');
+            var $week = $('#Week');
+            if (!$year.length || !$week.length) return;
+
+            $year.on('change', function () {
+                var weeks = data[$year.val()];
+                if (!weeks) return;
+
+                // Giữ lại tuần đang chọn nếu năm mới vẫn có tuần đó.
+                var previous = parseInt($week.val(), 10);
+                $week.empty();
+
+                $.each(weeks, function (_, item) {
+                    var opt = new Option(item.label, item.w, false, item.w === previous);
+                    $week.append(opt);
+                });
+
+                // Danh sách vừa đổi, báo Select2 vẽ lại phần hiển thị.
+                $week.trigger('change');
+            });
+        })(jQuery);
+    </script>
+}

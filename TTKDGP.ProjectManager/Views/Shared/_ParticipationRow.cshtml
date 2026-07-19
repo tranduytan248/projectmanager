@@ -1,0 +1,38 @@
+﻿@model TTKDGP.ProjectManager.Models.SummaryRow
+@using TTKDGP.ProjectManager.Infrastructure
+@*
+    Một dòng dự án trong khối "Chi tiết tham gia" của FrontEnd.
+    Dùng chung cho phần hiện sẵn và phần gập sau nút "Xem thêm".
+*@
+<tr>
+    <td>
+        @if (Model.ProjectId > 0)
+        {
+            <a href="@Url.Action("Project", "Home", new { id = Model.ProjectId })">@Model.ProjectName</a>
+        }
+        else
+        {
+            @Model.ProjectName
+        }
+    </td>
+    <td class="muted">@ViewHelpers.OrDash(Model.Customer)</td>
+    <td><span class="badge badge-role">@ViewHelpers.OrDash(Model.Role)</span></td>
+    <td class="nowrap">
+        @if (Model.HasLog)
+        {
+            <span class="week-tag" title="@Model.WeekRange">@Model.WeekLabel</span>
+        }
+        else
+        {
+            <span class="muted" title="Phân công này chưa ghi nhật ký tuần nào">chưa ghi</span>
+        }
+    </td>
+    <td class="wrap-text muted">@ViewHelpers.OrDash(Model.WorkContent)</td>
+    <td><span class="badge @ViewHelpers.StatusBadgeClass(Model.ProjectStatus)">@ViewHelpers.OrDash(Model.ProjectStatus)</span></td>
+    <td><span class="badge @ViewHelpers.StatusBadgeClass(Model.WorkStatus)">@ViewHelpers.OrDash(Model.WorkStatus)</span></td>
+    <td class="actions">
+        <a class="btn btn-default btn-sm"
+           href="@Url.Action("Timeline", "WorkLogs", new { id = Model.AssignmentId })"
+           title="Xem tiến trình thực hiện theo tuần">Tiến trình</a>
+    </td>
+</tr>
