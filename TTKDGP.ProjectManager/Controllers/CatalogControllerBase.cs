@@ -66,6 +66,7 @@ namespace TTKDGP.ProjectManager.Controllers
                 Name = item.Name,
                 Description = item.Description,
                 Priority = item.Priority,
+                IsClosed = item.IsClosed,
                 IsActive = item.IsActive,
                 SortOrder = item.SortOrder
             });
@@ -96,6 +97,7 @@ namespace TTKDGP.ProjectManager.Controllers
                     Name = name,
                     Description = model.Description,
                     Priority = Config.ShowPriority ? model.Priority : 0,
+                    IsClosed = Config.ShowPriority && model.IsClosed,
                     IsActive = model.IsActive,
                     SortOrder = model.SortOrder
                 };
@@ -110,7 +112,11 @@ namespace TTKDGP.ProjectManager.Controllers
             var oldName = current.Name;
             current.Name = name;
             current.Description = model.Description;
-            if (Config.ShowPriority) current.Priority = model.Priority;
+            if (Config.ShowPriority)
+            {
+                current.Priority = model.Priority;
+                current.IsClosed = model.IsClosed;
+            }
             current.IsActive = model.IsActive;
             current.SortOrder = model.SortOrder;
             Store.Update(current);

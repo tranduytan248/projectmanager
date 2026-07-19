@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -92,6 +92,12 @@
     <Compile Include="Models\Project.cs" />
     <Compile Include="Models\ProjectMember.cs" />
     <Compile Include="Models\CatalogItem.cs" />
+    <Compile Include="Infrastructure\AppSettings.cs" />
+    <Compile Include="Infrastructure\TelegramClient.cs" />
+    <Compile Include="Infrastructure\ReminderScheduler.cs" />
+    <Compile Include="Models\ReminderModels.cs" />
+    <Compile Include="Services\ReminderService.cs" />
+    <Compile Include="Controllers\NotificationsController.cs" />
     <Compile Include="Models\WorkLog.cs" />
     <Compile Include="Controllers\WorkLogsController.cs" />
     <Compile Include="Infrastructure\WeekHelper.cs" />
@@ -142,6 +148,8 @@
     <Content Include="Views\Projects\Index.cshtml" />
     <Content Include="Views\Projects\Edit.cshtml" />
     <Content Include="Views\Shared\_ParticipationRow.cshtml" />
+    <Content Include="Views\Notifications\Index.cshtml" />
+    <Content Include="App_Config\secrets.example.config" />
     <Content Include="Views\WorkLogs\Timeline.cshtml" />
     <Content Include="Views\WorkLogs\Edit.cshtml" />
     <Content Include="Views\Shared\CatalogIndex.cshtml" />

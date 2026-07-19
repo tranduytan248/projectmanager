@@ -29,6 +29,13 @@ namespace TTKDGP.ProjectManager.Models
         [Range(0, 999, ErrorMessage = "Độ ưu tiên từ 0 đến 999")]
         public int Priority { get; set; }
 
+        /// <summary>
+        /// Chỉ dùng cho trạng thái dự án: đánh dấu dự án coi như đã dừng (tạm dừng, hoàn thành).
+        /// Dự án ở trạng thái này không bị nhắc báo cáo hàng tuần.
+        /// </summary>
+        [Display(Name = "Coi như đã dừng")]
+        public bool IsClosed { get; set; }
+
         [Display(Name = "Đang sử dụng")]
         public bool IsActive { get; set; }
 
@@ -69,7 +76,9 @@ namespace TTKDGP.ProjectManager.Models
         /// <summary>Tên controller của màn hình này, để dựng link.</summary>
         public string ControllerName { get; set; }
 
-        /// <summary>Chỉ danh mục trạng thái dự án mới hiện và cho sửa cột Độ ưu tiên.</summary>
+        /// <summary>
+        /// Chỉ danh mục trạng thái dự án mới hiện cột Độ ưu tiên và cờ "Coi như đã dừng".
+        /// </summary>
         public bool ShowPriority { get; set; }
     }
 
@@ -108,6 +117,9 @@ namespace TTKDGP.ProjectManager.Models
         [Display(Name = "Độ ưu tiên")]
         [Range(0, 999, ErrorMessage = "Độ ưu tiên từ 0 đến 999")]
         public int Priority { get; set; }
+
+        [Display(Name = "Coi như đã dừng")]
+        public bool IsClosed { get; set; }
 
         [Display(Name = "Đang sử dụng")]
         public bool IsActive { get; set; }

@@ -19,6 +19,14 @@ namespace TTKDGP.ProjectManager
 
             // Ẩn header lộ phiên bản ASP.NET MVC.
             MvcHandler.DisableMvcResponseHeader = true;
+
+            // Bộ lịch nhắc báo cáo qua Telegram (sáng thứ Hai và chiều thứ Sáu).
+            Infrastructure.ReminderScheduler.Start();
+        }
+
+        protected void Application_End()
+        {
+            Infrastructure.ReminderScheduler.Stop();
         }
 
         /// <summary>Dựng lại thông tin người dùng từ cookie đăng nhập cho mỗi request.</summary>

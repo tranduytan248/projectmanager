@@ -51,6 +51,7 @@
                     </span>
                     if (isAdmin)
                     {
+                        <a href="@Url.Action("Index", "Notifications")" class="@(controller == "Notifications" ? "active" : "")">Thông báo</a>
                         <a href="@Url.Action("Index", "Users")" class="@(controller == "Users" ? "active" : "")">Người dùng</a>
                     }
                 }

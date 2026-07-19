@@ -165,6 +165,64 @@ trực tiếp các file trong `Content/img/` và `favicon.ico`.
 Đuôi `.webmanifest` phải khai báo MIME trong `Web.config` (`application/manifest+json`),
 nếu không IIS trả về 404.
 
+## Nhắc báo cáo qua Telegram
+
+Hệ thống tự rà soát và nhắn vào nhóm Telegram khi có dự án chưa được báo cáo:
+
+| Thời điểm | Rà soát | Nội dung |
+|-----------|---------|----------|
+| Sáng thứ Hai (mặc định 8h) | Tuần **trước** | Các dự án chưa dừng lại mà PM chưa báo cáo |
+| Chiều thứ Sáu (mặc định 15h) | Tuần **này** | Nhắc PM chưa thực hiện báo cáo trong tuần |
+
+Tin nhắn gom theo từng PM phụ trách:
+
+```
+Nội dung: Các dự án chưa dừng lại mà bạn chưa báo cáo
+
+Trần Thiên Long
+1. Phần mềm CRM
+2. Hóa đơn điện tử
+
+Trịnh Minh Hậu
+1. Website Làng gốm
+```
+
+- Một dự án được coi là **đã báo cáo** nếu có ít nhất một dòng nhật ký tuần trong tuần đó.
+- Dự án **không bị nhắc** khi trạng thái được đánh dấu *Coi như đã dừng* trong danh mục
+  **Trạng thái dự án**. Mặc định là *Đang chờ*, *Tạm dừng*, *Hoàn thành* — sửa được trong giao diện.
+- Tin dài quá 4096 ký tự được tự cắt thành nhiều tin, cắt ở ranh giới dòng.
+
+### Thiết lập
+
+1. Nhắn **@BotFather** trên Telegram, lấy token bot.
+2. **Thêm bot vào nhóm** rồi gửi một tin bất kỳ trong nhóm.
+   Bot không thể tự vào nhóm bằng link mời — Telegram không cho phép.
+3. Chép `App_Config\secrets.example.config` thành `App_Config\secrets.config`, điền token.
+4. Vào màn hình **Thông báo** (chỉ Admin thấy), bấm **Dò chat id**, chép id vào `secrets.config`.
+5. Vẫn ở màn hình đó, xem trước nội dung và bấm **Gửi ngay lên nhóm** để thử.
+
+Màn hình Thông báo cũng hiển thị lịch sử các lần gửi, kèm lý do khi gửi hỏng.
+
+### Chạy đúng giờ
+
+Bộ lịch chạy sẵn trong ứng dụng, cứ 5 phút kiểm tra một lần. Nhưng IIS sẽ tắt ứng dụng khi
+không có ai truy cập, lúc đó bộ lịch cũng dừng. Chọn một trong hai cách:
+
+**Cách 1 — giữ ứng dụng luôn chạy.** Trong IIS Manager đặt application pool
+*Start Mode* = `AlwaysRunning` và site *Preload Enabled* = `True`.
+
+**Cách 2 — dùng Task Scheduler (chắc chắn hơn).** Tạo tác vụ chạy mỗi 15 phút:
+
+```powershell
+Invoke-WebRequest "http://localhost/Notifications/Trigger?key=<Reminder:TriggerKey>" -UseBasicParsing
+```
+
+Endpoint này không cần đăng nhập nhưng phải đúng khoá trong `secrets.config`. Nó chỉ gửi khi
+đã tới giờ hẹn và kỳ đó chưa gửi, nên gọi thừa cũng không sinh tin trùng.
+
+Cả hai cách đều an toàn khi chạy song song: mỗi kỳ nhắc chỉ gửi một lần, vì trước khi gửi
+hệ thống kiểm tra nhật ký xem tuần đó đã gửi thành công chưa.
+
 ## Đóng gói (publish)
 
 ```powershell

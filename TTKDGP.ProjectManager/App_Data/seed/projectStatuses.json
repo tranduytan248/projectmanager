@@ -4,6 +4,7 @@
         "Name":  "Đang thực hiện",
         "Description":  "Đang trong quá trình phát triển",
         "Priority":  1,
+        "IsClosed":  false,
         "IsActive":  true,
         "SortOrder":  10
     },
@@ -12,6 +13,7 @@
         "Name":  "Đang hỗ trợ",
         "Description":  "Đã bàn giao, đang hỗ trợ vận hành",
         "Priority":  2,
+        "IsClosed":  false,
         "IsActive":  true,
         "SortOrder":  20
     },
@@ -20,6 +22,7 @@
         "Name":  "Đang thử nghiệm",
         "Description":  "Đang chạy thử với khách hàng",
         "Priority":  3,
+        "IsClosed":  false,
         "IsActive":  true,
         "SortOrder":  30
     },
@@ -28,6 +31,7 @@
         "Name":  "Đang chờ",
         "Description":  "Chờ khách hàng hoặc chờ điều kiện khác",
         "Priority":  4,
+        "IsClosed":  true,
         "IsActive":  true,
         "SortOrder":  40
     },
@@ -36,6 +40,7 @@
         "Name":  "Tạm dừng",
         "Description":  "Tạm ngưng, chưa có kế hoạch tiếp",
         "Priority":  5,
+        "IsClosed":  true,
         "IsActive":  true,
         "SortOrder":  50
     },
@@ -44,6 +49,7 @@
         "Name":  "Hoàn thành",
         "Description":  "Đã kết thúc",
         "Priority":  6,
+        "IsClosed":  true,
         "IsActive":  true,
         "SortOrder":  60
     }

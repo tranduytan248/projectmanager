@@ -38,7 +38,11 @@ namespace TTKDGP.ProjectManager.Data
         private static readonly Lazy<JsonStore<WorkLog>> _workLogs =
             new Lazy<JsonStore<WorkLog>>(() => new JsonStore<WorkLog>(DataPath("workLogs.json")));
 
+        private static readonly Lazy<JsonStore<ReminderLog>> _reminderLogs =
+            new Lazy<JsonStore<ReminderLog>>(() => new JsonStore<ReminderLog>(DataPath("reminderLogs.json")));
+
         public static JsonStore<WorkLog> WorkLogs { get { return _workLogs.Value; } }
+        public static JsonStore<ReminderLog> ReminderLogs { get { return _reminderLogs.Value; } }
 
         public static JsonStore<Member> Members { get { return _members.Value; } }
         public static JsonStore<Project> Projects { get { return _projects.Value; } }

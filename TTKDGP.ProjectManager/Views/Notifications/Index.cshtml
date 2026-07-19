@@ -1,0 +1,226 @@
+﻿@model TTKDGP.ProjectManager.Models.NotificationsViewModel
+@using TTKDGP.ProjectManager.Models
+@{
+    ViewBag.Title = "Nhắc báo cáo qua Telegram";
+}
+
+<div class="page-head">
+    <div>
+        <h1>Nhắc báo cáo qua Telegram</h1>
+        <p>
+            Sáng thứ Hai lúc @Model.MondayHour giờ rà soát tuần trước,
+            chiều thứ Sáu lúc @Model.FridayHour giờ rà soát tuần đang chạy.
+            Dự án ở trạng thái <em>coi như đã dừng</em> không bị nhắc.
+        </p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-head">Kết nối</div>
+    <div class="card-body">
+        <div class="form-grid">
+            <div>
+                <strong>Trạng thái:</strong><br />
+                @if (Model.TelegramEnabled && Model.HasToken && Model.HasChatId)
+                {
+                    <span class="badge badge-active">Sẵn sàng gửi</span>
+                }
+                else
+                {
+                    <span class="badge badge-waiting">Chưa gửi được</span>
+                }
+            </div>
+            <div>
+                <strong>Bot:</strong><br />
+                @if (!string.IsNullOrEmpty(Model.BotName))
+                {
+                    <text>@@@Model.BotName</text>
+                }
+                else if (!string.IsNullOrEmpty(Model.ConnectionError))
+                {
+                    <span class="field-error">@Model.ConnectionError</span>
+                }
+                else
+                {
+                    <span class="muted">(chưa đặt token)</span>
+                }
+            </div>
+            <div><strong>Token:</strong><br />@Model.MaskedToken</div>
+            <div><strong>Chat id nhóm:</strong><br />@Model.ChatId</div>
+        </div>
+
+        @if (!Model.TelegramEnabled || !Model.HasToken || !Model.HasChatId)
+        {
+            <div class="alert alert-danger" style="margin-top:16px;margin-bottom:0">
+                <strong>Chưa gửi được.</strong> Tạo file <code>App_Config\secrets.config</code>
+                (chép từ <code>secrets.example.config</code>) và điền:
+                <ul style="margin:8px 0 0;padding-left:20px">
+                    @if (!Model.TelegramEnabled)
+                    {
+                        <li><code>Telegram:Enabled</code> = <code>true</code></li>
+                    }
+                    @if (!Model.HasToken)
+                    {
+                        <li><code>Telegram:BotToken</code> — lấy từ @@BotFather</li>
+                    }
+                    @if (!Model.HasChatId)
+                    {
+                        <li><code>Telegram:ChatId</code> — thêm bot vào nhóm, gửi một tin trong nhóm rồi bấm <em>Dò chat id</em> bên dưới</li>
+                    }
+                </ul>
+            </div>
+        }
+
+        <div class="form-actions">
+            @using (Html.BeginForm("Discover", "Notifications", FormMethod.Post, new { @class = "inline-form" }))
+            {
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-default" @(Model.HasToken ? "" : "disabled=disabled")>
+                    Dò chat id
+                </button>
+            }
+        </div>
+
+        @if (Model.DiscoveredChats.Count > 0)
+        {
+            <div class="table-wrap" style="margin-top:14px">
+                <table class="data">
+                    <thead>
+                        <tr><th>chat id</th><th>Loại</th><th>Tên</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var chat in Model.DiscoveredChats)
+                        {
+                            <tr>
+                                <td><strong>@chat.Id</strong></td>
+                                <td class="muted">@chat.Type</td>
+                                <td>@chat.Title</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@foreach (var preview in new[] { Model.FridayPreview, Model.MondayPreview })
+{
+    <div class="card">
+        <div class="card-head">
+            <span>@preview.KindLabel</span>
+            <span class="muted" style="font-weight:400">
+                Tuần @preview.Week/@preview.Year (@preview.WeekFrom.ToString("dd/MM") – @preview.WeekTo.ToString("dd/MM/yyyy"))
+            </span>
+        </div>
+        <div class="card-body">
+            <div class="stats" style="margin-bottom:16px">
+                <div class="stat">
+                    <div class="stat-value">@preview.MissingProjectCount</div>
+                    <div class="stat-label">Dự án chưa báo cáo</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">@preview.ReportedProjects</div>
+                    <div class="stat-label">Đã báo cáo</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">@preview.TotalOpenProjects</div>
+                    <div class="stat-label">Dự án đang chạy</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">@preview.Groups.Count</div>
+                    <div class="stat-label">PM bị nhắc</div>
+                </div>
+            </div>
+
+            @if (!preview.HasSomethingToSend)
+            {
+                <p class="muted">Mọi dự án đang chạy đều đã có báo cáo trong tuần này — không cần gửi nhắc.</p>
+            }
+            else
+            {
+                <p class="hint" style="margin-bottom:8px">Nội dung sẽ gửi lên nhóm:</p>
+                <pre class="message-preview">@preview.Message</pre>
+            }
+
+            <div class="form-actions">
+                @using (Html.BeginForm("Send", "Notifications", new { kind = preview.Kind }, FormMethod.Post, new { @class = "inline-form" }))
+                {
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-primary"
+                            onclick="return confirm('Gửi ngay nội dung này lên nhóm Telegram?');">
+                        Gửi ngay lên nhóm
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<div class="card">
+    <div class="card-head">
+        <span>Lịch sử gửi</span>
+        <span class="muted" style="font-weight:400">@Model.History.Count lần gần nhất</span>
+    </div>
+
+    @if (Model.History.Count == 0)
+    {
+        <div class="empty-state">Chưa gửi lần nào.</div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th>Thời điểm</th>
+                        <th>Kỳ nhắc</th>
+                        <th>Tuần</th>
+                        <th class="num">Dự án</th>
+                        <th class="num">PM</th>
+                        <th>Cách gửi</th>
+                        <th>Kết quả</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in Model.History)
+                    {
+                        <tr>
+                            <td class="nowrap">@log.SentAt.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>
+                                @(log.Kind == ReminderKind.MondayPreviousWeek ? "Thứ Hai" : "Thứ Sáu")
+                            </td>
+                            <td class="nowrap muted">Tuần @log.Week/@log.Year</td>
+                            <td class="num">@log.MissingProjectCount</td>
+                            <td class="num">@log.PmCount</td>
+                            <td class="muted">
+                                @if (log.IsManual)
+                                {
+                                    <text>Thủ công@(string.IsNullOrEmpty(log.TriggeredBy) ? "" : " · " + log.TriggeredBy)</text>
+                                }
+                                else
+                                {
+                                    <text>Theo lịch</text>
+                                }
+                            </td>
+                            <td>
+                                @if (log.Success && log.MissingProjectCount > 0)
+                                {
+                                    <span class="badge badge-active">Đã gửi</span>
+                                }
+                                else if (log.Success)
+                                {
+                                    <span class="badge badge-inactive">Không cần gửi</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-waiting" title="@log.Error">Lỗi</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

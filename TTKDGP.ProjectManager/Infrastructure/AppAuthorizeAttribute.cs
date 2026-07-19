@@ -113,6 +113,15 @@ namespace TTKDGP.ProjectManager.Infrastructure
 
         public override void OnActionExecuting(ActionExecutingContext filterContext)
         {
+            // Đây là ActionFilter chứ không phải AuthorizeFilter nên phải tự kiểm tra
+            // AllowAnonymous, dùng cho các endpoint máy gọi máy (ví dụ Task Scheduler).
+            if (filterContext.ActionDescriptor.IsDefined(typeof(AllowAnonymousAttribute), true) ||
+                filterContext.ActionDescriptor.ControllerDescriptor.IsDefined(typeof(AllowAnonymousAttribute), true))
+            {
+                base.OnActionExecuting(filterContext);
+                return;
+            }
+
             var principal = filterContext.HttpContext.User as AppPrincipal;
 
             if (principal == null || !principal.Identity.IsAuthenticated)

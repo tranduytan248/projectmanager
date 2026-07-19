@@ -34,6 +34,10 @@ TTKDGP.ProjectManager/App_Data/*.tmp
 TTKDGP.ProjectManager/App_Data/*.bak
 !TTKDGP.ProjectManager/App_Data/seed/
 
+# ---- Bí mật ----
+# Chứa token bot Telegram và khoá kích hoạt. Chỉ commit file .example.
+TTKDGP.ProjectManager/App_Config/secrets.config
+
 # ---- Khác ----
 Thumbs.db
 desktop.ini

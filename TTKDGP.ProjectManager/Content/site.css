@@ -372,6 +372,22 @@ table.data .wrap-text { min-width: 240px; }
 table.data .nowrap { white-space: nowrap; }
 
 /* Nhãn tuần báo cáo trên bảng chi tiết tham gia */
+/* Xem trước nội dung tin nhắn Telegram */
+.message-preview {
+    background: #f7f9fc;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin: 0;
+    font-family: "Segoe UI", Roboto, Arial, sans-serif;
+    font-size: 13.5px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 420px;
+    overflow-y: auto;
+}
+
 .week-tag {
     display: inline-block;
     padding: 2px 8px;
