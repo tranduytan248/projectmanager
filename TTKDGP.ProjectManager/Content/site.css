@@ -153,6 +153,21 @@ a:hover { text-decoration: underline; }
 .page-head h1 { margin: 0 0 4px; font-size: 22px; }
 .page-head p { margin: 0; color: var(--text-muted); }
 
+/* ===== Ô tuần hiện tại trên màn hình tổng hợp ===== */
+.week-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--primary);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 12px 16px;
+    min-width: 210px;
+}
+
+.week-box-title { font-weight: 700; font-size: 15px; color: var(--primary); }
+.week-box-range { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+.week-box-stats { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 9px; }
+
 /* ===== Thẻ ===== */
 .card {
     background: var(--surface);

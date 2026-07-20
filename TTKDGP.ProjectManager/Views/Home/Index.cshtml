@@ -11,6 +11,26 @@
         <h1>Tổng hợp nhân sự tham gia dự án</h1>
         <p>Thành viên nào đang tham gia dự án nào, làm công việc gì và trạng thái tham gia ra sao.</p>
     </div>
+
+    <div class="week-box">
+        <div class="week-box-title">
+            Tuần @Model.CurrentWeek/@Model.CurrentYear
+        </div>
+        <div class="week-box-range">
+            @Model.CurrentWeekFrom.ToString("dd/MM") – @Model.CurrentWeekTo.ToString("dd/MM/yyyy")
+        </div>
+        <div class="week-box-stats">
+            <span class="badge badge-active" title="Dự án đang chạy đã có báo cáo tuần này">
+                @Model.ReportedThisWeek đã báo cáo
+            </span>
+            @if (Model.MissingThisWeek > 0)
+            {
+                <span class="badge badge-waiting" title="Dự án đang chạy còn thiếu báo cáo tuần này">
+                    @Model.MissingThisWeek chưa báo cáo
+                </span>
+            }
+        </div>
+    </div>
 </div>
 
 <div class="stats">
@@ -92,11 +112,16 @@
 
 <div class="two-col">
     <div class="card">
-        <div class="card-head">Khối lượng theo thành viên</div>
+        <div class="card-head">
+            <span>Khối lượng theo thành viên</span>
+            <span class="muted" style="font-weight:400;font-size:12px">
+                Công việc đang thực hiện, thuộc dự án đang thực hiện hoặc đang hỗ trợ
+            </span>
+        </div>
         <div class="card-body">
             @if (Model.MemberLoads.Count == 0)
             {
-                <p class="muted">Không có dữ liệu phù hợp bộ lọc.</p>
+                <p class="muted">Không có ai đang thực hiện công việc nào phù hợp bộ lọc.</p>
             }
             else
             {
@@ -117,7 +142,10 @@
     </div>
 
     <div class="card">
-        <div class="card-head">Phân bố theo trạng thái</div>
+        <div class="card-head">
+            <span>Phân bố theo trạng thái dự án</span>
+            <span class="muted" style="font-weight:400;font-size:12px">Số dự án</span>
+        </div>
         <div class="card-body">
             @if (Model.StatusBreakdown.Count == 0)
             {

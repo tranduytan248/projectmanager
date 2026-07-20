@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Configuration;
+using System.Linq;
 
 namespace TTKDGP.ProjectManager.Infrastructure
 {
@@ -25,6 +27,38 @@ namespace TTKDGP.ProjectManager.Infrastructure
         {
             bool result;
             return bool.TryParse(Get(key), out result) ? result : fallback;
+        }
+
+        /// <summary>Tách chuỗi nhiều giá trị ngăn cách bởi dấu phẩy.</summary>
+        private static List<string> GetList(string key, string fallback)
+        {
+            var raw = Get(key, fallback);
+
+            return raw.Split(',')
+                .Select(s => s.Trim())
+                .Where(s => s.Length > 0)
+                .ToList();
+        }
+
+        /// <summary>Cấu hình cho các biểu đồ trên màn hình tổng hợp.</summary>
+        public static class Dashboard
+        {
+            /// <summary>
+            /// Chỉ những phân công ở các trạng thái công việc này mới được tính vào
+            /// biểu đồ khối lượng theo thành viên.
+            /// </summary>
+            public static List<string> WorkloadWorkStatuses
+            {
+                get { return GetList("Dashboard:WorkloadWorkStatuses", "Đang thực hiện"); }
+            }
+
+            /// <summary>
+            /// Và dự án phải đang ở một trong các trạng thái này.
+            /// </summary>
+            public static List<string> WorkloadProjectStatuses
+            {
+                get { return GetList("Dashboard:WorkloadProjectStatuses", "Đang thực hiện, Đang hỗ trợ"); }
+            }
         }
 
         /// <summary>Địa chỉ người dùng truy cập hệ thống, đính kèm cuối mỗi tin nhắc.</summary>

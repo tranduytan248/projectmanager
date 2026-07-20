@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web.Mvc;
 using TTKDGP.ProjectManager.Data;
+using TTKDGP.ProjectManager.Infrastructure;
 using TTKDGP.ProjectManager.Models;
 
 namespace TTKDGP.ProjectManager.Controllers
@@ -74,16 +75,22 @@ namespace TTKDGP.ProjectManager.Controllers
                 DistinctProjects = rows.Select(r => r.ProjectId).Distinct().Count(),
                 ActiveAssignments = rows.Count(r => r.IsActive),
 
+                // Phân bố đếm theo dự án riêng biệt, gom theo trạng thái của chính dự án.
                 StatusBreakdown = rows
-                    .GroupBy(r => string.IsNullOrWhiteSpace(r.WorkStatus) ? "(chưa đặt)" : r.WorkStatus)
-                    .Select(g => new StatusCount { Status = g.Key, Count = g.Count() })
+                    .GroupBy(r => string.IsNullOrWhiteSpace(r.ProjectStatus) ? "(chưa đặt)" : r.ProjectStatus)
+                    .Select(g => new StatusCount
+                    {
+                        Status = g.Key,
+                        Count = g.Select(r => r.ProjectId).Distinct().Count()
+                    })
                     .OrderByDescending(s => s.Count)
                     .ToList(),
 
-                MemberLoads = BuildMemberLoads(rows),
+                MemberLoads = BuildMemberLoads(FilterForWorkload(rows)),
                 ByMember = GroupByMember(rows)
             };
 
+            FillCurrentWeek(model);
             return View(model);
         }
 
@@ -150,6 +157,44 @@ namespace TTKDGP.ProjectManager.Controllers
                 .OrderBy(m => m.Rows.Count == 0 ? int.MaxValue : m.Rows[0].ProjectStatusPriority)
                 .ThenByDescending(m => m.ActiveCount)
                 .ThenBy(m => m.MemberName, StringComparer.CurrentCulture)
+                .ToList();
+        }
+
+        /// <summary>
+        /// Điền thông tin tuần đang diễn ra và tình hình báo cáo của tuần đó.
+        /// Số liệu này tính trên toàn bộ dữ liệu, không phụ thuộc bộ lọc đang chọn,
+        /// để luôn phản ánh đúng tình hình chung.
+        /// </summary>
+        private static void FillCurrentWeek(SummaryViewModel model)
+        {
+            var year = WeekHelper.CurrentYear;
+            var week = WeekHelper.CurrentWeek;
+
+            model.CurrentYear = year;
+            model.CurrentWeek = week;
+            model.CurrentWeekFrom = WeekHelper.FirstDayOfWeek(year, week);
+            model.CurrentWeekTo = WeekHelper.LastDayOfWeek(year, week);
+
+            var report = Services.ReminderService.Build(Models.ReminderKind.FridayCurrentWeek, DateTime.Today);
+            model.MissingThisWeek = report.MissingProjectCount;
+            model.ReportedThisWeek = report.ReportedProjects;
+        }
+
+        /// <summary>
+        /// Lọc các dòng dùng để tính khối lượng thành viên: chỉ công việc đang thực hiện,
+        /// và chỉ trên những dự án đang chạy thật (đang thực hiện hoặc đang hỗ trợ).
+        /// Danh sách trạng thái lấy từ Web.config để đổi được mà không phải build lại.
+        /// </summary>
+        private static List<SummaryRow> FilterForWorkload(IEnumerable<SummaryRow> rows)
+        {
+            var workStatuses = new HashSet<string>(
+                AppSettings.Dashboard.WorkloadWorkStatuses, StringComparer.CurrentCultureIgnoreCase);
+            var projectStatuses = new HashSet<string>(
+                AppSettings.Dashboard.WorkloadProjectStatuses, StringComparer.CurrentCultureIgnoreCase);
+
+            return rows
+                .Where(r => r.WorkStatus != null && workStatuses.Contains(r.WorkStatus))
+                .Where(r => r.ProjectStatus != null && projectStatuses.Contains(r.ProjectStatus))
                 .ToList();
         }
 

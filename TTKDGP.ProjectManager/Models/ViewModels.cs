@@ -164,6 +164,19 @@ namespace TTKDGP.ProjectManager.Models
         /// <summary>Chi tiết tham gia gom nhóm theo thành viên — cách hiển thị chính ở FrontEnd.</summary>
         public List<MemberParticipation> ByMember { get; set; }
 
+        // ----- Tuần hiện tại -----
+
+        public int CurrentYear { get; set; }
+        public int CurrentWeek { get; set; }
+        public DateTime CurrentWeekFrom { get; set; }
+        public DateTime CurrentWeekTo { get; set; }
+
+        /// <summary>Số dự án đang chạy đã có báo cáo trong tuần hiện tại.</summary>
+        public int ReportedThisWeek { get; set; }
+
+        /// <summary>Số dự án đang chạy còn thiếu báo cáo trong tuần hiện tại.</summary>
+        public int MissingThisWeek { get; set; }
+
         // Bộ lọc hiện tại
         public string Keyword { get; set; }
         public int? MemberId { get; set; }
