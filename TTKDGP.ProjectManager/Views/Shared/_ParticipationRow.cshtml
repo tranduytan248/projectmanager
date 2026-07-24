@@ -42,8 +42,10 @@
     <td class="wrap-text muted">@ViewHelpers.OrDash(Model.WorkContent)</td>
     <td><span class="badge @ViewHelpers.StatusBadgeClass(Model.WorkStatus)">@ViewHelpers.OrDash(Model.WorkStatus)</span></td>
     <td class="actions">
-        <a class="btn btn-default btn-sm"
-           href="@Url.Action("Timeline", "WorkLogs", new { id = Model.AssignmentId })"
-           title="Xem tiến trình thực hiện theo tuần">Tiến trình</a>
+        <div class="btn-group">
+            <a class="btn btn-default btn-sm"
+               href="@Url.Action("Timeline", "WorkLogs", new { id = Model.AssignmentId })"
+               title="Xem tiến trình thực hiện theo tuần">Tiến trình</a>
+        </div>
     </td>
 </tr>

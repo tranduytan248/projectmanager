@@ -74,7 +74,7 @@
                     @foreach (var row in Model.Members)
                     {
                         <tr>
-                            <td><strong>@row.MemberName</strong></td>
+                            <td class="col-name"><strong>@row.MemberName</strong></td>
                             <td><span class="badge badge-role">@ViewHelpers.OrDash(row.Role)</span></td>
                             <td class="nowrap">
                                 @if (row.HasLog)
@@ -99,9 +99,11 @@
                                 }
                             </td>
                             <td class="actions">
-                                <a class="btn btn-default btn-sm"
-                                   href="@Url.Action("Timeline", "WorkLogs", new { id = row.AssignmentId })"
-                                   title="Xem tiến trình thực hiện theo tuần">Tiến trình</a>
+                                <div class="btn-group">
+                                    <a class="btn btn-default btn-sm"
+                                       href="@Url.Action("Timeline", "WorkLogs", new { id = row.AssignmentId })"
+                                       title="Xem tiến trình thực hiện theo tuần">Tiến trình</a>
+                                </div>
                             </td>
                         </tr>
                     }

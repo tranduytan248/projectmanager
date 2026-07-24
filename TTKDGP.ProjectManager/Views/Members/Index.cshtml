@@ -58,7 +58,7 @@
                     @foreach (var m in Model)
                     {
                         <tr>
-                            <td><strong>@m.FullName</strong></td>
+                            <td class="col-name"><strong>@m.FullName</strong></td>
                             <td>
                                 @if (string.IsNullOrWhiteSpace(m.Email))
                                 {
@@ -113,15 +113,17 @@
                                 }
                             </td>
                             <td class="actions">
-                                <a class="btn btn-default btn-sm" href="@Url.Action("Edit", "Members", new { id = m.Id })">Sửa</a>
-                                @using (Html.BeginForm("Delete", "Members", new { id = m.Id }, FormMethod.Post, new { @class = "inline-form" }))
-                                {
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-danger btn-sm"
-                                            onclick="return confirm('Xoá thành viên &quot;@m.FullName&quot;?');">
-                                        Xoá
-                                    </button>
-                                }
+                                <div class="btn-group">
+                                    <a class="btn btn-default btn-sm" href="@Url.Action("Edit", "Members", new { id = m.Id })">Sửa</a>
+                                    @using (Html.BeginForm("Delete", "Members", new { id = m.Id }, FormMethod.Post, new { @class = "inline-form" }))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-danger btn-sm"
+                                                onclick="return confirm('Xoá thành viên &quot;@m.FullName&quot;?');">
+                                            Xoá
+                                        </button>
+                                    }
+                                </div>
                             </td>
                         </tr>
                     }

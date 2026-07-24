@@ -93,14 +93,14 @@
                     @foreach (var p in Model.Items)
                     {
                         <tr>
-                            <td>
+                            <td class="col-project">
                                 <strong>@p.Name</strong>
                                 @if (!string.IsNullOrWhiteSpace(p.Note))
                                 {
                                     <div class="muted" style="font-size:12.5px">@p.Note</div>
                                 }
                             </td>
-                            <td class="muted">@ViewHelpers.OrDash(p.Customer)</td>
+                            <td class="muted col-name">@ViewHelpers.OrDash(p.Customer)</td>
                             <td class="muted">@ViewHelpers.OrDash(p.ProjectType)</td>
                             <td class="muted">@ViewHelpers.OrDash(memberNames.ContainsKey(p.PmMemberId) ? memberNames[p.PmMemberId] : null)</td>
                             <td><span class="badge @ViewHelpers.StatusBadgeClass(p.CurrentStatus)">@ViewHelpers.OrDash(p.CurrentStatus)</span></td>
@@ -117,17 +117,19 @@
                                 }
                             </td>
                             <td class="actions">
-                                <a class="btn btn-default btn-sm"
-                                   href="@Url.Action("Index", "Assignments", new { projectId = p.Id })">Phân công</a>
-                                <a class="btn btn-default btn-sm" href="@Url.Action("Edit", "Projects", new { id = p.Id })">Sửa</a>
-                                @using (Html.BeginForm("Delete", "Projects", new { id = p.Id }, FormMethod.Post, new { @class = "inline-form" }))
-                                {
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-danger btn-sm"
-                                            onclick="return confirm('Xoá dự án &quot;@p.Name&quot;? Các phân công thuộc dự án này cũng sẽ bị xoá.');">
-                                        Xoá
-                                    </button>
-                                }
+                                <div class="btn-group">
+                                    <a class="btn btn-default btn-sm"
+                                       href="@Url.Action("Index", "Assignments", new { projectId = p.Id })">Phân công</a>
+                                    <a class="btn btn-default btn-sm" href="@Url.Action("Edit", "Projects", new { id = p.Id })">Sửa</a>
+                                    @using (Html.BeginForm("Delete", "Projects", new { id = p.Id }, FormMethod.Post, new { @class = "inline-form" }))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-danger btn-sm"
+                                                onclick="return confirm('Xoá dự án &quot;@p.Name&quot;? Các phân công thuộc dự án này cũng sẽ bị xoá.');">
+                                            Xoá
+                                        </button>
+                                    }
+                                </div>
                             </td>
                         </tr>
                     }

@@ -468,20 +468,47 @@ textarea { min-height: 84px; resize: vertical; width: 100%; }
 
 .btn-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 
+/* ===== Nhóm nút =====
+   Các nút thao tác trên bảng dính liền thành một khối: chỉ bo góc hai đầu, viền giữa
+   chồng lên nhau 1px. Con của nhóm có thể là thẻ <a class="btn"> hoặc <form> bọc nút
+   (các thao tác ghi đều phải đi bằng POST), nên chọn cả hai kiểu. */
+.btn-group { display: inline-flex; align-items: stretch; vertical-align: middle; }
+.btn-group .inline-form { display: inline-flex; margin: 0; }
+.btn-group .btn { border-radius: 0; margin: 0; position: relative; }
+
+.btn-group > .btn:first-child,
+.btn-group > *:first-child > .btn {
+    border-top-left-radius: 6px;
+    border-bottom-left-radius: 6px;
+}
+
+.btn-group > .btn:last-child,
+.btn-group > *:last-child > .btn {
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.btn-group > * + .btn,
+.btn-group > * + * > .btn { margin-left: -1px; }
+
+/* Nút đang rê chuột phải nổi lên trên để thấy trọn viền của chính nó */
+.btn-group .btn:hover, .btn-group .btn:focus { z-index: 1; }
+
 /* ===== Bảng ===== */
 .table-wrap { overflow-x: auto; }
 
 table.data {
     width: 100%;
     border-collapse: collapse;
-    font-size: 13.5px;
+    font-size: 13px;
 }
 
 table.data th, table.data td {
-    padding: 10px 12px;
+    padding: 8px 10px;
     text-align: left;
     border-bottom: 1px solid var(--border);
     vertical-align: top;
+    overflow-wrap: break-word;
 }
 
 table.data thead th {
@@ -501,16 +528,41 @@ table.data tbody tr:hover { background: #fafbfe; }
 table.data td.num { text-align: right; font-variant-numeric: tabular-nums; }
 table.data td.actions { white-space: nowrap; text-align: right; }
 table.data .muted { color: var(--text-muted); }
-table.data .wrap-text { min-width: 240px; }
 table.data .nowrap { white-space: nowrap; }
 
-/* Cột chữ dài phải có bề rộng tối thiểu. Không đặt thì trình duyệt bóp nó lại để nhường
-   chỗ cho các cột không xuống dòng (badge, nút), và tên dự án dài rơi xuống mỗi dòng một từ. */
-table.data .col-project { min-width: 220px; }
+/* Bề rộng tối thiểu cho các cột chữ.
+   Bảng rộng 100% mà các cột badge / nút lại nowrap nên không co được: trình duyệt dồn
+   hết phần thiếu chỗ vào mấy cột chữ xuống dòng được, bóp chúng còn đúng một từ mỗi
+   dòng. Đặt sàn cho từng loại cột thì thà cuộn ngang còn hơn để cột chữ nát ra. */
+table.data .wrap-text   { min-width: 200px; }   /* nội dung công việc, ghi chú dài */
+table.data .col-project { min-width: 200px; }   /* tên dự án */
+table.data .col-name    { min-width: 150px; }   /* họ tên người, tên danh mục */
+
+/* Cột đầu của mọi bảng luôn là cột định danh — không bao giờ để nó bị bóp nát. */
+table.data tbody td:first-child { min-width: 120px; }
 
 /* Dòng phụ trong cùng một ô: khách hàng, trạng thái dự án... */
 table.data .cell-sub { margin-top: 5px; }
 table.data .cell-sub.muted { font-size: 12.5px; line-height: 1.4; }
+
+/* ===== Bảng trên màn hẹp ===== */
+@media (max-width: 1200px) {
+    table.data { font-size: 12.5px; }
+    table.data th, table.data td { padding: 7px 8px; }
+    table.data .wrap-text, table.data .col-project { min-width: 170px; }
+    table.data .col-name { min-width: 130px; }
+    .btn-group .btn { padding: 5px 8px; }
+}
+
+@media (max-width: 820px) {
+    table.data th, table.data td { padding: 6px 7px; }
+    table.data .wrap-text, table.data .col-project { min-width: 150px; }
+    table.data .col-name { min-width: 120px; }
+    table.data tbody td:first-child { min-width: 110px; }
+
+    /* Đầu bảng dính trên đỉnh chỉ có ích khi trang cuộn dọc dài; màn hẹp thì bỏ đi cho nhẹ */
+    table.data thead th { position: static; }
+}
 
 /* Nhãn tuần báo cáo trên bảng chi tiết tham gia */
 /* Xem trước nội dung tin nhắn Telegram */

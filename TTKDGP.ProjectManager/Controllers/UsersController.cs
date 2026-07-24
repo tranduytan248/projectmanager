@@ -214,7 +214,7 @@ namespace TTKDGP.ProjectManager.Controllers
         private const string EmailDomain = "@vnpt.vn";
 
         /// <summary>Mật khẩu gợi ý sẵn trên form, người tạo đổi lại được trước khi bấm.</summary>
-        private const string SuggestedPassword = "Vnpt@2026";
+        private const string SuggestedPassword = "Ncpt@2026";
 
         /// <summary>
         /// Xem trước danh sách tài khoản sắp mở cho nhân sự chưa có, kèm lý do với những
@@ -272,14 +272,14 @@ namespace TTKDGP.ProjectManager.Controllers
 
         /// <summary>
         /// Đối chiếu nhân sự đang làm việc với tài khoản hiện có để biết ai còn thiếu.
-        /// Tên đăng nhập lấy từ email bỏ đuôi <see cref="EmailDomain"/>.
+        /// Mốc so sánh là TÊN ĐĂNG NHẬP suy từ email (bỏ đuôi <see cref="EmailDomain"/>):
+        /// có tài khoản trùng tên đó thì coi như nhân sự đã có tài khoản, không thì mở mới.
         /// </summary>
         private UserProvisionViewModel BuildProvisionModel()
         {
             var model = new UserProvisionViewModel();
 
             var users = Repository.Users.All();
-            var linkedMemberIds = new HashSet<int>(users.Where(u => u.MemberId > 0).Select(u => u.MemberId));
 
             var members = Repository.Members.All()
                 .Where(m => m.IsActive)
@@ -288,11 +288,6 @@ namespace TTKDGP.ProjectManager.Controllers
 
             foreach (var m in members)
             {
-                if (linkedMemberIds.Contains(m.Id))
-                {
-                    continue;
-                }
-
                 var email = (m.Email ?? string.Empty).Trim();
 
                 if (email.Length == 0)
@@ -315,11 +310,21 @@ namespace TTKDGP.ProjectManager.Controllers
                     continue;
                 }
 
+                // Đã có tài khoản mang đúng tên đăng nhập này — nhân sự coi như đã có tài khoản.
                 var sameName = users.FirstOrDefault(u =>
                     string.Equals(u.UserName, userName, StringComparison.OrdinalIgnoreCase));
                 if (sameName != null)
                 {
-                    AddSkip(model, m, "Tên đăng nhập \"" + userName + "\" đã có rồi — hãy gắn nhân sự cho tài khoản đó.");
+                    continue;
+                }
+
+                // Nhân sự đã gắn với một tài khoản mang tên khác. Không mở thêm, mà nêu ra để
+                // quản trị tự quyết — mở nữa là một người hai tài khoản.
+                var linked = users.FirstOrDefault(u => u.MemberId == m.Id);
+                if (linked != null)
+                {
+                    AddSkip(model, m, "Đã gắn với tài khoản \"" + linked.UserName
+                        + "\" (khác tên đăng nhập suy từ email).");
                     continue;
                 }
 

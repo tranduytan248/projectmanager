@@ -91,18 +91,20 @@
                         </td>
                         <td class="muted">@u.CreatedAt.ToString("dd/MM/yyyy")</td>
                         <td class="actions">
-                            <a class="btn btn-default btn-sm" href="@Url.Action("Edit", "Users", new { id = u.Id })">Sửa</a>
-                            @if (!isSelf)
-                            {
-                                using (Html.BeginForm("Delete", "Users", new { id = u.Id }, FormMethod.Post, new { @class = "inline-form" }))
+                            <div class="btn-group">
+                                <a class="btn btn-default btn-sm" href="@Url.Action("Edit", "Users", new { id = u.Id })">Sửa</a>
+                                @if (!isSelf)
                                 {
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-danger btn-sm"
-                                            onclick="return confirm('Xoá tài khoản &quot;@u.UserName&quot;?');">
-                                        Xoá
-                                    </button>
+                                    using (Html.BeginForm("Delete", "Users", new { id = u.Id }, FormMethod.Post, new { @class = "inline-form" }))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-danger btn-sm"
+                                                onclick="return confirm('Xoá tài khoản &quot;@u.UserName&quot;?');">
+                                            Xoá
+                                        </button>
+                                    }
                                 }
-                            }
+                            </div>
                         </td>
                     </tr>
                 }

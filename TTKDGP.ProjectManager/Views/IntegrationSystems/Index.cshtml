@@ -128,15 +128,17 @@
                             </td>
                             <td class="muted nowrap">@s.CreatedAt.ToString("dd/MM/yyyy")</td>
                             <td class="actions">
-                                <a class="btn btn-default btn-sm" href="@Url.Action("Edit", "IntegrationSystems", new { id = s.Id })">Sửa</a>
-                                @using (Html.BeginForm("Delete", "IntegrationSystems", new { id = s.Id }, FormMethod.Post, new { @class = "inline-form" }))
-                                {
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-danger btn-sm"
-                                            onclick="return confirm('Xoá hệ thống &quot;@s.Code&quot;? Khoá bí mật của nó cũng mất, hệ thống đối tác sẽ không tích hợp được nữa.');">
-                                        Xoá
-                                    </button>
-                                }
+                                <div class="btn-group">
+                                    <a class="btn btn-default btn-sm" href="@Url.Action("Edit", "IntegrationSystems", new { id = s.Id })">Sửa</a>
+                                    @using (Html.BeginForm("Delete", "IntegrationSystems", new { id = s.Id }, FormMethod.Post, new { @class = "inline-form" }))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-danger btn-sm"
+                                                onclick="return confirm('Xoá hệ thống &quot;@s.Code&quot;? Khoá bí mật của nó cũng mất, hệ thống đối tác sẽ không tích hợp được nữa.');">
+                                            Xoá
+                                        </button>
+                                    }
+                                </div>
                             </td>
                         </tr>
                     }

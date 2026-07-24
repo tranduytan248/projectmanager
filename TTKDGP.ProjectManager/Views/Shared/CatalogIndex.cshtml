@@ -85,18 +85,20 @@
                                 }
                             </td>
                             <td class="actions">
-                                <a class="btn btn-default btn-sm"
-                                   href="@Url.Action("Edit", Model.Config.ControllerName, new { id = item.Id })">Sửa</a>
-                                @using (Html.BeginForm("Delete", Model.Config.ControllerName, new { id = item.Id }, FormMethod.Post, new { @class = "inline-form" }))
-                                {
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-danger btn-sm"
-                                            @(inUse > 0 ? "disabled=disabled" : "")
-                                            title="@(inUse > 0 ? "Còn bản ghi đang dùng giá trị này" : "Xoá khỏi danh mục")"
-                                            onclick="return confirm('Xoá @Model.Config.ItemLabel &quot;@item.Name&quot;?');">
-                                        Xoá
-                                    </button>
-                                }
+                                <div class="btn-group">
+                                    <a class="btn btn-default btn-sm"
+                                       href="@Url.Action("Edit", Model.Config.ControllerName, new { id = item.Id })">Sửa</a>
+                                    @using (Html.BeginForm("Delete", Model.Config.ControllerName, new { id = item.Id }, FormMethod.Post, new { @class = "inline-form" }))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-danger btn-sm"
+                                                @(inUse > 0 ? "disabled=disabled" : "")
+                                                title="@(inUse > 0 ? "Còn bản ghi đang dùng giá trị này" : "Xoá khỏi danh mục")"
+                                                onclick="return confirm('Xoá @Model.Config.ItemLabel &quot;@item.Name&quot;?');">
+                                            Xoá
+                                        </button>
+                                    }
+                                </div>
                             </td>
                         </tr>
                     }
