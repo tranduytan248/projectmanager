@@ -10,7 +10,10 @@
         <h1>Người dùng</h1>
         <p>Tài khoản đăng nhập để cập nhật dữ liệu. Tổng cộng @Model.Count tài khoản.</p>
     </div>
-    <a class="btn btn-primary" href="@Url.Action("Edit", "Users")">+ Tạo người dùng</a>
+    <div class="btn-row">
+        <a class="btn btn-default" href="@Url.Action("Provision", "Users")">Mở tài khoản cho nhân sự</a>
+        <a class="btn btn-primary" href="@Url.Action("Edit", "Users")">+ Tạo người dùng</a>
+    </div>
 </div>
 
 <div class="card">
@@ -20,6 +23,7 @@
                 <tr>
                     <th>Tên đăng nhập</th>
                     <th>Họ và tên</th>
+                    <th>Email</th>
                     <th>Phân quyền</th>
                     <th>Trạng thái</th>
                     <th>Ngày tạo</th>
@@ -40,13 +44,39 @@
                         </td>
                         <td>@u.FullName</td>
                         <td>
-                            @if (u.IsAdmin)
+                            @if (string.IsNullOrWhiteSpace(u.Email))
                             {
-                                <span class="badge badge-role">Quản trị</span>
+                                <span class="muted">—</span>
                             }
                             else
                             {
-                                <span class="badge badge-doing">Quản lý</span>
+                                <a href="mailto:@u.Email">@u.Email</a>
+                            }
+                        </td>
+                        <td>
+                            @* Một tài khoản có thể mang nhiều quyền — hiện đủ từng nhãn. *@
+                            @foreach (var r in TTKDGP.ProjectManager.Models.Roles.Split(u.Role))
+                            {
+                                if (string.Equals(r, TTKDGP.ProjectManager.Models.Roles.Admin, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <span class="badge badge-role">Quản trị</span>
+                                }
+                                else if (string.Equals(r, TTKDGP.ProjectManager.Models.Roles.Reporter, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <span class="badge badge-waiting">Báo cáo công việc</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-doing">Quản lý</span>
+                                }
+                            }
+                            @if (u.MemberId > 0)
+                            {
+                                var linked = TTKDGP.ProjectManager.Data.Repository.Members.Find(u.MemberId);
+                                if (linked != null)
+                                {
+                                    <div class="muted" style="font-size:12px">@linked.FullName</div>
+                                }
                             }
                         </td>
                         <td>

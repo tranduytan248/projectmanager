@@ -34,6 +34,12 @@ TTKDGP.ProjectManager/App_Data/*.tmp
 TTKDGP.ProjectManager/App_Data/*.bak
 !TTKDGP.ProjectManager/App_Data/seed/
 
+# Trình duyệt Playwright tải về lúc chạy (~500 MB) và phiên đăng nhập GoConnect —
+# là dữ liệu vận hành sinh ra tại chỗ, không phải mã nguồn.
+TTKDGP.ProjectManager/App_Data/playwright-browsers/
+TTKDGP.ProjectManager/App_Data/goconnect-debug/
+TTKDGP.ProjectManager/App_Data/goconnect-lastrun.txt
+
 # ---- Bí mật ----
 # Chứa token bot Telegram và khoá kích hoạt. Chỉ commit file .example.
 TTKDGP.ProjectManager/App_Config/secrets.config

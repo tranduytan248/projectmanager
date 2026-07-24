@@ -41,6 +41,16 @@ namespace TTKDGP.ProjectManager.Infrastructure
             return string.IsNullOrWhiteSpace(value) ? "—" : value.Trim();
         }
 
+        /// <summary>
+        /// Hiển thị rút gọn khoá bí mật trong bảng: vài ký tự đầu rồi "…", để không phơi cả khoá
+        /// mà vẫn nhận ra bản ghi. Xem/sao chép đủ ở màn hình sửa.
+        /// </summary>
+        public static string KeyPeek(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key)) return "—";
+            return key.Length <= 10 ? key : key.Substring(0, 8) + "…";
+        }
+
         /// <summary>Phần trăm của một giá trị so với giá trị lớn nhất, dùng để vẽ độ dài thanh.</summary>
         public static int BarWidth(int value, int max)
         {

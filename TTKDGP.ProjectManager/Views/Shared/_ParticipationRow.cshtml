@@ -1,11 +1,15 @@
-﻿@model TTKDGP.ProjectManager.Models.SummaryRow
+@model TTKDGP.ProjectManager.Models.SummaryRow
 @using TTKDGP.ProjectManager.Infrastructure
 @*
     Một dòng dự án trong khối "Chi tiết tham gia" của FrontEnd.
     Dùng chung cho phần hiện sẵn và phần gập sau nút "Xem thêm".
+
+    Khách hàng và trạng thái dự án nằm chung ô với tên dự án: cả ba đều là thuộc tính của
+    dự án chứ không phải của tuần đang xem, gộp lại thì bảng bớt ba cột và tên dự án có đủ
+    chỗ để xuống dòng cho tử tế.
 *@
 <tr>
-    <td>
+    <td class="col-project">
         @if (Model.ProjectId > 0)
         {
             <a href="@Url.Action("Project", "Home", new { id = Model.ProjectId })">@Model.ProjectName</a>
@@ -14,8 +18,16 @@
         {
             @Model.ProjectName
         }
+
+        @if (!string.IsNullOrWhiteSpace(Model.Customer))
+        {
+            <div class="cell-sub muted">@Model.Customer</div>
+        }
+
+        <div class="cell-sub">
+            <span class="badge @ViewHelpers.StatusBadgeClass(Model.ProjectStatus)">@ViewHelpers.OrDash(Model.ProjectStatus)</span>
+        </div>
     </td>
-    <td class="muted">@ViewHelpers.OrDash(Model.Customer)</td>
     <td><span class="badge badge-role">@ViewHelpers.OrDash(Model.Role)</span></td>
     <td class="nowrap">
         @if (Model.HasLog)
@@ -28,7 +40,6 @@
         }
     </td>
     <td class="wrap-text muted">@ViewHelpers.OrDash(Model.WorkContent)</td>
-    <td><span class="badge @ViewHelpers.StatusBadgeClass(Model.ProjectStatus)">@ViewHelpers.OrDash(Model.ProjectStatus)</span></td>
     <td><span class="badge @ViewHelpers.StatusBadgeClass(Model.WorkStatus)">@ViewHelpers.OrDash(Model.WorkStatus)</span></td>
     <td class="actions">
         <a class="btn btn-default btn-sm"

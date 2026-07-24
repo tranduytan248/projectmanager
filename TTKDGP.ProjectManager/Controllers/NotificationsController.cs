@@ -42,6 +42,59 @@ namespace TTKDGP.ProjectManager.Controllers
             return RedirectToAction("Index");
         }
 
+        /// <summary>Gửi ngay mail nhắc cho từng thành viên, không chờ tới sáng thứ Sáu.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult SendMemberEmails()
+        {
+            var log = ReminderService.RunMemberEmails(DateTime.Now, true, CurrentUser.Name);
+
+            if (log.PmCount == 0)
+            {
+                Notify("Không có thành viên nào thiếu báo cáo nên chưa gửi mail nào.");
+            }
+            else if (log.Success && log.NoEmailCount > 0)
+            {
+                Notify(string.Format("Đã gửi {0} mail. Còn {1} người thiếu báo cáo nhưng chưa điền email.",
+                    log.SentCount, log.NoEmailCount));
+            }
+            else if (log.Success)
+            {
+                Notify(string.Format("Đã gửi {0} mail nhắc báo cáo.", log.SentCount));
+            }
+            else
+            {
+                NotifyError("Gửi mail thất bại: " + log.Error);
+            }
+
+            return RedirectToAction("Index");
+        }
+
+        /// <summary>Gửi một mail thử để kiểm tra cấu hình SMTP.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult SendTestEmail(string to)
+        {
+            if (string.IsNullOrWhiteSpace(to))
+            {
+                NotifyError("Vui lòng nhập địa chỉ nhận mail thử.");
+                return RedirectToAction("Index");
+            }
+
+            var result = EmailClient.SendTest(to.Trim());
+
+            if (result.Ok)
+            {
+                Notify("Đã gửi mail thử tới " + to.Trim() + ".");
+            }
+            else
+            {
+                NotifyError("Gửi mail thử thất bại: " + result.Error);
+            }
+
+            return RedirectToAction("Index");
+        }
+
         /// <summary>Dò chat id của các nhóm mà bot đang tham gia.</summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -108,9 +161,29 @@ namespace TTKDGP.ProjectManager.Controllers
                 HasChatId = AppSettings.Telegram.HasChatId,
                 MaskedToken = AppSettings.Telegram.MaskedToken,
                 ChatId = AppSettings.Telegram.HasChatId ? AppSettings.Telegram.ChatId : "(chưa đặt)",
+                GoConnectEnabled = AppSettings.GoConnect.Enabled,
+                GoConnectHasToken = AppSettings.GoConnect.HasToken,
+                GoConnectHasChatId = AppSettings.GoConnect.HasChatId,
+                GoConnectMaskedToken = AppSettings.GoConnect.MaskedToken,
+                GoConnectChatId = AppSettings.GoConnect.HasChatId
+                    ? AppSettings.GoConnect.ChatId
+                    : "(chưa đặt)",
+                SharesBotWithReminder = AppSettings.GoConnect.SharesBotWithReminder,
+                SharesChatIdWithReminder = AppSettings.GoConnect.SharesChatIdWithReminder,
+                EmailEnabled = AppSettings.Email.Enabled,
+                EmailHasHost = AppSettings.Email.HasHost,
+                EmailHasAccount = AppSettings.Email.HasAccount,
+                EmailHost = AppSettings.Email.HasHost ? AppSettings.Email.Host : "(chưa đặt)",
+                EmailPort = AppSettings.Email.Port,
+                EmailUser = AppSettings.Email.User,
+                EmailFrom = AppSettings.Email.From,
+                EmailDisplayName = AppSettings.Email.DisplayName,
+                EmailMaskedPassword = AppSettings.Email.MaskedPassword,
+                MemberReminders = ReminderService.BuildMemberReminders(now),
                 MondayHour = AppSettings.Reminder.MondayHour,
                 FridayHour = AppSettings.Reminder.FridayHour,
                 SaturdayHour = AppSettings.Reminder.SaturdayHour,
+                MemberEmailHour = AppSettings.Reminder.MemberEmailHour,
                 AutoSend = AppSettings.Reminder.AutoSend,
                 MondayPreview = ReminderService.Build(ReminderKind.MondayPreviousWeek, now),
                 FridayPreview = ReminderService.Build(ReminderKind.FridayCurrentWeek, now),
@@ -123,25 +196,51 @@ namespace TTKDGP.ProjectManager.Controllers
 
             if (model.HasToken)
             {
-                var me = TelegramClient.GetMe(AppSettings.Telegram.BotToken);
-                if (me.Ok)
+                string error;
+                model.BotName = ResolveBotName(AppSettings.Telegram.BotToken, out error);
+                model.ConnectionError = error;
+            }
+
+            if (model.GoConnectHasToken)
+            {
+                // Dùng chung token thì khỏi hỏi Telegram lần nữa — vẫn đúng tên bot mà đỡ một
+                // lần gọi mạng cho mỗi lượt mở trang.
+                if (model.SharesBotWithReminder)
                 {
-                    try
-                    {
-                        model.BotName = (string)JObject.Parse(me.RawResponse)["result"]["username"];
-                    }
-                    catch
-                    {
-                        model.BotName = "(không đọc được tên bot)";
-                    }
+                    model.GoConnectBotName = model.BotName;
+                    model.GoConnectConnectionError = model.ConnectionError;
                 }
                 else
                 {
-                    model.ConnectionError = me.Error;
+                    string error;
+                    model.GoConnectBotName = ResolveBotName(AppSettings.GoConnect.BotToken, out error);
+                    model.GoConnectConnectionError = error;
                 }
             }
 
             return model;
+        }
+
+        /// <summary>Hỏi Telegram tên tài khoản của bot ứng với một token. Trả null nếu hỏng.</summary>
+        private static string ResolveBotName(string botToken, out string error)
+        {
+            error = null;
+
+            var me = TelegramClient.GetMe(botToken);
+            if (!me.Ok)
+            {
+                error = me.Error;
+                return null;
+            }
+
+            try
+            {
+                return (string)JObject.Parse(me.RawResponse)["result"]["username"];
+            }
+            catch
+            {
+                return "(không đọc được tên bot)";
+            }
         }
 
         /// <summary>So sánh không phụ thuộc thời gian, tránh dò khoá qua thời gian phản hồi.</summary>

@@ -81,6 +81,13 @@ namespace TTKDGP.ProjectManager.Infrastructure
                 sent++;
             }
 
+            // Sáng thứ Sáu: mail riêng cho từng thành viên, trước tin nhắc chung buổi chiều.
+            if (IsDue(now, DayOfWeek.Friday, AppSettings.Reminder.MemberEmailHour, ReminderKind.FridayMemberEmails))
+            {
+                ReminderService.RunMemberEmails(now, false, null);
+                sent++;
+            }
+
             if (IsDue(now, DayOfWeek.Friday, AppSettings.Reminder.FridayHour, ReminderKind.FridayCurrentWeek))
             {
                 ReminderService.Run(ReminderKind.FridayCurrentWeek, now, false, null);

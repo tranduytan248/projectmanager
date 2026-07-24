@@ -1,0 +1,93 @@
+﻿@model TTKDGP.ProjectManager.Models.IntegrationSystem
+@{
+    var isNew = Model.Id == 0;
+    ViewBag.Title = (isNew ? "Thêm " : "Sửa ") + "hệ thống tích hợp";
+}
+
+<div class="page-head">
+    <div>
+        <h1>@ViewBag.Title</h1>
+        @if (!isNew)
+        {
+            <p>@Model.Code — @Model.Name</p>
+        }
+    </div>
+    <a class="btn btn-default" href="@Url.Action("Index", "IntegrationSystems")">&larr; Hệ thống tích hợp</a>
+</div>
+
+<div class="card form-narrow">
+    <div class="card-body">
+        @using (Html.BeginForm("Edit", "IntegrationSystems", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            @Html.HiddenFor(m => m.Id)
+            @Html.ValidationSummary(true)
+
+            <div class="form-field">
+                @Html.LabelFor(m => m.Code)
+                @Html.TextBoxFor(m => m.Code, new { autofocus = "autofocus", maxlength = "50", placeholder = "VD: CRM, PORTAL, ERP..." })
+                @Html.ValidationMessageFor(m => m.Code, "", new { @class = "field-error" })
+                <span class="hint">Mã định danh hệ thống, không trùng với hệ thống khác.</span>
+            </div>
+
+            <div class="form-field">
+                @Html.LabelFor(m => m.Name)
+                @Html.TextBoxFor(m => m.Name, new { maxlength = "200" })
+                @Html.ValidationMessageFor(m => m.Name, "", new { @class = "field-error" })
+            </div>
+
+            @* Khoá bí mật: không cho gõ tay. Màn thêm mới đưa khoá vừa sinh vào ô ẩn để lưu; cả
+               hai màn đều hiện khoá ở ô chỉ đọc kèm nút sao chép. *@
+            if (isNew)
+            {
+                @Html.HiddenFor(m => m.PrivateKey)
+            }
+
+            <div class="form-field">
+                @Html.LabelFor(m => m.PrivateKey)
+                <div class="key-box">
+                    <input type="text" id="privateKey" value="@Model.PrivateKey" readonly
+                           class="key-input" onclick="this.select();" />
+                    <button type="button" class="btn btn-default btn-sm" data-copy-target="#privateKey">Sao chép</button>
+                </div>
+                <span class="hint">
+                    Khoá sinh ngẫu nhiên. Khi tích hợp, hai bên ghép chuỗi dữ liệu với khoá này rồi
+                    băm SHA-256 ra checksum để xác thực. Giữ bí mật, chỉ cấp cho hệ thống đối tác.
+                </span>
+            </div>
+
+            <div class="check-inline">
+                @Html.CheckBoxFor(m => m.IsActive)
+                @Html.LabelFor(m => m.IsActive)
+            </div>
+            <span class="hint">Bỏ đánh dấu để tạm ngừng cho hệ thống này tích hợp mà vẫn giữ cấu hình.</span>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">@(isNew ? "Thêm" : "Lưu thay đổi")</button>
+                <a class="btn btn-default" href="@Url.Action("Index", "IntegrationSystems")">Huỷ</a>
+            </div>
+        }
+
+        @if (!isNew)
+        {
+            <hr />
+            <div class="key-regen">
+                <div>
+                    <strong>Tạo lại khoá bí mật</strong>
+                    <div class="hint">
+                        Sinh khoá mới thay khoá hiện tại. Khoá cũ hết hiệu lực ngay — nhớ cấp lại khoá
+                        mới cho hệ thống đối tác, nếu không việc tích hợp sẽ báo sai checksum.
+                    </div>
+                </div>
+                @using (Html.BeginForm("Regenerate", "IntegrationSystems", new { id = Model.Id }, FormMethod.Post, new { @class = "inline-form" }))
+                {
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-default"
+                            onclick="return confirm('Tạo lại khoá bí mật? Khoá cũ sẽ không dùng được nữa.');">
+                        Tạo lại khoá
+                    </button>
+                }
+            </div>
+        }
+    </div>
+</div>

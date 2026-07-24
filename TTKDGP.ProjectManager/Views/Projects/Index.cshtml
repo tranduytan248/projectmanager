@@ -1,4 +1,4 @@
-﻿@model List<TTKDGP.ProjectManager.Models.Project>
+﻿@model TTKDGP.ProjectManager.Models.PagedList<TTKDGP.ProjectManager.Models.Project>
 @using TTKDGP.ProjectManager.Infrastructure
 @{
     ViewBag.Title = "Dự án";
@@ -15,7 +15,7 @@
 <div class="page-head">
     <div>
         <h1>Dự án</h1>
-        <p>Khai báo dự án của tổ. Tổng cộng @Model.Count dự án.</p>
+        <p>Khai báo dự án của tổ. Tổng cộng @Model.Pager.TotalItems dự án.</p>
     </div>
     <a class="btn btn-primary" href="@Url.Action("Edit", "Projects")">+ Thêm dự án</a>
 </div>
@@ -70,7 +70,7 @@
 </div>
 
 <div class="card">
-    @if (Model.Count == 0)
+    @if (Model.Items.Count == 0)
     {
         <div class="empty-state">Chưa có dự án nào phù hợp.</div>
     }
@@ -90,7 +90,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var p in Model)
+                    @foreach (var p in Model.Items)
                     {
                         <tr>
                             <td>
@@ -134,5 +134,7 @@
                 </tbody>
             </table>
         </div>
+
+        @Html.Partial("_Pager", Model.Pager)
     }
 </div>

@@ -3,6 +3,14 @@
     var currentUser = ViewBag.CurrentUser as AppIdentity;
     var isAdmin = ViewBag.IsAdmin != null && (bool)ViewBag.IsAdmin;
     var controller = ViewContext.RouteData.Values["controller"] as string ?? "";
+
+    // Tài khoản Báo cáo công việc chỉ thấy Tổng hợp và Báo cáo của tôi.
+    // Ghi rõ namespace vì Razor tự nạp System.Web.Security.Roles gây trùng tên.
+    var canManage = currentUser != null
+        && TTKDGP.ProjectManager.Models.Roles.CanManage(currentUser.Role);
+
+    var catalogControllers = new[] { "ProjectTypes", "ProjectStatuses", "WorkStatuses", "MemberRoles" };
+    var inCatalog = catalogControllers.Contains(controller);
 }
 <!DOCTYPE html>
 <html lang="vi">
@@ -21,81 +29,142 @@
     <link rel="stylesheet" href="@Url.Content("~/Content/lib/select2.min.css")" />
     <link rel="stylesheet" href="@Url.Content("~/Content/site.css")" />
 </head>
-<body>
-    <header class="topbar">
-        <div class="container topbar-inner">
-            <a class="brand" href="@Url.Action("Index", "Home")">
-                <span class="brand-mark">NCPT</span>
-                <span class="brand-text">Quản lý dự án &amp; nhân sự</span>
-            </a>
+@* Chưa đăng nhập thì không dựng menu dọc — trang Đăng nhập dùng trọn bề ngang *@
+<body class="@(currentUser != null ? "has-sidebar" : "")">
+    @if (currentUser != null)
+    {
+        @* Áp trạng thái thu gọn NGAY trước khi dựng menu để không bị nháy khi tải trang. *@
+        <script>try{if(localStorage.getItem('sidebarCollapsed')==='1')document.body.classList.add('sidebar-collapsed');}catch(e){}</script>
 
-            <nav class="nav">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-head">
+                <a class="brand" href="@Url.Action("Index", "Home")">
+                    <span class="brand-mark">NCPT</span>
+                    <span class="brand-text">Quản lý dự án &amp; nhân sự</span>
+                </a>
+                <button type="button" class="sidebar-collapse" data-sidebar-toggle
+                        aria-label="Thu gọn menu" title="Thu gọn menu">«</button>
+            </div>
+
+            <nav class="sidenav">
                 <a href="@Url.Action("Index", "Home")" class="@(controller == "Home" ? "active" : "")">Tổng hợp</a>
-                @if (currentUser != null)
+                <a href="@Url.Action("Index", "MyReports")" class="@(controller == "MyReports" ? "active" : "")">Báo cáo của tôi</a>
+
+                @if (canManage)
                 {
-                    <a href="@Url.Action("Index", "Projects")" class="@(controller == "Projects" ? "active" : "")">Dự án</a>
-                    <a href="@Url.Action("Index", "Members")" class="@(controller == "Members" ? "active" : "")">Thành viên</a>
-                    <a href="@Url.Action("Index", "Assignments")" class="@(controller == "Assignments" ? "active" : "")">Phân công</a>
+                <a href="@Url.Action("Index", "Projects")" class="@(controller == "Projects" ? "active" : "")">Dự án</a>
+                <a href="@Url.Action("Index", "Members")" class="@(controller == "Members" ? "active" : "")">Thành viên</a>
+                <a href="@Url.Action("Index", "Assignments")" class="@(controller == "Assignments" ? "active" : "")">Phân công</a>
+                <a href="@Url.Action("Index", "TeamReports")" class="@(controller == "TeamReports" ? "active" : "")">Báo cáo nhân sự</a>
 
-                    var catalogControllers = new[] { "ProjectTypes", "ProjectStatuses", "WorkStatuses", "MemberRoles" };
-                    var inCatalog = catalogControllers.Contains(controller);
+                @* Nhóm gập/mở bằng thẻ details của trình duyệt, không cần JavaScript.
+                   Đang ở trong một trang danh mục thì mở sẵn để thấy mình đang đứng ở đâu. *@
+                <details class="sidenav-group" @(inCatalog ? "open" : "")>
+                    <summary class="@(inCatalog ? "active" : "")">Danh mục</summary>
+                    <div class="sidenav-sub">
+                        <a href="@Url.Action("Index", "ProjectTypes")" class="@(controller == "ProjectTypes" ? "active" : "")">Loại dự án</a>
+                        <a href="@Url.Action("Index", "ProjectStatuses")" class="@(controller == "ProjectStatuses" ? "active" : "")">Trạng thái dự án</a>
+                        <a href="@Url.Action("Index", "WorkStatuses")" class="@(controller == "WorkStatuses" ? "active" : "")">Trạng thái tham gia</a>
+                        <a href="@Url.Action("Index", "MemberRoles")" class="@(controller == "MemberRoles" ? "active" : "")">Vai trò</a>
+                    </div>
+                </details>
+                }
 
-                    <span class="nav-group @(inCatalog ? "open" : "")">
-                        <span class="nav-group-label @(inCatalog ? "active" : "")">Danh mục ▾</span>
-                        <span class="nav-group-menu">
-                            <a href="@Url.Action("Index", "ProjectTypes")" class="@(controller == "ProjectTypes" ? "active" : "")">Loại dự án</a>
-                            <a href="@Url.Action("Index", "ProjectStatuses")" class="@(controller == "ProjectStatuses" ? "active" : "")">Trạng thái dự án</a>
-                            <a href="@Url.Action("Index", "WorkStatuses")" class="@(controller == "WorkStatuses" ? "active" : "")">Trạng thái tham gia</a>
-                            <a href="@Url.Action("Index", "MemberRoles")" class="@(controller == "MemberRoles" ? "active" : "")">Vai trò</a>
-                        </span>
-                    </span>
-                    if (isAdmin)
-                    {
-                        <a href="@Url.Action("Index", "Notifications")" class="@(controller == "Notifications" ? "active" : "")">Thông báo</a>
-                        <a href="@Url.Action("Index", "Users")" class="@(controller == "Users" ? "active" : "")">Người dùng</a>
-                    }
+                @if (isAdmin)
+                {
+                    var inHrm = controller == "Hrm";
+                    var action = ViewContext.RouteData.Values["action"] as string ?? "";
+
+                    <div class="sidenav-title">Nhân sự</div>
+                    <details class="sidenav-group" @(inHrm ? "open" : "")>
+                        <summary class="@(inHrm ? "active" : "")">HRM</summary>
+                        <div class="sidenav-sub">
+                            <a href="@Url.Action("Employees", "Hrm")" class="@(inHrm && action == "Employees" ? "active" : "")">Nhân sự</a>
+                            <a href="@Url.Action("Workplaces", "Hrm")" class="@(inHrm && action == "Workplaces" ? "active" : "")">Đơn vị</a>
+                            <a href="@Url.Action("Positions", "Hrm")" class="@(inHrm && action == "Positions" ? "active" : "")">Chức danh</a>
+                        </div>
+                    </details>
+
+                    <div class="sidenav-title">Quản trị</div>
+                    <a href="@Url.Action("Index", "Notifications")" class="@(controller == "Notifications" ? "active" : "")">Thông báo</a>
+                    <a href="@Url.Action("Index", "GoConnect")" class="@(controller == "GoConnect" ? "active" : "")">GoConnect</a>
+                    <a href="@Url.Action("Index", "IntegrationSystems")" class="@(controller == "IntegrationSystems" ? "active" : "")">Hệ thống tích hợp</a>
+                    <a href="@Url.Action("Index", "Users")" class="@(controller == "Users" ? "active" : "")">Người dùng</a>
                 }
             </nav>
+        </aside>
 
-            <div class="user-area">
+        @* Nền mờ phủ nội dung khi mở menu trên màn hình hẹp; bấm vào để đóng *@
+        <div class="sidebar-scrim" data-menu-close></div>
+    }
+
+    <div class="shell">
+        <header class="topbar">
+            <div class="container topbar-inner">
                 @if (currentUser != null)
                 {
-                    <a class="user-chip" href="@Url.Action("Profile", "Account")" title="Thông tin cá nhân">
-                        @currentUser.FullName
-                        <em>@(currentUser.Role == "Admin" ? "Quản trị" : "Quản lý")</em>
+                    <button type="button" class="menu-toggle" data-menu-toggle
+                            aria-label="Mở menu" aria-controls="sidebar" aria-expanded="false">
+                        <span></span><span></span><span></span>
+                    </button>
+
+                    @* Nút mở lại menu khi đã thu gọn (chỉ hiện trên màn hình rộng lúc menu đang đóng) *@
+                    <button type="button" class="sidebar-expand" data-sidebar-toggle
+                            aria-label="Mở menu" title="Mở menu">☰</button>
+
+                    @* Trên màn hình hẹp menu dọc bị ẩn nên thanh trên phải tự mang tên hệ thống *@
+                    <a class="brand brand-compact" href="@Url.Action("Index", "Home")">
+                        <span class="brand-mark">NCPT</span>
                     </a>
-                    using (Html.BeginForm("Logout", "Account", FormMethod.Post, new { @class = "inline-form" }))
-                    {
-                        @Html.AntiForgeryToken()
-                        <button type="submit" class="btn btn-ghost btn-sm">Đăng xuất</button>
-                    }
                 }
                 else
                 {
-                    <a class="btn btn-primary btn-sm" href="@Url.Action("Login", "Account")">Đăng nhập</a>
+                    <a class="brand" href="@Url.Action("Index", "Home")">
+                        <span class="brand-mark">NCPT</span>
+                        <span class="brand-text">Quản lý dự án &amp; nhân sự</span>
+                    </a>
                 }
+
+                <div class="user-area">
+                    @if (currentUser != null)
+                    {
+                        <a class="user-chip" href="@Url.Action("Profile", "Account")" title="Thông tin cá nhân">
+                            @currentUser.FullName
+                            <em>@TTKDGP.ProjectManager.Models.Roles.Display(currentUser.Role)</em>
+                        </a>
+                        using (Html.BeginForm("Logout", "Account", FormMethod.Post, new { @class = "inline-form" }))
+                        {
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-ghost btn-sm">Đăng xuất</button>
+                        }
+                    }
+                    else
+                    {
+                        <a class="btn btn-primary btn-sm" href="@Url.Action("Login", "Account")">Đăng nhập</a>
+                    }
+                </div>
             </div>
-        </div>
-    </header>
+        </header>
 
-    <main class="container main">
-        @if (TempData["Flash"] != null)
-        {
-            <div class="alert alert-success">@TempData["Flash"]</div>
-        }
-        @if (TempData["FlashError"] != null)
-        {
-            <div class="alert alert-danger">@TempData["FlashError"]</div>
-        }
+        <main class="container main">
+            @if (TempData["Flash"] != null)
+            {
+                <div class="alert alert-success">@TempData["Flash"]</div>
+            }
+            @if (TempData["FlashError"] != null)
+            {
+                <div class="alert alert-danger">@TempData["FlashError"]</div>
+            }
 
-        @RenderBody()
-    </main>
+            @RenderBody()
+        </main>
 
-    <footer class="footer">
-        <div class="container">
-            Tổ NCPT &mdash; Trung tâm Kinh doanh Giải pháp, VNPT Khánh Hòa
-        </div>
-    </footer>
+        <footer class="footer">
+            <div class="container">
+                Tổ NCPT &mdash; Trung tâm Kinh doanh Giải pháp, VNPT Khánh Hòa
+            </div>
+        </footer>
+    </div>
 
     @* Thư viện đóng gói sẵn trong project, không phụ thuộc CDN nên chạy được cả khi server không có internet *@
     <script src="@Url.Content("~/Scripts/lib/jquery.min.js")"></script>

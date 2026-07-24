@@ -40,6 +40,13 @@ namespace TTKDGP.ProjectManager.Models
         [Display(Name = "Người ghi")]
         public string CreatedBy { get; set; }
 
+        /// <summary>
+        /// Người sửa gần nhất. Nhân sự tự ghi rồi PM tổng hợp lại thì cần biết dòng này
+        /// còn nguyên văn hay đã được rút gọn, nên tách riêng với người ghi đầu tiên.
+        /// </summary>
+        [Display(Name = "Người sửa")]
+        public string UpdatedBy { get; set; }
+
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
     }

@@ -13,10 +13,10 @@ namespace TTKDGP.ProjectManager.Controllers
     /// trạng thái tham gia, vai trò). Lớp con chỉ cần khai báo kho dữ liệu, cách hiển thị,
     /// nơi giá trị được sử dụng và cách đổi tên hàng loạt.
     /// </summary>
-    [AppAuthorize]
+    [AppAuthorize(AllowedRoles = Roles.Management)]
     public abstract class CatalogControllerBase<T> : BaseController where T : CatalogItem, new()
     {
-        protected abstract JsonStore<T> Store { get; }
+        protected abstract SqlStore<T> Store { get; }
         protected abstract CatalogConfig Config { get; }
 
         /// <summary>Số bản ghi nghiệp vụ đang dùng mỗi giá trị, khoá theo tên giá trị.</summary>

@@ -53,6 +53,26 @@
 </div>
 
 <div class="card">
+    <div class="card-head">Tài liệu tích hợp API</div>
+    <div class="card-body">
+        <p class="muted" style="margin-top:0">
+            API lấy dữ liệu HRM (nhân sự, đơn vị, chức danh). Tải về để xem hướng dẫn và thử bằng Postman.
+        </p>
+        <div class="btn-row">
+            <a class="btn btn-primary" href="@Url.Action("Download", "Home", new { doc = "guide" })">
+                Hướng dẫn sử dụng (.md)
+            </a>
+            <a class="btn btn-default" href="@Url.Action("Download", "Home", new { doc = "postman" })">
+                Bộ Postman (.json)
+            </a>
+        </div>
+        <p class="hint" style="margin:10px 0 0">
+            Mã hệ thống và khoá bí mật được cấp riêng cho từng hệ thống tích hợp.
+        </p>
+    </div>
+</div>
+
+<div class="card">
     <div class="card-body">
         @using (Html.BeginForm("Index", "Home", FormMethod.Get))
         {
@@ -212,11 +232,9 @@ else
                     <thead>
                         <tr>
                             <th>Dự án</th>
-                            <th>Khách hàng</th>
                             <th>Vai trò</th>
                             <th>Tuần báo cáo</th>
                             <th>Nội dung tuần mới nhất</th>
-                            <th>Trạng thái dự án</th>
                             <th>Trạng thái công việc</th>
                             <th></th>
                         </tr>

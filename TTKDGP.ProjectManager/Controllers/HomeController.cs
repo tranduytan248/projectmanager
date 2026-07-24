@@ -94,6 +94,35 @@ namespace TTKDGP.ProjectManager.Controllers
             return View(model);
         }
 
+        /// <summary>
+        /// Tải tài liệu tích hợp API (hướng dẫn và bộ Postman). Công khai như trang tổng hợp;
+        /// tài liệu không chứa khoá bí mật (khoá cấp riêng cho từng hệ thống). Chỉ nhận đúng vài
+        /// tên tài liệu định sẵn để không cho đọc file tuỳ ý.
+        /// </summary>
+        [AllowAnonymous]
+        public ActionResult Download(string doc)
+        {
+            string fileName, contentType;
+            switch ((doc ?? string.Empty).Trim().ToLowerInvariant())
+            {
+                case "guide":
+                    fileName = "Huong-dan-tich-hop-API-HRM.md";
+                    contentType = "text/markdown; charset=utf-8";
+                    break;
+                case "postman":
+                    fileName = "HRM-API.postman_collection.json";
+                    contentType = "application/json; charset=utf-8";
+                    break;
+                default:
+                    return HttpNotFound();
+            }
+
+            var path = Server.MapPath("~/App_Data/docs/" + fileName);
+            if (!System.IO.File.Exists(path)) return HttpNotFound();
+
+            return File(System.IO.File.ReadAllBytes(path), contentType, fileName);
+        }
+
         /// <summary>Chi tiết một dự án kèm danh sách thành viên — công khai, chỉ xem.</summary>
         public ActionResult Project(int id)
         {

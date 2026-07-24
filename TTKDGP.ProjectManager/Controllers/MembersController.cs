@@ -8,7 +8,7 @@ using TTKDGP.ProjectManager.Models;
 
 namespace TTKDGP.ProjectManager.Controllers
 {
-    [AppAuthorize]
+    [AppAuthorize(AllowedRoles = Roles.Management)]
     public class MembersController : BaseController
     {
         public ActionResult Index(string keyword)
@@ -79,6 +79,22 @@ namespace TTKDGP.ProjectManager.Controllers
             {
                 ModelState.AddModelError("FullName", "Đã có thành viên trùng họ tên.");
                 return View(model);
+            }
+
+            // Email không bắt buộc, nhưng đã nhập thì mỗi người một địa chỉ riêng
+            // để mail nhắc không gửi nhầm sang người khác.
+            model.Email = string.IsNullOrWhiteSpace(model.Email) ? null : model.Email.Trim();
+            if (model.Email != null)
+            {
+                var duplicateEmail = Repository.Members.FirstOrDefault(m =>
+                    m.Id != model.Id &&
+                    string.Equals(m.Email, model.Email, StringComparison.OrdinalIgnoreCase));
+                if (duplicateEmail != null)
+                {
+                    ModelState.AddModelError("Email",
+                        "Email này đang dùng cho thành viên \"" + duplicateEmail.FullName + "\".");
+                    return View(model);
+                }
             }
 
             if (model.Id == 0)

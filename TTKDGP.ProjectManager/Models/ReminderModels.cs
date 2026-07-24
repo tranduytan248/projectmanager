@@ -16,7 +16,55 @@ namespace TTKDGP.ProjectManager.Models
         /// Sáng thứ Bảy — tổng hợp PM nào chưa báo cáo, dạng danh sách phẳng
         /// "Tên PM - Dự án" để anh Tân theo dõi. Cũng gửi vào nhóm.
         /// </summary>
-        SaturdayAdminSummary = 3
+        SaturdayAdminSummary = 3,
+
+        /// <summary>
+        /// Sáng thứ Sáu — mail riêng cho từng thành viên, liệt kê những dự án của
+        /// TUẦN NÀY mà họ còn phải báo cáo cho PM. Không gửi vào nhóm.
+        /// </summary>
+        FridayMemberEmails = 4
+    }
+
+    /// <summary>Một dự án mà thành viên còn phải báo cáo, kèm nơi gửi báo cáo.</summary>
+    public class MemberMissingProject
+    {
+        public int ProjectId { get; set; }
+        public string ProjectName { get; set; }
+        public string Customer { get; set; }
+        public string Status { get; set; }
+
+        public string PmName { get; set; }
+
+        /// <summary>Có thể trống nếu PM chưa được điền email.</summary>
+        public string PmEmail { get; set; }
+    }
+
+    /// <summary>Phần việc còn nợ của một thành viên, dùng để dựng mail gửi riêng cho họ.</summary>
+    public class MemberReminder
+    {
+        public int MemberId { get; set; }
+        public string MemberName { get; set; }
+        public string Email { get; set; }
+
+        public List<MemberMissingProject> Projects { get; set; }
+
+        /// <summary>Không có email thì không gửi được, nhưng vẫn đếm để báo cho quản trị biết.</summary>
+        public bool CanSend { get { return !string.IsNullOrWhiteSpace(Email); } }
+
+        public MemberReminder()
+        {
+            Projects = new List<MemberMissingProject>();
+        }
+    }
+
+    /// <summary>Kết quả một lượt gửi mail cho từng thành viên.</summary>
+    public class MemberEmailOutcome
+    {
+        public string MemberName { get; set; }
+        public string Email { get; set; }
+        public int ProjectCount { get; set; }
+        public bool Sent { get; set; }
+        public string Error { get; set; }
     }
 
     /// <summary>Một dự án còn thiếu báo cáo trong kỳ đang xét.</summary>
@@ -95,6 +143,7 @@ namespace TTKDGP.ProjectManager.Models
                 {
                     case ReminderKind.MondayPreviousWeek: return "Sáng thứ Hai — rà soát tuần trước";
                     case ReminderKind.FridayCurrentWeek: return "Chiều thứ Sáu — rà soát tuần này";
+                    case ReminderKind.FridayMemberEmails: return "Sáng thứ Sáu — mail riêng từng thành viên";
                     default: return "Sáng thứ Bảy — báo cáo cho anh Tân";
                 }
             }
@@ -131,11 +180,35 @@ namespace TTKDGP.ProjectManager.Models
         public int MissingProjectCount { get; set; }
         public int PmCount { get; set; }
 
+        /// <summary>Số mail đã gửi được. Chỉ có ý nghĩa với kỳ gửi mail cho thành viên.</summary>
+        public int SentCount { get; set; }
+
+        /// <summary>Số người lẽ ra phải nhận mail nhưng chưa điền email.</summary>
+        public int NoEmailCount { get; set; }
+
         /// <summary>Nội dung đã gửi, giữ lại để đối chiếu.</summary>
         public string Message { get; set; }
 
         /// <summary>Người bấm gửi, để trống nếu do lịch tự chạy.</summary>
         public string TriggeredBy { get; set; }
+
+        /// <summary>Nhãn ngắn của kỳ nhắc, dùng trong bảng lịch sử.</summary>
+        public string KindLabel
+        {
+            get
+            {
+                switch (Kind)
+                {
+                    case ReminderKind.MondayPreviousWeek: return "Thứ Hai · nhóm";
+                    case ReminderKind.FridayCurrentWeek: return "Thứ Sáu · nhóm";
+                    case ReminderKind.FridayMemberEmails: return "Thứ Sáu · mail";
+                    default: return "Thứ Bảy · nhóm";
+                }
+            }
+        }
+
+        /// <summary>Kỳ gửi mail đếm theo số người nhận, các kỳ còn lại đếm theo số PM.</summary>
+        public bool IsEmailKind { get { return Kind == ReminderKind.FridayMemberEmails; } }
     }
 
     /// <summary>Màn hình quản trị thông báo.</summary>
@@ -149,9 +222,43 @@ namespace TTKDGP.ProjectManager.Models
         public string BotName { get; set; }
         public string ConnectionError { get; set; }
 
+        // ----- Bot Telegram thứ hai: đăng nhập GoConnect -----
+        // Hệ thống dùng HAI bot khác nhau. Hiển thị cả hai cạnh nhau để nhìn là biết ngay
+        // tin nhắc báo cáo và tin hỏi OTP đang đi ra từ đúng bot của nó.
+        public bool GoConnectEnabled { get; set; }
+        public bool GoConnectHasToken { get; set; }
+        public bool GoConnectHasChatId { get; set; }
+        public string GoConnectMaskedToken { get; set; }
+        public string GoConnectChatId { get; set; }
+        public string GoConnectBotName { get; set; }
+        public string GoConnectConnectionError { get; set; }
+
+        /// <summary>Hai chức năng đang dùng chung một bot — cấu hình sai, cần báo đỏ.</summary>
+        public bool SharesBotWithReminder { get; set; }
+
+        /// <summary>Hai chức năng đang gửi vào cùng một nơi nhận.</summary>
+        public bool SharesChatIdWithReminder { get; set; }
+
+        // ----- Kênh mail -----
+        public bool EmailEnabled { get; set; }
+        public bool EmailHasHost { get; set; }
+        public bool EmailHasAccount { get; set; }
+        public string EmailHost { get; set; }
+        public int EmailPort { get; set; }
+        public string EmailUser { get; set; }
+        public string EmailFrom { get; set; }
+        public string EmailDisplayName { get; set; }
+        public string EmailMaskedPassword { get; set; }
+
+        /// <summary>Xem trước danh sách người sẽ nhận mail sáng thứ Sáu.</summary>
+        public List<MemberReminder> MemberReminders { get; set; }
+
+        public bool EmailReady { get { return EmailEnabled && EmailHasHost && EmailHasAccount; } }
+
         public int MondayHour { get; set; }
         public int FridayHour { get; set; }
         public int SaturdayHour { get; set; }
+        public int MemberEmailHour { get; set; }
 
         /// <summary>Lịch tự động có đang chạy không. Ở máy phát triển thường là tắt.</summary>
         public bool AutoSend { get; set; }
@@ -170,6 +277,7 @@ namespace TTKDGP.ProjectManager.Models
         {
             History = new List<ReminderLog>();
             DiscoveredChats = new List<Infrastructure.TelegramChat>();
+            MemberReminders = new List<MemberReminder>();
         }
     }
 }

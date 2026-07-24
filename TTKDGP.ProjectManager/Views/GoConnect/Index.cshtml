@@ -1,0 +1,79 @@
+﻿@{
+    ViewBag.Title = "Đăng nhập GoConnect";
+    var enabled = ViewBag.Enabled != null && (bool)ViewBag.Enabled;
+    var hasToken = ViewBag.HasToken != null && (bool)ViewBag.HasToken;
+    var hasChatId = ViewBag.HasChatId != null && (bool)ViewBag.HasChatId;
+    var state = ViewBag.State as string ?? "Idle";
+    var awaiting = ViewBag.IsAwaitingOtp != null && (bool)ViewBag.IsAwaitingOtp;
+    var lastMessage = ViewBag.LastMessage as string;
+    var lastChangedAt = ViewBag.LastChangedAt as DateTime? ?? DateTime.MinValue;
+    var lastTokens = ViewBag.LastTokens as string;
+    var lastTokensAt = ViewBag.LastTokensAt as DateTime? ?? DateTime.MinValue;
+    var phone = ViewBag.Phone as string;
+    var running = state == "RequestingOtp" || state == "AwaitingOtp" || state == "Verifying";
+}
+
+<h1>Đăng nhập GoConnect</h1>
+<p class="text-secondary">
+    Bấm nút để gửi lệnh đăng nhập. Bot Telegram sẽ nhắn yêu cầu OTP — trả lời mã ngay trên Telegram
+    (giống lệnh <code>/sdt</code>). Vào workspace xong, token sẽ hiện bên dưới và được gửi lên Telegram.
+</p>
+
+@if (!hasToken || !hasChatId)
+{
+    <div class="alert alert-danger">
+        Chưa cấu hình bot Telegram cho GoConnect:
+        @(!hasToken ? " thiếu GoConnect:BotToken" : "")@(!hasChatId ? " thiếu GoConnect:ChatId" : "").
+        Không gửi được lệnh OTP tới bạn.
+    </div>
+}
+else if (!enabled)
+{
+    <div class="alert alert-danger">
+        GoConnect:Enabled đang tắt — lịch tự động và bộ nghe OTP không chạy. Nút bấm vẫn hoạt động,
+        nhưng bạn nên bật để nhận được OTP trả lời qua Telegram.
+    </div>
+}
+
+<div class="card" style="margin: 16px 0; padding: 16px; border: 1px solid var(--border-color, #ddd); border-radius: 8px;">
+    <div><strong>Số điện thoại:</strong> @(string.IsNullOrWhiteSpace(phone) ? "(chưa đặt)" : phone)</div>
+    <div><strong>Trạng thái:</strong> @state</div>
+    @if (!string.IsNullOrWhiteSpace(lastMessage))
+    {
+        <div><strong>Gần nhất:</strong> @lastMessage <span class="text-secondary">(@lastChangedAt.ToString("HH:mm:ss dd/MM"))</span></div>
+    }
+    @if (awaiting)
+    {
+        <div class="alert alert-success" style="margin-top: 10px;">
+            🔐 Đang chờ OTP — mở Telegram và trả lời mã cho bot.
+        </div>
+    }
+</div>
+
+@using (Html.BeginForm("Start", "GoConnect", FormMethod.Post))
+{
+    @Html.AntiForgeryToken()
+    <button type="submit" class="btn btn-primary" @(running ? "disabled" : "")>
+        @(running ? "Đang chạy..." : "Đăng nhập GoConnect (gửi lệnh qua Telegram)")
+    </button>
+}
+
+<a href="@Url.Action("Index", "GoConnect")" class="btn btn-ghost btn-sm" style="margin-left: 8px;">Làm mới</a>
+
+@if (!string.IsNullOrWhiteSpace(lastTokens))
+{
+    <h2 style="margin-top: 24px;">Token gần nhất <span class="text-secondary">(@lastTokensAt.ToString("HH:mm:ss dd/MM"))</span></h2>
+    <p class="text-secondary">Thông tin nhạy cảm — chỉ Admin xem được trang này.</p>
+    <pre style="white-space: pre-wrap; word-break: break-all; background: #f6f8fa; padding: 12px; border-radius: 6px; border: 1px solid #e1e4e8;">@lastTokens</pre>
+}
+
+@section Scripts {
+    <script>
+        // Chỉ tự làm mới khi đang ở bước chuyển tiếp (chưa tới lúc chờ nhập OTP),
+        // để không làm phiền khi bạn đang thao tác.
+        var st = "@state";
+        if (st === "RequestingOtp" || st === "Verifying") {
+            setTimeout(function () { location.reload(); }, 4000);
+        }
+    </script>
+}

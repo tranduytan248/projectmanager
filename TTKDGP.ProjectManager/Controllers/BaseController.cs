@@ -19,7 +19,7 @@ namespace TTKDGP.ProjectManager.Controllers
         {
             var user = CurrentUser;
             ViewBag.CurrentUser = user;
-            ViewBag.IsAdmin = user != null && user.Role == Models.Roles.Admin;
+            ViewBag.IsAdmin = user != null && Models.Roles.Has(user.Role, Models.Roles.Admin);
             base.OnActionExecuting(filterContext);
         }
 

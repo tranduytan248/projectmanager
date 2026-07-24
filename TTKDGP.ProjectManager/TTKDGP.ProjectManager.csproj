@@ -67,6 +67,9 @@
     <PackageReference Include="Newtonsoft.Json">
       <Version>13.0.3</Version>
     </PackageReference>
+    <PackageReference Include="Microsoft.Playwright">
+      <Version>1.49.0</Version>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="App_Start\FilterConfig.cs" />
@@ -81,7 +84,12 @@
     <Compile Include="Controllers\CatalogControllers.cs" />
     <Compile Include="Controllers\UsersController.cs" />
     <Compile Include="Data\JsonStore.cs" />
+    <Compile Include="Data\SqlStore.cs" />
+    <Compile Include="Data\JsonToSqlMigration.cs" />
     <Compile Include="Data\Repository.cs" />
+    <Compile Include="Data\HrEmployeeStore.cs" />
+    <Compile Include="Data\HrOrgStore.cs" />
+    <Compile Include="Data\GoConnectTokenStore.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
@@ -89,15 +97,36 @@
     <Compile Include="Infrastructure\PasswordHasher.cs" />
     <Compile Include="Infrastructure\ViewHelpers.cs" />
     <Compile Include="Models\Member.cs" />
+    <Compile Include="Models\HrEmployee.cs" />
     <Compile Include="Models\Project.cs" />
     <Compile Include="Models\ProjectMember.cs" />
     <Compile Include="Models\CatalogItem.cs" />
     <Compile Include="Infrastructure\AppSettings.cs" />
+    <Compile Include="Infrastructure\Db.cs" />
     <Compile Include="Infrastructure\TelegramClient.cs" />
+    <Compile Include="Infrastructure\EmailClient.cs" />
     <Compile Include="Infrastructure\ReminderScheduler.cs" />
+    <Compile Include="Infrastructure\GoConnectAutoLogin.cs" />
+    <Compile Include="Infrastructure\GoConnectSession.cs" />
+    <Compile Include="Infrastructure\GoConnectTelegramPoller.cs" />
+    <Compile Include="Infrastructure\GoConnectScheduler.cs" />
     <Compile Include="Models\ReminderModels.cs" />
     <Compile Include="Services\ReminderService.cs" />
+    <Compile Include="Services\GoConnectService.cs" />
+    <Compile Include="Services\GoConnectSyncService.cs" />
     <Compile Include="Controllers\NotificationsController.cs" />
+    <Compile Include="Controllers\GoConnectController.cs" />
+    <Compile Include="Controllers\HrmController.cs" />
+    <Compile Include="Controllers\IntegrationSystemsController.cs" />
+    <Compile Include="Controllers\IntegrationApiController.cs" />
+    <Compile Include="Controllers\MyReportsController.cs" />
+    <Compile Include="Models\MyReportModels.cs" />
+    <Compile Include="Controllers\TeamReportsController.cs" />
+    <Compile Include="Models\TeamReportModels.cs" />
+    <Compile Include="Models\PagedList.cs" />
+    <Compile Include="Models\IntegrationSystem.cs" />
+    <Compile Include="Models\HrmApiModels.cs" />
+    <Compile Include="Infrastructure\IntegrationKey.cs" />
     <Compile Include="Models\WorkLog.cs" />
     <Compile Include="Controllers\WorkLogsController.cs" />
     <Compile Include="Infrastructure\WeekHelper.cs" />
@@ -131,6 +160,8 @@
       Chỉ dữ liệu mẫu được đưa vào kho mã và gói publish. Dữ liệu thật nằm trực tiếp
       trong App_Data, không theo dõi bởi git; lần đầu chạy JsonStore tự chép từ seed sang.
     -->
+    <Content Include="App_Data\docs\Huong-dan-tich-hop-API-HRM.md" />
+    <Content Include="App_Data\docs\HRM-API.postman_collection.json" />
     <Content Include="App_Data\seed\members.json" />
     <Content Include="App_Data\seed\projects.json" />
     <Content Include="App_Data\seed\projectMembers.json" />
@@ -152,6 +183,15 @@
     <Content Include="Views\Projects\Edit.cshtml" />
     <Content Include="Views\Shared\_ParticipationRow.cshtml" />
     <Content Include="Views\Notifications\Index.cshtml" />
+    <Content Include="Views\GoConnect\Index.cshtml" />
+    <Content Include="Views\Shared\_Pager.cshtml" />
+    <Content Include="Views\Hrm\Employees.cshtml" />
+    <Content Include="Views\Hrm\Workplaces.cshtml" />
+    <Content Include="Views\Hrm\Positions.cshtml" />
+    <Content Include="Views\MyReports\Index.cshtml" />
+    <Content Include="Views\TeamReports\Index.cshtml" />
+    <Content Include="Views\IntegrationSystems\Index.cshtml" />
+    <Content Include="Views\IntegrationSystems\Edit.cshtml" />
     <Content Include="App_Config\secrets.example.config" />
     <Content Include="Views\WorkLogs\Timeline.cshtml" />
     <Content Include="Views\WorkLogs\Edit.cshtml" />
@@ -163,6 +203,7 @@
     <Content Include="Views\Assignments\Edit.cshtml" />
     <Content Include="Views\Users\Index.cshtml" />
     <Content Include="Views\Users\Edit.cshtml" />
+    <Content Include="Views\Users\Provision.cshtml" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

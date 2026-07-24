@@ -1,53 +1,123 @@
 ﻿@model TTKDGP.ProjectManager.Models.NotificationsViewModel
 @using TTKDGP.ProjectManager.Models
 @{
-    ViewBag.Title = "Nhắc báo cáo qua Telegram";
+    ViewBag.Title = "Nhắc báo cáo";
 }
 
 <div class="page-head">
     <div>
-        <h1>Nhắc báo cáo qua Telegram</h1>
+        <h1>Nhắc báo cáo</h1>
         <p>
-            Thứ Hai @Model.MondayHour giờ rà soát tuần trước ·
+            <strong>Gửi vào nhóm Telegram:</strong>
+            thứ Hai @Model.MondayHour giờ rà soát tuần trước ·
             thứ Sáu @Model.FridayHour giờ rà soát tuần này ·
             thứ Bảy @Model.SaturdayHour giờ tổng hợp cho anh Tân.
-            Tất cả gửi vào nhóm. Dự án ở trạng thái <em>coi như đã dừng</em> không bị nhắc.
         </p>
+        <p>
+            <strong>Gửi mail riêng cho từng thành viên:</strong>
+            thứ Sáu @Model.MemberEmailHour giờ, liệt kê tên dự án và email PM cần gửi báo cáo về
+            để PM tổng hợp lên hệ thống.
+        </p>
+        <p>Dự án ở trạng thái <em>coi như đã dừng</em> không bị nhắc.</p>
     </div>
 </div>
 
+@* Hai bot Telegram tách bạch: bot Thư ký lo nhắc báo cáo, bot HRM lo đăng nhập GoConnect.
+   Trình bày cạnh nhau để nhìn một cái là thấy tin nào đi ra từ bot nào. *@
+@helper BotCell(string botName, string error, bool hasToken)
+{
+    if (!string.IsNullOrEmpty(botName))
+    {
+        <strong>@@@botName</strong>
+    }
+    else if (!string.IsNullOrEmpty(error))
+    {
+        <span class="field-error">@error</span>
+    }
+    else if (!hasToken)
+    {
+        <span class="muted">(chưa đặt token)</span>
+    }
+}
+
+@helper ChatCell(string chatId, bool hasChatId)
+{
+    if (!hasChatId)
+    {
+        <span class="badge badge-waiting">chưa đặt</span>
+    }
+    else
+    {
+        @* Telegram đánh id âm cho nhóm, id dương cho chat riêng *@
+        <span class="muted">@(chatId.StartsWith("-") ? "Nhóm" : "Chat riêng") · </span><text>@chatId</text>
+    }
+}
+
 <div class="card">
-    <div class="card-head">Kết nối</div>
+    <div class="card-head">
+        <span>Kết nối Telegram</span>
+        <span class="muted" style="font-weight:400">Hệ thống dùng 2 bot riêng biệt</span>
+    </div>
     <div class="card-body">
-        <div class="form-grid">
-            <div>
-                <strong>Trạng thái:</strong><br />
-                @if (Model.TelegramEnabled && Model.HasToken && Model.HasChatId)
-                {
-                    <span class="badge badge-active">Sẵn sàng gửi</span>
-                }
-                else
-                {
-                    <span class="badge badge-waiting">Chưa gửi được</span>
-                }
+        @if (Model.SharesBotWithReminder)
+        {
+            <div class="alert alert-danger">
+                <strong>Hai chức năng đang dùng chung một bot.</strong>
+                Tin nhắc báo cáo và tin hỏi mã OTP sẽ cùng đi ra từ <strong>@@@Model.BotName</strong>.
+                Khai báo <code>GoConnect:BotToken</code> riêng trong
+                <code>App_Config\secrets.config</code> để tách ra.
             </div>
-            <div>
-                <strong>Bot:</strong><br />
-                @if (!string.IsNullOrEmpty(Model.BotName))
-                {
-                    <text>@@@Model.BotName</text>
-                }
-                else if (!string.IsNullOrEmpty(Model.ConnectionError))
-                {
-                    <span class="field-error">@Model.ConnectionError</span>
-                }
-                else
-                {
-                    <span class="muted">(chưa đặt token)</span>
-                }
-            </div>
-            <div><strong>Token:</strong><br />@Model.MaskedToken</div>
-            <div><strong>Chat id nhóm:</strong><br />@Model.ChatId</div>
+        }
+
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th>Việc</th>
+                        <th>Bot</th>
+                        <th>Token</th>
+                        <th>Nơi nhận</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Nhắc báo cáo</strong><br /><span class="muted">thứ Hai · thứ Sáu · thứ Bảy</span></td>
+                        <td>@BotCell(Model.BotName, Model.ConnectionError, Model.HasToken)</td>
+                        <td class="nowrap">@Model.MaskedToken</td>
+                        <td>@ChatCell(Model.ChatId, Model.HasChatId)</td>
+                        <td>
+                            @if (Model.TelegramEnabled && Model.HasToken && Model.HasChatId)
+                            {
+                                <span class="badge badge-active">Sẵn sàng gửi</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-waiting">Chưa gửi được</span>
+                            }
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Đăng nhập GoConnect</strong><br /><span class="muted">hỏi mã OTP mỗi sáng</span></td>
+                        <td>@BotCell(Model.GoConnectBotName, Model.GoConnectConnectionError, Model.GoConnectHasToken)</td>
+                        <td class="nowrap">@Model.GoConnectMaskedToken</td>
+                        <td>@ChatCell(Model.GoConnectChatId, Model.GoConnectHasChatId)</td>
+                        <td>
+                            @if (Model.GoConnectEnabled && Model.GoConnectHasToken && Model.GoConnectHasChatId)
+                            {
+                                <span class="badge badge-active">Sẵn sàng gửi</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-inactive">Đang tắt</span>
+                            }
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="form-grid" style="margin-top:16px">
             <div class="full">
                 <strong>Lịch tự động:</strong>
                 @if (Model.AutoSend)
@@ -119,6 +189,155 @@
                         }
                     </tbody>
                 </table>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-head">
+        <span>Mail riêng cho từng thành viên</span>
+        <span class="muted" style="font-weight:400">Sáng thứ Sáu @Model.MemberEmailHour giờ</span>
+    </div>
+    <div class="card-body">
+        <div class="form-grid">
+            <div>
+                <strong>Trạng thái:</strong><br />
+                @if (Model.EmailReady)
+                {
+                    <span class="badge badge-active">Sẵn sàng gửi</span>
+                }
+                else
+                {
+                    <span class="badge badge-waiting">Chưa gửi được</span>
+                }
+            </div>
+            <div><strong>Máy chủ:</strong><br />@Model.EmailHost : @Model.EmailPort</div>
+            <div><strong>Tài khoản:</strong><br />@Model.EmailUser</div>
+            <div><strong>Mật khẩu:</strong><br />@Model.EmailMaskedPassword</div>
+            <div class="full">
+                <strong>Người gửi hiển thị:</strong><br />
+                @Model.EmailDisplayName &lt;@Model.EmailFrom&gt;
+            </div>
+        </div>
+
+        @if (!Model.EmailReady)
+        {
+            <div class="alert alert-danger" style="margin-top:16px;margin-bottom:0">
+                <strong>Chưa gửi được mail.</strong> Điền vào <code>App_Config\secrets.config</code>:
+                <ul style="margin:8px 0 0;padding-left:20px">
+                    @if (!Model.EmailEnabled)
+                    {
+                        <li><code>Email:Enabled</code> = <code>true</code></li>
+                    }
+                    @if (!Model.EmailHasAccount)
+                    {
+                        <li><code>Email:Password</code> — mật khẩu hộp thư gửi</li>
+                    }
+                    @if (!Model.EmailHasHost)
+                    {
+                        <li><code>Email:Host</code> — máy chủ SMTP (đặt trong Web.config)</li>
+                    }
+                </ul>
+            </div>
+        }
+
+        <hr />
+
+        @{ var noEmailCount = Model.MemberReminders.Count(r => !r.CanSend); }
+
+        <div class="stats" style="margin-bottom:16px">
+            <div class="stat">
+                <div class="stat-value">@Model.MemberReminders.Count(r => r.CanSend)</div>
+                <div class="stat-label">Người sẽ nhận mail</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">@Model.MemberReminders.Sum(r => r.Projects.Count)</div>
+                <div class="stat-label">Lượt dự án cần báo cáo</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">@noEmailCount</div>
+                <div class="stat-label">Chưa có email</div>
+            </div>
+        </div>
+
+        @if (Model.MemberReminders.Count == 0)
+        {
+            <p class="muted">Mọi thành viên đều đã báo cáo trong tuần này — không cần gửi mail.</p>
+        }
+        else
+        {
+            if (noEmailCount > 0)
+            {
+                <div class="alert alert-danger">
+                    Có @noEmailCount người cần báo cáo nhưng chưa điền email nên sẽ không nhận được mail.
+                    Bổ sung ở màn hình <a href="@Url.Action("Index", "Members")">Thành viên</a>.
+                </div>
+            }
+
+            <div class="table-wrap">
+                <table class="data">
+                    <thead>
+                        <tr>
+                            <th>Thành viên</th>
+                            <th>Email nhận</th>
+                            <th class="num">Dự án</th>
+                            <th>Gửi báo cáo cho PM</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in Model.MemberReminders)
+                        {
+                            <tr>
+                                <td><strong>@r.MemberName</strong></td>
+                                <td>
+                                    @if (r.CanSend)
+                                    {
+                                        <span>@r.Email</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-waiting">Chưa có email</span>
+                                    }
+                                </td>
+                                <td class="num">@r.Projects.Count</td>
+                                <td class="muted">
+                                    @string.Join(" · ", r.Projects.Select(p => p.ProjectName + " → " + p.PmName))
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        <div class="form-actions">
+            @using (Html.BeginForm("SendMemberEmails", "Notifications", FormMethod.Post, new { @class = "inline-form" }))
+            {
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-primary"
+                        @(Model.EmailReady && Model.MemberReminders.Any(r => r.CanSend) ? "" : "disabled=disabled")
+                        onclick="return confirm('Gửi mail nhắc ngay cho từng thành viên trong danh sách trên?');">
+                    Gửi mail ngay
+                </button>
+            }
+        </div>
+
+        <hr />
+
+        @using (Html.BeginForm("SendTestEmail", "Notifications", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            <div class="filters">
+                <div class="filter-field grow">
+                    <label for="to">Gửi thử tới địa chỉ</label>
+                    <input type="email" id="to" name="to" placeholder="ten@vnpt.vn" />
+                </div>
+                <div class="btn-row" style="padding-bottom:1px">
+                    <button type="submit" class="btn btn-default" @(Model.EmailReady ? "" : "disabled=disabled")>
+                        Gửi mail thử
+                    </button>
+                </div>
             </div>
         }
     </div>
@@ -197,7 +416,7 @@
                         <th>Kỳ nhắc</th>
                         <th>Tuần</th>
                         <th class="num">Dự án</th>
-                        <th class="num">PM</th>
+                        <th class="num">PM / Người nhận</th>
                         <th>Cách gửi</th>
                         <th>Kết quả</th>
                     </tr>
@@ -207,12 +426,21 @@
                     {
                         <tr>
                             <td class="nowrap">@log.SentAt.ToString("dd/MM/yyyy HH:mm")</td>
-                            <td>
-                                @(log.Kind == ReminderKind.MondayPreviousWeek ? "Thứ Hai" : "Thứ Sáu")
-                            </td>
+                            <td class="nowrap">@log.KindLabel</td>
                             <td class="nowrap muted">Tuần @log.Week/@log.Year</td>
                             <td class="num">@log.MissingProjectCount</td>
-                            <td class="num">@log.PmCount</td>
+                            <td class="num">
+                                @if (log.IsEmailKind)
+                                {
+                                    <span title="Đã gửi @log.SentCount mail trên @log.PmCount người cần nhắc">
+                                        @log.SentCount/@log.PmCount
+                                    </span>
+                                }
+                                else
+                                {
+                                    @log.PmCount
+                                }
+                            </td>
                             <td class="muted">
                                 @if (log.IsManual)
                                 {

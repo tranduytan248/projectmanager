@@ -67,12 +67,13 @@ namespace TTKDGP.ProjectManager.Models
 
         public bool IsAdmin
         {
-            get { return string.Equals(Role, Models.Roles.Admin, StringComparison.OrdinalIgnoreCase); }
+            get { return Models.Roles.Has(Role, Models.Roles.Admin); }
         }
 
+        /// <summary>Tên các quyền của tài khoản, nhiều quyền thì nối bằng dấu phẩy.</summary>
         public string RoleDisplay
         {
-            get { return IsAdmin ? "Quản trị" : "Quản lý"; }
+            get { return Models.Roles.Display(Role); }
         }
 
         public ProfilePageViewModel()
@@ -96,9 +97,24 @@ namespace TTKDGP.ProjectManager.Models
         [Display(Name = "Họ và tên")]
         public string FullName { get; set; }
 
-        [Required(ErrorMessage = "Vui lòng chọn phân quyền")]
+        [Display(Name = "Email")]
+        [StringLength(120, ErrorMessage = "Email tối đa 120 ký tự")]
+        [EmailAddress(ErrorMessage = "Email không hợp lệ")]
+        public string Email { get; set; }
+
+        /// <summary>
+        /// Các quyền được chọn (chọn được nhiều). Lưu xuống <see cref="User.Role"/> dưới dạng
+        /// chuỗi ngăn bởi dấu phẩy.
+        /// </summary>
         [Display(Name = "Phân quyền")]
-        public string Role { get; set; }
+        public string[] SelectedRoles { get; set; }
+
+        /// <summary>
+        /// Nhân sự tương ứng. Bắt buộc với quyền Báo cáo công việc để biết tài khoản được báo
+        /// cáo cho phân công nào; các quyền khác có thể bỏ trống.
+        /// </summary>
+        [Display(Name = "Nhân sự tương ứng")]
+        public int MemberId { get; set; }
 
         [DataType(DataType.Password)]
         [StringLength(100, MinimumLength = 6, ErrorMessage = "Mật khẩu tối thiểu 6 ký tự")]
@@ -114,6 +130,54 @@ namespace TTKDGP.ProjectManager.Models
         public bool IsActive { get; set; }
 
         public bool IsNew { get { return Id == 0; } }
+    }
+
+    /// <summary>Một nhân sự sẽ được mở tài khoản.</summary>
+    public class UserProvisionRow
+    {
+        public int MemberId { get; set; }
+        public string MemberName { get; set; }
+        public string Email { get; set; }
+
+        /// <summary>Tên đăng nhập suy ra từ email (bỏ phần đuôi miền).</summary>
+        public string UserName { get; set; }
+    }
+
+    /// <summary>Một nhân sự bị bỏ qua, kèm lý do để quản trị biết đường xử lý tay.</summary>
+    public class UserProvisionSkip
+    {
+        public string MemberName { get; set; }
+        public string Email { get; set; }
+        public string Reason { get; set; }
+    }
+
+    /// <summary>
+    /// Xem trước rồi mở hàng loạt tài khoản cho nhân sự chưa có. Xem trước trước khi ghi để
+    /// quản trị nhìn thấy đúng những tài khoản nào sắp sinh ra, tránh tạo nhầm bản trùng.
+    /// </summary>
+    public class UserProvisionViewModel
+    {
+        [Required(ErrorMessage = "Vui lòng nhập mật khẩu khởi tạo")]
+        [DataType(DataType.Password)]
+        [StringLength(100, MinimumLength = 6, ErrorMessage = "Mật khẩu tối thiểu 6 ký tự")]
+        [Display(Name = "Mật khẩu khởi tạo")]
+        public string Password { get; set; }
+
+        public List<UserProvisionRow> ToCreate { get; set; }
+        public List<UserProvisionSkip> Skipped { get; set; }
+
+        /// <summary>
+        /// Tài khoản đang có nhưng chưa gắn nhân sự nào. Nêu ra để quản trị gắn tay trước,
+        /// nếu không sẽ đẻ thêm tài khoản thứ hai cho cùng một người.
+        /// </summary>
+        public List<User> UnlinkedUsers { get; set; }
+
+        public UserProvisionViewModel()
+        {
+            ToCreate = new List<UserProvisionRow>();
+            Skipped = new List<UserProvisionSkip>();
+            UnlinkedUsers = new List<User>();
+        }
     }
 
     /// <summary>Một dòng trên màn hình tổng hợp ngoài FrontEnd.</summary>

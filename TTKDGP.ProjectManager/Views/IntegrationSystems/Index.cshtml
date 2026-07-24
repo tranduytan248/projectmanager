@@ -1,0 +1,147 @@
+﻿@model List<TTKDGP.ProjectManager.Models.IntegrationSystem>
+@using TTKDGP.ProjectManager.Infrastructure
+@{
+    ViewBag.Title = "Hệ thống tích hợp";
+}
+
+<div class="page-head">
+    <div>
+        <h1>Hệ thống tích hợp</h1>
+        <p>
+            Các hệ thống bên ngoài được phép trao đổi dữ liệu. Mỗi hệ thống có một khoá bí mật
+            để ký checksum khi tích hợp. Tổng cộng @Model.Count hệ thống.
+        </p>
+    </div>
+    <a class="btn btn-primary" href="@Url.Action("Edit", "IntegrationSystems")">+ Thêm hệ thống</a>
+</div>
+
+<details class="card api-help">
+    <summary>Hướng dẫn tích hợp API lấy dữ liệu HRM</summary>
+    <div class="card-body">
+        <p>
+            Đối tác gọi <code>POST /api/hrm</code>, thân là JSON, xác thực bằng checksum SHA-256.
+            Endpoint không cần đăng nhập — chỉ cần checksum đúng và hệ thống đang hoạt động.
+        </p>
+
+        <p class="hint" style="margin-bottom:6px"><strong>Các trường bản tin (đúng thứ tự tạo checksum):</strong></p>
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr><th class="num">#</th><th>Trường</th><th>Bắt buộc</th><th>Mô tả</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td class="num">1</td><td><code>partnerCode</code></td><td>Có</td><td>Mã hệ thống (cột Mã ở bảng trên)</td></tr>
+                    <tr><td class="num">2</td><td><code>requestId</code></td><td>Có</td><td>Mã yêu cầu duy nhất mỗi lần gọi</td></tr>
+                    <tr><td class="num">3</td><td><code>requestTime</code></td><td>Có</td><td>Thời gian gửi, dạng <code>yyyyMMddHHmmss</code></td></tr>
+                    <tr><td class="num">4</td><td><code>resource</code></td><td>Có</td><td><code>employees</code> · <code>workplaces</code> · <code>positions</code></td></tr>
+                    <tr><td class="num">5</td><td><code>page</code></td><td>Không</td><td>Trang, mặc định 1</td></tr>
+                    <tr><td class="num">6</td><td><code>pageSize</code></td><td>Không</td><td>Số dòng/trang, mặc định 100, tối đa 500</td></tr>
+                    <tr><td class="num">7</td><td><code>keyword</code></td><td>Không</td><td>Từ khoá lọc</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p class="hint" style="margin:12px 0 6px"><strong>Cách tạo checksum:</strong></p>
+        <pre class="message-preview">checksum = SHA256( partnerCode|requestId|requestTime|resource|page|pageSize|keyword|<khoá bí mật> )</pre>
+        <ul style="margin:6px 0 0;padding-left:20px;font-size:13px;color:var(--text-muted)">
+            <li>Ghép các trường 1→7 theo đúng thứ tự, ngăn nhau bởi ký tự <code>|</code>.</li>
+            <li>Trường không bắt buộc mà bỏ trống thì để rỗng nhưng vẫn giữ dấu <code>|</code>.</li>
+            <li>Khoá bí mật của hệ thống đứng cuối cùng. Kết quả băm là chuỗi hex thường.</li>
+        </ul>
+
+        <p class="hint" style="margin:12px 0 6px"><strong>Ví dụ thân request:</strong></p>
+        <pre class="message-preview">{
+  "partnerCode": "CRM",
+  "requestId": "REQ-20260724-0001",
+  "requestTime": "20260724013000",
+  "resource": "employees",
+  "page": 1,
+  "pageSize": 100,
+  "keyword": "",
+  "checksum": "&lt;chuỗi SHA-256&gt;"
+}</pre>
+        <p class="hint">
+            Phản hồi có <code>code</code> = <code>00</code> khi thành công, kèm <code>data</code>,
+            phân trang và <code>checksum</code> của phản hồi. Mã lỗi: <code>01</code> sai checksum,
+            <code>02</code> hệ thống không tồn tại/đang khoá, <code>03</code> tham số sai.
+        </p>
+    </div>
+</details>
+
+<div class="card">
+    <div class="card-body">
+        @using (Html.BeginForm("Index", "IntegrationSystems", FormMethod.Get))
+        {
+            <div class="filters">
+                <div class="filter-field grow">
+                    <label for="keyword">Tìm kiếm</label>
+                    <input type="search" id="keyword" name="keyword" value="@ViewBag.Keyword"
+                           placeholder="Mã hoặc tên hệ thống..." />
+                </div>
+                <div class="btn-row" style="padding-bottom:1px">
+                    <button type="submit" class="btn btn-primary">Lọc</button>
+                    <a class="btn btn-default" href="@Url.Action("Index", "IntegrationSystems")">Xoá lọc</a>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="card">
+    @if (Model.Count == 0)
+    {
+        <div class="empty-state">Chưa có hệ thống tích hợp nào.</div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th>Mã</th>
+                        <th>Tên hệ thống</th>
+                        <th>Khoá bí mật</th>
+                        <th>Trạng thái</th>
+                        <th>Ngày tạo</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in Model)
+                    {
+                        <tr>
+                            <td><strong>@s.Code</strong></td>
+                            <td>@s.Name</td>
+                            <td class="muted">
+                                @* Chỉ hiện phần đầu khoá cho gọn; xem/sao chép đủ ở trang sửa. *@
+                                <code class="key-peek">@ViewHelpers.KeyPeek(s.PrivateKey)</code>
+                            </td>
+                            <td>
+                                @if (s.IsActive)
+                                {
+                                    <span class="badge badge-active">Đang hoạt động</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-inactive">Ngừng</span>
+                                }
+                            </td>
+                            <td class="muted nowrap">@s.CreatedAt.ToString("dd/MM/yyyy")</td>
+                            <td class="actions">
+                                <a class="btn btn-default btn-sm" href="@Url.Action("Edit", "IntegrationSystems", new { id = s.Id })">Sửa</a>
+                                @using (Html.BeginForm("Delete", "IntegrationSystems", new { id = s.Id }, FormMethod.Post, new { @class = "inline-form" }))
+                                {
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-danger btn-sm"
+                                            onclick="return confirm('Xoá hệ thống &quot;@s.Code&quot;? Khoá bí mật của nó cũng mất, hệ thống đối tác sẽ không tích hợp được nữa.');">
+                                        Xoá
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

@@ -30,7 +30,7 @@ namespace TTKDGP.ProjectManager.Controllers
         }
 
         [HttpGet]
-        [AppAuthorize]
+        [AppAuthorize(AllowedRoles = Roles.Management)]
         public ActionResult Edit(int? id, int? assignmentId)
         {
             WorkLog log;
@@ -78,7 +78,7 @@ namespace TTKDGP.ProjectManager.Controllers
         }
 
         [HttpPost]
-        [AppAuthorize]
+        [AppAuthorize(AllowedRoles = Roles.Management)]
         [ValidateAntiForgeryToken]
         public ActionResult Edit(WorkLogEditViewModel model)
         {
@@ -155,7 +155,7 @@ namespace TTKDGP.ProjectManager.Controllers
         }
 
         [HttpPost]
-        [AppAuthorize]
+        [AppAuthorize(AllowedRoles = Roles.Management)]
         [ValidateAntiForgeryToken]
         public ActionResult Delete(int id)
         {

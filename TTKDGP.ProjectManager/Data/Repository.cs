@@ -7,57 +7,63 @@ using TTKDGP.ProjectManager.Models;
 namespace TTKDGP.ProjectManager.Data
 {
     /// <summary>
-    /// Điểm truy cập duy nhất tới các kho JSON, kèm các phép nối dữ liệu dùng chung.
+    /// Điểm truy cập duy nhất tới các kho dữ liệu SQL, kèm các phép nối dữ liệu dùng chung.
     /// </summary>
     public static class Repository
     {
-        private static readonly Lazy<JsonStore<Member>> _members =
-            new Lazy<JsonStore<Member>>(() => new JsonStore<Member>(DataPath("members.json")));
+        private static readonly Lazy<SqlStore<Member>> _members =
+            new Lazy<SqlStore<Member>>(() => new SqlStore<Member>("Members"));
 
-        private static readonly Lazy<JsonStore<Project>> _projects =
-            new Lazy<JsonStore<Project>>(() => new JsonStore<Project>(DataPath("projects.json")));
+        private static readonly Lazy<SqlStore<Project>> _projects =
+            new Lazy<SqlStore<Project>>(() => new SqlStore<Project>("Projects"));
 
-        private static readonly Lazy<JsonStore<ProjectMember>> _assignments =
-            new Lazy<JsonStore<ProjectMember>>(() => new JsonStore<ProjectMember>(DataPath("projectMembers.json")));
+        private static readonly Lazy<SqlStore<ProjectMember>> _assignments =
+            new Lazy<SqlStore<ProjectMember>>(() => new SqlStore<ProjectMember>("ProjectMembers"));
 
-        private static readonly Lazy<JsonStore<User>> _users =
-            new Lazy<JsonStore<User>>(() => new JsonStore<User>(DataPath("users.json")));
+        private static readonly Lazy<SqlStore<User>> _users =
+            new Lazy<SqlStore<User>>(() => new SqlStore<User>("Users"));
 
-        private static readonly Lazy<JsonStore<ProjectType>> _projectTypes =
-            new Lazy<JsonStore<ProjectType>>(() => new JsonStore<ProjectType>(DataPath("projectTypes.json")));
+        private static readonly Lazy<SqlStore<ProjectType>> _projectTypes =
+            new Lazy<SqlStore<ProjectType>>(() => new SqlStore<ProjectType>("ProjectTypes"));
 
-        private static readonly Lazy<JsonStore<ProjectStatus>> _projectStatuses =
-            new Lazy<JsonStore<ProjectStatus>>(() => new JsonStore<ProjectStatus>(DataPath("projectStatuses.json")));
+        private static readonly Lazy<SqlStore<ProjectStatus>> _projectStatuses =
+            new Lazy<SqlStore<ProjectStatus>>(() => new SqlStore<ProjectStatus>("ProjectStatuses"));
 
-        private static readonly Lazy<JsonStore<WorkStatus>> _workStatuses =
-            new Lazy<JsonStore<WorkStatus>>(() => new JsonStore<WorkStatus>(DataPath("workStatuses.json")));
+        private static readonly Lazy<SqlStore<WorkStatus>> _workStatuses =
+            new Lazy<SqlStore<WorkStatus>>(() => new SqlStore<WorkStatus>("WorkStatuses"));
 
-        private static readonly Lazy<JsonStore<MemberRole>> _memberRoles =
-            new Lazy<JsonStore<MemberRole>>(() => new JsonStore<MemberRole>(DataPath("memberRoles.json")));
+        private static readonly Lazy<SqlStore<MemberRole>> _memberRoles =
+            new Lazy<SqlStore<MemberRole>>(() => new SqlStore<MemberRole>("MemberRoles"));
 
-        private static readonly Lazy<JsonStore<WorkLog>> _workLogs =
-            new Lazy<JsonStore<WorkLog>>(() => new JsonStore<WorkLog>(DataPath("workLogs.json")));
+        private static readonly Lazy<SqlStore<WorkLog>> _workLogs =
+            new Lazy<SqlStore<WorkLog>>(() => new SqlStore<WorkLog>("WorkLogs"));
 
-        private static readonly Lazy<JsonStore<ReminderLog>> _reminderLogs =
-            new Lazy<JsonStore<ReminderLog>>(() => new JsonStore<ReminderLog>(DataPath("reminderLogs.json")));
+        private static readonly Lazy<SqlStore<ReminderLog>> _reminderLogs =
+            new Lazy<SqlStore<ReminderLog>>(() => new SqlStore<ReminderLog>("ReminderLogs"));
 
-        public static JsonStore<WorkLog> WorkLogs { get { return _workLogs.Value; } }
-        public static JsonStore<ReminderLog> ReminderLogs { get { return _reminderLogs.Value; } }
+        private static readonly Lazy<SqlStore<IntegrationSystem>> _integrationSystems =
+            new Lazy<SqlStore<IntegrationSystem>>(() => new SqlStore<IntegrationSystem>("IntegrationSystems"));
 
-        public static JsonStore<Member> Members { get { return _members.Value; } }
-        public static JsonStore<Project> Projects { get { return _projects.Value; } }
-        public static JsonStore<ProjectMember> Assignments { get { return _assignments.Value; } }
-        public static JsonStore<User> Users { get { return _users.Value; } }
+        public static SqlStore<WorkLog> WorkLogs { get { return _workLogs.Value; } }
+        public static SqlStore<ReminderLog> ReminderLogs { get { return _reminderLogs.Value; } }
 
-        public static JsonStore<ProjectType> ProjectTypes { get { return _projectTypes.Value; } }
-        public static JsonStore<ProjectStatus> ProjectStatuses { get { return _projectStatuses.Value; } }
-        public static JsonStore<WorkStatus> WorkStatuses { get { return _workStatuses.Value; } }
-        public static JsonStore<MemberRole> MemberRoles { get { return _memberRoles.Value; } }
+        /// <summary>Các hệ thống bên ngoài được cấu hình để tích hợp (mã, tên, khoá bí mật).</summary>
+        public static SqlStore<IntegrationSystem> IntegrationSystems { get { return _integrationSystems.Value; } }
+
+        public static SqlStore<Member> Members { get { return _members.Value; } }
+        public static SqlStore<Project> Projects { get { return _projects.Value; } }
+        public static SqlStore<ProjectMember> Assignments { get { return _assignments.Value; } }
+        public static SqlStore<User> Users { get { return _users.Value; } }
+
+        public static SqlStore<ProjectType> ProjectTypes { get { return _projectTypes.Value; } }
+        public static SqlStore<ProjectStatus> ProjectStatuses { get { return _projectStatuses.Value; } }
+        public static SqlStore<WorkStatus> WorkStatuses { get { return _workStatuses.Value; } }
+        public static SqlStore<MemberRole> MemberRoles { get { return _memberRoles.Value; } }
 
         // ---------- Danh mục dùng chung ----------
 
         /// <summary>Tên các mục đang sử dụng của một danh mục, theo thứ tự hiển thị — dùng đổ dropdown.</summary>
-        public static List<string> ActiveNames<T>(JsonStore<T> store) where T : CatalogItem
+        public static List<string> ActiveNames<T>(SqlStore<T> store) where T : CatalogItem
         {
             return store.All()
                 .Where(x => x.IsActive)
@@ -71,7 +77,7 @@ namespace TTKDGP.ProjectManager.Data
         /// Bổ sung giá trị hiện tại vào danh sách chọn nếu nó đã bị ẩn hoặc xoá khỏi danh mục,
         /// tránh việc mở bản ghi cũ ra sửa lại làm mất giá trị đang có.
         /// </summary>
-        public static List<string> NamesForEdit<T>(JsonStore<T> store, string currentValue) where T : CatalogItem
+        public static List<string> NamesForEdit<T>(SqlStore<T> store, string currentValue) where T : CatalogItem
         {
             var names = ActiveNames(store);
             if (!string.IsNullOrWhiteSpace(currentValue) &&
@@ -98,7 +104,7 @@ namespace TTKDGP.ProjectManager.Data
         /// Trả về số bản ghi đã cập nhật.
         /// </summary>
         public static int RenameUsage<TRecord>(
-            JsonStore<TRecord> store,
+            SqlStore<TRecord> store,
             Func<TRecord, string> read,
             Action<TRecord, string> write,
             string oldName,

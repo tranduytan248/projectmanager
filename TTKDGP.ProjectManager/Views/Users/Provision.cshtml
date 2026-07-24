@@ -1,0 +1,145 @@
+﻿@model TTKDGP.ProjectManager.Models.UserProvisionViewModel
+@{
+    ViewBag.Title = "Mở tài khoản cho nhân sự";
+}
+
+<div class="page-head">
+    <div>
+        <h1>Mở tài khoản cho nhân sự</h1>
+        <p>
+            Đối chiếu danh sách nhân sự đang làm việc với tài khoản hiện có. Tên đăng nhập lấy từ
+            email, bỏ phần <strong>@@vnpt.vn</strong>. Tài khoản mở ra mang quyền
+            <strong>Báo cáo công việc</strong> và được gắn sẵn với nhân sự tương ứng.
+        </p>
+    </div>
+    <a class="btn btn-default" href="@Url.Action("Index", "Users")">Về danh sách</a>
+</div>
+
+@Html.ValidationSummary(true)
+
+<div class="card">
+    <div class="card-head">
+        <span>Sẽ mở tài khoản (@Model.ToCreate.Count)</span>
+    </div>
+
+    @if (Model.ToCreate.Count == 0)
+    {
+        <div class="empty-state">
+            Không có nhân sự nào cần mở tài khoản — mọi người đang làm việc đều đã có tài khoản
+            hoặc bị bỏ qua vì lý do nêu bên dưới.
+        </div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th>Nhân sự</th>
+                        <th>Email</th>
+                        <th>Tên đăng nhập</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.ToCreate)
+                    {
+                        <tr>
+                            <td>@row.MemberName</td>
+                            <td class="muted">@row.Email</td>
+                            <td><strong>@row.UserName</strong></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        using (Html.BeginForm("Provision", "Users", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            <div class="card-body">
+                <div class="form-field" style="max-width:320px">
+                    <label for="Password">Mật khẩu khởi tạo</label>
+                    @Html.PasswordFor(m => m.Password, new { id = "Password", value = Model.Password })
+                    @Html.ValidationMessageFor(m => m.Password)
+                    <span class="hint">Dùng chung cho tất cả tài khoản mở lần này. Nhắc mọi người đổi sau lần đăng nhập đầu.</span>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary"
+                            onclick="return confirm('Mở @Model.ToCreate.Count tài khoản với mật khẩu vừa nhập?');">
+                        Mở @Model.ToCreate.Count tài khoản
+                    </button>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@if (Model.Skipped.Count > 0)
+{
+    <div class="card">
+        <div class="card-head">
+            <span>Bỏ qua (@Model.Skipped.Count)</span>
+            <span class="muted" style="font-weight:400">Cần xử lý tay</span>
+        </div>
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th>Nhân sự</th>
+                        <th>Email</th>
+                        <th>Lý do</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in Model.Skipped)
+                    {
+                        <tr>
+                            <td>@s.MemberName</td>
+                            <td class="muted">@(string.IsNullOrWhiteSpace(s.Email) ? "—" : s.Email)</td>
+                            <td>@s.Reason</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@if (Model.UnlinkedUsers.Count > 0)
+{
+    <div class="card">
+        <div class="card-head">
+            <span>Tài khoản chưa gắn nhân sự (@Model.UnlinkedUsers.Count)</span>
+        </div>
+        <div class="card-body">
+            <p class="hint" style="margin-top:0">
+                Những tài khoản này chưa trỏ về nhân sự nào. Nếu chủ tài khoản thực ra đã có tên
+                trong danh sách nhân sự thì nên gắn lại trước khi mở hàng loạt, tránh cùng một
+                người có hai tài khoản.
+            </p>
+        </div>
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th>Tên đăng nhập</th>
+                        <th>Họ và tên</th>
+                        <th>Email</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var u in Model.UnlinkedUsers)
+                    {
+                        <tr>
+                            <td><strong>@u.UserName</strong></td>
+                            <td>@u.FullName</td>
+                            <td class="muted">@(string.IsNullOrWhiteSpace(u.Email) ? "—" : u.Email)</td>
+                            <td><a href="@Url.Action("Edit", "Users", new { id = u.Id })">Gắn nhân sự</a></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

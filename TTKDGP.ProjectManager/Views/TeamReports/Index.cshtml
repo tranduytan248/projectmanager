@@ -1,0 +1,261 @@
+﻿@model TTKDGP.ProjectManager.Models.TeamReportViewModel
+@using TTKDGP.ProjectManager.Infrastructure
+@{
+    ViewBag.Title = "Báo cáo nhân sự";
+    var weekOptions = WeekHelper.WeekOptions(Model.Year);
+}
+
+<div class="page-head">
+    <div>
+        <h1>Báo cáo nhân sự</h1>
+        <p>Nội dung công việc theo tuần do nhân sự tham gia dự án tự báo cáo. Xem, tổng hợp rồi gửi lại lên nhóm.</p>
+    </div>
+
+    <div class="week-box">
+        <div class="week-box-title">Tuần @Model.Week/@Model.Year</div>
+        <div class="week-box-range">@Model.WeekFrom.ToString("dd/MM") – @Model.WeekTo.ToString("dd/MM/yyyy")</div>
+        <div class="week-box-stats">
+            @if (Model.TotalReported > 0)
+            {
+                <span class="badge badge-active">@Model.TotalReported đã báo cáo</span>
+            }
+            @if (Model.TotalMissing > 0)
+            {
+                <span class="badge badge-waiting">@Model.TotalMissing chưa báo cáo</span>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        @using (Html.BeginForm("Index", "TeamReports", FormMethod.Get))
+        {
+            <div class="filters">
+                <div class="filter-field">
+                    <label for="year">Năm</label>
+                    <select id="year" name="year">
+                        @foreach (var y in Model.YearOptions)
+                        {
+                            <option value="@y" selected="@(Model.Year == y)">@y</option>
+                        }
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label for="week">Tuần</label>
+                    <select id="week" name="week">
+                        @foreach (var w in weekOptions)
+                        {
+                            <option value="@w.Key" selected="@(Model.Week == w.Key)">@w.Value</option>
+                        }
+                    </select>
+                </div>
+                <div class="filter-field grow">
+                    <label for="projectId">Dự án</label>
+                    <select id="projectId" name="projectId">
+                        <option value="">— Tất cả —</option>
+                        @foreach (var p in Model.ProjectOptions)
+                        {
+                            <option value="@p.Id" selected="@(Model.ProjectId == p.Id)">@p.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="filter-field grow">
+                    <label for="memberId">Nhân sự</label>
+                    <select id="memberId" name="memberId">
+                        <option value="">— Tất cả —</option>
+                        @foreach (var m in Model.MemberOptions)
+                        {
+                            <option value="@m.Id" selected="@(Model.MemberId == m.Id)">@m.FullName</option>
+                        }
+                    </select>
+                </div>
+                @if (Model.CanFilterMine)
+                {
+                    <div class="check-inline">
+                        <input type="checkbox" id="onlyMine" name="onlyMine" value="true" checked="@Model.OnlyMyProjects" />
+                        <label for="onlyMine">Chỉ dự án tôi làm PM</label>
+                    </div>
+                    <input type="hidden" name="onlyMine" value="false" />
+                }
+                <div class="btn-row" style="padding-bottom:1px">
+                    <button type="submit" class="btn btn-primary">Xem</button>
+                    @if (!Model.IsCurrentWeek)
+                    {
+                        <a class="btn btn-default" href="@Url.Action("Index", "TeamReports")">Về tuần hiện tại</a>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@if (Model.Groups.Count == 0)
+{
+    <div class="card">
+        <div class="empty-state">
+            Không có nhân sự nào đang thực hiện hoặc hỗ trợ trong phạm vi đang lọc.<br />
+            Thử bỏ lọc &quot;Chỉ dự án tôi làm PM&quot;, hoặc chọn dự án / nhân sự khác.
+        </div>
+    </div>
+}
+else
+{
+    foreach (var g in Model.Groups)
+    {
+        <div class="card">
+            <div class="card-head">
+                <span>
+                    @g.ProjectName
+                    @if (!string.IsNullOrWhiteSpace(g.Customer))
+                    {
+                        <span class="muted" style="font-weight:400"> · @g.Customer</span>
+                    }
+                </span>
+                <span style="font-weight:400">
+                    @if (!string.IsNullOrWhiteSpace(g.PmName))
+                    {
+                        <span class="muted">PM: @g.PmName</span>
+                    }
+                    @if (g.ReportedCount > 0)
+                    {
+                        <span class="badge badge-active">@g.ReportedCount đã báo cáo</span>
+                    }
+                    @if (g.MissingCount > 0)
+                    {
+                        <span class="badge badge-waiting">@g.MissingCount chưa</span>
+                    }
+                </span>
+            </div>
+            @using (Html.BeginForm("SaveSummary", "TeamReports",
+                new { year = Model.Year, week = Model.Week, projectId = Model.ProjectId, memberId = Model.MemberId, onlyMine = Model.OnlyMyProjects },
+                FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="groupProjectId" value="@g.ProjectId" />
+
+                <div class="table-wrap">
+                    <table class="data">
+                        <thead>
+                            <tr>
+                                <th>Nhân sự</th>
+                                <th class="wrap-text">Nhân sự tự báo cáo</th>
+                                <th class="wrap-text">Tổng hợp ngắn gọn — PM soạn</th>
+                                <th>Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @* Chỉ số chạy liên tục để MVC gom được mảng rows[] khi gửi lên *@
+                            @for (var i = 0; i < g.Members.Count; i++)
+                            {
+                                var m = g.Members[i];
+                                <tr>
+                                    <td>
+                                        <strong>@m.MemberName</strong>
+                                        <div class="muted">@ViewHelpers.OrDash(m.Role)</div>
+                                        @if (m.ReportedAt.HasValue)
+                                        {
+                                            <div class="muted" style="font-size:12px">
+                                                @m.ReportedAt.Value.ToString("HH:mm dd/MM")
+                                                @if (!string.IsNullOrWhiteSpace(m.EditedBy))
+                                                {
+                                                    <text> · @m.EditedBy sửa</text>
+                                                }
+                                                else if (!string.IsNullOrWhiteSpace(m.ReportedBy))
+                                                {
+                                                    <text> · @m.ReportedBy</text>
+                                                }
+                                            </div>
+                                        }
+                                    </td>
+                                    <td class="wrap-text">
+                                        <input type="hidden" name="rows[@i].AssignmentId" value="@m.AssignmentId" />
+                                        @if (m.HasReport)
+                                        {
+                                            <div style="white-space:pre-wrap">@m.Content</div>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-waiting">Chưa báo cáo</span>
+                                        }
+                                    </td>
+                                    <td class="wrap-text">
+                                        <textarea name="rows[@i].Content" rows="4"
+                                                  placeholder="Rút gọn lại nội dung tuần của nhân sự này…">@m.Suggested</textarea>
+                                    </td>
+                                    <td>
+                                        <select name="rows[@i].Status">
+                                            @foreach (var s in Model.StatusOptions)
+                                            {
+                                                <option value="@s" selected="@(string.Equals(m.Status, s, StringComparison.CurrentCultureIgnoreCase))">@s</option>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(m.Status)
+                                                && !Model.StatusOptions.Any(s => string.Equals(s, m.Status, StringComparison.CurrentCultureIgnoreCase)))
+                                            {
+                                                <option value="@m.Status" selected="selected">@m.Status</option>
+                                            }
+                                        </select>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="card-body">
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary"
+                                onclick="return confirm('Lưu bản tổng hợp này vào nội dung tuần của các nhân sự trong dự án?');">
+                            Lưu tổng hợp vào nội dung tuần
+                        </button>
+                        <span class="hint">
+                            Nội dung lưu sẽ thay nội dung tuần của nhân sự, đúng như PM vẫn ghi nhật ký tuần.
+                            Ô nào để trống thì giữ nguyên nội dung cũ.
+                        </span>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    <div class="card">
+        <div class="card-head">
+            <span>Tổng hợp để báo cáo lại</span>
+            <span class="muted" style="font-weight:400">Tuần @Model.Week/@Model.Year</span>
+        </div>
+        <div class="card-body">
+            <p class="hint" style="margin-top:0">
+                Nội dung dưới đây gộp từ báo cáo của các nhân sự ở trên. Sao chép để dán vào báo cáo,
+                hoặc gửi thẳng lên nhóm Telegram.
+            </p>
+
+            <div class="form-field">
+                <textarea id="summaryText" rows="12" readonly
+                          style="font-family:Consolas,'Courier New',monospace;font-size:13px">@Model.SummaryText</textarea>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn btn-default" data-copy-target="#summaryText">Sao chép</button>
+
+                @using (Html.BeginForm("Send", "TeamReports",
+                    new { year = Model.Year, week = Model.Week, projectId = Model.ProjectId, memberId = Model.MemberId, onlyMine = Model.OnlyMyProjects },
+                    FormMethod.Post, new { @class = "inline-form" }))
+                {
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-primary"
+                            @(Model.TelegramReady ? "" : "disabled=disabled")
+                            onclick="return confirm('Gửi bản tổng hợp này lên nhóm Telegram?');">
+                        Gửi lên nhóm Telegram
+                    </button>
+                }
+            </div>
+
+            @if (!Model.TelegramReady)
+            {
+                <span class="hint">
+                    Chưa cấu hình Telegram nên chưa gửi được — xem màn hình <strong>Thông báo</strong>.
+                </span>
+            }
+        </div>
+    </div>
+}

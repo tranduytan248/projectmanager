@@ -7,7 +7,7 @@ namespace TTKDGP.ProjectManager.Controllers
     /// <summary>Danh mục loại dự án — dùng cho cột "Loại dự án" của dự án.</summary>
     public class ProjectTypesController : CatalogControllerBase<ProjectType>
     {
-        protected override JsonStore<ProjectType> Store { get { return Repository.ProjectTypes; } }
+        protected override SqlStore<ProjectType> Store { get { return Repository.ProjectTypes; } }
 
         protected override CatalogConfig Config
         {
@@ -40,7 +40,7 @@ namespace TTKDGP.ProjectManager.Controllers
     /// <summary>Danh mục trạng thái dự án — dùng cho cột "Trạng thái hiện tại" của dự án.</summary>
     public class ProjectStatusesController : CatalogControllerBase<ProjectStatus>
     {
-        protected override JsonStore<ProjectStatus> Store { get { return Repository.ProjectStatuses; } }
+        protected override SqlStore<ProjectStatus> Store { get { return Repository.ProjectStatuses; } }
 
         protected override CatalogConfig Config
         {
@@ -78,7 +78,7 @@ namespace TTKDGP.ProjectManager.Controllers
     /// <summary>Danh mục trạng thái tham gia — dùng cho trạng thái công việc trong phân công.</summary>
     public class WorkStatusesController : CatalogControllerBase<WorkStatus>
     {
-        protected override JsonStore<WorkStatus> Store { get { return Repository.WorkStatuses; } }
+        protected override SqlStore<WorkStatus> Store { get { return Repository.WorkStatuses; } }
 
         protected override CatalogConfig Config
         {
@@ -116,7 +116,7 @@ namespace TTKDGP.ProjectManager.Controllers
     /// <summary>Danh mục vai trò của thành viên trong dự án.</summary>
     public class MemberRolesController : CatalogControllerBase<MemberRole>
     {
-        protected override JsonStore<MemberRole> Store { get { return Repository.MemberRoles; } }
+        protected override SqlStore<MemberRole> Store { get { return Repository.MemberRoles; } }
 
         protected override CatalogConfig Config
         {

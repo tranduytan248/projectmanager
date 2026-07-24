@@ -20,13 +20,20 @@ namespace TTKDGP.ProjectManager
             // Ẩn header lộ phiên bản ASP.NET MVC.
             MvcHandler.DisableMvcResponseHeader = true;
 
+            // Tạo bảng SQL nếu chưa có và nạp dữ liệu từ JSON sang khi bảng còn trống.
+            Data.JsonToSqlMigration.RunIfNeeded();
+
             // Bộ lịch nhắc báo cáo qua Telegram (sáng thứ Hai và chiều thứ Sáu).
             Infrastructure.ReminderScheduler.Start();
+
+            // GoConnect: chỉ lắng nghe lệnh /hrm qua Telegram, KHÔNG hẹn giờ tự động.
+            Infrastructure.GoConnectTelegramPoller.Start();
         }
 
         protected void Application_End()
         {
             Infrastructure.ReminderScheduler.Stop();
+            Infrastructure.GoConnectTelegramPoller.Stop();
         }
 
         /// <summary>Dựng lại thông tin người dùng từ cookie đăng nhập cho mỗi request.</summary>

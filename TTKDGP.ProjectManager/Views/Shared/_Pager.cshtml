@@ -1,0 +1,63 @@
+﻿@model TTKDGP.ProjectManager.Models.PagerInfo
+@*
+    Thanh số trang dùng chung. Đường dẫn dựng lại từ chính chuỗi truy vấn hiện tại rồi chỉ thay
+    tham số page — nhờ vậy mọi bộ lọc đang áp dụng đều được giữ nguyên khi lật trang, mà từng
+    màn hình không phải liệt kê lại tham số của mình.
+*@
+@{
+    Func<int, string> pageUrl = p =>
+    {
+        var query = System.Web.HttpUtility.ParseQueryString(Request.Url.Query);
+        query["page"] = p.ToString();
+        return Request.Path + "?" + query;
+    };
+}
+
+@if (Model != null && Model.TotalItems > 0)
+{
+    <div class="pager">
+        <div class="pager-info">
+            Hiển thị <strong>@Model.FirstItem&ndash;@Model.LastItem</strong> trong tổng số
+            <strong>@Model.TotalItems</strong>
+        </div>
+
+        @if (Model.TotalPages > 1)
+        {
+            <nav class="pager-links" aria-label="Phân trang">
+                @if (Model.HasPrevious)
+                {
+                    <a href="@pageUrl(Model.Page - 1)" rel="prev" aria-label="Trang trước">‹</a>
+                }
+                else
+                {
+                    <span class="disabled" aria-hidden="true">‹</span>
+                }
+
+                @foreach (var p in Model.PageWindow())
+                {
+                    if (p == 0)
+                    {
+                        <span class="gap">…</span>
+                    }
+                    else if (p == Model.Page)
+                    {
+                        <span class="current" aria-current="page">@p</span>
+                    }
+                    else
+                    {
+                        <a href="@pageUrl(p)">@p</a>
+                    }
+                }
+
+                @if (Model.HasNext)
+                {
+                    <a href="@pageUrl(Model.Page + 1)" rel="next" aria-label="Trang sau">›</a>
+                }
+                else
+                {
+                    <span class="disabled" aria-hidden="true">›</span>
+                }
+            </nav>
+        }
+    </div>
+}

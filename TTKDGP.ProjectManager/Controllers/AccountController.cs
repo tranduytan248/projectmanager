@@ -12,9 +12,20 @@ namespace TTKDGP.ProjectManager.Controllers
         [HttpGet]
         public ActionResult Login(string returnUrl)
         {
-            if (CurrentUser != null) return RedirectToAction("Index", "Projects");
+            if (CurrentUser != null) return HomeFor(CurrentUser.Role);
 
             return View(new LoginViewModel { ReturnUrl = returnUrl });
+        }
+
+        /// <summary>
+        /// Màn hình mở đầu sau khi đăng nhập, tuỳ theo quyền. Tài khoản Báo cáo công việc không
+        /// vào được danh sách dự án nên phải đưa thẳng về màn báo cáo của họ.
+        /// </summary>
+        private ActionResult HomeFor(string role)
+        {
+            return Roles.CanManage(role)
+                ? RedirectToAction("Index", "Projects")
+                : RedirectToAction("Index", "MyReports");
         }
 
         [HttpPost]
@@ -39,7 +50,7 @@ namespace TTKDGP.ProjectManager.Controllers
             {
                 return Redirect(model.ReturnUrl);
             }
-            return RedirectToAction("Index", "Projects");
+            return HomeFor(user.Role);
         }
 
         [HttpPost]

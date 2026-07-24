@@ -8,10 +8,13 @@ using TTKDGP.ProjectManager.Models;
 
 namespace TTKDGP.ProjectManager.Controllers
 {
-    [AppAuthorize]
+    [AppAuthorize(AllowedRoles = Roles.Management)]
     public class ProjectsController : BaseController
     {
-        public ActionResult Index(string keyword, string status, string projectType, int? pmMemberId)
+        /// <summary>Số dự án mỗi trang. Danh sách đã nằm sẵn trong bộ nhớ nên cắt trang ngay ở đây.</summary>
+        private const int PageSize = 25;
+
+        public ActionResult Index(string keyword, string status, string projectType, int? pmMemberId, int? page)
         {
             var projects = Repository.Projects.All();
 
@@ -72,7 +75,10 @@ namespace TTKDGP.ProjectManager.Controllers
             ViewBag.PmMemberId = pmMemberId;
             ViewBag.PmOptions = pmOptions;
 
-            return View(projects.OrderBy(p => p.Name, StringComparer.CurrentCulture).ToList());
+            // Sắp xếp TRƯỚC khi cắt trang, để thứ tự không đổi khi lật qua lại giữa các trang.
+            var ordered = projects.OrderBy(p => p.Name, StringComparer.CurrentCulture).ToList();
+
+            return View(PagedList<Project>.From(ordered, page, PageSize));
         }
 
         [HttpGet]

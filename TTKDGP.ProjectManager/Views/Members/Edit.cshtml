@@ -29,6 +29,13 @@
                 }
             </div>
 
+            <div class="form-field">
+                @Html.LabelFor(m => m.Email)
+                @Html.TextBoxFor(m => m.Email, new { type = "email", autocomplete = "off" })
+                @Html.ValidationMessageFor(m => m.Email, "", new { @class = "field-error" })
+                <span class="hint">Nơi nhận mail nhắc báo cáo sáng thứ Sáu. Bỏ trống thì thành viên không nhận mail.</span>
+            </div>
+
             <div class="check-inline">
                 @Html.CheckBoxFor(m => m.IsActive)
                 @Html.LabelFor(m => m.IsActive)

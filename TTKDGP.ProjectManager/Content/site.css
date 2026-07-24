@@ -36,6 +36,168 @@ a:hover { text-decoration: underline; }
 .container { max-width: 1400px; margin: 0 auto; padding: 0 20px; }
 .main { padding-top: 24px; padding-bottom: 48px; }
 
+/* ===== Bố cục có menu dọc =====
+   Menu dọc neo cố định bên trái, phần còn lại của trang nằm trong .shell và được đẩy
+   sang phải đúng bằng bề rộng menu. Trang Đăng nhập không có menu nên .shell không lệch. */
+:root { --sidebar-w: 232px; }
+
+.shell { min-height: 100vh; display: flex; flex-direction: column; }
+body.has-sidebar .shell { margin-left: var(--sidebar-w); }
+
+/* Nội dung đã bị menu chiếm chỗ nên không căn giữa theo cả màn hình nữa */
+body.has-sidebar .main, body.has-sidebar .topbar-inner, body.has-sidebar .footer .container { max-width: none; }
+
+/* Đẩy phần chân trang xuống đáy khi nội dung ngắn. Cần width 100%: .main vừa là ô co giãn
+   của .shell vừa mang lớp .container có lề auto, mà lề auto trong flexbox sẽ chặn ô giãn hết
+   bề ngang — không đặt width thì vùng nội dung co lại vừa bằng chữ và trôi vào giữa. */
+.shell > .main { flex: 1 0 auto; width: 100%; }
+
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: var(--sidebar-w);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px 12px;
+    overflow-y: auto;
+    z-index: 40;
+}
+
+/* Hàng đầu menu: tên hệ thống + nút thu gọn */
+.sidebar-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 6px;
+}
+.sidebar-head .brand { flex: 1; min-width: 0; padding: 4px 2px 0; }
+.sidebar .brand-text { font-size: 13px; white-space: normal; line-height: 1.35; }
+
+/* Nút thu gọn menu (mũi tên «) nằm trong menu */
+.sidebar-collapse {
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 1;
+}
+.sidebar-collapse:hover { background: var(--primary-soft); color: var(--primary); border-color: #bcd5f2; }
+
+/* Nút mở lại menu (☰) trên thanh trên, chỉ hiện khi menu đã thu gọn ở màn hình rộng */
+.sidebar-expand {
+    display: none;
+    width: 36px;
+    height: 34px;
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    background: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+}
+.sidebar-expand:hover { background: var(--primary-soft); color: var(--primary); }
+
+/* ===== Menu dọc ===== */
+.sidenav { display: flex; flex-direction: column; gap: 2px; }
+
+.sidenav a {
+    display: block;
+    padding: 8px 12px;
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.sidenav a:hover { background: var(--primary-soft); color: var(--primary); text-decoration: none; }
+.sidenav a.active { background: var(--primary); color: #fff; }
+
+/* Nhãn phân nhóm, ví dụ "Quản trị" */
+.sidenav-title {
+    margin-top: 12px;
+    padding: 6px 12px 2px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: .4px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    border-top: 1px solid var(--border);
+}
+
+/* Nhóm gập/mở bằng thẻ details — không cần JavaScript */
+.sidenav-group summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-weight: 500;
+    cursor: pointer;
+    list-style: none;
+}
+
+/* Bỏ tam giác mặc định của details để tự vẽ mũi tên bên phải */
+.sidenav-group summary::-webkit-details-marker { display: none; }
+
+/* Đổi hẳn ký tự thay vì xoay: glyph nhỏ xoay 180° hiển thị nhoè, nhìn ra thành dấu gạch */
+.sidenav-group summary::after { content: "▾"; font-size: 11px; }
+.sidenav-group[open] summary::after { content: "▴"; }
+
+.sidenav-group summary:hover { background: var(--primary-soft); color: var(--primary); }
+.sidenav-group summary.active { color: var(--primary); }
+
+.sidenav-sub { display: flex; flex-direction: column; gap: 2px; margin: 2px 0 2px 10px; padding-left: 8px; border-left: 2px solid var(--border); }
+.sidenav-sub a { padding: 7px 10px; font-size: 13.5px; }
+
+/* Nút ba gạch, chỉ hiện khi menu dọc bị thu lại trên màn hình hẹp */
+.menu-toggle {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    /* Trình duyệt tự căn giữa nội dung của thẻ button; không ép stretch thì ba vạch
+       co lại còn 0px vì span rỗng không có bề ngang tự nhiên. */
+    align-items: stretch;
+    gap: 4px;
+    width: 36px;
+    height: 34px;
+    padding: 0 8px;
+    background: none;
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.menu-toggle span { display: block; width: 100%; height: 2px; background: var(--text-muted); border-radius: 2px; }
+.menu-toggle:hover { background: var(--primary-soft); }
+.menu-toggle:hover span { background: var(--primary); }
+
+/* Đủ hai lớp để thắng .brand{display:flex} khai báo bên dưới, nếu không sẽ lộ ở màn hình rộng */
+.brand.brand-compact { display: none; }
+
+.sidebar-scrim {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(20, 35, 60, .38);
+    z-index: 35;
+}
+
 /* ===== Thanh trên cùng ===== */
 .topbar {
     background: var(--surface);
@@ -68,52 +230,8 @@ a:hover { text-decoration: underline; }
 
 .brand-text { color: var(--text); font-weight: 600; white-space: nowrap; }
 
-.nav { display: flex; gap: 4px; flex: 1; }
-
-.nav a {
-    padding: 7px 13px;
-    border-radius: 6px;
-    color: var(--text-muted);
-    font-weight: 500;
-}
-
-.nav a:hover { background: var(--primary-soft); color: var(--primary); text-decoration: none; }
-.nav a.active { background: var(--primary); color: #fff; }
-
-/* Nhóm menu Danh mục — mở ra khi rê chuột, không cần JavaScript */
-.nav-group { position: relative; display: inline-block; }
-
-.nav-group-label {
-    display: inline-block;
-    padding: 7px 13px;
-    border-radius: 6px;
-    color: var(--text-muted);
-    font-weight: 500;
-    cursor: default;
-    white-space: nowrap;
-}
-
-.nav-group:hover .nav-group-label { background: var(--primary-soft); color: var(--primary); }
-.nav-group-label.active { background: var(--primary); color: #fff; }
-
-.nav-group-menu {
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    min-width: 210px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: 0 6px 18px rgba(20, 35, 60, .13);
-    padding: 6px;
-    z-index: 30;
-}
-
-.nav-group:hover .nav-group-menu { display: flex; flex-direction: column; gap: 2px; }
-.nav-group-menu a { display: block; padding: 8px 12px; border-radius: 5px; }
-
-.user-area { display: flex; align-items: center; gap: 12px; }
+/* Điều hướng đã chuyển hết sang menu dọc, thanh trên chỉ còn khối tài khoản bên phải */
+.user-area { display: flex; align-items: center; gap: 12px; margin-left: auto; }
 
 .user-chip {
     display: flex;
@@ -386,6 +504,14 @@ table.data .muted { color: var(--text-muted); }
 table.data .wrap-text { min-width: 240px; }
 table.data .nowrap { white-space: nowrap; }
 
+/* Cột chữ dài phải có bề rộng tối thiểu. Không đặt thì trình duyệt bóp nó lại để nhường
+   chỗ cho các cột không xuống dòng (badge, nút), và tên dự án dài rơi xuống mỗi dòng một từ. */
+table.data .col-project { min-width: 220px; }
+
+/* Dòng phụ trong cùng một ô: khách hàng, trạng thái dự án... */
+table.data .cell-sub { margin-top: 5px; }
+table.data .cell-sub.muted { font-size: 12.5px; line-height: 1.4; }
+
 /* Nhãn tuần báo cáo trên bảng chi tiết tham gia */
 /* Xem trước nội dung tin nhắn Telegram */
 .message-preview {
@@ -417,6 +543,45 @@ table.data .nowrap { white-space: nowrap; }
 }
 
 .empty-state { padding: 44px 20px; text-align: center; color: var(--text-muted); }
+
+/* ===== Thanh số trang ===== */
+.pager {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+/* Bảng đứng ngay trên thanh số trang đã có sẵn đường kẻ dưới cùng rồi */
+.table-wrap + .pager { border-top: none; }
+
+.pager-links { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+
+.pager-links a, .pager-links span {
+    min-width: 32px;
+    padding: 5px 9px;
+    border-radius: 6px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.pager-links a { color: var(--text-muted); border: 1px solid var(--border); }
+.pager-links a:hover { background: var(--primary-soft); color: var(--primary); border-color: #bcd5f2; text-decoration: none; }
+
+.pager-links .current {
+    background: var(--primary);
+    color: #fff;
+    border: 1px solid var(--primary);
+    font-weight: 600;
+}
+
+.pager-links .disabled { color: var(--border-strong); border: 1px solid var(--border); }
+.pager-links .gap { min-width: 0; padding: 5px 2px; border: none; }
 
 /* ===== Khối chi tiết tham gia gom theo thành viên ===== */
 .section-head {
@@ -611,8 +776,41 @@ table.data .nowrap { white-space: nowrap; }
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 @media (max-width: 900px) {
     .two-col { grid-template-columns: 1fr; }
-    .topbar-inner { flex-wrap: wrap; height: auto; padding-top: 10px; padding-bottom: 10px; }
-    .nav { order: 3; width: 100%; overflow-x: auto; }
+
+    /* Màn hình hẹp: menu dọc trượt ra như ngăn kéo, nội dung không bị đẩy sang phải nữa */
+    body.has-sidebar .shell { margin-left: 0; }
+
+    .sidebar {
+        transform: translateX(-100%);
+        transition: transform .2s ease;
+        box-shadow: 0 0 24px rgba(20, 35, 60, .18);
+    }
+
+    body.menu-open .sidebar { transform: translateX(0); }
+    body.menu-open .sidebar-scrim { display: block; }
+
+    .menu-toggle { display: flex; }
+    .brand.brand-compact { display: flex; }
+
+    /* Thu gọn là khái niệm của màn hình rộng; màn hình hẹp dùng ngăn kéo nên bỏ qua nút thu gọn */
+    .sidebar-collapse { display: none; }
+}
+
+/* ===== Thu gọn menu trên màn hình rộng ===== */
+@media (min-width: 901px) {
+    /* Trượt mượt khi đóng/mở */
+    .sidebar { transition: transform .18s ease; }
+    body.has-sidebar .shell { transition: margin-left .18s ease; }
+
+    body.sidebar-collapsed .sidebar { transform: translateX(-100%); }
+    body.sidebar-collapsed .shell { margin-left: 0; }
+
+    /* Menu đóng thì hiện nút mở lại trên thanh trên */
+    body.sidebar-collapsed .sidebar-expand {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
 }
 
 /* ===== Thông báo ===== */
@@ -658,6 +856,41 @@ table.data .nowrap { white-space: nowrap; }
     margin-top: 18px;
     border-top: 1px solid var(--border);
 }
+
+/* ===== Thẻ hướng dẫn API (gập/mở) ===== */
+.api-help > summary {
+    padding: 13px 17px;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--primary);
+    list-style: none;
+}
+.api-help > summary::-webkit-details-marker { display: none; }
+.api-help > summary::before { content: "▸  "; font-size: 11px; }
+.api-help[open] > summary::before { content: "▾  "; }
+.api-help[open] > summary { border-bottom: 1px solid var(--border); }
+.api-help code { font-size: 12.5px; }
+
+/* ===== Khoá bí mật hệ thống tích hợp ===== */
+.key-box { display: flex; gap: 8px; align-items: center; }
+.key-input {
+    flex: 1;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 13px;
+    letter-spacing: .3px;
+    background: #f7f9fc;
+    color: var(--text);
+}
+.key-peek { font-family: "Consolas", "Courier New", monospace; font-size: 12.5px; color: var(--text-muted); }
+
+.key-regen {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+.key-regen .hint { margin-top: 4px; max-width: 460px; }
 
 /* ===== Trang đăng nhập ===== */
 .login-wrap { max-width: 400px; margin: 56px auto; }

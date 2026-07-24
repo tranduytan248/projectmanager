@@ -1,0 +1,156 @@
+﻿@model TTKDGP.ProjectManager.Models.MyReportViewModel
+@using TTKDGP.ProjectManager.Infrastructure
+@{
+    ViewBag.Title = "Báo cáo của tôi";
+    var weekOptions = WeekHelper.WeekOptions(Model.Year);
+}
+
+<div class="page-head">
+    <div>
+        <h1>Báo cáo của tôi</h1>
+        <p>
+            Ghi nội dung công việc theo tuần cho các dự án bạn đang thực hiện hoặc đang hỗ trợ.
+            @if (!string.IsNullOrWhiteSpace(Model.MemberName))
+            {
+                <text>Nhân sự: <strong>@Model.MemberName</strong>.</text>
+            }
+        </p>
+    </div>
+
+    <div class="week-box">
+        <div class="week-box-title">Tuần @Model.Week/@Model.Year</div>
+        <div class="week-box-range">@Model.WeekFrom.ToString("dd/MM") – @Model.WeekTo.ToString("dd/MM/yyyy")</div>
+        <div class="week-box-stats">
+            @if (Model.ReportedCount > 0)
+            {
+                <span class="badge badge-active">@Model.ReportedCount đã báo cáo</span>
+            }
+            @if (Model.MissingCount > 0)
+            {
+                <span class="badge badge-waiting">@Model.MissingCount chưa báo cáo</span>
+            }
+        </div>
+    </div>
+</div>
+
+@if (Model.NotLinked)
+{
+    <div class="card">
+        <div class="empty-state">
+            Tài khoản của bạn chưa được gắn với nhân sự nào nên chưa biết báo cáo cho phân công nào.<br />
+            Liên hệ quản trị để gắn &quot;Nhân sự tương ứng&quot; cho tài khoản.
+        </div>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="card-body">
+            @using (Html.BeginForm("Index", "MyReports", FormMethod.Get))
+            {
+                <div class="filters">
+                    <div class="filter-field">
+                        <label for="year">Năm</label>
+                        <select id="year" name="year">
+                            @foreach (var y in Model.YearOptions)
+                            {
+                                <option value="@y" selected="@(Model.Year == y)">@y</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="filter-field">
+                        <label for="week">Tuần</label>
+                        <select id="week" name="week">
+                            @foreach (var w in weekOptions)
+                            {
+                                <option value="@w.Key" selected="@(Model.Week == w.Key)">@w.Value</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="btn-row" style="padding-bottom:1px">
+                        <button type="submit" class="btn btn-primary">Xem tuần này</button>
+                        @if (!Model.IsCurrentWeek)
+                        {
+                            <a class="btn btn-default" href="@Url.Action("Index", "MyReports")">Về tuần hiện tại</a>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    if (Model.Rows.Count == 0)
+    {
+        <div class="card">
+            <div class="empty-state">
+                Bạn không có phân công nào đang ở trạng thái &quot;Đang thực hiện&quot; hoặc &quot;Đang hỗ trợ&quot;.<br />
+                Khi được phân công, các dự án sẽ hiện ở đây để báo cáo hằng tuần.
+            </div>
+        </div>
+    }
+    else
+    {
+        foreach (var row in Model.Rows)
+        {
+            <div class="card">
+                <div class="card-head">
+                    <span>
+                        @row.ProjectName
+                        @if (!string.IsNullOrWhiteSpace(row.Customer))
+                        {
+                            <span class="muted" style="font-weight:400"> · @row.Customer</span>
+                        }
+                    </span>
+                    <span style="font-weight:400">
+                        <span class="badge @ViewHelpers.StatusBadgeClass(row.WorkStatus)">@ViewHelpers.OrDash(row.WorkStatus)</span>
+                        @if (row.HasReport)
+                        {
+                            <span class="badge badge-active">Đã báo cáo</span>
+                        }
+                        else
+                        {
+                            <span class="badge badge-waiting">Chưa báo cáo</span>
+                        }
+                    </span>
+                </div>
+                <div class="card-body">
+                    @using (Html.BeginForm("Save", "MyReports", FormMethod.Post))
+                    {
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="assignmentId" value="@row.AssignmentId" />
+                        <input type="hidden" name="year" value="@Model.Year" />
+                        <input type="hidden" name="week" value="@Model.Week" />
+
+                        <div class="form-field">
+                            <label for="content-@row.AssignmentId">Nội dung thực hiện trong tuần</label>
+                            <textarea id="content-@row.AssignmentId" name="content" rows="4"
+                                      maxlength="2000" placeholder="Tuần này bạn đã làm gì trong dự án này?">@row.Content</textarea>
+                        </div>
+
+                        <div class="filters">
+                            <div class="filter-field">
+                                <label for="status-@row.AssignmentId">Trạng thái</label>
+                                <select id="status-@row.AssignmentId" name="status" data-no-select2>
+                                    @foreach (var s in Model.StatusOptions)
+                                    {
+                                        <option value="@s" selected="@(row.Status == s)">@s</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="btn-row" style="padding-bottom:1px">
+                                <button type="submit" class="btn btn-primary">
+                                    @(row.HasReport ? "Cập nhật báo cáo" : "Gửi báo cáo")
+                                </button>
+                            </div>
+                        </div>
+
+                        if (row.ReportedAt.HasValue)
+                        {
+                            <span class="hint">Lần ghi gần nhất: @row.ReportedAt.Value.ToString("HH:mm dd/MM/yyyy")</span>
+                        }
+                    }
+                </div>
+            </div>
+        }
+    }
+}

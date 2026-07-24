@@ -33,6 +33,14 @@ namespace TTKDGP.ProjectManager.Infrastructure
         public string Title { get; set; }
     }
 
+    /// <summary>Một tin nhắn đến, rút gọn từ cập nhật của Telegram.</summary>
+    public class TelegramUpdate
+    {
+        public long UpdateId { get; set; }
+        public string ChatId { get; set; }
+        public string Text { get; set; }
+    }
+
     /// <summary>
     /// Gọi Bot API của Telegram. Chỉ dùng WebRequest sẵn có của .NET Framework,
     /// không thêm thư viện ngoài.
@@ -162,6 +170,56 @@ namespace TTKDGP.ProjectManager.Infrastructure
             return chats;
         }
 
+        /// <summary>
+        /// Đọc các tin nhắn mới gửi tới bot theo kiểu long-poll. offset là id cập nhật kế tiếp
+        /// cần lấy (đã xử lý tới đâu thì truyền tới đó để Telegram không trả lại tin cũ).
+        /// Chỉ lấy loại "message" cho nhẹ. Trả về danh sách rút gọn (id, chat, nội dung).
+        /// </summary>
+        public static List<TelegramUpdate> GetUpdates(string botToken, long offset, int longPollSeconds, out TelegramResult result)
+        {
+            var list = new List<TelegramUpdate>();
+
+            if (string.IsNullOrWhiteSpace(botToken))
+            {
+                result = TelegramResult.Fail("Chưa cấu hình token bot.");
+                return list;
+            }
+
+            var url = string.Format(
+                "{0}{1}/getUpdates?timeout={2}&offset={3}&allowed_updates=%5B%22message%22%5D",
+                ApiBase, botToken, longPollSeconds, offset);
+
+            // Chờ đọc phải dài hơn thời gian long-poll, cộng thêm khoảng dư cho mạng.
+            result = Send(url, "GET", null, (longPollSeconds + 15) * 1000);
+            if (!result.Ok) return list;
+
+            try
+            {
+                var updates = JObject.Parse(result.RawResponse)["result"] as JArray;
+                if (updates == null) return list;
+
+                foreach (var update in updates)
+                {
+                    var message = update["message"];
+                    if (message == null) continue;
+
+                    var chat = message["chat"];
+                    list.Add(new TelegramUpdate
+                    {
+                        UpdateId = (long)update["update_id"],
+                        ChatId = chat != null ? (string)chat["id"] : null,
+                        Text = (string)message["text"]
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                result = TelegramResult.Fail("Không đọc được cập nhật từ Telegram: " + ex.Message, result.RawResponse);
+            }
+
+            return list;
+        }
+
         private static TelegramResult Get(string botToken, string method)
         {
             return Send(ApiBase + botToken + "/" + method, "GET", null);
@@ -172,14 +230,14 @@ namespace TTKDGP.ProjectManager.Infrastructure
             return Send(ApiBase + botToken + "/" + method, "POST", json);
         }
 
-        private static TelegramResult Send(string url, string httpMethod, string json)
+        private static TelegramResult Send(string url, string httpMethod, string json, int timeoutMs = 30000)
         {
             try
             {
                 var request = (HttpWebRequest)WebRequest.Create(url);
                 request.Method = httpMethod;
-                request.Timeout = 30000;
-                request.ReadWriteTimeout = 30000;
+                request.Timeout = timeoutMs;
+                request.ReadWriteTimeout = timeoutMs;
 
                 if (json != null)
                 {

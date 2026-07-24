@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 
 namespace TTKDGP.ProjectManager.Models
 {
@@ -17,7 +19,73 @@ namespace TTKDGP.ProjectManager.Models
         /// <summary>Cập nhật dự án / thành viên / phân công, không quản trị người dùng.</summary>
         public const string Manager = "Manager";
 
-        public static readonly string[] All = { Admin, Manager };
+        /// <summary>
+        /// Chỉ báo cáo công việc của chính mình. Không vào được các màn quản trị; chỉ thấy màn
+        /// tổng hợp và màn báo cáo cá nhân theo tuần.
+        /// </summary>
+        public const string Reporter = "Reporter";
+
+        public static readonly string[] All = { Admin, Manager, Reporter };
+
+        /// <summary>
+        /// Nhóm quyền được cập nhật dữ liệu quản trị. Truyền vào
+        /// <c>AppAuthorize(AllowedRoles = Roles.Management)</c> để chặn tài khoản báo cáo.
+        /// </summary>
+        public const string Management = Admin + "," + Manager;
+
+        /// <summary>
+        /// Một tài khoản có thể mang NHIỀU quyền, lưu chung một chuỗi ngăn bởi dấu phẩy
+        /// (ví dụ "Manager,Reporter"). Tách thành danh sách để so sánh.
+        /// Dữ liệu cũ chỉ có một quyền vẫn tách ra đúng một phần tử nên tương thích ngược.
+        /// </summary>
+        public static string[] Split(string roles)
+        {
+            if (string.IsNullOrWhiteSpace(roles)) return new string[0];
+
+            return roles.Split(',')
+                .Select(r => r.Trim())
+                .Where(r => r.Length > 0)
+                .ToArray();
+        }
+
+        /// <summary>Ghép danh sách quyền thành chuỗi để lưu.</summary>
+        public static string Join(IEnumerable<string> roles)
+        {
+            if (roles == null) return string.Empty;
+
+            var valid = roles
+                .Select(r => (r ?? string.Empty).Trim())
+                .Where(r => r.Length > 0 && All.Contains(r, StringComparer.OrdinalIgnoreCase))
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+
+            return string.Join(",", valid);
+        }
+
+        /// <summary>Tài khoản (có thể nhiều quyền) có mang quyền này không.</summary>
+        public static bool Has(string roles, string role)
+        {
+            return Split(roles).Any(r => string.Equals(r, role, StringComparison.OrdinalIgnoreCase));
+        }
+
+        /// <summary>Tên hiển thị, nhiều quyền thì nối bằng dấu phẩy.</summary>
+        public static string Display(string roles)
+        {
+            var names = Split(roles).Select(DisplayOne).ToList();
+            return names.Count == 0 ? "Quản lý" : string.Join(", ", names);
+        }
+
+        private static string DisplayOne(string role)
+        {
+            if (string.Equals(role, Admin, StringComparison.OrdinalIgnoreCase)) return "Quản trị";
+            if (string.Equals(role, Reporter, StringComparison.OrdinalIgnoreCase)) return "Báo cáo công việc";
+            return "Quản lý";
+        }
+
+        /// <summary>Có quyền nào cho vào các màn quản trị không.</summary>
+        public static bool CanManage(string roles)
+        {
+            return Has(roles, Admin) || Has(roles, Manager);
+        }
     }
 
     public class User : IEntity
@@ -33,9 +101,25 @@ namespace TTKDGP.ProjectManager.Models
         [Display(Name = "Họ và tên")]
         public string FullName { get; set; }
 
+        [Display(Name = "Email")]
+        [StringLength(120, ErrorMessage = "Email tối đa 120 ký tự")]
+        [EmailAddress(ErrorMessage = "Email không hợp lệ")]
+        public string Email { get; set; }
+
+        /// <summary>
+        /// Một hoặc nhiều quyền, ngăn bởi dấu phẩy (ví dụ "Manager,Reporter").
+        /// Dùng <see cref="Roles.Has"/> / <see cref="Roles.Split"/> để so sánh, đừng so chuỗi thẳng.
+        /// </summary>
         [Required]
         [Display(Name = "Phân quyền")]
         public string Role { get; set; }
+
+        /// <summary>
+        /// Nhân sự (bảng Members) mà tài khoản này đại diện. Bắt buộc với quyền Báo cáo công việc
+        /// — dùng để biết tài khoản được báo cáo cho những phân công nào. 0 nghĩa là chưa gắn.
+        /// </summary>
+        [Display(Name = "Nhân sự tương ứng")]
+        public int MemberId { get; set; }
 
         /// <summary>Định dạng: iterations.salt_base64.key_base64 (PBKDF2-SHA256).</summary>
         public string PasswordHash { get; set; }
@@ -47,7 +131,7 @@ namespace TTKDGP.ProjectManager.Models
 
         public bool IsAdmin
         {
-            get { return string.Equals(Role, Roles.Admin, StringComparison.OrdinalIgnoreCase); }
+            get { return Roles.Has(Role, Roles.Admin); }
         }
     }
 }

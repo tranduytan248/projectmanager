@@ -38,9 +38,10 @@ namespace TTKDGP.ProjectManager.Infrastructure
         public AppIdentity AppIdentity { get; private set; }
         public IIdentity Identity { get { return AppIdentity; } }
 
+        /// <summary>Tài khoản có thể mang nhiều quyền nên phải tách chuỗi ra rồi đối chiếu.</summary>
         public bool IsInRole(string role)
         {
-            return string.Equals(AppIdentity.Role, role, StringComparison.OrdinalIgnoreCase);
+            return Models.Roles.Has(AppIdentity.Role, role);
         }
     }
 
@@ -104,12 +105,30 @@ namespace TTKDGP.ProjectManager.Infrastructure
     }
 
     /// <summary>
-    /// Yêu cầu đăng nhập; nếu truyền <see cref="RequiredRole"/> thì yêu cầu đúng quyền đó.
+    /// Yêu cầu đăng nhập; thêm <see cref="RequiredRole"/> để bắt đúng một quyền, hoặc
+    /// <see cref="AllowedRoles"/> (danh sách ngăn bởi dấu phẩy) để cho phép nhiều quyền.
+    /// Không khai gì thì mọi tài khoản đã đăng nhập đều vào được.
     /// Người đã đăng nhập nhưng sai quyền sẽ nhận 403 thay vì bị đá về trang đăng nhập.
     /// </summary>
     public class AppAuthorizeAttribute : ActionFilterAttribute
     {
         public string RequiredRole { get; set; }
+
+        /// <summary>Danh sách quyền được phép, ngăn nhau bởi dấu phẩy (ví dụ <c>Roles.Management</c>).</summary>
+        public string AllowedRoles { get; set; }
+
+        private bool IsAllowed(AppPrincipal principal)
+        {
+            if (!string.IsNullOrEmpty(RequiredRole)) return principal.IsInRole(RequiredRole);
+            if (string.IsNullOrEmpty(AllowedRoles)) return true;
+
+            foreach (var role in AllowedRoles.Split(','))
+            {
+                var name = role.Trim();
+                if (name.Length > 0 && principal.IsInRole(name)) return true;
+            }
+            return false;
+        }
 
         public override void OnActionExecuting(ActionExecutingContext filterContext)
         {
@@ -139,12 +158,13 @@ namespace TTKDGP.ProjectManager.Infrastructure
                 return;
             }
 
-            if (!string.IsNullOrEmpty(RequiredRole) && !principal.IsInRole(RequiredRole))
+            if (!IsAllowed(principal))
             {
                 var result = new ViewResult { ViewName = "Error" };
                 result.ViewData["Title"] = "Không đủ quyền";
-                result.ViewData["Message"] = "Bạn không có quyền truy cập chức năng này. "
-                                             + "Chức năng quản trị người dùng chỉ dành cho tài khoản Admin.";
+                result.ViewData["Message"] = "Tài khoản của bạn không có quyền truy cập chức năng này. "
+                                             + "Nếu bạn dùng tài khoản Báo cáo công việc thì chỉ vào được "
+                                             + "màn hình Tổng hợp và Báo cáo của tôi.";
                 filterContext.Result = result;
                 filterContext.HttpContext.Response.StatusCode = 403;
                 filterContext.HttpContext.Response.TrySkipIisCustomErrors = true;

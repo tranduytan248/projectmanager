@@ -11,7 +11,7 @@ namespace TTKDGP.ProjectManager.Controllers
     /// Quản lý việc "thành viên nào làm công việc gì trong dự án nào, trạng thái tham gia ra sao".
     /// Đây là nguồn dữ liệu cho màn hình tổng hợp ngoài FrontEnd.
     /// </summary>
-    [AppAuthorize]
+    [AppAuthorize(AllowedRoles = Roles.Management)]
     public class AssignmentsController : BaseController
     {
         public ActionResult Index(string keyword, int? memberId, int? projectId)

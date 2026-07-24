@@ -46,6 +46,7 @@
                 <thead>
                     <tr>
                         <th>Họ và tên</th>
+                        <th>Email</th>
                         <th class="num">Đang thực hiện</th>
                         <th class="num">Đang hỗ trợ</th>
                         <th class="num">Tổng dự án</th>
@@ -58,6 +59,16 @@
                     {
                         <tr>
                             <td><strong>@m.FullName</strong></td>
+                            <td>
+                                @if (string.IsNullOrWhiteSpace(m.Email))
+                                {
+                                    <span class="muted" title="Chưa có email nên không nhận được mail nhắc báo cáo">—</span>
+                                }
+                                else
+                                {
+                                    <a href="mailto:@m.Email">@m.Email</a>
+                                }
+                            </td>
                             <td class="num">
                                 @{ var doingCount = countOf(doing, m.Id); }
                                 @if (doingCount > 0)

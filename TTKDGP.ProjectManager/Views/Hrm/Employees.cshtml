@@ -1,0 +1,100 @@
+﻿@model TTKDGP.ProjectManager.Models.PagedList<TTKDGP.ProjectManager.Models.HrEmployee>
+@using TTKDGP.ProjectManager.Infrastructure
+@using TTKDGP.ProjectManager.Models
+@{
+    ViewBag.Title = "Nhân sự";
+    var workplaces = ViewBag.WorkplaceOptions as List<HrWorkplace> ?? new List<HrWorkplace>();
+    var positions = ViewBag.PositionOptions as List<HrPosition> ?? new List<HrPosition>();
+    var currentWp = ViewBag.WpId as string;
+    var currentPos = ViewBag.PosId as string;
+}
+
+<div class="page-head">
+    <div>
+        <h1>Nhân sự</h1>
+        <p>
+            Danh bạ nhân sự đồng bộ từ GoConnect. Tổng cộng @Model.Pager.TotalItems người.
+            Dữ liệu chỉ để tra cứu — cập nhật bằng lệnh <code>/hrm</code> trên Telegram.
+        </p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        @using (Html.BeginForm("Employees", "Hrm", FormMethod.Get))
+        {
+            <div class="filters">
+                <div class="filter-field grow">
+                    <label for="keyword">Tìm kiếm</label>
+                    <input type="search" id="keyword" name="keyword" value="@ViewBag.Keyword"
+                           placeholder="Họ tên, email, mã nhân viên, điện thoại, đơn vị, chức danh..." />
+                </div>
+                <div class="filter-field">
+                    <label for="wpId">Đơn vị</label>
+                    <select id="wpId" name="wpId">
+                        <option value="">— Tất cả —</option>
+                        @foreach (var w in workplaces)
+                        {
+                            <option value="@w.WpId" selected="@(currentWp == w.WpId)">@w.WpName</option>
+                        }
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label for="posId">Chức danh</label>
+                    <select id="posId" name="posId">
+                        <option value="">— Tất cả —</option>
+                        @foreach (var p in positions)
+                        {
+                            <option value="@p.PosId" selected="@(currentPos == p.PosId)">@p.PosName</option>
+                        }
+                    </select>
+                </div>
+                <div class="btn-row" style="padding-bottom:1px">
+                    <button type="submit" class="btn btn-primary">Lọc</button>
+                    <a class="btn btn-default" href="@Url.Action("Employees", "Hrm")">Xoá lọc</a>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="card">
+    @if (Model.Items.Count == 0)
+    {
+        <div class="empty-state">
+            Chưa có nhân sự nào phù hợp. Nếu bảng còn trống, nhắn <code>/hrm</code> cho bot Telegram để đồng bộ.
+        </div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th>Họ và tên</th>
+                        <th>Mã NV</th>
+                        <th>Email</th>
+                        <th>Điện thoại</th>
+                        <th>Đơn vị</th>
+                        <th>Chức danh</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var e in Model.Items)
+                    {
+                        <tr>
+                            <td><strong>@ViewHelpers.OrDash(e.FullName)</strong></td>
+                            <td class="muted nowrap">@ViewHelpers.OrDash(e.Code)</td>
+                            <td class="muted">@ViewHelpers.OrDash(e.Email)</td>
+                            <td class="muted nowrap">@ViewHelpers.OrDash(e.PhoneNumber)</td>
+                            <td class="muted wrap-text">@ViewHelpers.OrDash(e.DepartmentName)</td>
+                            <td class="muted wrap-text">@ViewHelpers.OrDash(e.PositionName)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @Html.Partial("_Pager", Model.Pager)
+    }
+</div>

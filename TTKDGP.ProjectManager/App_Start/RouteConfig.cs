@@ -9,6 +9,13 @@ namespace TTKDGP.ProjectManager
         {
             routes.IgnoreRoute("{resource}.axd/{*pathInfo}");
 
+            // API tích hợp cho đối tác lấy dữ liệu HRM. Đặt trước route mặc định để URL gọn (/api/hrm).
+            routes.MapRoute(
+                name: "IntegrationApiHrm",
+                url: "api/hrm",
+                defaults: new { controller = "IntegrationApi", action = "Hrm" }
+            );
+
             routes.MapRoute(
                 name: "Default",
                 url: "{controller}/{action}/{id}",
