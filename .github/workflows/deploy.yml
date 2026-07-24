@@ -1,0 +1,107 @@
+name: Deploy to FTP
+
+# Chi deploy khi nhanh upload-source nhan thay doi (vi du merge main -> upload-source).
+# main van la nhanh phat trien, push main KHONG deploy.
+on:
+  push:
+    branches: [upload-source]
+  workflow_dispatch:
+
+# Khong cho hai luot deploy chay chong len nhau.
+concurrency:
+  group: ftp-deploy
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: windows-latest
+    environment: FTP_Server
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v2
+
+      - name: Restore NuGet packages
+        run: nuget restore TTKDGP.ProjectManager.sln
+
+      # FolderProfile ghi ket qua ra build\app (DeleteExistingFiles=True, ExcludeApp_Data=False).
+      - name: Build and publish (Release, FolderProfile)
+        run: msbuild TTKDGP.ProjectManager\TTKDGP.ProjectManager.csproj /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile /v:minimal /nologo
+
+      # Upload DE LEN, KHONG XOA. Tren runner khong co secrets.config, du lieu that trong
+      # App_Data hay playwright-browsers (deu bi gitignore), nen tuyet doi khong dung cong cu
+      # sync kieu xoa file la - se xoa mat secret va du lieu that tren server.
+      - name: Upload build output to FTP (overwrite, never delete)
+        shell: pwsh
+        env:
+          FTP_SERVER: ${{ vars.IP_FTP }}
+          FTP_USER: ${{ vars.USERNAME_FTP }}
+          FTP_PASS: ${{ secrets.PASS_FTP }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:GITHUB_WORKSPACE 'build\app'
+          if (-not (Test-Path $root)) { throw "Khong tim thay build\app sau khi publish." }
+
+          $server = $env:FTP_SERVER
+          $remote = 'public_html'
+          $cred = New-Object System.Net.NetworkCredential($env:FTP_USER, $env:FTP_PASS)
+
+          function New-Req($url, $method) {
+            $r = [System.Net.FtpWebRequest]::Create($url)
+            $r.Credentials = $cred
+            $r.Method = $method
+            $r.UsePassive = $true
+            $r.UseBinary = $true
+            $r.KeepAlive = $false
+            $r.Timeout = 120000
+            return $r
+          }
+
+          function Ensure-Dir($rel) {
+            $url = "ftp://$server/$remote/$($rel -replace '\\','/')"
+            try {
+              (New-Req $url ([System.Net.WebRequestMethods+Ftp]::MakeDirectory)).GetResponse().Close()
+            } catch [System.Net.WebException] {
+              # 550 = thu muc da co, bo qua.
+              $resp = $_.Exception.Response
+              if ($null -eq $resp -or $resp.StatusCode -ne [System.Net.FtpStatusCode]::ActionNotTakenFileUnavailable) { throw }
+            }
+          }
+
+          $dirs = Get-ChildItem $root -Recurse -Directory |
+                  ForEach-Object { $_.FullName.Substring($root.Length + 1) } |
+                  Sort-Object { ($_ -split '\\').Count }, { $_ }
+          Write-Host "Tao $($dirs.Count) thu muc..."
+          foreach ($d in $dirs) { Ensure-Dir $d }
+
+          $files = Get-ChildItem $root -Recurse -File
+          Write-Host "Tai len $($files.Count) file..."
+          $ok = 0
+          $fail = @()
+          foreach ($f in $files) {
+            $rel = $f.FullName.Substring($root.Length + 1)
+            $url = "ftp://$server/$remote/$($rel -replace '\\','/')"
+            try {
+              $req = New-Req $url ([System.Net.WebRequestMethods+Ftp]::UploadFile)
+              $bytes = [System.IO.File]::ReadAllBytes($f.FullName)
+              $req.ContentLength = $bytes.Length
+              $s = $req.GetRequestStream()
+              $s.Write($bytes, 0, $bytes.Length)
+              $s.Close()
+              $req.GetResponse().Close()
+              $ok++
+              if ($ok % 100 -eq 0) { Write-Host "  ...$ok/$($files.Count)" }
+            } catch {
+              $fail += "$rel => $($_.Exception.Message)"
+            }
+          }
+          Write-Host "Thanh cong: $ok / $($files.Count)"
+          if ($fail.Count -gt 0) {
+            $fail | ForEach-Object { Write-Host "LOI: $_" }
+            throw "$($fail.Count) file that bai."
+          }
