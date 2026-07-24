@@ -14,7 +14,9 @@ concurrency:
 
 jobs:
   build-and-deploy:
-    runs-on: windows-latest
+    # Chay tren self-hosted runner trong mang noi bo (thay vi cloud), vi FTP 10.57.30.10
+    # la IP noi bo runner cloud cua GitHub khong toi duoc.
+    runs-on: [self-hosted, windows, ftp-deploy]
     environment: FTP_Server
     steps:
       - name: Checkout
