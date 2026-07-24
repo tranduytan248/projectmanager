@@ -38,8 +38,10 @@ jobs:
       # Upload DE LEN, KHONG XOA. Tren runner khong co secrets.config, du lieu that trong
       # App_Data hay playwright-browsers (deu bi gitignore), nen tuyet doi khong dung cong cu
       # sync kieu xoa file la - se xoa mat secret va du lieu that tren server.
+      # Windows PowerShell 5.1 (powershell) chu khong phai PowerShell 7 (pwsh) -
+      # may self-hosted khong co pwsh. Script FtpWebRequest chay tot tren 5.1.
       - name: Upload build output to FTP (overwrite, never delete)
-        shell: pwsh
+        shell: powershell
         env:
           FTP_SERVER: ${{ vars.IP_FTP }}
           FTP_USER: ${{ vars.USERNAME_FTP }}
