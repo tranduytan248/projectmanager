@@ -179,7 +179,77 @@ namespace TTKDGP.ProjectManager.Controllers
             model.ReportedCount = model.Rows.Count(r => r.HasReport);
             model.MissingCount = model.Rows.Count - model.ReportedCount;
 
+            // ----- Nội dung tuần trước + lịch sử vài tuần gần nhất -----
+            var myAssignmentIds = new HashSet<int>(assignments.Select(a => a.Id));
+            var myLogs = Repository.WorkLogs.All()
+                .Where(l => myAssignmentIds.Contains(l.AssignmentId))
+                .ToList();
+
+            int py, pw;
+            PrevWeek(y, w, out py, out pw);
+            model.PreviousWeekLabel = "Tuần " + pw;
+
+            var prevByAssignment = myLogs
+                .Where(l => l.Year == py && l.Week == pw)
+                .GroupBy(l => l.AssignmentId)
+                .ToDictionary(g => g.Key, g => g.First().Content);
+
+            foreach (var row in model.Rows)
+            {
+                string prev;
+                if (prevByAssignment.TryGetValue(row.AssignmentId, out prev))
+                {
+                    row.PreviousContent = prev;
+                }
+            }
+
+            // Bốn tuần liền trước tuần đang xem.
+            int hy = y, hw = w;
+            for (var i = 0; i < 4; i++)
+            {
+                PrevWeek(hy, hw, out hy, out hw);
+
+                var weekLogs = myLogs.Where(l => l.Year == hy && l.Week == hw).ToList();
+                var reported = weekLogs.Select(l => l.AssignmentId).Distinct().Count();
+                var snippet = weekLogs
+                    .Select(l => l.Content)
+                    .FirstOrDefault(c => !string.IsNullOrWhiteSpace(c));
+
+                model.History.Add(new MyReportWeekHistory
+                {
+                    Year = hy,
+                    Week = hw,
+                    WeekLabel = "Tuần " + hw,
+                    Reported = reported,
+                    Total = model.Rows.Count,
+                    Snippet = Snippet(snippet)
+                });
+            }
+
             return model;
+        }
+
+        /// <summary>Tuần liền trước (year, week), tự lùi năm khi ở tuần 1.</summary>
+        private static void PrevWeek(int year, int week, out int py, out int pw)
+        {
+            if (week > 1)
+            {
+                py = year;
+                pw = week - 1;
+            }
+            else
+            {
+                py = year - 1;
+                pw = WeekHelper.WeeksInYear(py);
+            }
+        }
+
+        /// <summary>Cắt ngắn một dòng nội dung để hiện trong lịch sử.</summary>
+        private static string Snippet(string content)
+        {
+            if (string.IsNullOrWhiteSpace(content)) return null;
+            var oneLine = content.Replace("\r", " ").Replace("\n", " ").Trim();
+            return oneLine.Length > 90 ? oneLine.Substring(0, 90) + "…" : oneLine;
         }
 
         /// <summary>Nhân sự gắn với tài khoản đang đăng nhập; 0 nếu chưa gắn.</summary>

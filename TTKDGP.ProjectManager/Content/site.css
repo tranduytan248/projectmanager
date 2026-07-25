@@ -428,6 +428,12 @@ body.has-sidebar .main, body.has-sidebar .topbar-inner, body.has-sidebar .footer
 .flow-cell { border: 1px solid var(--border-soft); border-radius: 8px; padding: 14px 16px; }
 .flow-cell .head { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13.5px; }
 .flow-cell .detail { font-size: 12.5px; color: var(--text-muted); margin-top: 5px; }
+
+/* Lịch sử tuần gần đây (màn Báo cáo của tôi) */
+.hist-row { display: flex; align-items: center; gap: 14px; padding: 12px 18px; border-bottom: 1px solid var(--border-soft); }
+.hist-row:last-child { border-bottom: 0; }
+.hist-week { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 13px; min-width: 64px; flex: 0 0 auto; }
+.hist-text { flex: 1; min-width: 0; font-size: 13px; color: #5b6779; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .status-dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
 .status-dot.ok { background: var(--success); }
 .status-dot.warn { background: var(--warn); }

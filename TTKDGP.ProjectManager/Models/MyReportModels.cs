@@ -29,6 +29,31 @@ namespace TTKDGP.ProjectManager.Models
         public DateTime? ReportedAt { get; set; }
 
         public bool HasReport { get { return LogId > 0; } }
+
+        /// <summary>Nội dung đã ghi cho phân công này ở TUẦN TRƯỚC — để gợi ý và bấm dùng lại.</summary>
+        public string PreviousContent { get; set; }
+
+        public bool HasPrevious { get { return !string.IsNullOrWhiteSpace(PreviousContent); } }
+    }
+
+    /// <summary>Một tuần trong phần "Lịch sử gần đây" của màn Báo cáo của tôi.</summary>
+    public class MyReportWeekHistory
+    {
+        public int Year { get; set; }
+        public int Week { get; set; }
+        public string WeekLabel { get; set; }
+
+        /// <summary>Số phân công đã ghi báo cáo trong tuần đó.</summary>
+        public int Reported { get; set; }
+
+        /// <summary>Tổng số phân công cần báo cáo (lấy theo phân công hiện tại).</summary>
+        public int Total { get; set; }
+
+        /// <summary>Trích một đoạn nội dung của tuần đó, hiện cho dễ nhận ra.</summary>
+        public string Snippet { get; set; }
+
+        public bool Full { get { return Total > 0 && Reported >= Total; } }
+        public int Missing { get { return Total - Reported < 0 ? 0 : Total - Reported; } }
     }
 
     /// <summary>Màn hình "Báo cáo của tôi": các phân công đang thực hiện/hỗ trợ theo từng tuần.</summary>
@@ -58,11 +83,24 @@ namespace TTKDGP.ProjectManager.Models
         public int ReportedCount { get; set; }
         public int MissingCount { get; set; }
 
+        /// <summary>Nhãn tuần liền trước tuần đang xem, ví dụ "Tuần 29".</summary>
+        public string PreviousWeekLabel { get; set; }
+
+        /// <summary>Vài tuần gần nhất trước tuần đang xem, để tự soi tình hình báo cáo.</summary>
+        public List<MyReportWeekHistory> History { get; set; }
+
+        public int TotalRows { get { return Rows == null ? 0 : Rows.Count; } }
+        public int ReportedPercent
+        {
+            get { return TotalRows <= 0 ? 0 : (int)System.Math.Round(ReportedCount * 100.0 / TotalRows); }
+        }
+
         public MyReportViewModel()
         {
             Rows = new List<MyReportRow>();
             StatusOptions = new List<string>();
             YearOptions = new List<int>();
+            History = new List<MyReportWeekHistory>();
         }
     }
 }

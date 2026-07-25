@@ -79,6 +79,25 @@ else
         </div>
     </div>
 
+    if (Model.Rows.Count > 0)
+    {
+        <div class="card">
+            <div class="card-body">
+                <div style="display:flex;align-items:baseline;justify-content:space-between;gap:14px;flex-wrap:wrap">
+                    <div style="font-size:15px;font-weight:600">
+                        @(Model.MissingCount > 0
+                            ? "Còn " + Model.MissingCount + " dự án chưa ghi báo cáo tuần này"
+                            : "Đã ghi báo cáo đủ các dự án tuần này")
+                    </div>
+                    <div class="muted" style="font-size:13px">Đã ghi @Model.ReportedCount/@Model.TotalRows</div>
+                </div>
+                <div class="progress-track" style="margin-top:12px">
+                    <div class="progress-fill" style="width:@(Model.ReportedPercent)%"></div>
+                </div>
+            </div>
+        </div>
+    }
+
     if (Model.Rows.Count == 0)
     {
         <div class="card">
@@ -122,9 +141,22 @@ else
                         <input type="hidden" name="week" value="@Model.Week" />
 
                         <div class="form-field">
-                            <label for="content-@row.AssignmentId">Nội dung thực hiện trong tuần</label>
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+                                <label for="content-@row.AssignmentId" style="margin:0">Nội dung thực hiện trong tuần</label>
+                                @if (row.HasPrevious)
+                                {
+                                    <button type="button" class="btn btn-default btn-sm" data-reuse="@row.AssignmentId">
+                                        Dùng lại nội dung @Model.PreviousWeekLabel
+                                    </button>
+                                }
+                            </div>
                             <textarea id="content-@row.AssignmentId" name="content" rows="4"
                                       maxlength="2000" placeholder="Tuần này bạn đã làm gì trong dự án này?">@row.Content</textarea>
+                            @if (row.HasPrevious)
+                            {
+                                <div id="prev-@row.AssignmentId" hidden>@row.PreviousContent</div>
+                                <div class="hint">@Model.PreviousWeekLabel bạn ghi: “@row.PreviousContent”</div>
+                            }
                         </div>
 
                         <div class="filters">
@@ -153,4 +185,57 @@ else
             </div>
         }
     }
+
+    if (Model.Rows.Count > 0)
+    {
+        <div class="section-head" style="margin-top:8px">
+            <h2>Vài tuần gần nhất</h2>
+            <span class="muted">Trước @Model.WeekLabel</span>
+        </div>
+        <div class="card">
+            @foreach (var h in Model.History)
+            {
+                <div class="hist-row">
+                    <span class="hist-week">@h.WeekLabel</span>
+                    <span class="hist-text">
+                        @if (h.Reported > 0)
+                        {
+                            <span>@h.Reported/@h.Total dự án@(string.IsNullOrWhiteSpace(h.Snippet) ? "" : " · " + h.Snippet)</span>
+                        }
+                        else
+                        {
+                            <span class="muted">Chưa ghi báo cáo</span>
+                        }
+                    </span>
+                    @if (h.Reported == 0)
+                    {
+                        <span class="badge badge-inactive">Trống</span>
+                    }
+                    else if (h.Full)
+                    {
+                        <span class="badge badge-active">Đủ</span>
+                    }
+                    else
+                    {
+                        <span class="badge badge-waiting">Thiếu @h.Missing</span>
+                    }
+                </div>
+            }
+        </div>
+    }
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            document.querySelectorAll('[data-reuse]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var id = btn.getAttribute('data-reuse');
+                    var src = document.getElementById('prev-' + id);
+                    var ta = document.getElementById('content-' + id);
+                    if (src && ta) { ta.value = src.textContent.trim(); ta.focus(); }
+                });
+            });
+        })();
+    </script>
 }
