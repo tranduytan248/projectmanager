@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #eef1f6; }
+  a { color: #1a56a8; text-decoration: none; }
+  a:hover { color: #10386f; text-decoration: underline; }
+  textarea, select, input, button { font-family: inherit; }
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#eef1f6;color:#16202c;font-family:'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:14px;line-height:1.5">
+
+  <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:9px 20px;background:#0f2742;color:#c8d6e8;font-size:12.5px">
+    <span style="letter-spacing:.4px;text-transform:uppercase;font-weight:700;font-size:11px;color:#7f9bbd">Xem giao diện với vai trò</span>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button type="button" onClick="{{ pickReporter }}" style="padding:5px 13px;border-radius:999px;border:1px solid #2c4a71;background:#173453;color:#dbe6f3;font-size:12.5px;font-weight:600;cursor:pointer" style-hover="background:#1f4064;color:#fff">Báo cáo công việc</button>
+      <button type="button" onClick="{{ pickManager }}" style="padding:5px 13px;border-radius:999px;border:1px solid #2c4a71;background:#173453;color:#dbe6f3;font-size:12.5px;font-weight:600;cursor:pointer" style-hover="background:#1f4064;color:#fff">Quản lý</button>
+      <button type="button" onClick="{{ pickAdmin }}" style="padding:5px 13px;border-radius:999px;border:1px solid #2c4a71;background:#173453;color:#dbe6f3;font-size:12.5px;font-weight:600;cursor:pointer" style-hover="background:#1f4064;color:#fff">Quản trị</button>
+    </div>
+    <span style="margin-left:auto;color:#7f9bbd">Đang xem: <strong style="color:#fff;font-weight:600">{{ roleLabel }}</strong></span>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;align-items:stretch">
+
+    <aside style="flex:0 1 248px;min-width:248px;background:#fff;border-right:1px solid #e0e5ee;padding:16px 14px 24px;display:flex;flex-direction:column;gap:4px">
+      <a href="#" style="display:flex;align-items:center;gap:10px;padding:2px 4px 14px;border-bottom:1px solid #e8ecf3;margin-bottom:10px;text-decoration:none">
+        <span style="background:#1a56a8;color:#fff;font-weight:700;letter-spacing:.5px;padding:6px 9px;border-radius:7px;font-size:13px">NCPT</span>
+        <span style="color:#16202c;font-weight:600;font-size:13px;line-height:1.3">Quản lý dự án<br />&amp; nhân sự</span>
+      </a>
+
+      <sc-if value="{{ isReporter }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <div style="padding:4px 10px 6px;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#8b96a9">Việc của tôi</div>
+          <a href="#" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-radius:7px;background:#1a56a8;color:#fff;font-weight:600;text-decoration:none">
+            <span>Báo cáo tuần này</span>
+            <span style="background:#fff;color:#1a56a8;border-radius:999px;padding:0 7px;font-size:11.5px;font-weight:700">2</span>
+          </a>
+          <a href="#" style="display:block;padding:10px 12px;border-radius:7px;color:#5b6779;font-weight:500;text-decoration:none" style-hover="background:#eaf1fb;color:#1a56a8">Lịch sử báo cáo</a>
+          <a href="#" style="display:block;padding:10px 12px;border-radius:7px;color:#5b6779;font-weight:500;text-decoration:none" style-hover="background:#eaf1fb;color:#1a56a8">Dự án của tôi</a>
+          <div style="margin-top:16px;padding:12px 13px;border:1px solid #e8ecf3;border-radius:9px;background:#f8fafc">
+            <div style="font-size:12px;font-weight:700;color:#16202c">Hạn ghi nhận</div>
+            <div style="font-size:12.5px;color:#667289;margin-top:3px">17:00 thứ Sáu, 24/07</div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isManager }}">
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <div style="padding:4px 10px 6px;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#8b96a9">Điều hành</div>
+          <a href="#" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-radius:7px;background:#1a56a8;color:#fff;font-weight:600;text-decoration:none">
+            <span>Việc cần xử lý</span>
+            <span style="background:#fff;color:#b3261e;border-radius:999px;padding:0 7px;font-size:11.5px;font-weight:700">3</span>
+          </a>
+          <a href="#" style="display:block;padding:10px 12px;border-radius:7px;color:#5b6779;font-weight:500;text-decoration:none" style-hover="background:#eaf1fb;color:#1a56a8">Báo cáo tuần của nhân sự</a>
+          <a href="#" style="display:block;padding:10px 12px;border-radius:7px;color:#5b6779;font-weight:500;text-decoration:none" style-hover="background:#eaf1fb;color:#1a56a8">Dự án</a>
+          <a href="#" style="display:block;padding:10px 12px;border-radius:7px;color:#5b6779;font-weight:500;text-decoration:none" style-hover="background:#eaf1fb;color:#1a56a8">Phân công</a>
+          <a href="#" style="display:block;padding:10px 12px;border-radius:7px;color:#5b6779;font-weight:500;text-decoration:none" style-hover="background:#eaf1fb;color:#1a56a8">Nhân sự</a>
+          <div style="padding:14px 10px 6px;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#8b96a9;border-top:1px solid #e8ecf3;margin-top:10px">Của tôi</div>
+          <a href="#" style="display:block;padding:10px 12px;border-radius:7px;color:#5b6779;font-weight:500;text-decoration:none" style-hover="background:#eaf1fb;color:#1a56a8">Báo cáo của tôi</a>
+          <a href="#" style="display:block;padding:10px 12px;border-radius:7px;color:#8b96a9;font-weight:500;font-size:13.5px;text-decoration:none" style-hover="background:#eaf1fb;color:#1a56a8">Danh mục &amp; thiết lập</a>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isAdmin }}">
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <div style="padding:4px 10px 6px;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#8b96a9">Quản trị</div>
+          <a href="#" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-radius:7px;background:#1a56a8;color:#fff;font-weight:600;text-decoration:none">
+            <span>Tình trạng hệ thống</span>
+            <span style="background:#fff;color:#b3261e;border-radius:999px;padding:0 7px;font-size:11.5px;font-weight:700">2</span>
+          </a>
+          <a href="#" style="display:block;padding:10px 12px;border-radius:7px;color:#5b6779;font-weight:500;text-decoration:none" style-hover="background:#eaf1fb;color:#1a56a8">Người dùng &amp; phân quyền</a>
+          <a href="#" style="display:block;padding:10px 12px;border-radius:7px;color:#5b6779;font-weight:500;text-decoration:none" style-hover="background:#eaf1fb;color:#1a56a8">Thông báo &amp; nhắc việc</a>
+          <a href="#" style="display:block;padding:10px 12px;border-radius:7px;color:#5b6779;font-weight:500;text-decoration:none" style-hover="background:#eaf1fb;color:#1a56a8">Đồng bộ HRM / GoConnect</a>
+          <a href="#" style="display:block;padding:10px 12px;border-radius:7px;color:#5b6779;font-weight:500;text-decoration:none" style-hover="background:#eaf1fb;color:#1a56a8">Hệ thống tích hợp</a>
+          <div style="padding:14px 10px 6px;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#8b96a9;border-top:1px solid #e8ecf3;margin-top:10px">Điều hành</div>
+          <a href="#" style="display:block;padding:10px 12px;border-radius:7px;color:#5b6779;font-weight:500;text-decoration:none" style-hover="background:#eaf1fb;color:#1a56a8">Việc cần xử lý</a>
+          <a href="#" style="display:block;padding:10px 12px;border-radius:7px;color:#5b6779;font-weight:500;text-decoration:none" style-hover="background:#eaf1fb;color:#1a56a8">Dự án &amp; phân công</a>
+          <a href="#" style="display:block;padding:10px 12px;border-radius:7px;color:#8b96a9;font-weight:500;font-size:13.5px;text-decoration:none" style-hover="background:#eaf1fb;color:#1a56a8">Danh mục &amp; thiết lập</a>
+        </div>
+      </sc-if>
+    </aside>
+
+    <main style="flex:1 1 560px;min-width:0;display:flex;flex-direction:column">
+
+      <header style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:0 24px;min-height:60px;background:#fff;border-bottom:1px solid #e0e5ee">
+        <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:#667289">
+          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#1a7f52"></span>
+          Tuần 30/2026 · 20/07 – 26/07/2026
+        </div>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
+          <a href="#" style="display:flex;flex-direction:column;text-align:right;line-height:1.25;padding:5px 10px;border-radius:7px;color:#16202c;text-decoration:none" style-hover="background:#eaf1fb">
+            <span style="font-weight:600">{{ userName }}</span>
+            <span style="font-size:11.5px;color:#8b96a9">{{ roleLabel }}</span>
+          </a>
+          <button type="button" style="padding:6px 12px;border-radius:7px;border:1px solid #c6cedd;background:#fff;color:#667289;font-size:13px;cursor:pointer" style-hover="background:#f3f5f9;color:#16202c">Đăng xuất</button>
+        </div>
+      </header>
+
+      <div style="padding:26px 24px 56px;max-width:1120px;width:100%">
+
+        <sc-if value="{{ isReporter }}" hint-placeholder-val="{{ true }}">
+          <div>
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:20px">
+              <div>
+                <h1 style="margin:0 0 5px;font-size:23px;letter-spacing:-.2px">Báo cáo công việc tuần 30/2026</h1>
+                <p style="margin:0;color:#667289">Kỳ báo cáo 20/07 – 26/07/2026. Hạn ghi nhận: 17:00 thứ Sáu 24/07.</p>
+              </div>
+              <a href="#" style="font-size:13px;color:#667289;text-decoration:none" style-hover="color:#1a56a8">Xem tuần khác</a>
+            </div>
+
+            <div style="background:#fff;border:1px solid #e0e5ee;border-radius:10px;box-shadow:0 1px 2px rgba(20,35,60,.05);padding:18px 20px;margin-bottom:20px">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:14px;flex-wrap:wrap">
+                <div style="font-size:15px;font-weight:600">Còn 2 dự án chưa ghi báo cáo tuần này</div>
+                <div style="font-size:13px;color:#667289">Đã ghi 1/3</div>
+              </div>
+              <div style="display:flex;gap:6px;margin-top:12px">
+                <div style="flex:1;height:8px;border-radius:999px;background:#1a7f52"></div>
+                <div style="flex:1;height:8px;border-radius:999px;background:#e6eaf1"></div>
+                <div style="flex:1;height:8px;border-radius:999px;background:#e6eaf1"></div>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:16px">
+
+              <section style="background:#fff;border:1px solid #cfdcee;border-radius:10px;box-shadow:0 1px 2px rgba(20,35,60,.05);overflow:hidden">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 20px;background:#f6f9fd;border-bottom:1px solid #e3ebf5">
+                  <div style="min-width:0">
+                    <div style="font-weight:600;font-size:15px">Thu phí môi trường - MTĐT Nha Trang</div>
+                    <div style="font-size:12.5px;color:#667289;margin-top:2px">Công ty Môi trường Đô Thị Nha Trang · PM: Nguyễn Ngọc Châu Hoàng</div>
+                  </div>
+                  <span style="padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;background:#fdf5e2;color:#9a6700;border:1px solid #ecd9a6;white-space:nowrap">Chưa ghi</span>
+                </div>
+                <div style="padding:18px 20px">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:7px">
+                    <label for="rp-1" style="font-size:13px;font-weight:600">Tuần này anh/chị đã làm gì trong dự án này?</label>
+                    <button type="button" onClick="{{ reuse1 }}" style="padding:4px 10px;border-radius:6px;border:1px solid #c6cedd;background:#fff;color:#1a56a8;font-size:12.5px;font-weight:600;cursor:pointer" style-hover="background:#eaf1fb">Dùng lại nội dung tuần 29</button>
+                  </div>
+                  <textarea id="rp-1" rows="4" value="{{ text1 }}" onChange="{{ onText1 }}" placeholder="Ví dụ: Hoàn thiện chức năng đối soát phí, chuyển dữ liệu site Tự quản sang site Đặt hàng." style="width:100%;font-size:14px;padding:10px 12px;border:1px solid #c6cedd;border-radius:7px;line-height:1.6;resize:vertical;min-height:92px;color:#16202c"></textarea>
+                  <div style="font-size:12px;color:#8b96a9;margin-top:6px">Tuần 29 anh/chị ghi: “Rà soát báo cáo doanh thu, sửa lỗi nhập liệu phiếu thu.”</div>
+                  <div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-top:16px">
+                    <div style="display:flex;flex-direction:column;gap:5px">
+                      <label for="st-1" style="font-size:12px;font-weight:600;color:#667289">Trạng thái tham gia</label>
+                      <select id="st-1" defaultValue="Đang thực hiện" style="font-size:14px;padding:8px 11px;border:1px solid #c6cedd;border-radius:7px;background:#fff;min-width:180px;color:#16202c">
+                        <option>Đang thực hiện</option>
+                        <option>Đang hỗ trợ</option>
+                        <option>Tạm dừng</option>
+                        <option>Hoàn thành</option>
+                      </select>
+                    </div>
+                    <button type="button" style="padding:9px 18px;border-radius:7px;border:1px solid #1a56a8;background:#1a56a8;color:#fff;font-size:14px;font-weight:600;cursor:pointer" style-hover="background:#143f7d;border-color:#143f7d">Lưu báo cáo</button>
+                    <span style="font-size:12.5px;color:#8b96a9">Lưu xong sẽ tự chuyển xuống dự án kế tiếp.</span>
+                  </div>
+                </div>
+              </section>
+
+              <section style="background:#fff;border:1px solid #e0e5ee;border-radius:10px;box-shadow:0 1px 2px rgba(20,35,60,.05);overflow:hidden">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 20px;border-bottom:1px solid #eaeef4">
+                  <div style="min-width:0">
+                    <div style="font-weight:600;font-size:15px">VNPT Igate</div>
+                    <div style="font-size:12.5px;color:#667289;margin-top:2px">VPUB tỉnh Khánh Hòa · PM: Trần Thiên Long</div>
+                  </div>
+                  <span style="padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;background:#fdf5e2;color:#9a6700;border:1px solid #ecd9a6;white-space:nowrap">Chưa ghi</span>
+                </div>
+                <div style="padding:18px 20px">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:7px">
+                    <label for="rp-2" style="font-size:13px;font-weight:600">Tuần này anh/chị đã làm gì trong dự án này?</label>
+                    <button type="button" onClick="{{ reuse2 }}" style="padding:4px 10px;border-radius:6px;border:1px solid #c6cedd;background:#fff;color:#1a56a8;font-size:12.5px;font-weight:600;cursor:pointer" style-hover="background:#eaf1fb">Dùng lại nội dung tuần 29</button>
+                  </div>
+                  <textarea id="rp-2" rows="4" value="{{ text2 }}" onChange="{{ onText2 }}" placeholder="Ví dụ: Chỉnh sửa báo cáo 8h theo yêu cầu VPUB, hỗ trợ xử lý lỗi hồ sơ." style="width:100%;font-size:14px;padding:10px 12px;border:1px solid #c6cedd;border-radius:7px;line-height:1.6;resize:vertical;min-height:92px;color:#16202c"></textarea>
+                  <div style="font-size:12px;color:#8b96a9;margin-top:6px">Tuần 29 anh/chị ghi: “Chỉnh sửa báo cáo 8h, kiểm thử luồng tiếp nhận hồ sơ.”</div>
+                  <div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-top:16px">
+                    <div style="display:flex;flex-direction:column;gap:5px">
+                      <label for="st-2" style="font-size:12px;font-weight:600;color:#667289">Trạng thái tham gia</label>
+                      <select id="st-2" defaultValue="Đang hỗ trợ" style="font-size:14px;padding:8px 11px;border:1px solid #c6cedd;border-radius:7px;background:#fff;min-width:180px;color:#16202c">
+                        <option>Đang thực hiện</option>
+                        <option>Đang hỗ trợ</option>
+                        <option>Tạm dừng</option>
+                        <option>Hoàn thành</option>
+                      </select>
+                    </div>
+                    <button type="button" style="padding:9px 18px;border-radius:7px;border:1px solid #1a56a8;background:#1a56a8;color:#fff;font-size:14px;font-weight:600;cursor:pointer" style-hover="background:#143f7d;border-color:#143f7d">Lưu báo cáo</button>
+                  </div>
+                </div>
+              </section>
+
+              <section style="background:#fff;border:1px solid #e0e5ee;border-radius:10px;box-shadow:0 1px 2px rgba(20,35,60,.05);padding:15px 20px">
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                  <span style="padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;background:#e6f5ee;color:#1a7f52;border:1px solid #b7e0cc;white-space:nowrap">Đã ghi</span>
+                  <div style="min-width:0;flex:1 1 240px">
+                    <div style="font-weight:600">Thu phí môi trường - MTĐT Đà Lạt</div>
+                    <div style="font-size:12.5px;color:#667289;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Hỗ trợ đối soát dữ liệu tháng 7, hướng dẫn nhân sự khách hàng nhập phiếu thu.</div>
+                  </div>
+                  <span style="font-size:12.5px;color:#8b96a9">Ghi 09:12 · 22/07</span>
+                  <button type="button" style="padding:6px 13px;border-radius:7px;border:1px solid #c6cedd;background:#fff;color:#16202c;font-size:13px;cursor:pointer" style-hover="background:#f3f5f9">Sửa</button>
+                </div>
+              </section>
+            </div>
+
+            <sc-if value="{{ showHistory }}" hint-placeholder-val="{{ true }}">
+              <div style="margin-top:30px">
+                <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+                  <h2 style="margin:0;font-size:16px">Bốn tuần gần nhất</h2>
+                  <a href="#" style="font-size:13px;text-decoration:none">Xem toàn bộ lịch sử</a>
+                </div>
+                <div style="background:#fff;border:1px solid #e0e5ee;border-radius:10px;box-shadow:0 1px 2px rgba(20,35,60,.05);overflow:hidden">
+                  <div style="display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid #eef1f6">
+                    <span style="font-variant-numeric:tabular-nums;font-weight:600;font-size:13px;min-width:64px">Tuần 29</span>
+                    <span style="flex:1;min-width:0;font-size:13px;color:#5b6779;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">3/3 dự án · Rà soát báo cáo doanh thu, sửa lỗi nhập liệu phiếu thu…</span>
+                    <span style="padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:600;background:#e6f5ee;color:#1a7f52;border:1px solid #b7e0cc">Đủ</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid #eef1f6">
+                    <span style="font-variant-numeric:tabular-nums;font-weight:600;font-size:13px;min-width:64px">Tuần 28</span>
+                    <span style="flex:1;min-width:0;font-size:13px;color:#5b6779;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">2/3 dự án · Thiếu báo cáo dự án VNPT Igate</span>
+                    <span style="padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:600;background:#fdf5e2;color:#9a6700;border:1px solid #ecd9a6">Thiếu 1</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid #eef1f6">
+                    <span style="font-variant-numeric:tabular-nums;font-weight:600;font-size:13px;min-width:64px">Tuần 27</span>
+                    <span style="flex:1;min-width:0;font-size:13px;color:#5b6779;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">3/3 dự án · Triển khai bản cập nhật cho MTĐT Đà Lạt…</span>
+                    <span style="padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:600;background:#e6f5ee;color:#1a7f52;border:1px solid #b7e0cc">Đủ</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:14px;padding:12px 18px">
+                    <span style="font-variant-numeric:tabular-nums;font-weight:600;font-size:13px;min-width:64px">Tuần 26</span>
+                    <span style="flex:1;min-width:0;font-size:13px;color:#5b6779;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">3/3 dự án · Nghiệm thu giai đoạn 1 thu phí môi trường…</span>
+                    <span style="padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:600;background:#e6f5ee;color:#1a7f52;border:1px solid #b7e0cc">Đủ</span>
+                  </div>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isManager }}">
+          <div>
+            <div style="margin-bottom:20px">
+              <h1 style="margin:0 0 5px;font-size:23px;letter-spacing:-.2px">Việc cần xử lý</h1>
+              <p style="margin:0;color:#667289">Tuần 30/2026 · Xếp theo mức ưu tiên. Xử lý xong mục nào thì mục đó biến mất khỏi danh sách.</p>
+            </div>
+
+            <section style="border:1px solid #123a6b;border-radius:10px;overflow:hidden;box-shadow:0 1px 2px rgba(20,35,60,.05);margin-bottom:20px">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:13px 20px;background:#123a6b;color:#fff">
+                <span style="font-weight:600">Ưu tiên trong hôm nay</span>
+                <span style="font-size:12.5px;color:#adc4e0">Hạn báo cáo tuần: 17:00 thứ Sáu 24/07</span>
+              </div>
+              <div style="background:#fff">
+                <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:16px 20px;border-bottom:1px solid #eef1f6">
+                  <span style="flex:0 0 44px;height:44px;border-radius:9px;background:#fbeae9;color:#b3261e;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700">4</span>
+                  <div style="flex:1 1 260px;min-width:0">
+                    <div style="font-weight:600">Bốn nhân sự chưa ghi báo cáo tuần 30</div>
+                    <div style="font-size:13px;color:#667289;margin-top:2px">Võ Đình Chí, Nguyễn Trí Dũng, Trịnh Minh Hậu, Lê Đình Minh Trí</div>
+                  </div>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <button type="button" style="padding:8px 15px;border-radius:7px;border:1px solid #1a56a8;background:#1a56a8;color:#fff;font-size:13.5px;font-weight:600;cursor:pointer" style-hover="background:#143f7d;border-color:#143f7d">Nhắc cả 4 người</button>
+                    <button type="button" style="padding:8px 13px;border-radius:7px;border:1px solid #c6cedd;background:#fff;color:#16202c;font-size:13.5px;cursor:pointer" style-hover="background:#f3f5f9">Xem danh sách</button>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:16px 20px;border-bottom:1px solid #eef1f6">
+                  <span style="flex:0 0 44px;height:44px;border-radius:9px;background:#fdf5e2;color:#9a6700;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700">2</span>
+                  <div style="flex:1 1 260px;min-width:0">
+                    <div style="font-weight:600">Hai dự án đang chạy nhưng ba tuần không có báo cáo</div>
+                    <div style="font-size:13px;color:#667289;margin-top:2px">VNPT Igate · Cổng dịch vụ công Ninh Thuận</div>
+                  </div>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <button type="button" style="padding:8px 13px;border-radius:7px;border:1px solid #c6cedd;background:#fff;color:#16202c;font-size:13.5px;cursor:pointer" style-hover="background:#f3f5f9">Xem dự án</button>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:16px 20px">
+                  <span style="flex:0 0 44px;height:44px;border-radius:9px;background:#eaf1fb;color:#1a56a8;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700">1</span>
+                  <div style="flex:1 1 260px;min-width:0">
+                    <div style="font-weight:600">Một phân công mới chờ xác nhận nhân sự</div>
+                    <div style="font-size:13px;color:#667289;margin-top:2px">Thu phí môi trường - MTĐT Nha Trang · đề xuất bổ sung Lương Công Trung</div>
+                  </div>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <button type="button" style="padding:8px 13px;border-radius:7px;border:1px solid #c6cedd;background:#fff;color:#16202c;font-size:13.5px;cursor:pointer" style-hover="background:#f3f5f9">Mở phân công</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section style="background:#fff;border:1px solid #e0e5ee;border-radius:10px;box-shadow:0 1px 2px rgba(20,35,60,.05);margin-bottom:20px;overflow:hidden">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 20px;border-bottom:1px solid #eaeef4">
+                <span style="font-weight:600">Tiến độ báo cáo tuần 30</span>
+                <span style="font-size:13px;color:#667289">12/16 nhân sự đã ghi</span>
+              </div>
+              <div style="padding:16px 20px">
+                <div style="display:flex;height:9px;border-radius:999px;overflow:hidden;background:#e6eaf1">
+                  <div style="width:75%;background:#1a7f52"></div>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin-top:16px">
+                  <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #eef1f6;border-radius:8px">
+                    <span style="flex:0 0 32px;height:32px;border-radius:50%;background:#eaf1fb;color:#1a56a8;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">VĐC</span>
+                    <div style="flex:1;min-width:0">
+                      <div style="font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Võ Đình Chí</div>
+                      <div style="font-size:12px;color:#8b96a9">2 dự án · trễ 2 tuần</div>
+                    </div>
+                    <button type="button" style="padding:5px 11px;border-radius:6px;border:1px solid #c6cedd;background:#fff;color:#1a56a8;font-size:12.5px;font-weight:600;cursor:pointer" style-hover="background:#eaf1fb">Nhắc</button>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #eef1f6;border-radius:8px">
+                    <span style="flex:0 0 32px;height:32px;border-radius:50%;background:#eaf1fb;color:#1a56a8;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">NTD</span>
+                    <div style="flex:1;min-width:0">
+                      <div style="font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Nguyễn Trí Dũng</div>
+                      <div style="font-size:12px;color:#8b96a9">1 dự án · trễ 1 tuần</div>
+                    </div>
+                    <button type="button" style="padding:5px 11px;border-radius:6px;border:1px solid #c6cedd;background:#fff;color:#1a56a8;font-size:12.5px;font-weight:600;cursor:pointer" style-hover="background:#eaf1fb">Nhắc</button>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #eef1f6;border-radius:8px">
+                    <span style="flex:0 0 32px;height:32px;border-radius:50%;background:#eaf1fb;color:#1a56a8;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">TMH</span>
+                    <div style="flex:1;min-width:0">
+                      <div style="font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Trịnh Minh Hậu</div>
+                      <div style="font-size:12px;color:#8b96a9">3 dự án · trễ 1 tuần</div>
+                    </div>
+                    <button type="button" style="padding:5px 11px;border-radius:6px;border:1px solid #c6cedd;background:#fff;color:#1a56a8;font-size:12.5px;font-weight:600;cursor:pointer" style-hover="background:#eaf1fb">Nhắc</button>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #eef1f6;border-radius:8px">
+                    <span style="flex:0 0 32px;height:32px;border-radius:50%;background:#eaf1fb;color:#1a56a8;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">LĐM</span>
+                    <div style="flex:1;min-width:0">
+                      <div style="font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Lê Đình Minh Trí</div>
+                      <div style="font-size:12px;color:#8b96a9">2 dự án · trễ 1 tuần</div>
+                    </div>
+                    <button type="button" style="padding:5px 11px;border-radius:6px;border:1px solid #c6cedd;background:#fff;color:#1a56a8;font-size:12.5px;font-weight:600;cursor:pointer" style-hover="background:#eaf1fb">Nhắc</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section style="background:#fff;border:1px solid #e0e5ee;border-radius:10px;box-shadow:0 1px 2px rgba(20,35,60,.05);margin-bottom:20px;overflow:hidden">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 20px;border-bottom:1px solid #eaeef4">
+                <span style="font-weight:600">Dự án cần chú ý</span>
+                <a href="#" style="font-size:13px;text-decoration:none">Xem tất cả 24 dự án</a>
+              </div>
+              <div style="overflow-x:auto">
+                <table style="width:100%;border-collapse:collapse;font-size:13px">
+                  <thead>
+                    <tr>
+                      <th style="text-align:left;padding:9px 20px;background:#f7f9fc;color:#667289;font-size:11.5px;text-transform:uppercase;letter-spacing:.3px;border-bottom:1px solid #e0e5ee;white-space:nowrap">Dự án</th>
+                      <th style="text-align:left;padding:9px 12px;background:#f7f9fc;color:#667289;font-size:11.5px;text-transform:uppercase;letter-spacing:.3px;border-bottom:1px solid #e0e5ee;white-space:nowrap">PM</th>
+                      <th style="text-align:left;padding:9px 12px;background:#f7f9fc;color:#667289;font-size:11.5px;text-transform:uppercase;letter-spacing:.3px;border-bottom:1px solid #e0e5ee;white-space:nowrap">Báo cáo mới nhất</th>
+                      <th style="text-align:left;padding:9px 20px;background:#f7f9fc;color:#667289;font-size:11.5px;text-transform:uppercase;letter-spacing:.3px;border-bottom:1px solid #e0e5ee;white-space:nowrap">Vấn đề</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style="padding:11px 20px;border-bottom:1px solid #eef1f6;min-width:200px">
+                        <div style="font-weight:600">VNPT Igate</div>
+                        <div style="color:#8b96a9;font-size:12.5px;margin-top:2px">VPUB tỉnh Khánh Hòa</div>
+                      </td>
+                      <td style="padding:11px 12px;border-bottom:1px solid #eef1f6;white-space:nowrap">Trần Thiên Long</td>
+                      <td style="padding:11px 12px;border-bottom:1px solid #eef1f6;white-space:nowrap;color:#b3261e;font-weight:600">Tuần 27</td>
+                      <td style="padding:11px 20px;border-bottom:1px solid #eef1f6;min-width:200px">Ba tuần không có báo cáo</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:11px 20px;border-bottom:1px solid #eef1f6;min-width:200px">
+                        <div style="font-weight:600">Cổng dịch vụ công Ninh Thuận</div>
+                        <div style="color:#8b96a9;font-size:12.5px;margin-top:2px">Sở TT&amp;TT Ninh Thuận</div>
+                      </td>
+                      <td style="padding:11px 12px;border-bottom:1px solid #eef1f6;white-space:nowrap">Nguyễn Ngọc Châu Hoàng</td>
+                      <td style="padding:11px 12px;border-bottom:1px solid #eef1f6;white-space:nowrap;color:#b3261e;font-weight:600">Tuần 27</td>
+                      <td style="padding:11px 20px;border-bottom:1px solid #eef1f6;min-width:200px">Ba tuần không có báo cáo</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:11px 20px;border-bottom:1px solid #eef1f6;min-width:200px">
+                        <div style="font-weight:600">Thu phí môi trường - MTĐT Đà Lạt</div>
+                        <div style="color:#8b96a9;font-size:12.5px;margin-top:2px">Công ty môi trường Đô thị Đà Lạt</div>
+                      </td>
+                      <td style="padding:11px 12px;border-bottom:1px solid #eef1f6;white-space:nowrap">Nguyễn Ngọc Châu Hoàng</td>
+                      <td style="padding:11px 12px;border-bottom:1px solid #eef1f6;white-space:nowrap">Tuần 30</td>
+                      <td style="padding:11px 20px;border-bottom:1px solid #eef1f6;min-width:200px">Chỉ còn một nhân sự tham gia</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px">
+              <div style="background:#fff;border:1px solid #e0e5ee;border-radius:10px;padding:14px 16px">
+                <div style="font-size:24px;font-weight:700;color:#16202c;line-height:1.1">24</div>
+                <div style="font-size:12.5px;color:#667289;margin-top:3px">Dự án đang chạy</div>
+              </div>
+              <div style="background:#fff;border:1px solid #e0e5ee;border-radius:10px;padding:14px 16px">
+                <div style="font-size:24px;font-weight:700;color:#16202c;line-height:1.1">16</div>
+                <div style="font-size:12.5px;color:#667289;margin-top:3px">Nhân sự tham gia</div>
+              </div>
+              <div style="background:#fff;border:1px solid #e0e5ee;border-radius:10px;padding:14px 16px">
+                <div style="font-size:24px;font-weight:700;color:#16202c;line-height:1.1">41</div>
+                <div style="font-size:12.5px;color:#667289;margin-top:3px">Lượt phân công</div>
+              </div>
+              <div style="background:#fff;border:1px solid #e0e5ee;border-radius:10px;padding:14px 16px">
+                <div style="font-size:24px;font-weight:700;color:#16202c;line-height:1.1">2,6</div>
+                <div style="font-size:12.5px;color:#667289;margin-top:3px">Dự án / nhân sự</div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isAdmin }}">
+          <div>
+            <div style="margin-bottom:20px">
+              <h1 style="margin:0 0 5px;font-size:23px;letter-spacing:-.2px">Tình trạng hệ thống</h1>
+              <p style="margin:0;color:#667289">Hai việc cần xử lý. Các luồng tự động khác đang chạy bình thường.</p>
+            </div>
+
+            <section style="border:1px solid #123a6b;border-radius:10px;overflow:hidden;box-shadow:0 1px 2px rgba(20,35,60,.05);margin-bottom:20px">
+              <div style="padding:13px 20px;background:#123a6b;color:#fff;font-weight:600">Cần quản trị xử lý</div>
+              <div style="background:#fff">
+                <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:16px 20px;border-bottom:1px solid #eef1f6">
+                  <span style="flex:0 0 44px;height:44px;border-radius:9px;background:#fbeae9;color:#b3261e;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700">2</span>
+                  <div style="flex:1 1 260px;min-width:0">
+                    <div style="font-weight:600">Hai tài khoản chưa gắn nhân sự tương ứng</div>
+                    <div style="font-size:13px;color:#667289;margin-top:2px">Tài khoản không gắn nhân sự sẽ không thấy phân công để báo cáo: chi.vd, hau.tm</div>
+                  </div>
+                  <button type="button" style="padding:8px 15px;border-radius:7px;border:1px solid #1a56a8;background:#1a56a8;color:#fff;font-size:13.5px;font-weight:600;cursor:pointer" style-hover="background:#143f7d;border-color:#143f7d">Gắn nhân sự</button>
+                </div>
+                <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:16px 20px">
+                  <span style="flex:0 0 44px;height:44px;border-radius:9px;background:#fdf5e2;color:#9a6700;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700">1</span>
+                  <div style="flex:1 1 260px;min-width:0">
+                    <div style="font-weight:600">Một khoá tích hợp hết hạn trong 7 ngày</div>
+                    <div style="font-size:13px;color:#667289;margin-top:2px">Hệ thống HRM nội bộ · hết hạn 01/08/2026</div>
+                  </div>
+                  <button type="button" style="padding:8px 13px;border-radius:7px;border:1px solid #c6cedd;background:#fff;color:#16202c;font-size:13.5px;cursor:pointer" style-hover="background:#f3f5f9">Cấp lại khoá</button>
+                </div>
+              </div>
+            </section>
+
+            <section style="background:#fff;border:1px solid #e0e5ee;border-radius:10px;box-shadow:0 1px 2px rgba(20,35,60,.05);margin-bottom:20px;overflow:hidden">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 20px;border-bottom:1px solid #eaeef4">
+                <span style="font-weight:600">Luồng tự động</span>
+                <span style="font-size:12.5px;color:#8b96a9">Cập nhật 08:15 hôm nay</span>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1px;background:#eef1f6">
+                <div style="background:#fff;padding:16px 20px">
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#1a7f52"></span>
+                    <span style="font-weight:600;font-size:13.5px">Đồng bộ HRM</span>
+                  </div>
+                  <div style="font-size:12.5px;color:#667289;margin-top:5px">06:00 hôm nay · 312 nhân sự, không có lỗi</div>
+                </div>
+                <div style="background:#fff;padding:16px 20px">
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#1a7f52"></span>
+                    <span style="font-weight:600;font-size:13.5px">Nhắc báo cáo qua Telegram</span>
+                  </div>
+                  <div style="font-size:12.5px;color:#667289;margin-top:5px">Đã gửi 16 tin lúc 08:00 thứ Năm</div>
+                </div>
+                <div style="background:#fff;padding:16px 20px">
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#9a6700"></span>
+                    <span style="font-weight:600;font-size:13.5px">Phiên GoConnect</span>
+                  </div>
+                  <div style="font-size:12.5px;color:#667289;margin-top:5px">Còn hiệu lực 3 ngày · nên đăng nhập lại</div>
+                </div>
+                <div style="background:#fff;padding:16px 20px">
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#1a7f52"></span>
+                    <span style="font-weight:600;font-size:13.5px">API tích hợp</span>
+                  </div>
+                  <div style="font-size:12.5px;color:#667289;margin-top:5px">3 hệ thống đang hoạt động · 1.204 lượt gọi tuần này</div>
+                </div>
+              </div>
+            </section>
+
+            <section style="background:#fff;border:1px solid #e0e5ee;border-radius:10px;box-shadow:0 1px 2px rgba(20,35,60,.05);overflow:hidden">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 20px;border-bottom:1px solid #eaeef4">
+                <span style="font-weight:600">Người dùng</span>
+                <a href="#" style="font-size:13px;text-decoration:none">Quản lý toàn bộ 21 tài khoản</a>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;padding:16px 20px">
+                <div style="border:1px solid #eef1f6;border-radius:8px;padding:12px 14px">
+                  <div style="font-size:20px;font-weight:700">3</div>
+                  <div style="font-size:12.5px;color:#667289;margin-top:2px">Quản trị</div>
+                </div>
+                <div style="border:1px solid #eef1f6;border-radius:8px;padding:12px 14px">
+                  <div style="font-size:20px;font-weight:700">4</div>
+                  <div style="font-size:12.5px;color:#667289;margin-top:2px">Quản lý</div>
+                </div>
+                <div style="border:1px solid #eef1f6;border-radius:8px;padding:12px 14px">
+                  <div style="font-size:20px;font-weight:700">14</div>
+                  <div style="font-size:12.5px;color:#667289;margin-top:2px">Báo cáo công việc</div>
+                </div>
+                <div style="border:1px solid #eef1f6;border-radius:8px;padding:12px 14px">
+                  <div style="font-size:20px;font-weight:700;color:#b3261e">2</div>
+                  <div style="font-size:12.5px;color:#667289;margin-top:2px">Chưa gắn nhân sự</div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </sc-if>
+
+      </div>
+
+      <footer style="margin-top:auto;padding:16px 24px;border-top:1px solid #e0e5ee;background:#fff;color:#8b96a9;font-size:12.5px">
+        Tổ NCPT — Trung tâm Kinh doanh Giải pháp, VNPT Khánh Hòa
+      </footer>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;role&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;reporter&quot;,&quot;manager&quot;,&quot;admin&quot;],&quot;default&quot;:&quot;reporter&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Vai trò&quot;},&quot;showHistory&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Màn báo cáo&quot;}}">
+class Component extends DCLogic {
+  state = { role: null, text1: "", text2: "" };
+
+  get role() {
+    return this.state.role || this.props.role || "reporter";
+  }
+
+  renderVals() {
+    const role = this.role;
+    const labels = {
+      reporter: "Báo cáo công việc",
+      manager: "Quản lý",
+      admin: "Quản trị"
+    };
+    const names = {
+      reporter: "Lương Công Trung",
+      manager: "Nguyễn Ngọc Châu Hoàng",
+      admin: "Trần Thiên Long"
+    };
+    return {
+      isReporter: role === "reporter",
+      isManager: role === "manager",
+      isAdmin: role === "admin",
+      roleLabel: labels[role],
+      userName: names[role],
+      showHistory: this.props.showHistory ?? true,
+      text1: this.state.text1,
+      text2: this.state.text2,
+      onText1: e => this.setState({ text1: e.target.value }),
+      onText2: e => this.setState({ text2: e.target.value }),
+      reuse1: () => this.setState({ text1: "Rà soát báo cáo doanh thu, sửa lỗi nhập liệu phiếu thu." }),
+      reuse2: () => this.setState({ text2: "Chỉnh sửa báo cáo 8h, kiểm thử luồng tiếp nhận hồ sơ." }),
+      pickReporter: () => this.setState({ role: "reporter" }),
+      pickManager: () => this.setState({ role: "manager" }),
+      pickAdmin: () => this.setState({ role: "admin" })
+    };
+  }
+}
+</script>
+</body>
+</html>

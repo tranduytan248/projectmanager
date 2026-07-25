@@ -114,6 +114,17 @@
                     </a>
                 }
 
+                @if (currentUser != null)
+                {
+                    var wy = WeekHelper.CurrentYear;
+                    var ww = WeekHelper.CurrentWeek;
+                    <div class="topbar-week" title="Tuần đang diễn ra">
+                        <span class="topbar-week-dot"></span>
+                        Tuần @ww/@wy
+                        <span class="topbar-week-range">@WeekHelper.FirstDayOfWeek(wy, ww).ToString("dd/MM") – @WeekHelper.LastDayOfWeek(wy, ww).ToString("dd/MM/yyyy")</span>
+                    </div>
+                }
+
                 <div class="user-area">
                     @if (currentUser != null)
                     {
