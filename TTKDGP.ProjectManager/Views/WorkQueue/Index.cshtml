@@ -1,0 +1,175 @@
+﻿@model TTKDGP.ProjectManager.Models.ManagerDashboardViewModel
+@using TTKDGP.ProjectManager.Infrastructure
+@{
+    ViewBag.Title = "Việc cần xử lý";
+    var topMissing = Model.MissingMembers.Take(8).ToList();
+}
+
+<div class="page-head">
+    <div>
+        <h1>Việc cần xử lý</h1>
+        <p>@Model.WeekLabel · @Model.WeekFrom.ToString("dd/MM") – @Model.WeekTo.ToString("dd/MM/yyyy"). Xếp theo mức ưu tiên.</p>
+    </div>
+</div>
+
+@* ----- Khối ưu tiên ----- *@
+<div class="dash-panel">
+    <div class="dash-panel-head">
+        <span>Ưu tiên tuần này</span>
+        <span class="sub">Hạn báo cáo tuần: chiều thứ Sáu</span>
+    </div>
+    <div class="dash-panel-body">
+        @if (Model.MissingMemberCount == 0 && Model.SilentProjects.Count == 0)
+        {
+            <div class="dash-item">
+                <span class="num-badge ok">✓</span>
+                <div class="dash-item-main">
+                    <div class="title">Không có việc gấp cần xử lý</div>
+                    <div class="sub">Nhân sự đã ghi báo cáo đầy đủ và không có dự án nào im lặng quá lâu.</div>
+                </div>
+            </div>
+        }
+
+        @if (Model.MissingMemberCount > 0)
+        {
+            <div class="dash-item">
+                <span class="num-badge danger">@Model.MissingMemberCount</span>
+                <div class="dash-item-main">
+                    <div class="title">@Model.MissingMemberCount nhân sự chưa ghi báo cáo tuần này</div>
+                    <div class="sub">@string.Join(", ", topMissing.Select(m => m.MemberName))@(Model.MissingMemberCount > topMissing.Count ? "…" : "")</div>
+                </div>
+                <div class="dash-item-actions">
+                    <a class="btn btn-primary btn-sm" href="@Url.Action("Index", "TeamReports")">Xem báo cáo nhân sự</a>
+                </div>
+            </div>
+        }
+
+        @if (Model.SilentProjects.Count > 0)
+        {
+            <div class="dash-item">
+                <span class="num-badge warn">@Model.SilentProjects.Count</span>
+                <div class="dash-item-main">
+                    <div class="title">@Model.SilentProjects.Count dự án đang chạy nhưng lâu không có báo cáo</div>
+                    <div class="sub">@string.Join(" · ", Model.SilentProjects.Take(4).Select(p => p.ProjectName))@(Model.SilentProjects.Count > 4 ? "…" : "")</div>
+                </div>
+                <div class="dash-item-actions">
+                    <a class="btn btn-default btn-sm" href="#silent-projects">Xem danh sách</a>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@* ----- Tiến độ báo cáo ----- *@
+<div class="card">
+    <div class="card-head">
+        <span>Tiến độ báo cáo tuần @Model.Week/@Model.Year</span>
+        <span class="muted" style="font-weight:400">@Model.ReportedProjects/@Model.TotalOpenProjects dự án đã có báo cáo</span>
+    </div>
+    <div class="card-body">
+        <div class="progress-track">
+            <div class="progress-fill" style="width:@(Model.ProjectReportPercent)%"></div>
+        </div>
+
+        @if (topMissing.Count > 0)
+        {
+            <div class="member-grid" style="margin-top:16px">
+                @foreach (var m in topMissing)
+                {
+                    <div class="member-cell">
+                        <span class="avatar">@ViewHelpers.Initials(m.MemberName)</span>
+                        <div class="info">
+                            <div class="name" title="@m.MemberName">@m.MemberName</div>
+                            <div class="meta">@m.Projects.Count dự án chưa ghi</div>
+                        </div>
+                    </div>
+                }
+            </div>
+            if (Model.MissingMemberCount > topMissing.Count)
+            {
+                <div class="muted" style="font-size:12.5px;margin-top:10px">Và @(Model.MissingMemberCount - topMissing.Count) nhân sự khác — xem đầy đủ ở màn Báo cáo nhân sự.</div>
+            }
+        }
+        else
+        {
+            <div class="muted" style="margin-top:14px">Tất cả nhân sự đã ghi báo cáo tuần này.</div>
+        }
+    </div>
+</div>
+
+@* ----- Dự án cần chú ý ----- *@
+<div class="card" id="silent-projects">
+    <div class="card-head">
+        <span>Dự án cần chú ý</span>
+        <span class="muted" style="font-weight:400">Đang chạy nhưng ≥ 3 tuần không có báo cáo</span>
+    </div>
+    @if (Model.SilentProjects.Count == 0)
+    {
+        <div class="empty-state">Không có dự án nào im lặng quá lâu.</div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th>Dự án</th>
+                        <th>PM</th>
+                        <th>Báo cáo mới nhất</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in Model.SilentProjects)
+                    {
+                        <tr>
+                            <td class="col-project">
+                                <a href="@Url.Action("Project", "Home", new { id = p.ProjectId })">@p.ProjectName</a>
+                                @if (!string.IsNullOrWhiteSpace(p.Customer))
+                                {
+                                    <div class="cell-sub muted">@p.Customer</div>
+                                }
+                            </td>
+                            <td class="col-name">@ViewHelpers.OrDash(p.PmName)</td>
+                            <td class="nowrap">
+                                @if (p.LastReportLabel == null)
+                                {
+                                    <span class="week-tag late">Chưa có báo cáo</span>
+                                }
+                                else
+                                {
+                                    <span class="week-tag late" title="@p.WeeksSilent tuần không có báo cáo">@p.LastReportLabel</span>
+                                }
+                            </td>
+                            <td class="actions">
+                                <div class="btn-group">
+                                    <a class="btn btn-default btn-sm" href="@Url.Action("Index", "TeamReports", new { projectId = p.ProjectId })">Báo cáo nhân sự</a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@* ----- Ô số liệu ----- *@
+<div class="tile-grid">
+    <div class="tile">
+        <div class="tile-num">@Model.OpenProjectCount</div>
+        <div class="tile-label">Dự án đang chạy</div>
+    </div>
+    <div class="tile">
+        <div class="tile-num">@Model.ActiveMemberCount</div>
+        <div class="tile-label">Nhân sự tham gia</div>
+    </div>
+    <div class="tile">
+        <div class="tile-num">@Model.AssignmentCount</div>
+        <div class="tile-label">Lượt phân công đang hoạt động</div>
+    </div>
+    <div class="tile">
+        <div class="tile-num @(Model.MissingMemberCount > 0 ? "danger" : "")">@Model.MissingMemberCount</div>
+        <div class="tile-label">Nhân sự chưa báo cáo</div>
+    </div>
+</div>

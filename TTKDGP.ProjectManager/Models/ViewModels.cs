@@ -132,6 +132,59 @@ namespace TTKDGP.ProjectManager.Models
         public bool IsNew { get { return Id == 0; } }
     }
 
+    /// <summary>Một dự án đang chạy nhưng lâu không có báo cáo — hiện trên dashboard Manager.</summary>
+    public class DashboardSilentProject
+    {
+        public int ProjectId { get; set; }
+        public string ProjectName { get; set; }
+        public string Customer { get; set; }
+        public string PmName { get; set; }
+        public string Status { get; set; }
+
+        /// <summary>Nhãn tuần báo cáo mới nhất, ví dụ "Tuần 27/2026"; null nếu chưa có.</summary>
+        public string LastReportLabel { get; set; }
+        public int WeeksSilent { get; set; }
+    }
+
+    /// <summary>Dashboard "Việc cần xử lý" của Quản lý — số liệu tuần đang diễn ra.</summary>
+    public class ManagerDashboardViewModel
+    {
+        public int Year { get; set; }
+        public int Week { get; set; }
+        public string WeekLabel { get; set; }
+        public DateTime WeekFrom { get; set; }
+        public DateTime WeekTo { get; set; }
+
+        /// <summary>Nhân sự chưa ghi báo cáo tuần này (tái dùng kiểu của bộ nhắc).</summary>
+        public List<MemberReminder> MissingMembers { get; set; }
+
+        public int ReportedProjects { get; set; }
+        public int MissingProjects { get; set; }
+        public int TotalOpenProjects { get; set; }
+
+        public List<DashboardSilentProject> SilentProjects { get; set; }
+
+        // Ô số liệu
+        public int OpenProjectCount { get; set; }
+        public int ActiveMemberCount { get; set; }
+        public int AssignmentCount { get; set; }
+
+        public bool TelegramReady { get; set; }
+        public bool EmailReady { get; set; }
+
+        public int MissingMemberCount { get { return MissingMembers == null ? 0 : MissingMembers.Count; } }
+        public int ProjectReportPercent
+        {
+            get { return TotalOpenProjects <= 0 ? 0 : (int)System.Math.Round(ReportedProjects * 100.0 / TotalOpenProjects); }
+        }
+
+        public ManagerDashboardViewModel()
+        {
+            MissingMembers = new List<MemberReminder>();
+            SilentProjects = new List<DashboardSilentProject>();
+        }
+    }
+
     /// <summary>Form tạo / sửa một nhóm quyền kèm ma trận chức năng.</summary>
     public class RoleGroupEditViewModel
     {
