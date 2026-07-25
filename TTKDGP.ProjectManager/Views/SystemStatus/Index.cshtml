@@ -1,0 +1,90 @@
+﻿@model TTKDGP.ProjectManager.Models.AdminSystemViewModel
+@{
+    ViewBag.Title = "Tình trạng hệ thống";
+}
+
+<div class="page-head">
+    <div>
+        <h1>Tình trạng hệ thống</h1>
+        <p>Việc cần quản trị xử lý và trạng thái các luồng tự động.</p>
+    </div>
+</div>
+
+@* ----- Cần quản trị xử lý ----- *@
+<div class="dash-panel">
+    <div class="dash-panel-head">
+        <span>Cần quản trị xử lý</span>
+    </div>
+    <div class="dash-panel-body">
+        @if (Model.UnlinkedCount == 0)
+        {
+            <div class="dash-item">
+                <span class="num-badge ok">✓</span>
+                <div class="dash-item-main">
+                    <div class="title">Không có việc cần xử lý</div>
+                    <div class="sub">Mọi tài khoản cần báo cáo đều đã gắn nhân sự.</div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="dash-item">
+                <span class="num-badge danger">@Model.UnlinkedCount</span>
+                <div class="dash-item-main">
+                    <div class="title">@Model.UnlinkedCount tài khoản cần báo cáo nhưng chưa gắn nhân sự</div>
+                    <div class="sub">Không gắn nhân sự thì không thấy phân công để báo cáo: @string.Join(", ", Model.UnlinkedUsers.Select(u => u.UserName))</div>
+                </div>
+                <div class="dash-item-actions">
+                    <a class="btn btn-primary btn-sm" href="@Url.Action("Index", "Users")">Quản lý người dùng</a>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@* ----- Luồng tự động ----- *@
+<div class="card">
+    <div class="card-head">
+        <span>Luồng tự động</span>
+    </div>
+    <div class="card-body">
+        <div class="flow-grid">
+            @foreach (var f in Model.Flows)
+            {
+                <div class="flow-cell">
+                    <div class="head">
+                        <span class="status-dot @f.State"></span>
+                        <span>@f.Name</span>
+                    </div>
+                    <div class="detail">@f.Detail</div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@* ----- Người dùng theo nhóm ----- *@
+<div class="card">
+    <div class="card-head">
+        <span>Người dùng</span>
+        <a href="@Url.Action("Index", "Users")" style="font-size:13px">Quản lý toàn bộ @Model.TotalUsers tài khoản</a>
+    </div>
+    <div class="card-body">
+        <div class="tile-grid">
+            @foreach (var g in Model.GroupCounts)
+            {
+                <div class="tile">
+                    <div class="tile-num">@g.Count</div>
+                    <div class="tile-label">@g.Name</div>
+                </div>
+            }
+            @if (Model.UnlinkedCount > 0)
+            {
+                <div class="tile">
+                    <div class="tile-num danger">@Model.UnlinkedCount</div>
+                    <div class="tile-label">Chưa gắn nhân sự</div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

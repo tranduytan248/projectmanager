@@ -85,6 +85,7 @@
     <Compile Include="Controllers\UsersController.cs" />
     <Compile Include="Controllers\PermissionGroupsController.cs" />
     <Compile Include="Controllers\WorkQueueController.cs" />
+    <Compile Include="Controllers\SystemStatusController.cs" />
     <Compile Include="Data\JsonStore.cs" />
     <Compile Include="Data\SqlStore.cs" />
     <Compile Include="Data\JsonToSqlMigration.cs" />
@@ -212,6 +213,7 @@
     <Content Include="Views\PermissionGroups\Index.cshtml" />
     <Content Include="Views\PermissionGroups\Edit.cshtml" />
     <Content Include="Views\WorkQueue\Index.cshtml" />
+    <Content Include="Views\SystemStatus\Index.cshtml" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

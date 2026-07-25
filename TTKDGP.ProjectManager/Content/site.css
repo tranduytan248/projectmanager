@@ -424,6 +424,15 @@ body.has-sidebar .main, body.has-sidebar .topbar-inner, body.has-sidebar .footer
 .member-cell .name { font-size: 13.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .member-cell .meta { font-size: 12px; color: var(--text-faint); }
 
+.flow-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.flow-cell { border: 1px solid var(--border-soft); border-radius: 8px; padding: 14px 16px; }
+.flow-cell .head { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13.5px; }
+.flow-cell .detail { font-size: 12.5px; color: var(--text-muted); margin-top: 5px; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
+.status-dot.ok { background: var(--success); }
+.status-dot.warn { background: var(--warn); }
+.status-dot.off { background: var(--text-faint); }
+
 /* ===== Bộ lọc ===== */
 .filters { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
 .filter-field { display: flex; flex-direction: column; gap: 5px; }

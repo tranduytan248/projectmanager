@@ -248,6 +248,7 @@ namespace TTKDGP.ProjectManager.Models
                 Title = "Quản trị",
                 Nodes = new List<MenuNode>
                 {
+                    L("Tình trạng hệ thống", "SystemStatus", Users.Perm(View)),
                     L("Thông báo", "Notifications", Notifications.Perm(View)),
                     L("GoConnect", "GoConnect", GoConnect.Perm(View)),
                     L("Hệ thống tích hợp", "IntegrationSystems", Integrations.Perm(View)),

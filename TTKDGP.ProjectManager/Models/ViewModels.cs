@@ -132,6 +132,43 @@ namespace TTKDGP.ProjectManager.Models
         public bool IsNew { get { return Id == 0; } }
     }
 
+    /// <summary>Trạng thái một luồng tự động, hiện trên dashboard Quản trị.</summary>
+    public class AutomationStatus
+    {
+        public string Name { get; set; }
+        /// <summary>ok / warn / off — quyết định màu chấm.</summary>
+        public string State { get; set; }
+        public string Detail { get; set; }
+    }
+
+    /// <summary>Số tài khoản của một nhóm quyền.</summary>
+    public class GroupUserCount
+    {
+        public string Name { get; set; }
+        public int Count { get; set; }
+        public bool Highlight { get; set; }
+    }
+
+    /// <summary>Dashboard "Tình trạng hệ thống" của Quản trị.</summary>
+    public class AdminSystemViewModel
+    {
+        public List<User> UnlinkedUsers { get; set; }
+        public List<AutomationStatus> Flows { get; set; }
+        public List<GroupUserCount> GroupCounts { get; set; }
+
+        public int TotalUsers { get; set; }
+        public int ActiveIntegrations { get; set; }
+
+        public int UnlinkedCount { get { return UnlinkedUsers == null ? 0 : UnlinkedUsers.Count; } }
+
+        public AdminSystemViewModel()
+        {
+            UnlinkedUsers = new List<User>();
+            Flows = new List<AutomationStatus>();
+            GroupCounts = new List<GroupUserCount>();
+        }
+    }
+
     /// <summary>Một dự án đang chạy nhưng lâu không có báo cáo — hiện trên dashboard Manager.</summary>
     public class DashboardSilentProject
     {
