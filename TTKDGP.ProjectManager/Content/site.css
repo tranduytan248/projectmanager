@@ -594,6 +594,19 @@ table.data .cell-sub.muted { font-size: 12.5px; line-height: 1.4; }
     white-space: nowrap;
 }
 
+/* Nhãn tuần báo cáo: xanh lá khi đúng tuần hiện tại, đỏ khi đã trễ (hoặc chưa ghi). */
+.week-tag.on-time {
+    background: #e6f4ea;
+    border-color: #a6d8b6;
+    color: #1e7d3c;
+}
+
+.week-tag.late {
+    background: #fdecea;
+    border-color: #f2b8b2;
+    color: #c0392b;
+}
+
 .empty-state { padding: 44px 20px; text-align: center; color: var(--text-muted); }
 
 /* ===== Thanh số trang ===== */

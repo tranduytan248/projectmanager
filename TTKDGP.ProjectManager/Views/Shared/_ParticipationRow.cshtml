@@ -24,6 +24,11 @@
             <div class="cell-sub muted">@Model.Customer</div>
         }
 
+        @if (!string.IsNullOrWhiteSpace(Model.Pm))
+        {
+            <div class="cell-sub muted">PM: @Model.Pm</div>
+        }
+
         <div class="cell-sub">
             <span class="badge @ViewHelpers.StatusBadgeClass(Model.ProjectStatus)">@ViewHelpers.OrDash(Model.ProjectStatus)</span>
         </div>
@@ -32,11 +37,15 @@
     <td class="nowrap">
         @if (Model.HasLog)
         {
-            <span class="week-tag" title="@Model.WeekRange">@Model.WeekLabel</span>
+            @* Xanh lá nếu nhật ký mới nhất đúng tuần hiện tại, đỏ nếu đã trễ sang tuần khác. *@
+            var onTime = Model.LatestYear == WeekHelper.CurrentYear && Model.LatestWeek == WeekHelper.CurrentWeek;
+            var weekClass = onTime ? "week-tag on-time" : "week-tag late";
+            var weekTip = onTime ? Model.WeekRange : Model.WeekRange + " — chưa có báo cáo cho tuần hiện tại";
+            <span class="@weekClass" title="@weekTip">@Model.WeekLabel</span>
         }
         else
         {
-            <span class="muted" title="Phân công này chưa ghi nhật ký tuần nào">chưa ghi</span>
+            <span class="week-tag late" title="Phân công này chưa ghi nhật ký tuần nào">chưa ghi</span>
         }
     </td>
     <td class="wrap-text muted">@ViewHelpers.OrDash(Model.WorkContent)</td>

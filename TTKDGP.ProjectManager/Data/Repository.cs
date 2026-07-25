@@ -270,6 +270,7 @@ namespace TTKDGP.ProjectManager.Data
                             ? int.MaxValue
                             : PriorityOf(priorities, project.CurrentStatus),
                         Pm = project == null ? null : MemberNameFrom(members, project.PmMemberId),
+                        PmMemberId = project == null ? 0 : project.PmMemberId,
 
                         MemberId = a.MemberId,
                         MemberName = member != null

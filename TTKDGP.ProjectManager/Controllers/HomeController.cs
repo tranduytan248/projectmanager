@@ -14,7 +14,7 @@ namespace TTKDGP.ProjectManager.Controllers
     /// </summary>
     public class HomeController : BaseController
     {
-        public ActionResult Index(string keyword, int? memberId, int? projectId, string workStatus, bool? activeOnly)
+        public ActionResult Index(string keyword, int? memberId, int? projectId, int? pmId, string workStatus, bool? activeOnly)
         {
             var showActiveOnly = activeOnly ?? true;
             var rows = Repository.BuildSummaryRows();
@@ -32,6 +32,11 @@ namespace TTKDGP.ProjectManager.Controllers
             if (projectId.HasValue && projectId.Value > 0)
             {
                 rows = rows.Where(r => r.ProjectId == projectId.Value).ToList();
+            }
+
+            if (pmId.HasValue && pmId.Value > 0)
+            {
+                rows = rows.Where(r => r.PmMemberId == pmId.Value).ToList();
             }
 
             if (!string.IsNullOrWhiteSpace(workStatus))
@@ -61,6 +66,7 @@ namespace TTKDGP.ProjectManager.Controllers
                 Keyword = keyword,
                 MemberId = memberId,
                 ProjectId = projectId,
+                PmId = pmId,
                 WorkStatus = workStatus,
                 ActiveOnly = showActiveOnly,
 
@@ -68,6 +74,7 @@ namespace TTKDGP.ProjectManager.Controllers
                     .OrderBy(m => m.FullName, StringComparer.CurrentCulture).ToList(),
                 Projects = Repository.Projects.All()
                     .OrderBy(p => p.Name, StringComparer.CurrentCulture).ToList(),
+                Pms = BuildPmList(),
                 WorkStatuses = Repository.FilterableWorkStatuses(),
 
                 TotalAssignments = rows.Count,
@@ -240,6 +247,24 @@ namespace TTKDGP.ProjectManager.Controllers
                 })
                 .OrderByDescending(m => m.ProjectCount)
                 .ThenBy(m => m.MemberName, StringComparer.CurrentCulture)
+                .ToList();
+        }
+
+        /// <summary>
+        /// Danh sách nhân sự đang làm PM của ít nhất một dự án, để đổ vào dropdown lọc PM.
+        /// Lấy từ chính các dự án (không phải từ dòng đã lọc) để không sót PM của dự án
+        /// chưa có phân công nào.
+        /// </summary>
+        private static List<Member> BuildPmList()
+        {
+            var pmIds = new HashSet<int>(
+                Repository.Projects.All()
+                    .Select(p => p.PmMemberId)
+                    .Where(id => id > 0));
+
+            return Repository.Members.All()
+                .Where(m => pmIds.Contains(m.Id))
+                .OrderBy(m => m.FullName, StringComparer.CurrentCulture)
                 .ToList();
         }
 

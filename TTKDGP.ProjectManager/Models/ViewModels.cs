@@ -197,6 +197,9 @@ namespace TTKDGP.ProjectManager.Models
 
         public string Pm { get; set; }
 
+        /// <summary>Id nhân sự làm PM của dự án; 0 nếu chưa đặt. Dùng để lọc theo PM.</summary>
+        public int PmMemberId { get; set; }
+
         public int MemberId { get; set; }
         public string MemberName { get; set; }
         public string Role { get; set; }
@@ -245,12 +248,20 @@ namespace TTKDGP.ProjectManager.Models
         public string Keyword { get; set; }
         public int? MemberId { get; set; }
         public int? ProjectId { get; set; }
+
+        /// <summary>Lọc theo PM của dự án (Id nhân sự làm PM).</summary>
+        public int? PmId { get; set; }
+
         public string WorkStatus { get; set; }
         public bool ActiveOnly { get; set; }
 
         // Nguồn cho dropdown
         public List<Member> Members { get; set; }
         public List<Project> Projects { get; set; }
+
+        /// <summary>Danh sách nhân sự đang làm PM của ít nhất một dự án — đổ vào dropdown PM.</summary>
+        public List<Member> Pms { get; set; }
+
         public List<string> WorkStatuses { get; set; }
 
         // Thống kê (tính trên tập đã lọc)
@@ -271,6 +282,7 @@ namespace TTKDGP.ProjectManager.Models
             ByMember = new List<MemberParticipation>();
             Members = new List<Member>();
             Projects = new List<Project>();
+            Pms = new List<Member>();
             WorkStatuses = new List<string>();
             StatusBreakdown = new List<StatusCount>();
             MemberLoads = new List<MemberLoad>();

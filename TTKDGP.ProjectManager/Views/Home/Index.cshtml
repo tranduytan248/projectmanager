@@ -106,6 +106,17 @@
                 </div>
 
                 <div class="filter-field">
+                    <label for="pmId">PM</label>
+                    <select id="pmId" name="pmId">
+                        <option value="">— Tất cả —</option>
+                        @foreach (var pm in Model.Pms)
+                        {
+                            <option value="@pm.Id" selected="@(Model.PmId == pm.Id)">@pm.FullName</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="filter-field">
                     <label for="workStatus">Trạng thái</label>
                     <select id="workStatus" name="workStatus">
                         <option value="">— Tất cả —</option>
