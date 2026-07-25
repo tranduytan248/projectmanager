@@ -1,16 +1,14 @@
 ﻿@using TTKDGP.ProjectManager.Infrastructure
 @{
     var currentUser = ViewBag.CurrentUser as AppIdentity;
-    var isAdmin = ViewBag.IsAdmin != null && (bool)ViewBag.IsAdmin;
     var controller = ViewContext.RouteData.Values["controller"] as string ?? "";
+    var action = ViewContext.RouteData.Values["action"] as string ?? "";
 
-    // Tài khoản Báo cáo công việc chỉ thấy Tổng hợp và Báo cáo của tôi.
-    // Ghi rõ namespace vì Razor tự nạp System.Web.Security.Roles gây trùng tên.
-    var canManage = currentUser != null
-        && TTKDGP.ProjectManager.Models.Roles.CanManage(currentUser.Role);
-
-    var catalogControllers = new[] { "ProjectTypes", "ProjectStatuses", "WorkStatuses", "MemberRoles" };
-    var inCatalog = catalogControllers.Contains(controller);
+    // Menu dựng động từ danh mục chức năng: mỗi mục chỉ hiện khi tài khoản có quyền "xem" màn đó.
+    var role = currentUser != null ? currentUser.Role : null;
+    Func<string, bool> can = p => TTKDGP.ProjectManager.Models.Permissions.UserHas(role, p);
+    Func<TTKDGP.ProjectManager.Models.MenuLink, bool> linkActive = l =>
+        controller == l.Controller && (l.Action == "Index" || action == l.Action);
 }
 <!DOCTYPE html>
 <html lang="vi">
@@ -47,49 +45,40 @@
             </div>
 
             <nav class="sidenav">
-                <a href="@Url.Action("Index", "Home")" class="@(controller == "Home" ? "active" : "")">Tổng hợp</a>
-                <a href="@Url.Action("Index", "MyReports")" class="@(controller == "MyReports" ? "active" : "")">Báo cáo của tôi</a>
-
-                @if (canManage)
+                @foreach (var menuSection in TTKDGP.ProjectManager.Models.Permissions.Menu)
                 {
-                <a href="@Url.Action("Index", "Projects")" class="@(controller == "Projects" ? "active" : "")">Dự án</a>
-                <a href="@Url.Action("Index", "Members")" class="@(controller == "Members" ? "active" : "")">Thành viên</a>
-                <a href="@Url.Action("Index", "Assignments")" class="@(controller == "Assignments" ? "active" : "")">Phân công</a>
-                <a href="@Url.Action("Index", "TeamReports")" class="@(controller == "TeamReports" ? "active" : "")">Báo cáo nhân sự</a>
+                    var nodes = menuSection.Nodes
+                        .Where(n => n.IsGroup ? n.Children.Any(c => can(c.Permission)) : can(n.Link.Permission))
+                        .ToList();
+                    if (nodes.Count == 0) { continue; }
 
-                @* Nhóm gập/mở bằng thẻ details của trình duyệt, không cần JavaScript.
-                   Đang ở trong một trang danh mục thì mở sẵn để thấy mình đang đứng ở đâu. *@
-                <details class="sidenav-group" @(inCatalog ? "open" : "")>
-                    <summary class="@(inCatalog ? "active" : "")">Danh mục</summary>
-                    <div class="sidenav-sub">
-                        <a href="@Url.Action("Index", "ProjectTypes")" class="@(controller == "ProjectTypes" ? "active" : "")">Loại dự án</a>
-                        <a href="@Url.Action("Index", "ProjectStatuses")" class="@(controller == "ProjectStatuses" ? "active" : "")">Trạng thái dự án</a>
-                        <a href="@Url.Action("Index", "WorkStatuses")" class="@(controller == "WorkStatuses" ? "active" : "")">Trạng thái tham gia</a>
-                        <a href="@Url.Action("Index", "MemberRoles")" class="@(controller == "MemberRoles" ? "active" : "")">Vai trò</a>
-                    </div>
-                </details>
-                }
+                    if (!string.IsNullOrEmpty(menuSection.Title))
+                    {
+                        <div class="sidenav-title">@menuSection.Title</div>
+                    }
 
-                @if (isAdmin)
-                {
-                    var inHrm = controller == "Hrm";
-                    var action = ViewContext.RouteData.Values["action"] as string ?? "";
-
-                    <div class="sidenav-title">Nhân sự</div>
-                    <details class="sidenav-group" @(inHrm ? "open" : "")>
-                        <summary class="@(inHrm ? "active" : "")">HRM</summary>
-                        <div class="sidenav-sub">
-                            <a href="@Url.Action("Employees", "Hrm")" class="@(inHrm && action == "Employees" ? "active" : "")">Nhân sự</a>
-                            <a href="@Url.Action("Workplaces", "Hrm")" class="@(inHrm && action == "Workplaces" ? "active" : "")">Đơn vị</a>
-                            <a href="@Url.Action("Positions", "Hrm")" class="@(inHrm && action == "Positions" ? "active" : "")">Chức danh</a>
-                        </div>
-                    </details>
-
-                    <div class="sidenav-title">Quản trị</div>
-                    <a href="@Url.Action("Index", "Notifications")" class="@(controller == "Notifications" ? "active" : "")">Thông báo</a>
-                    <a href="@Url.Action("Index", "GoConnect")" class="@(controller == "GoConnect" ? "active" : "")">GoConnect</a>
-                    <a href="@Url.Action("Index", "IntegrationSystems")" class="@(controller == "IntegrationSystems" ? "active" : "")">Hệ thống tích hợp</a>
-                    <a href="@Url.Action("Index", "Users")" class="@(controller == "Users" ? "active" : "")">Người dùng</a>
+                    foreach (var node in nodes)
+                    {
+                        if (!node.IsGroup)
+                        {
+                            var link = node.Link;
+                            <a href="@Url.Action(link.Action, link.Controller)" class="@(linkActive(link) ? "active" : "")">@link.Label</a>
+                        }
+                        else
+                        {
+                            var kids = node.Children.Where(c => can(c.Permission)).ToList();
+                            var groupActive = kids.Any(c => linkActive(c));
+                            <details class="sidenav-group" @(groupActive ? "open" : "")>
+                                <summary class="@(groupActive ? "active" : "")">@node.GroupLabel</summary>
+                                <div class="sidenav-sub">
+                                    @foreach (var c in kids)
+                                    {
+                                        <a href="@Url.Action(c.Action, c.Controller)" class="@(linkActive(c) ? "active" : "")">@c.Label</a>
+                                    }
+                                </div>
+                            </details>
+                        }
+                    }
                 }
             </nav>
         </aside>

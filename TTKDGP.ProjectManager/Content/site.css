@@ -607,6 +607,54 @@ table.data .cell-sub.muted { font-size: 12.5px; line-height: 1.4; }
     color: #c0392b;
 }
 
+/* ===== Ma trận chức năng (màn Nhóm quyền) ===== */
+.perm-matrix.is-disabled { opacity: .45; pointer-events: none; }
+
+.perm-cat { margin-bottom: 18px; }
+.perm-cat:last-child { margin-bottom: 0; }
+
+.perm-cat-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+    font-weight: 700;
+    color: var(--text-muted);
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+.perm-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 7px 0;
+    flex-wrap: wrap;
+}
+.perm-row + .perm-row { border-top: 1px dashed var(--border); }
+
+.perm-mod {
+    flex: 0 0 190px;
+    font-weight: 600;
+    font-size: 13.5px;
+}
+
+.perm-actions { display: flex; gap: 8px 18px; flex-wrap: wrap; }
+
+.perm-chk {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.perm-chk input { margin: 0; }
+
+@media (max-width: 640px) {
+    .perm-mod { flex-basis: 100%; }
+}
+
 .empty-state { padding: 44px 20px; text-align: center; color: var(--text-muted); }
 
 /* ===== Thanh số trang ===== */

@@ -8,10 +8,11 @@ using TTKDGP.ProjectManager.Models;
 
 namespace TTKDGP.ProjectManager.Controllers
 {
-    /// <summary>Quản trị tài khoản đăng nhập. Chỉ Admin dùng được.</summary>
-    [AppAuthorize(RequiredRole = Roles.Admin)]
+    /// <summary>Quản trị tài khoản đăng nhập.</summary>
+    [AppAuthorize]
     public class UsersController : BaseController
     {
+        [AppAuthorize(Permission = "users.view")]
         public ActionResult Index()
         {
             var users = Repository.Users.All()
@@ -21,9 +22,10 @@ namespace TTKDGP.ProjectManager.Controllers
         }
 
         [HttpGet]
+        [AppAuthorize(Permission = "users.create,users.edit")]
         public ActionResult Edit(int? id)
         {
-            PopulateMembers();
+            PopulateLists();
 
             if (!id.HasValue)
             {
@@ -51,6 +53,7 @@ namespace TTKDGP.ProjectManager.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "users.create,users.edit")]
         public ActionResult Edit(UserEditViewModel model)
         {
             // Tạo mới thì bắt buộc có mật khẩu; sửa thì để trống nghĩa là giữ nguyên mật khẩu cũ.
@@ -59,21 +62,26 @@ namespace TTKDGP.ProjectManager.Controllers
                 ModelState.AddModelError("Password", "Vui lòng nhập mật khẩu cho tài khoản mới.");
             }
 
-            // Gộp các quyền được chọn thành chuỗi lưu trữ; Join đã loại giá trị lạ và trùng lặp.
+            // Gộp các nhóm được chọn thành chuỗi lưu trữ; Join đã bỏ trùng lặp và khoảng trắng.
             var roleValue = Roles.Join(model.SelectedRoles);
 
             if (string.IsNullOrEmpty(roleValue))
             {
-                ModelState.AddModelError("SelectedRoles", "Vui lòng chọn ít nhất một quyền.");
+                ModelState.AddModelError("SelectedRoles", "Vui lòng chọn ít nhất một nhóm quyền.");
+            }
+            else if (Roles.Split(roleValue).Any(code =>
+                Repository.RoleGroups.FirstOrDefault(g => string.Equals(g.Code, code, StringComparison.OrdinalIgnoreCase)) == null))
+            {
+                ModelState.AddModelError("SelectedRoles", "Có nhóm quyền không tồn tại.");
             }
 
-            // Tài khoản có quyền báo cáo phải gắn với một nhân sự, nếu không sẽ không biết báo cáo
-            // cho phân công nào. Các quyền khác thì để trống cũng được.
-            var isReporter = Roles.Has(roleValue, Roles.Reporter);
-            if (isReporter && model.MemberId <= 0)
+            // Nhóm có quyền tự báo cáo công việc thì tài khoản phải gắn nhân sự — để biết báo cáo
+            // cho phân công nào. Các nhóm khác thì để trống cũng được.
+            var needsMember = Permissions.UserHas(roleValue, Permissions.MyReports.Perm("report"));
+            if (needsMember && model.MemberId <= 0)
             {
                 ModelState.AddModelError("MemberId",
-                    "Tài khoản Báo cáo công việc phải chọn nhân sự tương ứng.");
+                    "Nhóm có quyền báo cáo công việc phải chọn nhân sự tương ứng.");
             }
 
             if (model.MemberId > 0 && Repository.Members.Find(model.MemberId) == null)
@@ -82,12 +90,12 @@ namespace TTKDGP.ProjectManager.Controllers
             }
 
             // Một nhân sự chỉ nên gắn với một tài khoản báo cáo, tránh hai người cùng ghi một chỗ.
-            if (isReporter && model.MemberId > 0)
+            if (needsMember && model.MemberId > 0)
             {
                 var taken = Repository.Users.FirstOrDefault(u =>
                     u.Id != model.Id &&
                     u.MemberId == model.MemberId &&
-                    Roles.Has(u.Role, Roles.Reporter));
+                    Permissions.UserHas(u.Role, Permissions.MyReports.Perm("report")));
                 if (taken != null)
                 {
                     ModelState.AddModelError("MemberId",
@@ -118,7 +126,7 @@ namespace TTKDGP.ProjectManager.Controllers
 
             if (!ModelState.IsValid)
             {
-                PopulateMembers();
+                PopulateLists();
                 return View(model);
             }
 
@@ -144,12 +152,13 @@ namespace TTKDGP.ProjectManager.Controllers
             var user = Repository.Users.Find(model.Id);
             if (user == null) return HttpNotFound();
 
-            // Không cho Admin tự hạ quyền hoặc tự khoá mình, tránh mất lối vào phần quản trị.
+            // Không cho tự cắt quyền quản lý người dùng hoặc tự khoá mình, tránh mất lối vào.
             if (user.Id == CurrentUser.UserId)
             {
-                if (!Roles.Has(roleValue, Roles.Admin))
+                if (!Permissions.UserHas(roleValue, Permissions.Users.Perm(Permissions.Edit)))
                 {
-                    ModelState.AddModelError("SelectedRoles", "Bạn không thể tự bỏ quyền Quản trị của chính mình.");
+                    ModelState.AddModelError("SelectedRoles",
+                        "Bạn không thể tự bỏ quyền quản lý người dùng của chính mình.");
                 }
                 if (!model.IsActive)
                 {
@@ -157,7 +166,7 @@ namespace TTKDGP.ProjectManager.Controllers
                 }
                 if (!ModelState.IsValid)
                 {
-                    PopulateMembers();
+                    PopulateLists();
                     return View(model);
                 }
             }
@@ -180,6 +189,7 @@ namespace TTKDGP.ProjectManager.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "users.delete")]
         public ActionResult Delete(int id)
         {
             var user = Repository.Users.Find(id);
@@ -221,6 +231,7 @@ namespace TTKDGP.ProjectManager.Controllers
         /// người bị bỏ qua. Chưa ghi gì vào dữ liệu.
         /// </summary>
         [HttpGet]
+        [AppAuthorize(Permission = "users.provision")]
         public ActionResult Provision()
         {
             var model = BuildProvisionModel();
@@ -231,6 +242,7 @@ namespace TTKDGP.ProjectManager.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [ActionName("Provision")]
+        [AppAuthorize(Permission = "users.provision")]
         public ActionResult ProvisionConfirmed(UserProvisionViewModel form)
         {
             // Dựng lại danh sách từ dữ liệu hiện tại chứ không tin danh sách gửi lên, phòng khi
@@ -364,12 +376,18 @@ namespace TTKDGP.ProjectManager.Controllers
             });
         }
 
-        /// <summary>Danh sách nhân sự để chọn "Nhân sự tương ứng" trên form tài khoản.</summary>
-        private void PopulateMembers()
+        /// <summary>Nguồn cho form tài khoản: danh sách nhân sự và danh sách nhóm quyền để chọn.</summary>
+        private void PopulateLists()
         {
             ViewBag.MemberOptions = Repository.Members.All()
                 .Where(m => m.IsActive)
                 .OrderBy(m => m.FullName, StringComparer.CurrentCulture)
+                .ToList();
+
+            ViewBag.RoleGroupOptions = Repository.RoleGroups.All()
+                .Where(g => g.IsActive)
+                .OrderBy(g => g.SortOrder)
+                .ThenBy(g => g.Name, StringComparer.CurrentCulture)
                 .ToList();
         }
     }

@@ -10,9 +10,10 @@ namespace TTKDGP.ProjectManager.Controllers
     /// Màn hình bấm tay để khởi động đăng nhập GoConnect. Khi bấm, hệ thống gửi lệnh y như
     /// gõ /sdt: bot Telegram nhắn yêu cầu OTP, người dùng trả lời OTP trên Telegram. Chỉ Admin dùng.
     /// </summary>
-    [AppAuthorize(RequiredRole = Roles.Admin)]
+    [AppAuthorize]
     public class GoConnectController : BaseController
     {
+        [AppAuthorize(Permission = "goconnect.view")]
         public ActionResult Index()
         {
             ViewBag.Enabled = AppSettings.GoConnect.Enabled;
@@ -31,6 +32,7 @@ namespace TTKDGP.ProjectManager.Controllers
         /// <summary>Bấm nút: gửi lệnh đăng nhập, OTP sẽ được hỏi và trả lời qua Telegram.</summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "goconnect.run")]
         public ActionResult Start()
         {
             // Đăng nhập cần trình duyệt (Chromium) nên chỉ chạy ở máy đăng nhập; bản chạy thật

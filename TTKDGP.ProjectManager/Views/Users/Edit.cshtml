@@ -2,12 +2,8 @@
 @using TTKDGP.ProjectManager.Models
 @{
     ViewBag.Title = Model.IsNew ? "Tạo người dùng" : "Sửa người dùng";
-    var roleOptions = new List<SelectListItem>
-    {
-        new SelectListItem { Value = "Manager",  Text = "Quản lý — cập nhật dự án, thành viên, phân công" },
-        new SelectListItem { Value = "Admin",    Text = "Quản trị — toàn quyền, gồm quản lý người dùng" },
-        new SelectListItem { Value = "Reporter", Text = "Báo cáo công việc — chỉ báo cáo phần việc của mình" }
-    };
+    var roleGroups = ViewBag.RoleGroupOptions as List<TTKDGP.ProjectManager.Models.RoleGroup>
+        ?? new List<TTKDGP.ProjectManager.Models.RoleGroup>();
     var members = ViewBag.MemberOptions as List<Member> ?? new List<Member>();
     var selectedRoles = Model.SelectedRoles ?? new string[0];
 }
@@ -51,19 +47,20 @@
             </div>
 
             <div class="form-field">
-                @Html.LabelFor(m => m.SelectedRoles)
-                @* Chọn được nhiều quyền: một tài khoản vừa Quản lý vừa Báo cáo công việc chẳng hạn. *@
-                <select id="SelectedRoles" name="SelectedRoles" multiple="multiple" size="3">
-                    @foreach (var opt in roleOptions)
+                <label for="SelectedRoles">Nhóm quyền</label>
+                @* Chọn được nhiều nhóm: quyền của tài khoản là hợp của các nhóm được chọn. *@
+                <select id="SelectedRoles" name="SelectedRoles" multiple="multiple" size="@(Math.Min(Math.Max(roleGroups.Count, 2), 6))">
+                    @foreach (var g in roleGroups)
                     {
-                        <option value="@opt.Value" selected="@(selectedRoles.Contains(opt.Value, StringComparer.OrdinalIgnoreCase))">@opt.Text</option>
+                        <option value="@g.Code" selected="@(selectedRoles.Contains(g.Code, StringComparer.OrdinalIgnoreCase))">
+                            @g.Name@(string.IsNullOrWhiteSpace(g.Description) ? "" : " — " + g.Description)
+                        </option>
                     }
                 </select>
                 @Html.ValidationMessageFor(m => m.SelectedRoles, "", new { @class = "field-error" })
                 <span class="hint">
-                    Chọn được nhiều quyền — bấm vào ô để thêm, bấm dấu × trên thẻ để bỏ.
-                    Quyền rộng hơn sẽ quyết định: có Quản trị hoặc Quản lý là vào được các màn quản trị,
-                    kèm Báo cáo công việc thì có thêm màn &quot;Báo cáo của tôi&quot;.
+                    Chọn được nhiều nhóm — quyền của tài khoản là hợp của các nhóm. Cấu hình chức năng
+                    của từng nhóm ở màn <strong>Nhóm quyền</strong>.
                 </span>
             </div>
 

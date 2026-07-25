@@ -1,0 +1,140 @@
+﻿@model TTKDGP.ProjectManager.Models.RoleGroupEditViewModel
+@using TTKDGP.ProjectManager.Models
+@{
+    ViewBag.Title = Model.IsNew ? "Tạo nhóm quyền" : "Sửa nhóm quyền";
+    var selected = new HashSet<string>(Model.SelectedPermissions ?? new string[0], StringComparer.OrdinalIgnoreCase);
+    var categories = Permissions.All
+        .GroupBy(m => m.Category)
+        .Select(g => new { Category = g.Key, Modules = g.ToList() })
+        .ToList();
+}
+
+<div class="page-head">
+    <div>
+        <h1>@ViewBag.Title</h1>
+        @if (!Model.IsNew)
+        {
+            <p>@Model.Name @(Model.UserCount > 0 ? "· " + Model.UserCount + " tài khoản đang dùng" : "")</p>
+        }
+    </div>
+    <a class="btn btn-default" href="@Url.Action("Index", "PermissionGroups")">&larr; Danh sách nhóm quyền</a>
+</div>
+
+@using (Html.BeginForm("Edit", "PermissionGroups", FormMethod.Post))
+{
+    @Html.AntiForgeryToken()
+    @Html.HiddenFor(m => m.Id)
+    @Html.ValidationSummary(true)
+
+    <div class="card form-narrow">
+        <div class="card-body">
+            <div class="form-field">
+                @Html.LabelFor(m => m.Code)
+                @if (Model.IsNew)
+                {
+                    @Html.TextBoxFor(m => m.Code, new { autocomplete = "off", placeholder = "vd: Editor" })
+                    <span class="hint">Không đổi được sau khi tạo — tài khoản tham chiếu tới mã này.</span>
+                }
+                else
+                {
+                    @Html.HiddenFor(m => m.Code)
+                    <div><span class="badge badge-role">@Model.Code</span></div>
+                }
+                @Html.ValidationMessageFor(m => m.Code, "", new { @class = "field-error" })
+            </div>
+
+            <div class="form-field">
+                @Html.LabelFor(m => m.Name)
+                @Html.TextBoxFor(m => m.Name, new { autofocus = "autofocus" })
+                @Html.ValidationMessageFor(m => m.Name, "", new { @class = "field-error" })
+            </div>
+
+            <div class="form-field">
+                @Html.LabelFor(m => m.Description)
+                @Html.TextBoxFor(m => m.Description)
+            </div>
+
+            <div class="check-inline">
+                @Html.CheckBoxFor(m => m.IsActive)
+                @Html.LabelFor(m => m.IsActive)
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-head">
+            <span>Chức năng</span>
+            <label class="check-inline" style="margin:0">
+                @Html.CheckBoxFor(m => m.GrantAll, new { id = "grantAll" })
+                <span>Toàn quyền (mọi chức năng, gồm cả chức năng thêm về sau)</span>
+            </label>
+        </div>
+
+        <div class="card-body perm-matrix" id="permMatrix">
+            @foreach (var cat in categories)
+            {
+                <div class="perm-cat">
+                    <div class="perm-cat-title">@cat.Category</div>
+                    @foreach (var mod in cat.Modules)
+                    {
+                        <div class="perm-row">
+                            <div class="perm-mod">@mod.Name</div>
+                            <div class="perm-actions">
+                                @foreach (var act in mod.Actions)
+                                {
+                                    var code = mod.Perm(act.Code);
+                                    <label class="perm-chk">
+                                        <input type="checkbox" name="SelectedPermissions" value="@code"
+                                               data-mod="@mod.Code"
+                                               @(selected.Contains(code) ? "checked=checked" : "") />
+                                        <span>@act.Name</span>
+                                    </label>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="card-body">
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">@(Model.IsNew ? "Tạo nhóm" : "Lưu thay đổi")</button>
+                <a class="btn btn-default" href="@Url.Action("Index", "PermissionGroups")">Huỷ</a>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            var all = document.getElementById('grantAll');
+            var matrix = document.getElementById('permMatrix');
+            if (!all || !matrix) return;
+
+            function apply() {
+                if (all.checked) {
+                    matrix.classList.add('is-disabled');
+                    matrix.querySelectorAll('input[type=checkbox]').forEach(function (c) { c.disabled = true; });
+                } else {
+                    matrix.classList.remove('is-disabled');
+                    matrix.querySelectorAll('input[type=checkbox]').forEach(function (c) { c.disabled = false; });
+                }
+            }
+
+            // Tick "Xem" tự bật khi tick Thêm/Sửa/Xóa cùng màn — không có Xem thì không vào được màn.
+            matrix.addEventListener('change', function (e) {
+                var box = e.target;
+                if (box.tagName !== 'INPUT' || box.value.indexOf('.view') >= 0) return;
+                if (!box.checked) return;
+                var mod = box.getAttribute('data-mod');
+                var view = matrix.querySelector('input[value="' + mod + '.view"]');
+                if (view) view.checked = true;
+            });
+
+            all.addEventListener('change', apply);
+            apply();
+        })();
+    </script>
+}

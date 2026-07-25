@@ -44,6 +44,12 @@ namespace TTKDGP.ProjectManager.Data
         private static readonly Lazy<SqlStore<IntegrationSystem>> _integrationSystems =
             new Lazy<SqlStore<IntegrationSystem>>(() => new SqlStore<IntegrationSystem>("IntegrationSystems"));
 
+        private static readonly Lazy<SqlStore<RoleGroup>> _roleGroups =
+            new Lazy<SqlStore<RoleGroup>>(() => new SqlStore<RoleGroup>("RoleGroups"));
+
+        /// <summary>Các nhóm quyền cấu hình được (tập chức năng gán cho từng nhóm).</summary>
+        public static SqlStore<RoleGroup> RoleGroups { get { return _roleGroups.Value; } }
+
         public static SqlStore<WorkLog> WorkLogs { get { return _workLogs.Value; } }
         public static SqlStore<ReminderLog> ReminderLogs { get { return _reminderLogs.Value; } }
 

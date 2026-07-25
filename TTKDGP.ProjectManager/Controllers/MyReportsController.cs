@@ -20,6 +20,7 @@ namespace TTKDGP.ProjectManager.Controllers
     [AppAuthorize]
     public class MyReportsController : BaseController
     {
+        [AppAuthorize(Permission = "myreports.view")]
         public ActionResult Index(int? year, int? week)
         {
             var model = BuildModel(year, week);
@@ -29,6 +30,7 @@ namespace TTKDGP.ProjectManager.Controllers
         /// <summary>Ghi hoặc cập nhật nhật ký tuần cho một phân công của chính mình.</summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "myreports.report")]
         public ActionResult Save(int assignmentId, int year, int week, string content, string status)
         {
             var memberId = LinkedMemberId();

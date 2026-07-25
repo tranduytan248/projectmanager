@@ -13,7 +13,7 @@ namespace TTKDGP.ProjectManager.Controllers
     /// trạng thái tham gia, vai trò). Lớp con chỉ cần khai báo kho dữ liệu, cách hiển thị,
     /// nơi giá trị được sử dụng và cách đổi tên hàng loạt.
     /// </summary>
-    [AppAuthorize(AllowedRoles = Roles.Management)]
+    [AppAuthorize]
     public abstract class CatalogControllerBase<T> : BaseController where T : CatalogItem, new()
     {
         protected abstract SqlStore<T> Store { get; }
@@ -25,6 +25,7 @@ namespace TTKDGP.ProjectManager.Controllers
         /// <summary>Đổi tên giá trị trên mọi bản ghi đang dùng. Trả về số bản ghi đã đổi.</summary>
         protected abstract int RenameUsage(string oldName, string newName);
 
+        [AppAuthorize(Permission = "catalog.view")]
         public ActionResult Index()
         {
             var model = new CatalogListViewModel
@@ -42,6 +43,7 @@ namespace TTKDGP.ProjectManager.Controllers
         }
 
         [HttpGet]
+        [AppAuthorize(Permission = "catalog.create,catalog.edit")]
         public ActionResult Edit(int? id)
         {
             if (!id.HasValue)
@@ -74,6 +76,7 @@ namespace TTKDGP.ProjectManager.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "catalog.create,catalog.edit")]
         public ActionResult Edit(CatalogEditViewModel model)
         {
             model.Config = Config;
@@ -130,6 +133,7 @@ namespace TTKDGP.ProjectManager.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "catalog.delete")]
         public ActionResult Delete(int id)
         {
             var item = Store.Find(id);

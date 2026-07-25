@@ -117,8 +117,27 @@ namespace TTKDGP.ProjectManager.Infrastructure
         /// <summary>Danh sách quyền được phép, ngăn nhau bởi dấu phẩy (ví dụ <c>Roles.Management</c>).</summary>
         public string AllowedRoles { get; set; }
 
+        /// <summary>
+        /// Mã chức năng bắt buộc, dạng "module.action" (ví dụ "projects.edit"). Đây là cách
+        /// đánh dấu chức năng mới: tài khoản phải thuộc nhóm quyền có cấp mã này mới vào được.
+        /// Có thể khai nhiều mã ngăn phẩy — chỉ cần có MỘT là qua (dùng cho form gộp Thêm/Sửa).
+        /// </summary>
+        public string Permission { get; set; }
+
         private bool IsAllowed(AppPrincipal principal)
         {
+            // Ưu tiên kiểm theo mã chức năng nếu có khai.
+            if (!string.IsNullOrEmpty(Permission))
+            {
+                var role = principal.AppIdentity.Role;
+                foreach (var code in Permission.Split(','))
+                {
+                    var c = code.Trim();
+                    if (c.Length > 0 && Models.Permissions.UserHas(role, c)) return true;
+                }
+                return false;
+            }
+
             if (!string.IsNullOrEmpty(RequiredRole)) return principal.IsInRole(RequiredRole);
             if (string.IsNullOrEmpty(AllowedRoles)) return true;
 

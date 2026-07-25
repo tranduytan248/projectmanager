@@ -8,12 +8,13 @@ using TTKDGP.ProjectManager.Models;
 
 namespace TTKDGP.ProjectManager.Controllers
 {
-    [AppAuthorize(AllowedRoles = Roles.Management)]
+    [AppAuthorize]
     public class ProjectsController : BaseController
     {
         /// <summary>Số dự án mỗi trang. Danh sách đã nằm sẵn trong bộ nhớ nên cắt trang ngay ở đây.</summary>
         private const int PageSize = 25;
 
+        [AppAuthorize(Permission = "projects.view")]
         public ActionResult Index(string keyword, string status, string projectType, int? pmMemberId, int? page)
         {
             var projects = Repository.Projects.All();
@@ -82,6 +83,7 @@ namespace TTKDGP.ProjectManager.Controllers
         }
 
         [HttpGet]
+        [AppAuthorize(Permission = "projects.create,projects.edit")]
         public ActionResult Edit(int? id)
         {
             var project = id.HasValue ? Repository.Projects.Find(id.Value) : new Project { CurrentStatus = "Đang thực hiện" };
@@ -93,6 +95,7 @@ namespace TTKDGP.ProjectManager.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "projects.create,projects.edit")]
         public ActionResult Edit(Project model)
         {
             // Không chọn ai thì trình duyệt không gửi trường nào cả.
@@ -136,6 +139,7 @@ namespace TTKDGP.ProjectManager.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "projects.delete")]
         public ActionResult Delete(int id)
         {
             var project = Repository.Projects.Find(id);

@@ -10,9 +10,10 @@ using TTKDGP.ProjectManager.Services;
 namespace TTKDGP.ProjectManager.Controllers
 {
     /// <summary>Cấu hình và theo dõi việc nhắc báo cáo qua Telegram. Chỉ Admin dùng được.</summary>
-    [AppAuthorize(RequiredRole = Roles.Admin)]
+    [AppAuthorize]
     public class NotificationsController : BaseController
     {
+        [AppAuthorize(Permission = "notifications.view")]
         public ActionResult Index()
         {
             return View(BuildModel());
@@ -21,6 +22,7 @@ namespace TTKDGP.ProjectManager.Controllers
         /// <summary>Gửi ngay một kỳ nhắc, không chờ tới lịch.</summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "notifications.send")]
         public ActionResult Send(ReminderKind kind)
         {
             var log = ReminderService.Run(kind, DateTime.Now, true, CurrentUser.Name);
@@ -45,6 +47,7 @@ namespace TTKDGP.ProjectManager.Controllers
         /// <summary>Gửi ngay mail nhắc cho từng thành viên, không chờ tới sáng thứ Sáu.</summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "notifications.send")]
         public ActionResult SendMemberEmails()
         {
             var log = ReminderService.RunMemberEmails(DateTime.Now, true, CurrentUser.Name);
@@ -73,6 +76,7 @@ namespace TTKDGP.ProjectManager.Controllers
         /// <summary>Gửi một mail thử để kiểm tra cấu hình SMTP.</summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "notifications.send")]
         public ActionResult SendTestEmail(string to)
         {
             if (string.IsNullOrWhiteSpace(to))
@@ -98,6 +102,7 @@ namespace TTKDGP.ProjectManager.Controllers
         /// <summary>Dò chat id của các nhóm mà bot đang tham gia.</summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "notifications.send")]
         public ActionResult Discover()
         {
             var model = BuildModel();

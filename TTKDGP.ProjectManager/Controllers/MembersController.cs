@@ -8,9 +8,10 @@ using TTKDGP.ProjectManager.Models;
 
 namespace TTKDGP.ProjectManager.Controllers
 {
-    [AppAuthorize(AllowedRoles = Roles.Management)]
+    [AppAuthorize]
     public class MembersController : BaseController
     {
+        [AppAuthorize(Permission = "members.view")]
         public ActionResult Index(string keyword)
         {
             var members = Repository.Members.All();
@@ -58,6 +59,7 @@ namespace TTKDGP.ProjectManager.Controllers
         }
 
         [HttpGet]
+        [AppAuthorize(Permission = "members.create,members.edit")]
         public ActionResult Edit(int? id)
         {
             var member = id.HasValue ? Repository.Members.Find(id.Value) : new Member { IsActive = true };
@@ -68,6 +70,7 @@ namespace TTKDGP.ProjectManager.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "members.create,members.edit")]
         public ActionResult Edit(Member model)
         {
             if (!ModelState.IsValid) return View(model);
@@ -115,6 +118,7 @@ namespace TTKDGP.ProjectManager.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "members.delete")]
         public ActionResult Delete(int id)
         {
             var member = Repository.Members.Find(id);

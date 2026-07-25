@@ -11,9 +11,10 @@ namespace TTKDGP.ProjectManager.Controllers
     /// Quản trị các hệ thống bên ngoài được phép tích hợp: mã, tên, khoá bí mật (sinh ngẫu nhiên,
     /// dùng để ký checksum) và trạng thái hoạt động. Chỉ Admin dùng vì khoá là thông tin nhạy cảm.
     /// </summary>
-    [AppAuthorize(RequiredRole = Roles.Admin)]
+    [AppAuthorize]
     public class IntegrationSystemsController : BaseController
     {
+        [AppAuthorize(Permission = "integrations.view")]
         public ActionResult Index(string keyword)
         {
             var items = Repository.IntegrationSystems.All();
@@ -33,6 +34,7 @@ namespace TTKDGP.ProjectManager.Controllers
         }
 
         [HttpGet]
+        [AppAuthorize(Permission = "integrations.create,integrations.edit")]
         public ActionResult Edit(int? id)
         {
             if (!id.HasValue)
@@ -53,6 +55,7 @@ namespace TTKDGP.ProjectManager.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "integrations.create,integrations.edit")]
         public ActionResult Edit(IntegrationSystem model)
         {
             var code = (model.Code ?? string.Empty).Trim();
@@ -108,6 +111,7 @@ namespace TTKDGP.ProjectManager.Controllers
         /// <summary>Sinh lại khoá bí mật cho một hệ thống. Khoá cũ hết hiệu lực ngay sau khi lưu.</summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "integrations.edit")]
         public ActionResult Regenerate(int id)
         {
             var item = Repository.IntegrationSystems.Find(id);
@@ -125,6 +129,7 @@ namespace TTKDGP.ProjectManager.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "integrations.delete")]
         public ActionResult Delete(int id)
         {
             var item = Repository.IntegrationSystems.Find(id);

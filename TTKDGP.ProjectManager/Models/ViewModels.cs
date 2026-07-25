@@ -132,6 +132,47 @@ namespace TTKDGP.ProjectManager.Models
         public bool IsNew { get { return Id == 0; } }
     }
 
+    /// <summary>Form tạo / sửa một nhóm quyền kèm ma trận chức năng.</summary>
+    public class RoleGroupEditViewModel
+    {
+        public int Id { get; set; }
+
+        [Required(ErrorMessage = "Vui lòng nhập mã nhóm")]
+        [Display(Name = "Mã nhóm")]
+        [StringLength(50, MinimumLength = 2, ErrorMessage = "Mã nhóm từ 2 đến 50 ký tự")]
+        public string Code { get; set; }
+
+        [Required(ErrorMessage = "Vui lòng nhập tên nhóm")]
+        [Display(Name = "Tên nhóm")]
+        [StringLength(100, ErrorMessage = "Tên nhóm tối đa 100 ký tự")]
+        public string Name { get; set; }
+
+        [Display(Name = "Mô tả")]
+        [StringLength(300, ErrorMessage = "Mô tả tối đa 300 ký tự")]
+        public string Description { get; set; }
+
+        [Display(Name = "Đang dùng")]
+        public bool IsActive { get; set; }
+
+        /// <summary>Toàn quyền: cấp mọi chức năng, tự bao gồm cả chức năng thêm về sau ("*").</summary>
+        [Display(Name = "Toàn quyền")]
+        public bool GrantAll { get; set; }
+
+        /// <summary>Các mã chức năng được tick trên ma trận (bỏ qua nếu GrantAll).</summary>
+        public string[] SelectedPermissions { get; set; }
+
+        public bool IsNew { get { return Id == 0; } }
+
+        /// <summary>Số tài khoản đang dùng nhóm này (để cảnh báo khi sửa/xoá).</summary>
+        public int UserCount { get; set; }
+
+        public RoleGroupEditViewModel()
+        {
+            IsActive = true;
+            SelectedPermissions = new string[0];
+        }
+    }
+
     /// <summary>Một nhân sự sẽ được mở tài khoản.</summary>
     public class UserProvisionRow
     {

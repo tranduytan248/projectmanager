@@ -11,9 +11,10 @@ namespace TTKDGP.ProjectManager.Controllers
     /// Quản lý việc "thành viên nào làm công việc gì trong dự án nào, trạng thái tham gia ra sao".
     /// Đây là nguồn dữ liệu cho màn hình tổng hợp ngoài FrontEnd.
     /// </summary>
-    [AppAuthorize(AllowedRoles = Roles.Management)]
+    [AppAuthorize]
     public class AssignmentsController : BaseController
     {
+        [AppAuthorize(Permission = "assignments.view")]
         public ActionResult Index(string keyword, int? memberId, int? projectId)
         {
             var rows = Repository.BuildSummaryRows();
@@ -56,6 +57,7 @@ namespace TTKDGP.ProjectManager.Controllers
         }
 
         [HttpGet]
+        [AppAuthorize(Permission = "assignments.create,assignments.edit")]
         public ActionResult Edit(int? id, int? projectId)
         {
             var assignment = id.HasValue
@@ -77,6 +79,7 @@ namespace TTKDGP.ProjectManager.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "assignments.create,assignments.edit")]
         public ActionResult Edit(ProjectMember model)
         {
             var project = Repository.Projects.Find(model.ProjectId);
@@ -124,6 +127,7 @@ namespace TTKDGP.ProjectManager.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "assignments.delete")]
         public ActionResult Delete(int id)
         {
             var assignment = Repository.Assignments.Find(id);
@@ -144,6 +148,7 @@ namespace TTKDGP.ProjectManager.Controllers
         /// <summary>Bật/tắt nhanh trạng thái tham gia ngay trên danh sách.</summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "assignments.edit")]
         public ActionResult ToggleActive(int id)
         {
             var assignment = Repository.Assignments.Find(id);

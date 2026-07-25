@@ -13,9 +13,10 @@ namespace TTKDGP.ProjectManager.Controllers
     /// PM xem báo cáo tuần của nhân sự tham gia dự án, rồi tổng hợp và gửi lại lên nhóm Telegram.
     /// Nguồn dữ liệu chính là nhật ký tuần do nhân sự tự ghi ở màn "Báo cáo của tôi".
     /// </summary>
-    [AppAuthorize(AllowedRoles = Roles.Management)]
+    [AppAuthorize]
     public class TeamReportsController : BaseController
     {
+        [AppAuthorize(Permission = "teamreports.view")]
         public ActionResult Index(int? year, int? week, int? projectId, int? memberId, bool? onlyMine)
         {
             return View(BuildModel(year, week, projectId, memberId, onlyMine));
@@ -28,6 +29,7 @@ namespace TTKDGP.ProjectManager.Controllers
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "teamreports.save")]
         public ActionResult SaveSummary(int groupProjectId, int year, int week,
             TeamReportSaveRow[] rows, int? projectId, int? memberId, bool? onlyMine)
         {
@@ -123,6 +125,7 @@ namespace TTKDGP.ProjectManager.Controllers
         /// <summary>Gửi bản tổng hợp lên nhóm Telegram (dùng bot nhắc báo cáo).</summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "teamreports.send")]
         public ActionResult Send(int year, int week, int? projectId, int? memberId, bool? onlyMine)
         {
             var model = BuildModel(year, week, projectId, memberId, onlyMine);

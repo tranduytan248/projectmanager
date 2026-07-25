@@ -23,6 +23,9 @@ namespace TTKDGP.ProjectManager
             // Tạo bảng SQL nếu chưa có và nạp dữ liệu từ JSON sang khi bảng còn trống.
             Data.JsonToSqlMigration.RunIfNeeded();
 
+            // Tạo ba nhóm quyền mặc định (Quản trị / Quản lý / Báo cáo) nếu bảng còn trống.
+            Data.RoleGroupSeeder.EnsureDefaults();
+
             // Bộ lịch nhắc báo cáo qua Telegram (sáng thứ Hai và chiều thứ Sáu).
             Infrastructure.ReminderScheduler.Start();
 

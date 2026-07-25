@@ -1,0 +1,91 @@
+﻿@model List<TTKDGP.ProjectManager.Models.RoleGroup>
+@using TTKDGP.ProjectManager.Models
+@{
+    ViewBag.Title = "Nhóm quyền";
+    var userCounts = ViewBag.UserCounts as Dictionary<string, int> ?? new Dictionary<string, int>();
+    var totalPerms = Permissions.AllCodes().Count();
+    Func<TTKDGP.ProjectManager.Models.RoleGroup, int> permCount = g =>
+    {
+        var p = (g.Permissions ?? "").Trim();
+        if (p == "*") return totalPerms;
+        return p.Split(',').Count(x => x.Trim().Length > 0);
+    };
+}
+
+<div class="page-head">
+    <div>
+        <h1>Nhóm quyền</h1>
+        <p>Mỗi nhóm nắm một tập chức năng. Menu và quyền truy cập của tài khoản hiện theo nhóm được gán.</p>
+    </div>
+    <a class="btn btn-primary" href="@Url.Action("Edit", "PermissionGroups")">+ Tạo nhóm quyền</a>
+</div>
+
+<div class="card">
+    <div class="table-wrap">
+        <table class="data">
+            <thead>
+                <tr>
+                    <th>Nhóm</th>
+                    <th>Mã</th>
+                    <th class="num">Chức năng</th>
+                    <th class="num">Tài khoản</th>
+                    <th>Trạng thái</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var g in Model)
+                {
+                    var uc = userCounts.ContainsKey(g.Code) ? userCounts[g.Code] : 0;
+                    var isAll = (g.Permissions ?? "").Trim() == "*";
+                    <tr>
+                        <td class="col-name">
+                            <strong>@g.Name</strong>
+                            @if (!string.IsNullOrWhiteSpace(g.Description))
+                            {
+                                <div class="muted" style="font-size:12.5px">@g.Description</div>
+                            }
+                        </td>
+                        <td><span class="badge badge-role">@g.Code</span></td>
+                        <td class="num">
+                            @if (isAll)
+                            {
+                                <span class="badge badge-active">Toàn quyền</span>
+                            }
+                            else
+                            {
+                                @permCount(g)
+                            }
+                        </td>
+                        <td class="num">@uc</td>
+                        <td>
+                            @if (g.IsActive)
+                            {
+                                <span class="badge badge-active">Đang dùng</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-inactive">Ngừng</span>
+                            }
+                        </td>
+                        <td class="actions">
+                            <div class="btn-group">
+                                <a class="btn btn-default btn-sm" href="@Url.Action("Edit", "PermissionGroups", new { id = g.Id })">Sửa</a>
+                                @using (Html.BeginForm("Delete", "PermissionGroups", new { id = g.Id }, FormMethod.Post, new { @class = "inline-form" }))
+                                {
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-danger btn-sm"
+                                            @(uc > 0 ? "disabled=disabled" : "")
+                                            title="@(uc > 0 ? "Còn tài khoản đang dùng nhóm này" : "Xoá nhóm")"
+                                            onclick="return confirm('Xoá nhóm quyền &quot;@g.Name&quot;?');">
+                                        Xoá
+                                    </button>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

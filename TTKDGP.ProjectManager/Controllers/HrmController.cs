@@ -13,7 +13,7 @@ namespace TTKDGP.ProjectManager.Controllers
     /// Giới hạn ở Admin như màn hình GoConnect, vì đây là thông tin cá nhân của toàn bộ nhân sự
     /// (họ tên, email, số điện thoại) chứ không riêng tổ mình.
     /// </summary>
-    [AppAuthorize(RequiredRole = Roles.Admin)]
+    [AppAuthorize(Permission = "hrm.view")]
     public class HrmController : BaseController
     {
         private const int PageSize = 25;

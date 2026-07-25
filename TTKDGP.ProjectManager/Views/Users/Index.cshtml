@@ -54,21 +54,12 @@
                             }
                         </td>
                         <td>
-                            @* Một tài khoản có thể mang nhiều quyền — hiện đủ từng nhãn. *@
+                            @* Một tài khoản có thể mang nhiều nhóm — hiện tên từng nhóm. *@
                             @foreach (var r in TTKDGP.ProjectManager.Models.Roles.Split(u.Role))
                             {
-                                if (string.Equals(r, TTKDGP.ProjectManager.Models.Roles.Admin, StringComparison.OrdinalIgnoreCase))
-                                {
-                                    <span class="badge badge-role">Quản trị</span>
-                                }
-                                else if (string.Equals(r, TTKDGP.ProjectManager.Models.Roles.Reporter, StringComparison.OrdinalIgnoreCase))
-                                {
-                                    <span class="badge badge-waiting">Báo cáo công việc</span>
-                                }
-                                else
-                                {
-                                    <span class="badge badge-doing">Quản lý</span>
-                                }
+                                var grp = TTKDGP.ProjectManager.Data.Repository.RoleGroups
+                                    .FirstOrDefault(g => string.Equals(g.Code, r, StringComparison.OrdinalIgnoreCase));
+                                <span class="badge badge-role">@(grp != null ? grp.Name : r)</span>
                             }
                             @if (u.MemberId > 0)
                             {

@@ -48,14 +48,17 @@ namespace TTKDGP.ProjectManager.Models
                 .ToArray();
         }
 
-        /// <summary>Ghép danh sách quyền thành chuỗi để lưu.</summary>
+        /// <summary>
+        /// Ghép danh sách mã nhóm thành chuỗi để lưu. Chấp nhận mọi mã nhóm (nhóm giờ cấu hình
+        /// được), chỉ bỏ khoảng trắng và trùng lặp — việc kiểm mã nhóm có tồn tại để nơi gọi lo.
+        /// </summary>
         public static string Join(IEnumerable<string> roles)
         {
             if (roles == null) return string.Empty;
 
             var valid = roles
                 .Select(r => (r ?? string.Empty).Trim())
-                .Where(r => r.Length > 0 && All.Contains(r, StringComparer.OrdinalIgnoreCase))
+                .Where(r => r.Length > 0)
                 .Distinct(StringComparer.OrdinalIgnoreCase);
 
             return string.Join(",", valid);
@@ -67,24 +70,35 @@ namespace TTKDGP.ProjectManager.Models
             return Split(roles).Any(r => string.Equals(r, role, StringComparison.OrdinalIgnoreCase));
         }
 
-        /// <summary>Tên hiển thị, nhiều quyền thì nối bằng dấu phẩy.</summary>
+        /// <summary>
+        /// Tên hiển thị của (các) nhóm quyền, tra theo tên nhóm trong CSDL. Nhóm nhiều thì
+        /// nối bằng dấu phẩy. Không tìm thấy nhóm thì hiện luôn mã.
+        /// </summary>
         public static string Display(string roles)
         {
-            var names = Split(roles).Select(DisplayOne).ToList();
-            return names.Count == 0 ? "Quản lý" : string.Join(", ", names);
+            var codes = Split(roles);
+            if (codes.Length == 0) return "Chưa phân nhóm";
+
+            var names = codes.Select(code =>
+            {
+                var group = Data.Repository.RoleGroups.FirstOrDefault(
+                    g => string.Equals(g.Code, code, StringComparison.OrdinalIgnoreCase));
+                return group != null ? group.Name : code;
+            });
+
+            return string.Join(", ", names);
         }
 
-        private static string DisplayOne(string role)
-        {
-            if (string.Equals(role, Admin, StringComparison.OrdinalIgnoreCase)) return "Quản trị";
-            if (string.Equals(role, Reporter, StringComparison.OrdinalIgnoreCase)) return "Báo cáo công việc";
-            return "Quản lý";
-        }
-
-        /// <summary>Có quyền nào cho vào các màn quản trị không.</summary>
+        /// <summary>
+        /// Có quyền nào cho vào các màn quản lý/quản trị không (bất kỳ chức năng nào ngoài
+        /// Tổng hợp và Báo cáo của tôi). Dùng để điều hướng sau đăng nhập.
+        /// </summary>
         public static bool CanManage(string roles)
         {
-            return Has(roles, Admin) || Has(roles, Manager);
+            var set = Permissions.ResolvePermissions(roles);
+            if (set.Contains("*")) return true;
+            return set.Any(c => !c.StartsWith("home.", StringComparison.OrdinalIgnoreCase)
+                                && !c.StartsWith("myreports.", StringComparison.OrdinalIgnoreCase));
         }
     }
 

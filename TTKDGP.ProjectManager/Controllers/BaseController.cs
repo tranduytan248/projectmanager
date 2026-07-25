@@ -1,4 +1,5 @@
-﻿using System.Web.Mvc;
+﻿using System;
+using System.Web.Mvc;
 using TTKDGP.ProjectManager.Infrastructure;
 
 namespace TTKDGP.ProjectManager.Controllers
@@ -20,6 +21,11 @@ namespace TTKDGP.ProjectManager.Controllers
             var user = CurrentUser;
             ViewBag.CurrentUser = user;
             ViewBag.IsAdmin = user != null && Models.Roles.Has(user.Role, Models.Roles.Admin);
+
+            // Hàm kiểm quyền cho view: dùng để ẩn/hiện nút Thêm/Sửa/Xóa theo chức năng.
+            var role = user == null ? null : user.Role;
+            ViewBag.Can = (Func<string, bool>)(perm => Models.Permissions.UserHas(role, perm));
+
             base.OnActionExecuting(filterContext);
         }
 
