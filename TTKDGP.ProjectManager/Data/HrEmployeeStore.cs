@@ -44,10 +44,11 @@ namespace TTKDGP.ProjectManager.Data
             "  VALUES (@Email,@Code,@FullName,@PhoneNumber,@Gender,@WorkplaceId,@PositionId," +
             "   @UserId,@AccountId,@UpdatedAt);";
 
-        // Đọc kèm tên đơn vị và tên chức danh. LEFT JOIN để người thiếu đơn vị/chức danh
+        // Đọc kèm mã và tên đơn vị, mã và tên chức danh. LEFT JOIN để người thiếu đơn vị/chức danh
         // vẫn hiện ra thay vì biến mất khỏi kết quả.
         private const string SelectSql =
-            "SELECT e.*, w.[WpName] AS DepartmentName, p.[PosName] AS PositionName " +
+            "SELECT e.*, w.[WpName] AS DepartmentName, w.[WpCode] AS DepartmentCode, " +
+            "       p.[PosName] AS PositionName, p.[PosCode] AS PositionCode " +
             "FROM [" + Table + "] e " +
             "LEFT JOIN [HrWorkplaces] w ON w.[WpId] = e.[WorkplaceId] " +
             "LEFT JOIN [HrPositions] p ON p.[PosId] = e.[PositionId] ";
@@ -233,7 +234,8 @@ namespace TTKDGP.ProjectManager.Data
                     Math.Max(1, (int)Math.Ceiling(total / (double)pageSize)));
 
                 var sql =
-                    "SELECT e.*, w.[WpName] AS DepartmentName, p.[PosName] AS PositionName" + from + where +
+                    "SELECT e.*, w.[WpName] AS DepartmentName, w.[WpCode] AS DepartmentCode," +
+                    "       p.[PosName] AS PositionName, p.[PosCode] AS PositionCode" + from + where +
                     " ORDER BY e.[FullName], e.[Email]" +
                     " OFFSET @Skip ROWS FETCH NEXT @Take ROWS ONLY";
 
@@ -319,7 +321,9 @@ namespace TTKDGP.ProjectManager.Data
                 UserId = HrBulk.Str(row, "UserId"),
                 AccountId = HrBulk.Str(row, "AccountId"),
                 DepartmentName = HrBulk.Str(row, "DepartmentName"),
+                DepartmentCode = HrBulk.Str(row, "DepartmentCode"),
                 PositionName = HrBulk.Str(row, "PositionName"),
+                PositionCode = HrBulk.Str(row, "PositionCode"),
                 UpdatedAt = row["UpdatedAt"] is DateTime ? (DateTime)row["UpdatedAt"] : DateTime.MinValue
             };
         }

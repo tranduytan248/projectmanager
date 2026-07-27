@@ -129,8 +129,11 @@ Lấy giá trị từ **chính phản hồi**, không phải từ request đã g
 **employees**
 ```json
 { "code": "CTV074188", "fullName": "Nguyễn Văn A", "email": "a@vnpt.vn",
-  "phoneNumber": "0912345678", "gender": "1", "department": "Tổ NCPT", "position": "Chuyên viên" }
+  "phoneNumber": "0912345678", "gender": "1",
+  "departmentCode": "239.307.603", "department": "Tổ NCPT",
+  "positionCode": "CV", "position": "Chuyên viên" }
 ```
+> `departmentCode` và `positionCode` chính là trường `code` của `workplaces` và `positions`, dùng để nối ba loại dữ liệu với nhau mà không phải so theo tên.
 
 **workplaces**
 ```json

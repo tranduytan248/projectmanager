@@ -102,7 +102,9 @@ namespace TTKDGP.ProjectManager.Controllers
                             email = e.Email,
                             phoneNumber = e.PhoneNumber,
                             gender = e.Gender,
+                            departmentCode = e.DepartmentCode,
                             department = e.DepartmentName,
+                            positionCode = e.PositionCode,
                             position = e.PositionName
                         }).ToList();
                         totalItems = paged.Pager.TotalItems;

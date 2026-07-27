@@ -53,8 +53,14 @@ namespace TTKDGP.ProjectManager.Models
         /// <summary>Tên đơn vị công tác, điền khi đọc bằng phép nối bảng.</summary>
         public string DepartmentName { get; set; }
 
+        /// <summary>Mã đơn vị công tác (WpCode), điền khi đọc bằng phép nối bảng.</summary>
+        public string DepartmentCode { get; set; }
+
         /// <summary>Tên chức danh, điền khi đọc bằng phép nối bảng.</summary>
         public string PositionName { get; set; }
+
+        /// <summary>Mã chức danh (PosCode), điền khi đọc bằng phép nối bảng.</summary>
+        public string PositionCode { get; set; }
     }
 
     /// <summary>
