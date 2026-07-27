@@ -130,6 +130,9 @@
     <Compile Include="Models\PagedList.cs" />
     <Compile Include="Models\IntegrationSystem.cs" />
     <Compile Include="Models\HrmApiModels.cs" />
+    <Compile Include="Controllers\UtilApiController.cs" />
+    <Compile Include="Models\SmsApiModels.cs" />
+    <Compile Include="Infrastructure\SmsClient.cs" />
     <Compile Include="Infrastructure\IntegrationKey.cs" />
     <Compile Include="Models\WorkLog.cs" />
     <Compile Include="Controllers\WorkLogsController.cs" />
@@ -168,6 +171,8 @@
     -->
     <Content Include="App_Data\docs\Huong-dan-tich-hop-API-HRM.md" />
     <Content Include="App_Data\docs\HRM-API.postman_collection.json" />
+    <Content Include="App_Data\docs\Huong-dan-tich-hop-API-SMS.md" />
+    <Content Include="App_Data\docs\SMS-API.postman_collection.json" />
     <Content Include="App_Data\seed\members.json" />
     <Content Include="App_Data\seed\projects.json" />
     <Content Include="App_Data\seed\projectMembers.json" />

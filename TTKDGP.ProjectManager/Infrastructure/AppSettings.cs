@@ -177,6 +177,33 @@ namespace TTKDGP.ProjectManager.Infrastructure
             }
         }
 
+        /// <summary>
+        /// Tổng đài gửi tin nhắn SMS. Phần mềm không tự nối vào nhà mạng mà gọi lại tổng đài
+        /// dùng chung (cùng đường mà HRM đang gọi), nên chỉ cần khai địa chỉ endpoint.
+        /// </summary>
+        public static class Sms
+        {
+            /// <summary>Bật/tắt API gửi SMS. Tắt thì endpoint trả lỗi ngay, không gọi ra ngoài.</summary>
+            public static bool Enabled { get { return GetBool("Sms:Enabled", false); } }
+
+            /// <summary>Địa chỉ tổng đài, nhận GET với hai tham số phoneNums và smsContents.</summary>
+            public static string GatewayUrl
+            {
+                get { return Get("Sms:GatewayUrl", "https://vnptkhanhhoa.cenit.vn/api/Util/SendSms"); }
+            }
+
+            /// <summary>Thời gian chờ tổng đài trả lời (giây).</summary>
+            public static int TimeoutSeconds { get { return Math.Max(5, GetInt("Sms:TimeoutSeconds", 30)); } }
+
+            /// <summary>Trần số máy nhận trong một lần gọi, chặn việc bắn hàng loạt do gọi nhầm.</summary>
+            public static int MaxPhones { get { return Math.Max(1, GetInt("Sms:MaxPhones", 50)); } }
+
+            public static bool HasGateway { get { return !string.IsNullOrWhiteSpace(GatewayUrl); } }
+
+            /// <summary>Đủ điều kiện gửi: đã bật và có địa chỉ tổng đài.</summary>
+            public static bool IsConfigured { get { return Enabled && HasGateway; } }
+        }
+
         public static class Reminder
         {
             /// <summary>

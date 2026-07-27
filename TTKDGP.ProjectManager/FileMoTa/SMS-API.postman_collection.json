@@ -1,0 +1,165 @@
+{
+  "info": {
+    "_postman_id": "b6d2e4f7-3a51-4c8e-9b02-7d4e5f6a8c19",
+    "name": "SMS API - Tich hop gui tin nhan",
+    "description": "API GET /api/Util/SendSms nho phan mem gui SMS. Xac thuc bang cap Ma he thong (partnerCode) + Khoa bi mat (secretKey) khai o man He thong tich hop. Dien bien baseUrl, partnerCode, secretKey, phoneNums, smsContents o tab Variables roi Send.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Gui SMS",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "var res = pm.response.json();",
+              "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"code = 00 (thanh cong)\", function () { pm.expect(res.code).to.eql(\"00\"); });",
+              "pm.test(\"Co danh sach so da gui\", function () { pm.expect(res.totalPhones).to.be.above(0); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/Util/SendSms?partnerCode={{partnerCode}}&phoneNums={{phoneNums}}&smsContents={{smsContents}}&secretKey={{secretKey}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "Util",
+            "SendSms"
+          ],
+          "query": [
+            { "key": "partnerCode", "value": "{{partnerCode}}" },
+            { "key": "phoneNums", "value": "{{phoneNums}}" },
+            { "key": "smsContents", "value": "{{smsContents}}" },
+            { "key": "secretKey", "value": "{{secretKey}}" }
+          ]
+        },
+        "description": "Gui mot noi dung toi mot hoac nhieu so (ngan nhau boi dau phay). secretKey lay o cot Khoa bi mat cua man He thong tich hop."
+      }
+    },
+    {
+      "name": "Loi - sai khoa bi mat (code 01)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "var res = pm.response.json();",
+              "pm.test(\"code = 01 (sai khoa bi mat)\", function () { pm.expect(res.code).to.eql(\"01\"); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/Util/SendSms?partnerCode={{partnerCode}}&phoneNums={{phoneNums}}&smsContents={{smsContents}}&secretKey=KHOA-SAI",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "Util",
+            "SendSms"
+          ],
+          "query": [
+            { "key": "partnerCode", "value": "{{partnerCode}}" },
+            { "key": "phoneNums", "value": "{{phoneNums}}" },
+            { "key": "smsContents", "value": "{{smsContents}}" },
+            { "key": "secretKey", "value": "KHOA-SAI" }
+          ]
+        },
+        "description": "Gui khoa bi mat sai de xem phan hoi loi (code 01)."
+      }
+    },
+    {
+      "name": "Loi - so dien thoai sai (code 03)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "var res = pm.response.json();",
+              "pm.test(\"code = 03 (tham so sai)\", function () { pm.expect(res.code).to.eql(\"03\"); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/Util/SendSms?partnerCode={{partnerCode}}&phoneNums=12345&smsContents={{smsContents}}&secretKey={{secretKey}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "Util",
+            "SendSms"
+          ],
+          "query": [
+            { "key": "partnerCode", "value": "{{partnerCode}}" },
+            { "key": "phoneNums", "value": "12345" },
+            { "key": "smsContents", "value": "{{smsContents}}" },
+            { "key": "secretKey", "value": "{{secretKey}}" }
+          ]
+        },
+        "description": "Gui so sai dinh dang (khong dung dau 0 hoac 84, khong du chu so) de xem phan hoi loi (code 03)."
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://pmncpt.cenit.vn",
+      "type": "string"
+    },
+    {
+      "key": "partnerCode",
+      "value": "CRM",
+      "type": "string"
+    },
+    {
+      "key": "secretKey",
+      "value": "DAN-KHOA-BI-MAT-VAO-DAY",
+      "type": "string"
+    },
+    {
+      "key": "phoneNums",
+      "value": "0942963127",
+      "type": "string"
+    },
+    {
+      "key": "smsContents",
+      "value": "Xin chao! Toi la SMS",
+      "type": "string"
+    }
+  ]
+}

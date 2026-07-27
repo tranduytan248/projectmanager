@@ -41,8 +41,8 @@
             </table>
         </div>
 
-        <p class="hint" style="margin:12px 0 6px"><strong>Cách tạo checksum:</strong></p>
-        <pre class="message-preview">checksum = SHA256( partnerCode|requestId|requestTime|resource|page|pageSize|keyword|<khoá bí mật> )</pre>
+        <p class="hint" style="margin:12px 0 6px"><strong>Cách tạo checksum của request:</strong></p>
+        <pre class="message-preview">checksum = SHA256( partnerCode|requestId|requestTime|resource|page|pageSize|keyword|&lt;khoá bí mật&gt; )</pre>
         <ul style="margin:6px 0 0;padding-left:20px;font-size:13px;color:var(--text-muted)">
             <li>Ghép các trường 1→7 theo đúng thứ tự, ngăn nhau bởi ký tự <code>|</code>.</li>
             <li>Trường không bắt buộc mà bỏ trống thì để rỗng nhưng vẫn giữ dấu <code>|</code>.</li>
@@ -60,10 +60,95 @@
   "keyword": "",
   "checksum": "&lt;chuỗi SHA-256&gt;"
 }</pre>
+
+        <p class="hint" style="margin:12px 0 6px"><strong>Phản hồi khi thành công:</strong></p>
+        <pre class="message-preview">{
+  "code": "00", "message": "Thành công.",
+  "requestId": "REQ-20260724-0001", "resource": "employees",
+  "page": 1, "pageSize": 100, "totalItems": 780, "totalPages": 8,
+  "data": [ ... ], "checksum": "&lt;chuỗi SHA-256&gt;"
+}</pre>
+        <ul style="margin:6px 0 0;padding-left:20px;font-size:13px;color:var(--text-muted)">
+            <li>
+                Kiểm phản hồi đúng nguồn bằng cách tính lại:
+                <code>SHA256( code|message|requestId|resource|page|pageSize|totalItems|&lt;khoá bí mật&gt; )</code>
+                — lấy giá trị từ chính phản hồi, vì <code>page</code> và <code>pageSize</code> có thể
+                khác lúc gửi (trang vượt quá bị kéo về trang cuối, <code>pageSize</code> bị chặn ở 500).
+            </li>
+            <li>
+                Bản ghi trong <code>data</code> <strong>lược bỏ trường rỗng</strong>: nhân sự không có
+                email thì phản hồi không có khoá <code>email</code>. Bên nhận nên coi khoá vắng mặt là
+                giá trị rỗng.
+            </li>
+        </ul>
+
+        <p class="hint" style="margin:12px 0 6px"><strong>Mã lỗi:</strong></p>
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr><th><code>code</code></th><th>Ý nghĩa</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>00</code></td><td>Thành công</td></tr>
+                    <tr><td><code>01</code></td><td>Checksum không hợp lệ</td></tr>
+                    <tr><td><code>02</code></td><td>Hệ thống không tồn tại hoặc đang bị khoá</td></tr>
+                    <tr><td><code>03</code></td><td>Thiếu trường bắt buộc, hoặc <code>resource</code> không đúng</td></tr>
+                    <tr><td><code>99</code></td><td>Lỗi hệ thống (kể cả khi thân JSON sai cú pháp)</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="hint" style="margin-top:8px">
+            Phản hồi lỗi <strong>không kèm</strong> <code>checksum</code> (chưa xác thực được bên gọi thì
+            không ký), và các số phân trang đều bằng <code>0</code>. Mọi trường hợp đều trả HTTP 200 —
+            phân biệt thành công hay lỗi bằng <code>code</code>, không bằng mã HTTP.
+        </p>
+    </div>
+</details>
+
+<details class="card api-help">
+    <summary>Hướng dẫn tích hợp API gửi tin nhắn SMS</summary>
+    <div class="card-body">
+        <p>
+            Đối tác gọi <code>GET /api/Util/SendSms</code> với bốn tham số trên query string. Xác thực
+            bằng cặp <strong>Mã hệ thống</strong> và <strong>Khoá bí mật</strong> ở bảng trên — dùng
+            đúng khoá đã cấp, không cấp khoá riêng cho SMS. Phần mềm chuẩn hoá số máy rồi chuyển tiếp
+            sang tổng đài SMS dùng chung.
+        </p>
+
+        <p class="hint" style="margin-bottom:6px"><strong>Các tham số:</strong></p>
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr><th class="num">#</th><th>Tham số</th><th>Bắt buộc</th><th>Mô tả</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td class="num">1</td><td><code>partnerCode</code></td><td>Có</td><td>Mã hệ thống (cột <strong>Mã</strong> ở bảng trên)</td></tr>
+                    <tr><td class="num">2</td><td><code>phoneNums</code></td><td>Có</td><td>Danh sách số nhận, ngăn nhau bởi dấu phẩy</td></tr>
+                    <tr><td class="num">3</td><td><code>smsContents</code></td><td>Có</td><td>Nội dung tin nhắn</td></tr>
+                    <tr><td class="num">4</td><td><code>secretKey</code></td><td>Có</td><td>Khoá bí mật của chính hệ thống đó (cột <strong>Khoá bí mật</strong>)</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <ul style="margin:10px 0 0;padding-left:20px;font-size:13px;color:var(--text-muted)">
+            <li>Mọi giá trị phải được URL-encode khi ghép vào địa chỉ (nội dung có dấu, dấu cách, dấu phẩy…).</li>
+            <li>Số máy nhận cả <code>0942963127</code>, <code>84942963127</code> hay <code>+84 942 963 127</code>.</li>
+            <li>Một lần gọi tối đa 50 số; số sai định dạng bị loại và trả lại trong <code>invalidPhones</code>.</li>
+        </ul>
+
+        <p class="hint" style="margin:12px 0 6px"><strong>Ví dụ gọi:</strong></p>
+        <pre class="message-preview">GET /api/Util/SendSms?partnerCode=CRM&amp;phoneNums=0942963127%2C0912345678
+    &amp;smsContents=Xin%20chao!%20Toi%20la%20SMS&amp;secretKey=&lt;khoá bí mật&gt;</pre>
         <p class="hint">
-            Phản hồi có <code>code</code> = <code>00</code> khi thành công, kèm <code>data</code>,
-            phân trang và <code>checksum</code> của phản hồi. Mã lỗi: <code>01</code> sai checksum,
-            <code>02</code> hệ thống không tồn tại/đang khoá, <code>03</code> tham số sai.
+            Phản hồi có <code>code</code> = <code>00</code> khi thành công, kèm <code>message</code> của
+            tổng đài và danh sách số đã gửi. Mã lỗi: <code>01</code> sai khoá bí mật, <code>02</code>
+            hệ thống không tồn tại/đang khoá, <code>03</code> tham số hoặc số máy sai, <code>04</code>
+            tổng đài từ chối hoặc tính năng SMS đang tắt.
+        </p>
+        <p class="hint" style="margin-top:10px">
+            <strong>Lưu ý:</strong> khoá bí mật đi trên query string nên sẽ bị ghi vào nhật ký của IIS
+            và các thiết bị trung gian. Chỉ cấp khoá cho hệ thống trong mạng nội bộ, và tạo lại khoá
+            ngay khi nghi bị lộ.
         </p>
     </div>
 </details>

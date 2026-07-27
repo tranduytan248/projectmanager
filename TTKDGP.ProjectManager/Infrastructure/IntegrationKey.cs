@@ -68,6 +68,17 @@ namespace TTKDGP.ProjectManager.Infrastructure
             return FixedTimeEquals(provided.Trim(), Sign(secretKey, fields));
         }
 
+        /// <summary>
+        /// So khoá bí mật đối tác gửi lên với khoá đang lưu của hệ thống. Dùng cho các API truyền
+        /// thẳng khoá thay vì ký checksum. So theo thời gian cố định để không lộ manh mối qua
+        /// thời gian phản hồi.
+        /// </summary>
+        public static bool Matches(string provided, string secretKey)
+        {
+            if (string.IsNullOrWhiteSpace(provided) || string.IsNullOrWhiteSpace(secretKey)) return false;
+            return FixedTimeEquals(provided.Trim(), secretKey.Trim());
+        }
+
         private static bool FixedTimeEquals(string a, string b)
         {
             if (a == null || b == null || a.Length != b.Length) return false;

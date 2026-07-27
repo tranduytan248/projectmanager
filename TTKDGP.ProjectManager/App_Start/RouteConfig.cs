@@ -16,6 +16,13 @@ namespace TTKDGP.ProjectManager
                 defaults: new { controller = "IntegrationApi", action = "Hrm" }
             );
 
+            // API tiện ích cho đối tác (gửi SMS). Giữ đúng đường dẫn quen thuộc của HRM.
+            routes.MapRoute(
+                name: "UtilApiSendSms",
+                url: "api/Util/SendSms",
+                defaults: new { controller = "UtilApi", action = "SendSms" }
+            );
+
             routes.MapRoute(
                 name: "Default",
                 url: "{controller}/{action}/{id}",
