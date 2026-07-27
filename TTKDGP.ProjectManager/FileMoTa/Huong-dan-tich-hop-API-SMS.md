@@ -102,7 +102,7 @@ GET /api/Util/SendSms
     ?partnerCode=CRM
     &phoneNums=0942963127%2C0912345678
     &smsContents=Xin%20chao!%20Toi%20la%20SMS
-    &secretKey=15b8fe44b2e38c77bc594151ce1c113192c21cd922300736b1d1c...
+    &secretKey=DAN-KHOA-BI-MAT-CUA-BAN-VAO-DAY
 ```
 
 **cURL**

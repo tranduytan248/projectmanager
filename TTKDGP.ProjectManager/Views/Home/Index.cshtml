@@ -66,8 +66,22 @@
                 Bộ Postman (.json)
             </a>
         </div>
-        <p class="hint" style="margin:10px 0 0">
-            Mã hệ thống và khoá bí mật được cấp riêng cho từng hệ thống tích hợp.
+
+        <p class="muted" style="margin:18px 0 0;padding-top:16px;border-top:1px solid var(--border)">
+            API gửi tin nhắn SMS tới một hoặc nhiều số máy. Tải về để xem hướng dẫn và thử bằng Postman.
+        </p>
+        <div class="btn-row" style="margin-top:10px">
+            <a class="btn btn-primary" href="@Url.Action("Download", "Home", new { doc = "sms-guide" })">
+                Hướng dẫn sử dụng (.md)
+            </a>
+            <a class="btn btn-default" href="@Url.Action("Download", "Home", new { doc = "sms-postman" })">
+                Bộ Postman (.json)
+            </a>
+        </div>
+
+        <p class="hint" style="margin:16px 0 0">
+            Mã hệ thống và khoá bí mật được cấp riêng cho từng hệ thống tích hợp; cả hai API dùng chung
+            một cặp mã và khoá.
         </p>
     </div>
 </div>
