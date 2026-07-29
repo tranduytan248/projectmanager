@@ -1,0 +1,167 @@
+﻿@model TTKDGP.ProjectManager.Models.PagedList<TTKDGP.ProjectManager.Models.WorkTask>
+@using TTKDGP.ProjectManager.Models
+@{
+    ViewBag.Title = "Giao việc riêng";
+    var users = ViewBag.Users as List<User> ?? new List<User>();
+    var overdueCount = (int)ViewBag.OverdueCount;
+    var showClosed = ViewBag.ShowClosed != null && (bool)ViewBag.ShowClosed;
+    var can = ViewBag.Can as Func<string, bool>;
+}
+
+<div class="page-head">
+    <div>
+        <h1>Giao việc riêng</h1>
+        <p>
+            Việc Quản lý Tổ giao thẳng cho cá nhân trong Tổ, ngoài dự án — hoàn thành đúng hạn
+            được cộng <strong>0,2–1,5%</strong> điểm KPI. Tổng cộng @Model.Pager.TotalItems việc@(
+                overdueCount > 0 ? ", " + overdueCount + " quá hạn" : "").
+        </p>
+    </div>
+    <a class="btn btn-primary" href="@Url.Action("Edit", "PrivateTasks")"
+       data-modal-url="@Url.Action("Edit", "PrivateTasks")"
+       data-modal-title="Giao việc riêng">+ Giao việc</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        @using (Html.BeginForm("Index", "PrivateTasks", FormMethod.Get))
+        {
+            <div class="filters">
+                <div class="filter-field grow">
+                    <label for="q">Tìm kiếm</label>
+                    <input type="search" id="q" name="q" value="@ViewBag.Query"
+                           placeholder="Tên việc hoặc người thực hiện..." />
+                </div>
+                <div class="filter-field">
+                    <label for="assigneeId">Người thực hiện</label>
+                    <select id="assigneeId" name="assigneeId">
+                        <option value="0">— Tất cả —</option>
+                        @foreach (var u in users)
+                        {
+                            <option value="@u.Id" selected="@((int)ViewBag.AssigneeId == u.Id)">@u.FullName</option>
+                        }
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label for="state">Trạng thái</label>
+                    <select id="state" name="state">
+                        <option value="">— Tất cả —</option>
+                        @foreach (var s in TaskStates.All)
+                        {
+                            <option value="@s" selected="@((string)ViewBag.State == s)">@TaskStates.Display(s)</option>
+                        }
+                    </select>
+                </div>
+                <div class="btn-row" style="padding-bottom:1px">
+                    <button type="submit" class="btn btn-primary">Lọc</button>
+                    <a class="btn btn-default" href="@Url.Action("Index", "PrivateTasks")">Xoá lọc</a>
+                </div>
+            </div>
+            <div class="check-inline" style="margin-top:10px">
+                <input type="checkbox" id="showClosed" name="showClosed" value="true"
+                       @(showClosed ? "checked=\"checked\"" : "") />
+                <label for="showClosed">Hiện cả việc đã hoàn thành và đã huỷ</label>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="card">
+    @if (Model.Items.Count == 0)
+    {
+        <div class="empty-state">
+            Chưa có việc riêng nào.
+            <span class="hint">Bấm "+ Giao việc" để giao việc đầu tiên.</span>
+        </div>
+    }
+    else
+    {
+        <div class="table-wrap with-menu">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th>Công việc</th>
+                        <th>Người thực hiện</th>
+                        <th>Hạn</th>
+                        <th class="num">Điểm cộng</th>
+                        <th class="num">Tiến độ</th>
+                        <th>Trạng thái</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var t in Model.Items)
+                    {
+                        var alert = t.IsOverdue ? " row-due-danger" : (t.IsDueSoon ? " row-due-warn" : "");
+                        <tr class="row-clickable@alert"
+                            data-modal-url="@Url.Action("Detail", "Checklist", new { id = t.Id })"
+                            data-modal-title="Chi tiết công việc"
+                            data-modal-size="lg">
+                            <td>
+                                @t.Title
+                                @if (t.HasAttachment)
+                                {
+                                    <span class="muted" title="Có file đính kèm: @t.AttachmentName">&#128206;</span>
+                                }
+                            </td>
+                            <td>@(string.IsNullOrWhiteSpace(t.AssigneeName) ? "(chưa giao)" : t.AssigneeName)</td>
+                            <td class="nowrap">
+                                @(t.DueDate.HasValue ? t.DueDate.Value.ToString("dd/MM/yyyy") : "—")
+                                @if (t.IsOverdue)
+                                {
+                                    <span class="badge badge-danger">Quá hạn @(-t.DaysLeft) ngày</span>
+                                }
+                                else if (t.IsDueSoon)
+                                {
+                                    <span class="badge badge-waiting">@(t.DaysLeft == 0 ? "Hết hạn hôm nay" : "Còn 1 ngày")</span>
+                                }
+                            </td>
+                            <td class="num"><strong>@t.BonusPercent.ToString("0.#")%</strong></td>
+                            <td class="num">@t.Progress%</td>
+                            <td>
+                                @if (t.State == TaskStates.Done)
+                                {
+                                    <span class="badge badge-active">Hoàn thành @(t.IsOnTime ? "đúng hạn" : "trễ hạn")</span>
+                                }
+                                else
+                                {
+                                    <span class="badge">@TaskStates.Display(t.State)</span>
+                                }
+                            </td>
+                            <td class="actions">
+                                <details class="row-menu">
+                                    <summary>Thao tác ▾</summary>
+                                    <div class="row-menu-items">
+                                        <a href="@Url.Action("Edit", "PrivateTasks", new { id = t.Id })"
+                                           data-modal-url="@Url.Action("Edit", "PrivateTasks", new { id = t.Id })"
+                                           data-modal-title="Sửa việc riêng">Sửa việc</a>
+                                        <a href="@Url.Action("Detail", "MyWork", new { id = t.Id })">Trang chi tiết &amp; trao đổi</a>
+                                        @if (can == null || can("wtasks.delete"))
+                                        {
+                                            <div class="row-menu-sep"></div>
+                                            using (Html.BeginForm("Delete", "PrivateTasks", new { id = t.Id }, FormMethod.Post))
+                                            {
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="danger"
+                                                        onclick="return confirm('Xoá việc &quot;@t.Title&quot;?');">Xoá việc</button>
+                                            }
+                                        }
+                                    </div>
+                                </details>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @Html.Partial("_Pager", Model.Pager)
+        <div class="card-body">
+            <span class="hint">
+                Người được giao thấy việc ở màn <strong>Công việc của tôi</strong> (loại
+                "Việc riêng") và nhận thông báo + email ngay khi được giao. Dòng cam là việc còn
+                tối đa 1 ngày, dòng đỏ là việc đã quá hạn.
+            </span>
+        </div>
+    }
+</div>

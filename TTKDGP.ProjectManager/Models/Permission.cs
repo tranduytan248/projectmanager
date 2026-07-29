@@ -130,12 +130,12 @@ namespace TTKDGP.ProjectManager.Models
 
         /// <summary>
         /// Đầu việc. "Xem" là quyền nền ai cũng có (thấy việc của mình, checklist dự án mình tham
-        /// gia, trao đổi). Thêm/Sửa/Xóa là quyền của màn "Việc ngoài dự án" — chỉ Quản lý Tổ.
+        /// gia, trao đổi). Thêm/Sửa/Xóa là quyền của màn "Giao việc riêng" — chỉ Quản lý Tổ.
         /// Việc PM sửa checklist dự án mình được chặn theo ngữ cảnh ở BaseController.CanEditProject.
         /// </summary>
         public static readonly PermModule WorkTasks =
             new PermModule("wtasks", "Công việc", "Công việc",
-                new[] { A(View, "Xem"), A(Create, "Giao việc ngoài dự án"), A(Edit, "Sửa"),
+                new[] { A(View, "Xem"), A(Create, "Giao việc riêng"), A(Edit, "Sửa"),
                         A(Delete, "Xóa"), A("import", "Import checklist") });
 
         public static readonly PermModule WorkReports =
@@ -284,7 +284,8 @@ namespace TTKDGP.ProjectManager.Models
                 Title = "Quản lý Tổ",
                 Nodes = new List<MenuNode>
                 {
-                    L("Dự án", "WorkProjects", WorkProjects.Perm(View))
+                    L("Dự án", "WorkProjects", WorkProjects.Perm(View)),
+                    L("Giao việc riêng", "PrivateTasks", WorkTasks.Perm(Create))
                 }
             },
 

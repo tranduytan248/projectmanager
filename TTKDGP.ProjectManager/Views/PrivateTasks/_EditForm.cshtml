@@ -1,0 +1,110 @@
+﻿@model TTKDGP.ProjectManager.Models.WorkTask
+@using System.Globalization
+@using TTKDGP.ProjectManager.Models
+@*
+    Form giao/sửa một việc riêng, dùng chung cho hộp thoại và trang riêng. Form mang file nên
+    gửi kiểu THƯỜNG (data-native-submit) — có lỗi nhập liệu thì quay về trang form đầy đủ.
+*@
+@{
+    var isNew = Model.Id == 0;
+    var users = ViewBag.Users as List<User> ?? new List<User>();
+    var bonusOptions = ViewBag.BonusOptions as decimal[] ?? new decimal[0];
+}
+
+@using (Html.BeginForm("Edit", "PrivateTasks", FormMethod.Post,
+    new { enctype = "multipart/form-data", data_native_submit = "true" }))
+{
+    @Html.AntiForgeryToken()
+    @Html.HiddenFor(m => m.Id)
+    @Html.ValidationSummary(true)
+
+    <div class="form-grid">
+        <div class="form-field full">
+            @Html.LabelFor(m => m.Title)
+            @Html.TextBoxFor(m => m.Title, new { placeholder = "Tên công việc giao cho cá nhân" })
+            @Html.ValidationMessageFor(m => m.Title, "", new { @class = "field-error" })
+        </div>
+
+        <div class="form-field">
+            @Html.LabelFor(m => m.AssigneeUserId)
+            @Html.DropDownListFor(m => m.AssigneeUserId,
+                new SelectList(users, "Id", "FullName", Model.AssigneeUserId), "— Chọn người thực hiện —")
+            @Html.ValidationMessageFor(m => m.AssigneeUserId, "", new { @class = "field-error" })
+        </div>
+
+        <div class="form-field">
+            <label for="bonus">Điểm cộng KPI khi đúng hạn</label>
+            <select id="bonus" name="bonus">
+                @foreach (var b in bonusOptions)
+                {
+                    <option value="@b.ToString("0.0", CultureInfo.InvariantCulture)"
+                            selected="@(Model.BonusPercent == b)">@b.ToString("0.#")%</option>
+                }
+            </select>
+            <span class="hint">Từ 0,2% đến 1,5% — cộng vào KPI tháng nếu hoàn thành đúng hạn.</span>
+            @Html.ValidationMessageFor(m => m.BonusPercent, "", new { @class = "field-error" })
+        </div>
+
+        <div class="form-field">
+            @Html.LabelFor(m => m.StartDate)
+            @Html.TextBoxFor(m => m.StartDate, "{0:yyyy-MM-dd}", new { type = "date" })
+        </div>
+
+        <div class="form-field">
+            @Html.LabelFor(m => m.DueDate)
+            @Html.TextBoxFor(m => m.DueDate, "{0:yyyy-MM-dd}", new { type = "date" })
+            <span class="hint">Bắt buộc — căn cứ tính đúng/trễ hạn và điểm cộng.</span>
+            @Html.ValidationMessageFor(m => m.DueDate, "", new { @class = "field-error" })
+        </div>
+
+        <div class="form-field">
+            @Html.LabelFor(m => m.State)
+            @Html.DropDownListFor(m => m.State,
+                TaskStates.All.Select(s => new SelectListItem
+                {
+                    Value = s,
+                    Text = TaskStates.Display(s),
+                    Selected = Model.State == s
+                }))
+        </div>
+
+        @if (!isNew)
+        {
+            <div class="form-field">
+                @Html.LabelFor(m => m.Progress)
+                @Html.TextBoxFor(m => m.Progress, new { type = "number", min = "0", max = "100" })
+            </div>
+        }
+
+        <div class="form-field full">
+            @Html.LabelFor(m => m.Description)
+            @Html.TextAreaFor(m => m.Description, new { rows = 4, placeholder = "Nội dung, yêu cầu, kết quả mong muốn..." })
+        </div>
+
+        <div class="form-field full">
+            <label for="file">File đính kèm</label>
+            @if (Model.HasAttachment)
+            {
+                <div class="form-static" style="margin-bottom:4px">
+                    Đang có: <a href="@Url.Action("Attachment", "MyWork", new { id = Model.Id })">&#128206; @Model.AttachmentName</a>
+                    <span class="muted">— chọn file mới sẽ thay file này</span>
+                </div>
+            }
+            <input type="file" id="file" name="file"
+                   accept=".png,.jpg,.jpeg,.gif,.webp,.bmp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.md,.zip,.rar,.7z" />
+            <span class="hint">Tài liệu, ảnh hoặc file nén, tối đa 10 MB. Không bắt buộc.</span>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">@(isNew ? "Giao việc" : "Lưu thay đổi")</button>
+        <a class="btn btn-default" href="@Url.Action("Index", "PrivateTasks")">Huỷ</a>
+    </div>
+
+    if (isNew)
+    {
+        <span class="hint">
+            Người được giao sẽ nhận thông báo trên hệ thống và email ngay khi bấm "Giao việc".
+        </span>
+    }
+}

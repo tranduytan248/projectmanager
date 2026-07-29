@@ -33,6 +33,7 @@ else
             var icon = n.Type == NotificationTypes.ProjectAdded ? "&#43;"
                 : n.Type == NotificationTypes.ProjectRemoved ? "&#8722;"
                 : n.Type == NotificationTypes.Mentioned ? "&#64;"
+                : n.Type == NotificationTypes.TaskAssigned ? "&#9733;"
                 : "&#9200;";
 
             <a class="notif-item @(n.IsRead ? "" : "unread")"

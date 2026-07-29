@@ -36,12 +36,17 @@ namespace TTKDGP.ProjectManager.Infrastructure
         }
 
         /// <summary>
-        /// Kiểm và lưu file đính kèm vào đĩa, ghi thông tin vào bản ghi trao đổi.
-        /// Không chọn file nào cũng tính là hợp lệ. Trả false kèm lý do khi file bị từ chối.
+        /// Kiểm và lưu một file vào kho đính kèm. Không chọn file nào cũng tính là hợp lệ (ba
+        /// giá trị out để nguyên). Trả false kèm lý do khi file bị từ chối.
         /// </summary>
-        public static bool TrySave(HttpPostedFileBase file, WorkComment comment, out string error)
+        public static bool TrySaveFile(HttpPostedFileBase file,
+            out string storedName, out string originalName, out long size, out string error)
         {
+            storedName = null;
+            originalName = null;
+            size = 0;
             error = null;
+
             if (file == null || file.ContentLength <= 0) return true;
 
             if (file.ContentLength > MaxBytes)
@@ -65,9 +70,42 @@ namespace TTKDGP.ProjectManager.Infrastructure
             var stored = Guid.NewGuid().ToString("N") + ext.ToLowerInvariant();
             file.SaveAs(Path.Combine(folder, stored));
 
-            comment.AttachmentFile = stored;
-            comment.AttachmentName = name;
-            comment.AttachmentSize = file.ContentLength;
+            storedName = stored;
+            originalName = name;
+            size = file.ContentLength;
+            return true;
+        }
+
+        /// <summary>Lưu file đính kèm của một lượt trao đổi.</summary>
+        public static bool TrySave(HttpPostedFileBase file, WorkComment comment, out string error)
+        {
+            string stored, name;
+            long size;
+            if (!TrySaveFile(file, out stored, out name, out size, out error)) return false;
+
+            if (stored != null)
+            {
+                comment.AttachmentFile = stored;
+                comment.AttachmentName = name;
+                comment.AttachmentSize = size;
+            }
+            return true;
+        }
+
+        /// <summary>Lưu file đính kèm khi giao một đầu việc. Thay file cũ thì file cũ bị xoá.</summary>
+        public static bool TrySave(HttpPostedFileBase file, WorkTask task, out string error)
+        {
+            string stored, name;
+            long size;
+            if (!TrySaveFile(file, out stored, out name, out size, out error)) return false;
+
+            if (stored != null)
+            {
+                if (task.HasAttachment) Delete(task.AttachmentFile);
+                task.AttachmentFile = stored;
+                task.AttachmentName = name;
+                task.AttachmentSize = size;
+            }
             return true;
         }
 

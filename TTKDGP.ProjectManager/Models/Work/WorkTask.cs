@@ -15,7 +15,7 @@ namespace TTKDGP.ProjectManager.Models
         /// <summary>Việc hỗ trợ kỹ thuật, phân theo tuần — nguồn của 20%.</summary>
         public const string Support = "HoTro";
 
-        /// <summary>Việc Quản lý Tổ giao riêng, ngoài dự án — cộng thêm 1-3%.</summary>
+        /// <summary>Việc riêng Quản lý Tổ giao thẳng cho cá nhân, ngoài dự án — có điểm cộng KPI 0,2–1,5%.</summary>
         public const string Standalone = "NgoaiDuAn";
 
         public static readonly string[] All = { Checklist, Support, Standalone };
@@ -27,7 +27,7 @@ namespace TTKDGP.ProjectManager.Models
         {
             if (kind == Checklist) return "Triển khai";
             if (kind == Support) return "Hỗ trợ";
-            if (kind == Standalone) return "Ngoài dự án";
+            if (kind == Standalone) return "Việc riêng";
             return kind;
         }
     }
@@ -169,6 +169,28 @@ namespace TTKDGP.ProjectManager.Models
         [Display(Name = "Thuộc tuần")]
         public int Week { get; set; }
 
+        /// <summary>
+        /// Điểm cộng KPI (%) khi hoàn thành đúng hạn — Quản lý Tổ chọn lúc giao việc riêng,
+        /// từ 0,2 đến 1,5. Việc trong dự án luôn bằng 0.
+        /// </summary>
+        [Display(Name = "Điểm cộng KPI (%)")]
+        public decimal BonusPercent { get; set; }
+
+        // ---------- File đính kèm khi giao việc (một file) ----------
+
+        /// <summary>Tên file lưu trên đĩa (ngẫu nhiên, giữ đuôi). NULL nghĩa là không đính kèm.</summary>
+        public string AttachmentFile { get; set; }
+
+        /// <summary>Tên gốc của file để hiển thị và đặt tên khi tải về.</summary>
+        public string AttachmentName { get; set; }
+
+        public long AttachmentSize { get; set; }
+
+        public bool HasAttachment
+        {
+            get { return !string.IsNullOrEmpty(AttachmentFile); }
+        }
+
         public DateTime CreatedAt { get; set; }
         public string CreatedBy { get; set; }
         public DateTime? UpdatedAt { get; set; }
@@ -251,25 +273,6 @@ namespace TTKDGP.ProjectManager.Models
             }
         }
 
-        /// <summary>
-        /// Bậc điểm cộng cho việc ngoài dự án hoàn thành đúng hạn.
-        ///
-        /// Yêu cầu gốc ghi "dưới 3 ngày là 1%, từ 4-7 ngày là 2%, trên 7 ngày là 3%" — hở đúng hai
-        /// chỗ: việc dài đúng 3 ngày và đúng 7 ngày không thuộc bậc nào. Ở đây vá thành
-        /// &lt;=3 / 4-7 / &gt;=8. CHỜ NGƯỜI DÙNG XÁC NHẬN.
-        /// </summary>
-        public decimal BonusPercent
-        {
-            get
-            {
-                if (Kind != TaskKinds.Standalone) return 0m;
-
-                var days = DurationDays;
-                if (days <= 3) return 1m;
-                if (days <= 7) return 2m;
-                return 3m;
-            }
-        }
     }
 
     /// <summary>

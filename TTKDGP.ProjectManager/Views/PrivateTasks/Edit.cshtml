@@ -1,0 +1,30 @@
+﻿@model TTKDGP.ProjectManager.Models.WorkTask
+@using TTKDGP.ProjectManager.Models
+@{
+    var isNew = Model.Id == 0;
+    ViewBag.Title = isNew ? "Giao việc riêng" : "Sửa việc riêng";
+
+    ViewBag.Crumbs = new List<Crumb>
+    {
+        new Crumb { Label = "Giao việc riêng", Url = Url.Action("Index", "PrivateTasks") },
+        new Crumb { Label = isNew ? "Giao việc mới" : Model.Title }
+    };
+}
+
+@*
+    Trang riêng cho form giao việc. Thường mở bằng hộp thoại ngay trên danh sách; trang này còn
+    là nơi quay về khi form gửi lên có lỗi nhập liệu (form mang file nên gửi kiểu thường).
+*@
+<div class="page-head">
+    <div>
+        <h1>@ViewBag.Title</h1>
+        <p>Việc giao thẳng cho cá nhân, ngoài dự án — đúng hạn được cộng 0,2–1,5% điểm KPI.</p>
+    </div>
+    <a class="btn btn-default" href="@Url.Action("Index", "PrivateTasks")">&larr; Danh sách việc riêng</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        @Html.Partial("_EditForm", Model)
+    </div>
+</div>

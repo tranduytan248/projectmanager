@@ -149,6 +149,7 @@
     <Compile Include="Services\EmailTemplateService.cs" />
     <Compile Include="Models\EmailTemplate.cs" />
     <Compile Include="Controllers\EmailTemplatesController.cs" />
+    <Compile Include="Controllers\PrivateTasksController.cs" />
     <Compile Include="Models\Work\UserNotification.cs" />
     <Compile Include="Controllers\UserNotificationsController.cs" />
     <Compile Include="Controllers\WorkProjectsController.cs" />
@@ -264,6 +265,9 @@
     <Content Include="Views\UserNotifications\_Panel.cshtml" />
     <Content Include="Views\EmailTemplates\Index.cshtml" />
     <Content Include="Views\EmailTemplates\Edit.cshtml" />
+    <Content Include="Views\PrivateTasks\Index.cshtml" />
+    <Content Include="Views\PrivateTasks\Edit.cshtml" />
+    <Content Include="Views\PrivateTasks\_EditForm.cshtml" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

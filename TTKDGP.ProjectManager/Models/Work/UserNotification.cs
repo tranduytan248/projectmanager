@@ -16,6 +16,9 @@ namespace TTKDGP.ProjectManager.Models
 
         /// <summary>Công việc sắp đến hạn hoặc đã quá hạn — bấm vào mở checklist của dự án.</summary>
         public const string DueSoon = "SapDenHan";
+
+        /// <summary>Được Quản lý Tổ giao việc riêng — bấm vào mở chi tiết công việc.</summary>
+        public const string TaskAssigned = "GiaoViecRieng";
     }
 
     /// <summary>

@@ -122,6 +122,41 @@ namespace TTKDGP.ProjectManager.Services
             }
         }
 
+        /// <summary>
+        /// Báo cho người vừa được giao một việc riêng (web + email). Mail kèm liên kết file đính
+        /// kèm của việc nếu có — liên kết đi qua action có kiểm quyền nên phải đăng nhập mới tải.
+        /// </summary>
+        public static void TaskAssigned(WorkTask task, string assignerName)
+        {
+            if (task == null || task.AssigneeUserId <= 0) return;
+
+            var assigner = string.IsNullOrWhiteSpace(assignerName) ? "Quản lý Tổ" : assignerName;
+            var due = task.DueDate.HasValue ? task.DueDate.Value.ToString("dd/MM/yyyy") : "—";
+
+            var n = Add(task.AssigneeUserId, NotificationTypes.TaskAssigned,
+                string.Format("{0} giao cho bạn việc riêng \"{1}\" — hạn {2}.", assigner, task.Title, due),
+                task.ProjectId, task.Id);
+
+            var attachmentHtml = task.HasAttachment
+                ? string.Format("<p>File đính kèm: <a href=\"{0}\">{1}</a> <em>(đăng nhập để tải)</em></p>",
+                    System.Web.HttpUtility.HtmlEncode(Infrastructure.AppSettings.PublicLink
+                        + "/MyWork/Attachment/" + task.Id),
+                    System.Web.HttpUtility.HtmlEncode(task.AttachmentName))
+                : string.Empty;
+
+            EmailTemplateService.Send(task.AssigneeUserId, NotificationTypes.TaskAssigned,
+                new Dictionary<string, string>
+                {
+                    { "NguoiGiao", assigner },
+                    { "TenCongViec", task.Title },
+                    { "NoiDung", task.Description ?? string.Empty },
+                    { "HanHoanThanh", due },
+                    { "DiemCong", task.BonusPercent.ToString("0.#") + "%" },
+                    { "LienKet", OpenLink(n) }
+                },
+                new Dictionary<string, string> { { "TepDinhKem", attachmentHtml } });
+        }
+
         // ---------- Việc sắp đến hạn ----------
 
         /// <summary>

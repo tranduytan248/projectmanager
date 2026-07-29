@@ -83,6 +83,31 @@ namespace TTKDGP.ProjectManager.Services
             },
             new EmailTemplateDefinition
             {
+                Code = NotificationTypes.TaskAssigned,
+                Name = "Được giao việc riêng",
+                Description = "Gửi khi Quản lý Tổ giao thẳng một việc riêng (ngoài dự án) cho bạn.",
+                Params =
+                {
+                    new EmailTemplateParam("HoTen", "Họ tên người nhận"),
+                    new EmailTemplateParam("NguoiGiao", "Người giao việc"),
+                    new EmailTemplateParam("TenCongViec", "Tên công việc"),
+                    new EmailTemplateParam("NoiDung", "Nội dung công việc"),
+                    new EmailTemplateParam("HanHoanThanh", "Hạn hoàn thành (dd/MM/yyyy)"),
+                    new EmailTemplateParam("DiemCong", "Điểm cộng KPI khi hoàn thành đúng hạn"),
+                    new EmailTemplateParam("TepDinhKem", "Liên kết file đính kèm (tự trống nếu không có)"),
+                    new EmailTemplateParam("LienKet", "Liên kết mở công việc (cần đăng nhập)")
+                },
+                DefaultSubject = "[NCPT] Bạn được giao việc riêng: {{TenCongViec}}",
+                DefaultBody = "<p>Chào {{HoTen}},</p>"
+                    + "<p><strong>{{NguoiGiao}}</strong> vừa giao cho bạn việc riêng "
+                    + "<strong>{{TenCongViec}}</strong> — hạn hoàn thành <strong>{{HanHoanThanh}}</strong>, "
+                    + "hoàn thành đúng hạn được cộng <strong>{{DiemCong}}</strong> điểm KPI.</p>"
+                    + "<blockquote style=\"margin:8px 0;padding:8px 14px;border-left:3px solid #1a56a8;background:#f4f7fb\">{{NoiDung}}</blockquote>"
+                    + "{{TepDinhKem}}"
+                    + "<p><a href=\"{{LienKet}}\">Mở công việc trong hệ thống</a> (cần đăng nhập).</p>"
+            },
+            new EmailTemplateDefinition
+            {
                 Code = NotificationTypes.DueSoon,
                 Name = "Công việc gần tới hạn",
                 Description = "Gửi khi công việc của bạn còn tối đa 1 ngày hoặc đã quá hạn.",

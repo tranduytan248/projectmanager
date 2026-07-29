@@ -219,6 +219,24 @@ namespace TTKDGP.ProjectManager.Controllers
             return RedirectToAction("Detail", new { id = id });
         }
 
+        /// <summary>
+        /// Tải file đính kèm của một ĐẦU VIỆC (file giao kèm lúc giao việc riêng). Ai xem được
+        /// việc thì tải được; chưa đăng nhập sẽ bị đưa qua màn đăng nhập trước.
+        /// </summary>
+        [AppAuthorize(Permission = "wtasks.view")]
+        public ActionResult Attachment(int id)
+        {
+            var task = Repository.WorkTasks.Find(id);
+            if (task == null || !CanSeeTask(task) || !task.HasAttachment) return HttpNotFound();
+
+            var path = CommentAttachments.FullPath(task.AttachmentFile);
+            if (path == null) return HttpNotFound();
+
+            // Luôn trả kiểu tải-về chung chung: trình duyệt tải file chứ không thực thi/nhúng.
+            return File(path, "application/octet-stream",
+                string.IsNullOrWhiteSpace(task.AttachmentName) ? "tep-dinh-kem" : task.AttachmentName);
+        }
+
         // ---------- Trao đổi ----------
 
         [HttpPost]

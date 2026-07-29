@@ -70,11 +70,25 @@
                 <div>@(Model.StartDate.HasValue ? Model.StartDate.Value.ToString("dd/MM/yyyy") : "—")</div>
             </div>
 
-            @if (Model.Kind == TaskKinds.Standalone)
+            @if (Model.Kind == TaskKinds.Standalone && Model.BonusPercent > 0)
             {
                 <div class="form-field">
-                    <label>Điểm cộng nếu đúng hạn</label>
-                    <div><strong>@Model.BonusPercent%</strong> <span class="muted">(việc dài @Model.DurationDays ngày)</span></div>
+                    <label>Điểm cộng KPI nếu đúng hạn</label>
+                    <div><strong>@Model.BonusPercent.ToString("0.#")%</strong></div>
+                </div>
+            }
+
+            @if (Model.HasAttachment)
+            {
+                <div class="form-field">
+                    <label>File đính kèm</label>
+                    <div>
+                        <a class="chat-file" href="@Url.Action("Attachment", "MyWork", new { id = Model.Id })">
+                            <span class="chat-file-icon">&#128206;</span>
+                            <span class="chat-file-label">@Model.AttachmentName</span>
+                            <span class="muted">(@TTKDGP.ProjectManager.Infrastructure.CommentAttachments.SizeLabel(Model.AttachmentSize))</span>
+                        </a>
+                    </div>
                 </div>
             }
 

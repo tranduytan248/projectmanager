@@ -100,6 +100,25 @@
             <span class="form-static-label">Mục cha</span>
             @(string.IsNullOrWhiteSpace(parentTitle) ? "— Mục gốc —" : parentTitle)
         </div>
+
+        @if (Model.Kind == TaskKinds.Standalone && Model.BonusPercent > 0)
+        {
+            <div class="form-static">
+                <span class="form-static-label">Điểm cộng KPI nếu đúng hạn</span>
+                <strong>@Model.BonusPercent.ToString("0.#")%</strong>
+            </div>
+        }
+
+        @if (Model.HasAttachment)
+        {
+            <div class="form-static">
+                <span class="form-static-label">File đính kèm</span>
+                <a class="chat-file" href="@Url.Action("Attachment", "MyWork", new { id = Model.Id })">
+                    <span class="chat-file-icon">&#128206;</span>
+                    <span class="chat-file-label">@Model.AttachmentName</span>
+                </a>
+            </div>
+        }
     </div>
 
     @if (!string.IsNullOrWhiteSpace(Model.Description))
