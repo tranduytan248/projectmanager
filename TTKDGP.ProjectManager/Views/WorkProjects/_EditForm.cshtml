@@ -1,0 +1,140 @@
+﻿@model TTKDGP.ProjectManager.Models.WorkProject
+@using TTKDGP.ProjectManager.Models
+@*
+    Form dự án, tách riêng để dùng chung: mở trong hộp thoại từ màn danh sách, hoặc mở thẳng
+    bằng đường dẫn. Đoạn JavaScript nằm ngay trong đây chứ không ở @section Scripts, vì partial
+    không có section — và khi nạp vào hộp thoại thì script này vẫn chạy.
+*@
+@{
+    var isNew = Model.Id == 0;
+    var projectTypes = ViewBag.ProjectTypes as List<string> ?? new List<string>();
+}
+
+@using (Html.BeginForm("Edit", "WorkProjects", FormMethod.Post))
+{
+    @Html.AntiForgeryToken()
+    @Html.HiddenFor(m => m.Id)
+    @Html.HiddenFor(m => m.PmUserId)
+    @Html.HiddenFor(m => m.PmName)
+    @Html.HiddenFor(m => m.Code)
+    @Html.ValidationSummary(true)
+
+    <div class="form-section">
+        <div class="form-section-title">Thông tin chung</div>
+        <div class="form-grid">
+            <div class="form-field full">
+                @Html.LabelFor(m => m.Name)
+                @Html.TextBoxFor(m => m.Name, new { id = "Name" })
+                @Html.ValidationMessageFor(m => m.Name, "", new { @class = "field-error" })
+            </div>
+
+            <div class="form-field">
+                @Html.LabelFor(m => m.Customer)
+                @Html.TextBoxFor(m => m.Customer)
+            </div>
+
+            <div class="form-field">
+                <label>Mã dự án</label>
+                <div class="form-static">
+                    @if (isNew)
+                    {
+                        <span class="muted">Tự sinh từ tên dự án sau khi thêm</span>
+                    }
+                    else
+                    {
+                        <strong>@Model.Code</strong>
+                    }
+                </div>
+            </div>
+
+            <div class="form-field">
+                @Html.LabelFor(m => m.ProjectType)
+                @Html.DropDownListFor(m => m.ProjectType,
+                    new SelectList(projectTypes, Model.ProjectType), "— Chọn loại dự án —")
+            </div>
+
+            <div class="form-field">
+                @Html.LabelFor(m => m.Phase)
+                @Html.DropDownListFor(m => m.Phase,
+                    ProjectPhases.All.Select(p => new SelectListItem
+                    {
+                        Value = p,
+                        Text = ProjectPhases.Display(p),
+                        Selected = Model.Phase == p
+                    }), new { @class = "js-phase", data_no_select2 = "true" })
+            </div>
+
+            <div class="form-field">
+                @Html.LabelFor(m => m.State)
+                @Html.DropDownListFor(m => m.State,
+                    ProjectStates.All.Select(s => new SelectListItem
+                    {
+                        Value = s,
+                        Text = ProjectStates.Display(s),
+                        Selected = Model.State == s
+                    }), new { @class = "js-state", data_no_select2 = "true" })
+                <span class="hint">Mỗi giai đoạn có bộ trạng thái riêng.</span>
+                @Html.ValidationMessageFor(m => m.State, "", new { @class = "field-error" })
+            </div>
+
+            <div class="form-field">
+                @Html.LabelFor(m => m.StartDate)
+                @Html.TextBoxFor(m => m.StartDate, "{0:yyyy-MM-dd}", new { type = "date" })
+            </div>
+
+            <div class="form-field">
+                @Html.LabelFor(m => m.EndDate)
+                @Html.TextBoxFor(m => m.EndDate, "{0:yyyy-MM-dd}", new { type = "date" })
+                @Html.ValidationMessageFor(m => m.EndDate, "", new { @class = "field-error" })
+            </div>
+
+            <div class="form-field full">
+                @Html.LabelFor(m => m.Description)
+                @Html.TextAreaFor(m => m.Description, new { rows = 3 })
+            </div>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">@(isNew ? "Thêm dự án" : "Lưu thay đổi")</button>
+        <a class="btn btn-default" href="@Url.Action("Index", "WorkProjects")">Huỷ</a>
+    </div>
+}
+
+<script>
+    // Lọc ô Trạng thái theo Giai đoạn đang chọn. Máy chủ VẪN kiểm lại khi lưu — người dùng sửa
+    // được JavaScript nên không bao giờ tin mỗi lớp này.
+    (function () {
+        var byPhase = @Html.Raw(Json.Encode(
+            ProjectPhases.All.ToDictionary(
+                p => p,
+                p => ProjectStates.ForPhase(p)
+                    .Select(s => new { value = s, text = ProjectStates.Display(s) }))));
+
+        // Chỉ tìm trong form vừa nạp, tránh đụng vào form khác nếu trang có nhiều form.
+        var scripts = document.getElementsByTagName('script');
+        var root = scripts[scripts.length - 1].parentNode;
+        var phase = root.querySelector('.js-phase');
+        var state = root.querySelector('.js-state');
+        if (!phase || !state) return;
+
+        function fill() {
+            var list = byPhase[phase.value] || [];
+            var current = state.value;
+            state.innerHTML = '';
+
+            list.forEach(function (item) {
+                var opt = document.createElement('option');
+                opt.value = item.value;
+                opt.textContent = item.text;
+                state.appendChild(opt);
+            });
+
+            // Đổi giai đoạn mà trạng thái cũ vẫn hợp lệ thì giữ nguyên, không thì lấy mục đầu.
+            if (list.some(function (i) { return i.value === current; })) state.value = current;
+        }
+
+        fill();
+        phase.addEventListener('change', fill);
+    })();
+</script>

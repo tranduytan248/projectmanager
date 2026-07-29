@@ -120,6 +120,34 @@ namespace TTKDGP.ProjectManager.Models
             new PermModule("worklogs", "Tiến trình công việc", "Chính",
                 new[] { A(View, "Xem"), A(Edit, "Sửa") });
 
+        // ---------- Bộ quản lý công việc & KPI (bảng riêng, chạy song song bộ cũ) ----------
+
+        public static readonly PermModule Team =
+            new PermModule("wteam", "Bảng điều khiển Tổ", "Công việc", new[] { A(View, "Xem") });
+
+        public static readonly PermModule WorkProjects =
+            new PermModule("wprojects", "Dự án", "Công việc", Crud());
+
+        /// <summary>
+        /// Đầu việc. "Xem" là quyền nền ai cũng có (thấy việc của mình, checklist dự án mình tham
+        /// gia, trao đổi). Thêm/Sửa/Xóa là quyền của màn "Việc ngoài dự án" — chỉ Quản lý Tổ.
+        /// Việc PM sửa checklist dự án mình được chặn theo ngữ cảnh ở BaseController.CanEditProject.
+        /// </summary>
+        public static readonly PermModule WorkTasks =
+            new PermModule("wtasks", "Công việc", "Công việc",
+                new[] { A(View, "Xem"), A(Create, "Giao việc ngoài dự án"), A(Edit, "Sửa"),
+                        A(Delete, "Xóa"), A("import", "Import checklist") });
+
+        public static readonly PermModule WorkReports =
+            new PermModule("wreports", "Báo cáo tuần dự án", "Công việc",
+                new[] { A(View, "Xem"), A(Edit, "Lập báo cáo") });
+
+        public static readonly PermModule Kpi =
+            new PermModule("kpi", "Chấm KPI", "Công việc",
+                new[] { A(View, "Xem"), A("generate", "Sinh bảng chấm"),
+                        A("pmapprove", "PM duyệt"), A("approve", "Duyệt lần cuối"),
+                        A("export", "Kết xuất"), A("send", "Gửi email") });
+
         public static readonly PermModule Catalog =
             new PermModule("catalog", "Danh mục", "Danh mục", Crud());
 
@@ -147,8 +175,9 @@ namespace TTKDGP.ProjectManager.Models
         /// <summary>Toàn bộ module, thứ tự dùng để hiển thị trên màn cấu hình.</summary>
         public static readonly List<PermModule> All = new List<PermModule>
         {
-            Home, MyReports, Projects, Members, Assignments, TeamReports, WorkLogs,
-            Catalog, Hrm, Notifications, GoConnect, Integrations, Users, Roles
+            Home, MyReports, Projects, Members, Assignments, TeamReports, WorkLogs, Catalog,
+            Team, WorkProjects, WorkTasks, WorkReports, Kpi,
+            Hrm, Notifications, GoConnect, Integrations, Users, Roles
         };
 
         /// <summary>Tất cả mã chức năng đầy đủ (module.action) — dùng để cấp toàn quyền.</summary>
@@ -160,16 +189,39 @@ namespace TTKDGP.ProjectManager.Models
         /// <summary>Bộ chức năng mặc định của nhóm "Quản lý" — dùng cho seed và làm phương án dự phòng.</summary>
         public static IEnumerable<string> ManagerDefaults()
         {
-            var codes = new List<string> { Home.Perm(View) };
-            codes.AddRange(new[] { MyReports, Projects, Members, Assignments, TeamReports, Catalog, WorkLogs }
+            var codes = new List<string> { Home.Perm(View), Team.Perm(View) };
+            codes.AddRange(new[] { MyReports, Projects, Members, Assignments, TeamReports,
+                                   Catalog, WorkLogs,
+                                   WorkProjects, WorkTasks, WorkReports, Kpi }
                 .SelectMany(m => m.Actions.Select(a => m.Perm(a.Code))));
             return codes;
         }
 
-        /// <summary>Bộ chức năng mặc định của nhóm "Báo cáo công việc".</summary>
+        /// <summary>
+        /// Bộ chức năng mặc định của nhóm "Báo cáo công việc" — dùng cho cả PM lẫn nhân sự thường.
+        ///
+        /// Nhóm này BUỘC phải có quyền sửa checklist và lập báo cáo tuần, vì "PM" không phải một
+        /// nhóm quyền riêng: cùng một tài khoản là PM ở dự án này nhưng chỉ là nhân sự ở dự án
+        /// khác. Việc chặn thật nằm ở BaseController.IsPmOf / CanEditProject, kiểm theo đúng dự án
+        /// đang thao tác. Bỏ lớp kiểm đó thì mọi nhân sự sửa được checklist của mọi dự án.
+        /// </summary>
         public static IEnumerable<string> ReporterDefaults()
         {
-            return new[] { Home.Perm(View), MyReports.Perm(View), MyReports.Perm("report") };
+            return new[]
+            {
+                Home.Perm(View),
+                MyReports.Perm(View), MyReports.Perm("report"),
+
+                // Xem việc của mình, xem checklist dự án mình tham gia, trao đổi trong đầu việc.
+                WorkTasks.Perm(View),
+
+                // PM cần import checklist và lập báo cáo tuần. KHÔNG cấp wtasks.create/edit/delete
+                // — đó là quyền của màn "Việc ngoài dự án", chỉ Quản lý Tổ mới giao loại việc này.
+                WorkTasks.Perm("import"),
+                WorkReports.Perm(View), WorkReports.Perm(Edit),
+
+                Kpi.Perm(View), Kpi.Perm("pmapprove")
+            };
         }
 
         /// <summary>
@@ -213,25 +265,31 @@ namespace TTKDGP.ProjectManager.Models
         /// <summary>Menu dọc, giữ đúng cấu trúc/thứ tự cũ; mỗi mục ẩn/hiện theo quyền "xem".</summary>
         public static readonly List<MenuSection> Menu = new List<MenuSection>
         {
+            // ===== BỘ MỚI: quản lý công việc & KPI =====
+            // Khối đầu không tiêu đề: những màn AI CŨNG dùng, bất kể vai trò.
             new MenuSection
             {
                 Title = null,
                 Nodes = new List<MenuNode>
                 {
-                    L("Việc cần xử lý", "WorkQueue", TeamReports.Perm(View)),
-                    L("Tổng hợp", "Home", Home.Perm(View)),
-                    L("Báo cáo của tôi", "MyReports", MyReports.Perm(View)),
-                    L("Dự án", "Projects", Projects.Perm(View)),
-                    L("Thành viên", "Members", Members.Perm(View)),
-                    L("Phân công", "Assignments", Assignments.Perm(View)),
-                    L("Báo cáo nhân sự", "TeamReports", TeamReports.Perm(View)),
-                    Group("Danh mục",
-                        Child("Loại dự án", "ProjectTypes", Catalog.Perm(View)),
-                        Child("Trạng thái dự án", "ProjectStatuses", Catalog.Perm(View)),
-                        Child("Trạng thái tham gia", "WorkStatuses", Catalog.Perm(View)),
-                        Child("Vai trò", "MemberRoles", Catalog.Perm(View)))
+                    L("Công việc của tôi", "MyWork", WorkTasks.Perm(View), "Tasks"),
+                    L("Dự án của tôi", "MyWork", WorkTasks.Perm(View), "Projects")
                 }
             },
+
+            // Khối này tự ẩn khi tài khoản không có quyền nào trong đó (xem _Layout), nên người
+            // dùng thường chỉ nhìn thấy đúng khối đầu.
+            new MenuSection
+            {
+                Title = "Quản lý Tổ",
+                Nodes = new List<MenuNode>
+                {
+                    L("Dự án", "WorkProjects", WorkProjects.Perm(View))
+                }
+            },
+
+            // ===== BỘ CŨ: các màn vẫn chạy (mở được bằng đường dẫn) nhưng ẨN khỏi menu — bộ mới
+            // đã thay thế. Muốn hiện lại thì thêm lại các mục vào đây.
             new MenuSection
             {
                 Title = "Nhân sự",
@@ -248,8 +306,14 @@ namespace TTKDGP.ProjectManager.Models
                 Title = "Quản trị",
                 Nodes = new List<MenuNode>
                 {
+                    Group("Danh mục",
+                        Child("Loại dự án", "ProjectTypes", Catalog.Perm(View)),
+                        Child("Trạng thái dự án", "ProjectStatuses", Catalog.Perm(View)),
+                        Child("Trạng thái tham gia", "WorkStatuses", Catalog.Perm(View)),
+                        Child("Vai trò", "MemberRoles", Catalog.Perm(View))),
                     L("Tình trạng hệ thống", "SystemStatus", Users.Perm(View)),
                     L("Thông báo", "Notifications", Notifications.Perm(View)),
+                    L("Mẫu email", "EmailTemplates", Notifications.Perm(View)),
                     L("GoConnect", "GoConnect", GoConnect.Perm(View)),
                     L("Hệ thống tích hợp", "IntegrationSystems", Integrations.Perm(View)),
                     L("Người dùng", "Users", Users.Perm(View)),

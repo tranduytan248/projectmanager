@@ -1,0 +1,175 @@
+﻿@model TTKDGP.ProjectManager.Controllers.MyTasksViewModel
+@using TTKDGP.ProjectManager.Models
+@{
+    ViewBag.Title = "Công việc của tôi";
+}
+
+<div class="page-head">
+    <div>
+        <h1>Công việc của tôi</h1>
+        <p>
+            @Model.UserFullName · <strong>@Model.Tasks.Pager.TotalItems</strong> công việc
+            @if (Model.OverdueCount > 0)
+            {
+                <strong style="color:var(--danger)">· @Model.OverdueCount quá hạn</strong>
+            }
+            @if (Model.DoneCount > 0)
+            {
+                <text>· @Model.DoneCount đã hoàn thành</text>
+            }
+        </p>
+    </div>
+    <a class="btn btn-default" href="@Url.Action("Projects", "MyWork")">Dự án của tôi &rarr;</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        @using (Html.BeginForm("Tasks", "MyWork", FormMethod.Get))
+        {
+            <div class="filters">
+                <div class="filter-field grow">
+                    <label for="q">Tìm kiếm</label>
+                    <input type="search" id="q" name="q" value="@Model.Query" placeholder="Tên hoặc mã công việc..." />
+                </div>
+
+                <div class="filter-field">
+                    <label for="projectId">Dự án</label>
+                    <select id="projectId" name="projectId">
+                        <option value="0">— Tất cả —</option>
+                        @foreach (var p in Model.Projects)
+                        {
+                            <option value="@p.Id" selected="@(Model.ProjectId == p.Id)">@p.Name (@p.Count)</option>
+                        }
+                        @if (Model.StandaloneCount > 0)
+                        {
+                            <option value="-1" selected="@(Model.ProjectId < 0)">Ngoài dự án (@Model.StandaloneCount)</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label for="kind">Loại việc</label>
+                    <select id="kind" name="kind">
+                        <option value="">— Tất cả —</option>
+                        @foreach (var k in TaskKinds.All)
+                        {
+                            <option value="@k" selected="@(Model.Kind == k)">@TaskKinds.Display(k)</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label for="state">Trạng thái</label>
+                    <select id="state" name="state">
+                        <option value="">— Tất cả —</option>
+                        @foreach (var s in TaskStates.All)
+                        {
+                            <option value="@s" selected="@(Model.State == s)">@TaskStates.Display(s)</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="btn-row" style="padding-bottom:1px">
+                    <button type="submit" class="btn btn-primary">Lọc</button>
+                    @if (Model.HasFilter)
+                    {
+                        <a class="btn btn-default" href="@Url.Action("Tasks", "MyWork")">Bỏ lọc</a>
+                    }
+                </div>
+            </div>
+
+            <div class="check-inline" style="margin-top:10px">
+                <input type="checkbox" id="showClosed" name="showClosed" value="true"
+                       @(Model.ShowClosed ? "checked=\"checked\"" : "") />
+                <label for="showClosed">Hiện cả việc đã hoàn thành và đã huỷ</label>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="card">
+    @if (Model.Tasks.Items.Count == 0)
+    {
+        <div class="empty-state">
+            @if (Model.HasFilter)
+            {
+                <text>Không có công việc nào khớp bộ lọc.</text>
+            }
+            else
+            {
+                <text>Bạn chưa được giao công việc nào.</text>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th>Công việc</th>
+                        <th>Dự án</th>
+                        <th>Loại</th>
+                        <th>Ưu tiên</th>
+                        <th>Hạn</th>
+                        <th class="num">Tiến độ</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var t in Model.Tasks.Items)
+                    {
+                        <tr class="row-clickable"
+                            data-modal-url="@Url.Action("Detail", "Checklist", new { id = t.Id })"
+                            data-modal-title="Chi tiết công việc"
+                            data-modal-size="lg">
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(t.Code))
+                                {
+                                    <span class="muted">@t.Code</span> <text>·</text>
+                                }
+                                @t.Title
+                            </td>
+                            <td>@(string.IsNullOrWhiteSpace(t.ProjectName) ? "—" : t.ProjectName)</td>
+                            <td class="nowrap"><span class="badge">@TaskKinds.Display(t.Kind)</span></td>
+                            <td class="nowrap muted">@TaskPriorities.Display(t.Priority)</td>
+                            <td class="nowrap">
+                                @if (t.DueDate.HasValue)
+                                {
+                                    @t.DueDate.Value.ToString("dd/MM/yyyy")
+                                    if (t.IsOverdue)
+                                    {
+                                        <span class="badge badge-inactive">Quá hạn</span>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="muted">—</span>
+                                }
+                            </td>
+                            <td class="num">@t.Progress%</td>
+                            <td>
+                                @if (t.State == TaskStates.Done)
+                                {
+                                    <span class="badge badge-active">Hoàn thành @(t.IsOnTime ? "đúng hạn" : "trễ hạn")</span>
+                                }
+                                else
+                                {
+                                    <span class="badge">@TaskStates.Display(t.State)</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @Html.Partial("_Pager", Model.Tasks.Pager)
+        <div class="card-body">
+            <span class="hint">
+                Bấm vào một dòng để xem chi tiết và cập nhật tiến độ. Danh sách chỉ gồm việc giao cho
+                bạn; mặc định ẩn việc đã hoàn thành và đã huỷ.
+            </span>
+        </div>
+    }
+</div>

@@ -1,0 +1,78 @@
+﻿@model TTKDGP.ProjectManager.Models.TaskCommentsViewModel
+@using System.Text.RegularExpressions
+@using System.Web
+@using TTKDGP.ProjectManager.Infrastructure
+@using TTKDGP.ProjectManager.Models
+@*
+    Danh sách trao đổi trong hộp thoại chi tiết công việc. Được trả lại nguyên khối sau mỗi lần
+    gửi/thu hồi để hộp thoại tự vẽ lại — chỉ MỘT nơi định nghĩa cách hiển thị một lượt trao đổi.
+*@
+
+@if (Model.Comments.Count == 0)
+{
+    <div class="chat-empty">
+        Chưa có trao đổi nào. Có vướng mắc gì thì trao đổi ngay tại đây —
+        gõ <strong>&#64;</strong> để nhắc người tham gia dự án.
+    </div>
+}
+else
+{
+    foreach (var c in Model.Comments)
+    {
+        <div class="chat-item @(c.IsDeleted ? "recalled" : "")">
+            <div class="chat-meta">
+                <strong>@c.AuthorName</strong>
+                <span class="muted">@c.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                @if (!c.IsDeleted && (c.UserId == Model.CurrentUserId || Model.CanModerate))
+                {
+                    <button type="button" class="chat-recall" data-comment-id="@c.Id">Thu hồi</button>
+                }
+            </div>
+            @if (c.IsDeleted)
+            {
+                <div class="chat-content muted"><em>Nội dung đã thu hồi.</em></div>
+            }
+            else
+            {
+                if (!string.IsNullOrWhiteSpace(c.Content))
+                {
+                    @* Nội dung đã HTML-encode trong Highlight trước khi tô @tên — không render thẳng
+                       văn bản người dùng nhập. *@
+                    <div class="chat-content">@Highlight(c.Content)</div>
+                }
+                if (c.HasAttachment)
+                {
+                    <a class="chat-file" href="@Url.Action("Attachment", "Checklist", new { commentId = c.Id })">
+                        <span class="chat-file-icon">&#128206;</span>
+                        <span class="chat-file-label">@c.AttachmentName</span>
+                        <span class="muted">(@CommentAttachments.SizeLabel(c.AttachmentSize))</span>
+                    </a>
+                }
+            }
+        </div>
+    }
+}
+
+@functions {
+    /// <summary>
+    /// HTML-encode nội dung TRƯỚC, rồi mới tô đậm các cụm @Tên khớp với người tham gia dự án.
+    /// Mẫu so khớp cũng encode y hệt nên hai bên luôn khớp nhau; ngoài các cụm được bọc thẻ,
+    /// toàn bộ còn lại là văn bản đã escape — không dùng Html.Raw với dữ liệu thô.
+    /// </summary>
+    private IHtmlString Highlight(string content)
+    {
+        var encoded = HttpUtility.HtmlEncode(content ?? string.Empty);
+
+        foreach (var p in Model.Participants
+            .Where(x => !string.IsNullOrWhiteSpace(x.FullName))
+            .OrderByDescending(x => x.FullName.Length))
+        {
+            var pattern = "@" + Regex.Escape(HttpUtility.HtmlEncode(p.FullName.Trim()));
+            encoded = Regex.Replace(encoded, pattern,
+                m => "<span class=\"mention\">" + m.Value + "</span>",
+                RegexOptions.IgnoreCase);
+        }
+
+        return new HtmlString(encoded);
+    }
+}

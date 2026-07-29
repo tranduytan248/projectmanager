@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Web.Mvc;
+using TTKDGP.ProjectManager.Data;
 using TTKDGP.ProjectManager.Infrastructure;
+using TTKDGP.ProjectManager.Models;
 
 namespace TTKDGP.ProjectManager.Controllers
 {
@@ -16,6 +18,111 @@ namespace TTKDGP.ProjectManager.Controllers
             }
         }
 
+        /// <summary>
+        /// Id tài khoản đang đăng nhập; 0 nếu khách vãng lai. Công việc và dự án gán thẳng theo
+        /// tài khoản (bảng Users) nên đây là mấu chốt để biết "việc này có phải của tôi không".
+        /// </summary>
+        protected int CurrentUserId
+        {
+            get { return CurrentUser == null ? 0 : CurrentUser.UserId; }
+        }
+
+        /// <summary>Tài khoản đang đăng nhập có mã chức năng này không.</summary>
+        protected bool Can(string permission)
+        {
+            return CurrentUser != null && Permissions.UserHas(CurrentUser.Role, permission);
+        }
+
+        /// <summary>
+        /// Là Quản lý Tổ — xét theo quyền quản trị dự án của tài khoản. Không còn hồ sơ nhân sự
+        /// riêng; ai được cấp quyền sửa dự án (wprojects.edit) thì chính là Quản lý Tổ.
+        /// </summary>
+        protected bool IsTeamManager
+        {
+            get { return Can(Permissions.WorkProjects.Perm(Permissions.Edit)); }
+        }
+
+        /// <summary>
+        /// Tài khoản đang đăng nhập có phải PM của dự án này không.
+        ///
+        /// "PM" KHÔNG phải một nhóm quyền — cùng một người là PM ở dự án này nhưng chỉ là thành
+        /// viên ở dự án khác. Vì vậy quyền của PM luôn phải kiểm hai lớp: thuộc tính AppAuthorize
+        /// chặn ở mức chức năng, còn hàm này chặn theo đúng dự án đang thao tác. Thiếu lớp thứ hai
+        /// thì PM dự án A sửa được dự án B chỉ bằng cách đổi id trên thanh địa chỉ.
+        /// </summary>
+        protected bool IsPmOf(int projectId)
+        {
+            if (projectId <= 0 || CurrentUserId <= 0) return false;
+
+            var project = Repository.WorkProjects.Find(projectId);
+            return project != null && project.PmUserId == CurrentUserId;
+        }
+
+        /// <summary>
+        /// Được sửa nội dung của dự án này không: hoặc là PM của chính nó, hoặc là Quản lý Tổ.
+        /// </summary>
+        protected bool CanEditProject(int projectId)
+        {
+            return IsTeamManager || IsPmOf(projectId);
+        }
+
+        /// <summary>
+        /// Được sửa đầu việc này không.
+        ///
+        /// Hai đường: PM của dự án và Quản lý Tổ sửa mọi việc trong dự án; người còn lại chỉ sửa
+        /// được việc giao cho CHÍNH MÌNH. Xem thêm <see cref="CanEditAllOfTask"/> — người thực hiện
+        /// sửa được tiến độ việc của mình nhưng không được tự dời hạn hay đẩy việc sang người khác.
+        /// </summary>
+        protected bool CanEditTask(WorkTask task)
+        {
+            if (task == null) return false;
+            if (CanEditProject(task.ProjectId)) return true;
+
+            return CurrentUserId > 0 && task.AssigneeUserId == CurrentUserId;
+        }
+
+        /// <summary>
+        /// Được nhìn thấy đầu việc này không. Trả về false thì nơi gọi phải trả 404 chứ không phải
+        /// 403 — để không lộ ra là đầu việc đó có tồn tại.
+        ///
+        /// Việc ngoài dự án có ProjectId bằng 0 nên không thể chỉ dựa vào quyền xem dự án; phải xét
+        /// người được giao trước, nếu không người nhận việc lẻ lại không mở được việc của chính mình.
+        /// </summary>
+        protected bool CanSeeTask(WorkTask task)
+        {
+            if (task == null) return false;
+            if (CurrentUserId > 0 && task.AssigneeUserId == CurrentUserId) return true;
+            if (task.ProjectId > 0) return CanViewProject(task.ProjectId);
+
+            return IsTeamManager;
+        }
+
+        /// <summary>
+        /// Được sửa MỌI trường của đầu việc không — tức là PM của dự án hoặc Quản lý Tổ.
+        ///
+        /// Người thực hiện chỉ được đụng vào phần báo cáo (trạng thái, tiến độ, mô tả). Hạn hoàn
+        /// thành và người thực hiện phải nằm ngoài tầm tay họ: hạn là căn cứ DUY NHẤT để chấm đúng
+        /// hay trễ hạn, tự dời được thì điểm chất lượng không còn ý nghĩa.
+        /// </summary>
+        protected bool CanEditAllOfTask(WorkTask task)
+        {
+            return task != null && CanEditProject(task.ProjectId);
+        }
+
+        /// <summary>
+        /// Được xem dự án này không: Quản lý Tổ xem tất cả, còn lại phải đang hoặc đã từng tham gia.
+        /// </summary>
+        protected bool CanViewProject(int projectId)
+        {
+            if (IsTeamManager) return true;
+            if (CurrentUserId <= 0) return false;
+            if (IsPmOf(projectId)) return true;
+
+            var userId = CurrentUserId;
+            return Repository.WorkAssignments.FirstOrDefault(
+                a => a.ProjectId == projectId && a.UserId == userId) != null;
+        }
+
         protected override void OnActionExecuting(ActionExecutingContext filterContext)
         {
             var user = CurrentUser;
@@ -27,6 +134,57 @@ namespace TTKDGP.ProjectManager.Controllers
             ViewBag.Can = (Func<string, bool>)(perm => Models.Permissions.UserHas(role, perm));
 
             base.OnActionExecuting(filterContext);
+        }
+
+        /// <summary>
+        /// Chuỗi truy vấn của danh sách người dùng đang xem — gồm cả bộ lọc lẫn số trang.
+        /// Các form và liên kết trên màn danh sách gửi kèm ô ẩn "returnQuery" để sau khi lưu/xoá
+        /// còn quay lại đúng chỗ cũ.
+        /// </summary>
+        protected string ListQuery
+        {
+            get
+            {
+                var q = Request == null ? null : Request["returnQuery"];
+                return string.IsNullOrWhiteSpace(q) ? string.Empty : q;
+            }
+        }
+
+        /// <summary>
+        /// Quay về màn danh sách, giữ nguyên bộ lọc và trang đang xem.
+        ///
+        /// Không giữ thì mỗi lần sửa một dòng ở trang 5 là người dùng bị ném về trang 1 và mất hết
+        /// điều kiện lọc — phải lọc lại từ đầu cho từng dòng.
+        ///
+        /// Số trang được màn danh sách tự kéo về trang cuối nếu trang cũ không còn (xoá hết dòng ở
+        /// trang cuối chẳng hạn), nên ở đây không cần xử lý gì thêm.
+        /// </summary>
+        protected ActionResult BackToList(string action = "Index", object routeValues = null)
+        {
+            var url = routeValues == null ? Url.Action(action) : Url.Action(action, routeValues);
+            var query = ListQuery.TrimStart('?');
+
+            if (query.Length > 0)
+            {
+                url += (url.IndexOf('?') >= 0 ? "&" : "?") + query;
+            }
+
+            return Redirect(url);
+        }
+
+        /// <summary>
+        /// Kết quả sau khi lưu thành công.
+        ///
+        /// Gửi từ hộp thoại thì chỉ trả JSON báo xong, để trình duyệt tự nạp lại đúng địa chỉ đang
+        /// đứng — nhờ vậy bộ lọc và số trang giữ nguyên. Gửi kiểu thường thì chuyển trang như cũ.
+        /// </summary>
+        protected ActionResult Saved(string action, object routeValues = null)
+        {
+            if (Request.IsAjaxRequest()) return Json(new { ok = true });
+
+            return routeValues == null
+                ? RedirectToAction(action)
+                : RedirectToAction(action, routeValues);
         }
 
         /// <summary>Thông báo thành công hiển thị sau khi chuyển trang.</summary>

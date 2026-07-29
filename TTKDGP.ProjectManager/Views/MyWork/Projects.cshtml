@@ -1,0 +1,130 @@
+﻿@model TTKDGP.ProjectManager.Models.PagedList<TTKDGP.ProjectManager.Controllers.MyProjectRow>
+@using TTKDGP.ProjectManager.Models
+@{
+    ViewBag.Title = "Dự án của tôi";
+    var year = (int)ViewBag.Year;
+    var week = (int)ViewBag.Week;
+    var pmCount = (int)ViewBag.PmCount;
+}
+
+<div class="page-head">
+    <div>
+        <h1>Dự án của tôi</h1>
+        <p>
+            @Model.Pager.TotalItems dự án đang hoặc đã tham gia@(pmCount > 0 ? ", trong đó " + pmCount + " dự án bạn làm PM" : "").
+            Tuần @week/@year.
+        </p>
+    </div>
+    <a class="btn btn-default" href="@Url.Action("Tasks", "MyWork")">Công việc của tôi &rarr;</a>
+</div>
+
+<div class="card">
+    @if (Model.Items.Count == 0)
+    {
+        <div class="empty-state">
+            Bạn chưa tham gia dự án nào.
+            <span class="hint">Nhờ Quản lý Tổ phân công ở màn Dự án → Nhân sự.</span>
+        </div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th>Dự án</th>
+                        <th>Vai trò của tôi</th>
+                        <th>PM</th>
+                        <th>Tiến độ checklist</th>
+                        <th class="num">Việc của tôi</th>
+                        <th>Báo cáo tuần</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model.Items)
+                    {
+                        var rowClass = !r.Project.IsOpen ? "row-closed"
+                            : (r.Project.Phase == ProjectPhases.Support ? "row-support" : "row-implement");
+                        <tr class="@rowClass">
+                            <td>
+                                <strong>@r.Project.Name</strong>
+                                @if (!r.IsActiveMember && !r.IsPm)
+                                {
+                                    <span class="badge badge-inactive">Đã rời</span>
+                                }
+                                <div class="muted">@ProjectStates.Display(r.Project.State)</div>
+                            </td>
+                            <td>
+                                @if (r.IsPm)
+                                {
+                                    <span class="badge badge-active">PM</span>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(r.Role))
+                                {
+                                    <span>@r.Role</span>
+                                }
+                                @if (r.JoinedAt.HasValue)
+                                {
+                                    <div class="muted nowrap">
+                                        Từ @r.JoinedAt.Value.ToString("dd/MM/yyyy")
+                                        @if (r.LeftAt.HasValue)
+                                        {
+                                            <text>đến @r.LeftAt.Value.ToString("dd/MM/yyyy")</text>
+                                        }
+                                    </div>
+                                }
+                            </td>
+                            <td>@(string.IsNullOrWhiteSpace(r.Project.PmName) ? "(chưa có PM)" : r.Project.PmName)</td>
+                            <td>
+                                @if (r.Stat.Total == 0)
+                                {
+                                    <span class="muted">Chưa có checklist</span>
+                                }
+                                else
+                                {
+                                    <text>@r.Stat.Done/@r.Stat.Total (@r.Stat.Percent%)</text>
+                                }
+                            </td>
+                            <td class="num">
+                                @r.MyOpenCount
+                                @if (r.MyOverdueCount > 0)
+                                {
+                                    <span class="badge badge-inactive">@r.MyOverdueCount quá hạn</span>
+                                }
+                            </td>
+                            <td>
+                                @if (r.Report != null && r.Report.IsSubmitted)
+                                {
+                                    <span class="badge badge-active">Đã nộp @(r.Report.IsOnTime ? "đúng hạn" : "trễ hạn")</span>
+                                }
+                                else if (r.Report != null)
+                                {
+                                    <span class="badge">Còn bản nháp</span>
+                                }
+                                else if (r.IsPm)
+                                {
+                                    <span class="badge badge-inactive">Chưa nộp</span>
+                                }
+                                else
+                                {
+                                    <span class="muted">—</span>
+                                }
+                            </td>
+                            <td class="actions">
+                                <div class="btn-group">
+                                    <a class="btn btn-default btn-sm"
+                                       href="@Url.Action("Details", "WorkProjects", new { id = r.Project.Id })">Chi tiết</a>
+                                    <a class="btn btn-default btn-sm"
+                                       href="@Url.Action("Index", "Checklist", new { projectId = r.Project.Id })">Checklist</a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @Html.Partial("_Pager", Model.Pager)
+    }
+</div>

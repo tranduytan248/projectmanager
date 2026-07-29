@@ -47,6 +47,73 @@ namespace TTKDGP.ProjectManager.Data
         private static readonly Lazy<SqlStore<RoleGroup>> _roleGroups =
             new Lazy<SqlStore<RoleGroup>>(() => new SqlStore<RoleGroup>("RoleGroups"));
 
+        // ---------- Bộ quản lý công việc & KPI ----------
+        //
+        // Bộ bảng RIÊNG, tiền tố Work/Kpi, không dùng chung dòng nào với Projects/Members/
+        // ProjectMembers/WorkLogs cũ. Hai bộ chạy song song: bộ cũ giữ nguyên để đối chiếu, bộ mới
+        // được thiết kế thẳng từ yêu cầu nghiệp vụ (vai trò, giai đoạn tham gia, ba loại đầu việc,
+        // báo cáo tuần theo format, chấm KPI hai cấp).
+
+        private static readonly Lazy<SqlStore<WorkProject>> _workProjects =
+            new Lazy<SqlStore<WorkProject>>(() => new SqlStore<WorkProject>("WorkProjects"));
+
+        private static readonly Lazy<SqlStore<WorkAssignment>> _workAssignments =
+            new Lazy<SqlStore<WorkAssignment>>(() => new SqlStore<WorkAssignment>("WorkAssignments"));
+
+        private static readonly Lazy<SqlStore<WorkTask>> _workTasks =
+            new Lazy<SqlStore<WorkTask>>(() => new SqlStore<WorkTask>("WorkTasks"));
+
+        private static readonly Lazy<SqlStore<WorkComment>> _workComments =
+            new Lazy<SqlStore<WorkComment>>(() => new SqlStore<WorkComment>("WorkComments"));
+
+        private static readonly Lazy<SqlStore<WorkWeekReport>> _workWeekReports =
+            new Lazy<SqlStore<WorkWeekReport>>(() => new SqlStore<WorkWeekReport>("WorkWeekReports"));
+
+        private static readonly Lazy<SqlStore<WorkPlanItem>> _workPlanItems =
+            new Lazy<SqlStore<WorkPlanItem>>(() => new SqlStore<WorkPlanItem>("WorkPlanItems"));
+
+        private static readonly Lazy<SqlStore<KpiSheet>> _kpiSheets =
+            new Lazy<SqlStore<KpiSheet>>(() => new SqlStore<KpiSheet>("KpiSheets"));
+
+        private static readonly Lazy<SqlStore<UserNotification>> _userNotifications =
+            new Lazy<SqlStore<UserNotification>>(() => new SqlStore<UserNotification>("UserNotifications"));
+
+        private static readonly Lazy<SqlStore<EmailTemplate>> _emailTemplates =
+            new Lazy<SqlStore<EmailTemplate>>(() => new SqlStore<EmailTemplate>("EmailTemplates"));
+
+        private static readonly Lazy<SqlStore<KpiLine>> _kpiLines =
+            new Lazy<SqlStore<KpiLine>>(() => new SqlStore<KpiLine>("KpiLines"));
+
+        /// <summary>Dự án trong bộ quản lý công việc.</summary>
+        public static SqlStore<WorkProject> WorkProjects { get { return _workProjects.Value; } }
+
+        /// <summary>Các giai đoạn tham gia dự án.</summary>
+        public static SqlStore<WorkAssignment> WorkAssignments { get { return _workAssignments.Value; } }
+
+        /// <summary>Đầu việc: checklist dự án, hỗ trợ theo tuần, việc ngoài dự án.</summary>
+        public static SqlStore<WorkTask> WorkTasks { get { return _workTasks.Value; } }
+
+        /// <summary>Trao đổi trong từng đầu việc.</summary>
+        public static SqlStore<WorkComment> WorkComments { get { return _workComments.Value; } }
+
+        /// <summary>Báo cáo tuần của PM cho từng dự án.</summary>
+        public static SqlStore<WorkWeekReport> WorkWeekReports { get { return _workWeekReports.Value; } }
+
+        /// <summary>Các mục checklist được chọn vào kế hoạch tuần tiếp theo.</summary>
+        public static SqlStore<WorkPlanItem> WorkPlanItems { get { return _workPlanItems.Value; } }
+
+        /// <summary>Phiếu chấm KPI theo tháng của từng nhân sự.</summary>
+        public static SqlStore<KpiSheet> KpiSheets { get { return _kpiSheets.Value; } }
+
+        /// <summary>Dòng chi tiết của phiếu chấm KPI.</summary>
+        public static SqlStore<KpiLine> KpiLines { get { return _kpiLines.Value; } }
+
+        /// <summary>Thông báo cá nhân hiện ở chuông trên thanh đầu trang.</summary>
+        public static SqlStore<UserNotification> UserNotifications { get { return _userNotifications.Value; } }
+
+        /// <summary>Mẫu email của từng loại thông báo, sửa được trên màn quản trị.</summary>
+        public static SqlStore<EmailTemplate> EmailTemplates { get { return _emailTemplates.Value; } }
+
         /// <summary>Các nhóm quyền cấu hình được (tập chức năng gán cho từng nhóm).</summary>
         public static SqlStore<RoleGroup> RoleGroups { get { return _roleGroups.Value; } }
 

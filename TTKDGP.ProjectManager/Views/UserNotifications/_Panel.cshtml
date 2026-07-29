@@ -1,0 +1,52 @@
+﻿@model List<TTKDGP.ProjectManager.Models.UserNotification>
+@using TTKDGP.ProjectManager.Models
+@*
+    Nội dung panel thông báo, nạp bằng AJAX khi bấm chuông. Bấm một dòng đi qua action Open —
+    nơi đánh dấu đã đọc rồi chuyển tới đúng màn của loại thông báo.
+*@
+
+<div class="notif-head">
+    <span>Thông báo</span>
+    @if (Model.Any(n => !n.IsRead))
+    {
+        using (Html.BeginForm("MarkAllRead", "UserNotifications", FormMethod.Post,
+            new { data_notif_readall = "true" }))
+        {
+            @Html.AntiForgeryToken()
+            <button type="submit" class="notif-readall">Đánh dấu đã đọc tất cả</button>
+        }
+    }
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="notif-empty">
+        Chưa có thông báo nào. Khi bạn được thêm vào dự án, được nhắc tên trong trao đổi hay có
+        việc sắp đến hạn, thông báo sẽ hiện ở đây.
+    </div>
+}
+else
+{
+    <div class="notif-list">
+        @foreach (var n in Model)
+        {
+            var icon = n.Type == NotificationTypes.ProjectAdded ? "&#43;"
+                : n.Type == NotificationTypes.ProjectRemoved ? "&#8722;"
+                : n.Type == NotificationTypes.Mentioned ? "&#64;"
+                : "&#9200;";
+
+            <a class="notif-item @(n.IsRead ? "" : "unread")"
+               href="@Url.Action("Open", "UserNotifications", new { id = n.Id })">
+                <span class="notif-icon notif-icon-@(n.Type == NotificationTypes.DueSoon ? "due" : n.Type == NotificationTypes.Mentioned ? "mention" : "project")">@Html.Raw(icon)</span>
+                <span class="notif-body">
+                    <span class="notif-message">@n.Message</span>
+                    <span class="notif-time">@n.CreatedAt.ToString("HH:mm dd/MM/yyyy")</span>
+                </span>
+                @if (!n.IsRead)
+                {
+                    <span class="notif-dot" title="Chưa đọc"></span>
+                }
+            </a>
+        }
+    </div>
+}

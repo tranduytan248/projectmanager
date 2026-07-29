@@ -1,0 +1,224 @@
+﻿@model TTKDGP.ProjectManager.Models.WorkTask
+@using TTKDGP.ProjectManager.Models
+@{
+    ViewBag.Title = "Chi tiết công việc";
+    var states = ViewBag.States as string[] ?? TaskStates.All;
+    var comments = ViewBag.Comments as List<WorkComment> ?? new List<WorkComment>();
+    var canReport = (bool)ViewBag.CanReport;
+
+    var detailCrumbs = new List<Crumb>
+    {
+        new Crumb { Label = "Công việc của tôi", Url = Url.Action("Tasks", "MyWork") }
+    };
+    if (Model.ProjectId > 0)
+    {
+        detailCrumbs.Add(new Crumb
+        {
+            Label = string.IsNullOrWhiteSpace(Model.ProjectName) ? "Dự án" : Model.ProjectName,
+            Url = Url.Action("Index", "Checklist", new { projectId = Model.ProjectId })
+        });
+    }
+    detailCrumbs.Add(new Crumb { Label = Model.Title });
+    ViewBag.Crumbs = detailCrumbs;
+}
+
+<div class="page-head">
+    <div>
+        <h1>@Model.Title</h1>
+        <p>
+            @TaskKinds.Display(Model.Kind)
+            @if (!string.IsNullOrWhiteSpace(Model.ProjectName))
+            {
+                <text>· Dự án @Model.ProjectName</text>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.AssigneeName))
+            {
+                <text>· Giao cho @Model.AssigneeName</text>
+            }
+        </p>
+    </div>
+    <a class="btn btn-default" href="@Url.Action("Tasks", "MyWork")">&larr; Công việc của tôi</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="form-grid">
+            <div class="form-field">
+                <label>Hạn hoàn thành</label>
+                <div>
+                    @if (Model.DueDate.HasValue)
+                    {
+                        <strong>@Model.DueDate.Value.ToString("dd/MM/yyyy")</strong>
+                        if (Model.IsOverdue)
+                        {
+                            <span class="badge badge-inactive">Quá hạn @(-Model.DaysLeft) ngày</span>
+                        }
+                        else if (Model.DaysLeft.HasValue && !TaskStates.IsClosed(Model.State))
+                        {
+                            <span class="badge">Còn @Model.DaysLeft ngày</span>
+                        }
+                    }
+                    else
+                    {
+                        <span class="muted">Không đặt hạn</span>
+                    }
+                </div>
+            </div>
+
+            <div class="form-field">
+                <label>Ngày bắt đầu</label>
+                <div>@(Model.StartDate.HasValue ? Model.StartDate.Value.ToString("dd/MM/yyyy") : "—")</div>
+            </div>
+
+            @if (Model.Kind == TaskKinds.Standalone)
+            {
+                <div class="form-field">
+                    <label>Điểm cộng nếu đúng hạn</label>
+                    <div><strong>@Model.BonusPercent%</strong> <span class="muted">(việc dài @Model.DurationDays ngày)</span></div>
+                </div>
+            }
+
+            @if (Model.CompletedAt.HasValue)
+            {
+                <div class="form-field">
+                    <label>Đã hoàn thành</label>
+                    <div>
+                        @Model.CompletedAt.Value.ToString("dd/MM/yyyy HH:mm")
+                        @if (Model.IsOnTime)
+                        {
+                            <span class="badge badge-active">Đúng hạn</span>
+                        }
+                        else
+                        {
+                            <span class="badge badge-inactive">Trễ @Model.LateDays ngày</span>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.Description))
+        {
+            <p class="hint" style="margin-top:12px"><strong>Mô tả và nhật ký cập nhật</strong></p>
+            <pre class="message-preview">@Model.Description</pre>
+        }
+    </div>
+</div>
+
+@if (canReport)
+{
+    <div class="card">
+        <div class="card-head">Cập nhật tiến độ</div>
+        <div class="card-body">
+            @using (Html.BeginForm("Report", "MyWork", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+
+                <div class="form-grid">
+                    <div class="form-field">
+                        <label for="state">Trạng thái</label>
+                        <select id="state" name="state">
+                            @foreach (var s in states)
+                            {
+                                <option value="@s" selected="@(Model.State == s)">@TaskStates.Display(s)</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="progress">Tiến độ (%)</label>
+                        <input type="number" id="progress" name="progress" min="0" max="100" value="@Model.Progress" />
+                        <span class="hint">Chọn "Hoàn thành" thì tiến độ tự đặt 100%.</span>
+                    </div>
+
+                    <div class="form-field full">
+                        <label for="note">Ghi chú thêm</label>
+                        <textarea id="note" name="note" placeholder="Nội dung đã làm, vướng mắc..."></textarea>
+                        <span class="hint">Ghi chú được nối vào nhật ký kèm thời điểm và tên người ghi.</span>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Lưu báo cáo</button>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+<div class="card">
+    <div class="card-head">
+        Trao đổi <span class="muted">— @comments.Count(c => !c.IsDeleted) nội dung</span>
+    </div>
+
+    @if (comments.Count == 0)
+    {
+        <div class="empty-state">Chưa có trao đổi nào. Có vướng mắc gì thì trao đổi ngay tại đây.</div>
+    }
+    else
+    {
+        <div class="card-body">
+            @foreach (var c in comments)
+            {
+                <div style="padding:10px 0;border-bottom:1px solid var(--border-soft)">
+                    <div>
+                        <strong>@c.AuthorName</strong>
+                        <span class="muted">· @c.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                        @if (!c.IsDeleted)
+                        {
+                            using (Html.BeginForm("DeleteComment", "MyWork", new { id = Model.Id, commentId = c.Id }, FormMethod.Post, new { @class = "inline-form" }))
+                            {
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-danger btn-sm"
+                                        onclick="return confirm('Thu hồi nội dung này?');">Thu hồi</button>
+                            }
+                        }
+                    </div>
+                    @if (c.IsDeleted)
+                    {
+                        <div class="muted"><em>Nội dung đã thu hồi.</em></div>
+                    }
+                    else
+                    {
+                        if (!string.IsNullOrWhiteSpace(c.Content))
+                        {
+                            @* Nội dung do người dùng nhập — Razor tự HTML-encode nên an toàn. Không dùng Html.Raw ở đây. *@
+                            <div style="white-space:pre-wrap;margin-top:4px">@c.Content</div>
+                        }
+                        if (c.HasAttachment)
+                        {
+                            <a class="chat-file" href="@Url.Action("Attachment", "Checklist", new { commentId = c.Id })">
+                                <span class="chat-file-icon">&#128206;</span>
+                                <span class="chat-file-label">@c.AttachmentName</span>
+                                <span class="muted">(@TTKDGP.ProjectManager.Infrastructure.CommentAttachments.SizeLabel(c.AttachmentSize))</span>
+                            </a>
+                        }
+                    }
+                </div>
+            }
+        </div>
+    }
+
+    <div class="card-body">
+        @using (Html.BeginForm("Comment", "MyWork", FormMethod.Post, new { enctype = "multipart/form-data" }))
+        {
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.Id" />
+            <div class="form-field full">
+                <label for="content">Gửi trao đổi</label>
+                <textarea id="content" name="content" rows="3"
+                          placeholder="Hỏi PM, báo vướng mắc, thống nhất cách làm..."></textarea>
+            </div>
+            <div class="form-field">
+                <label for="file">File đính kèm</label>
+                <input type="file" id="file" name="file"
+                       accept=".png,.jpg,.jpeg,.gif,.webp,.bmp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.md,.zip,.rar,.7z" />
+                <span class="hint">Tài liệu, ảnh hoặc file nén, tối đa 10 MB. Không bắt buộc.</span>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Gửi</button>
+            </div>
+        }
+    </div>
+</div>

@@ -81,6 +81,187 @@
     });
 })(jQuery);
 
+// Menu thao tác trên từng dòng bảng dựng bằng <details>. Trình duyệt không tự đóng khi bấm ra
+// ngoài, nên mở vài dòng là màn hình đầy menu chồng nhau — phải tự đóng.
+(function ($) {
+    'use strict';
+
+    function closeAll(except) {
+        $('details.row-menu[open]').each(function () {
+            if (this !== except) this.removeAttribute('open');
+        });
+    }
+
+    $(function () {
+        // Mở menu này thì đóng các menu khác ngay, khỏi chờ tới lượt bấm ra ngoài.
+        $(document).on('click', 'details.row-menu > summary', function () {
+            closeAll($(this).parent()[0]);
+        });
+
+        $(document).on('mousedown', function (e) {
+            if (!$(e.target).closest('details.row-menu').length) closeAll(null);
+        });
+
+        $(document).on('keydown', function (e) {
+            if (e.key === 'Escape') closeAll(null);
+        });
+    });
+})(jQuery);
+
+// Hộp thoại thêm/sửa. Nội dung form được nạp từ máy chủ nên chỉ có một nơi định nghĩa form,
+// dùng chung cho cả khi mở bằng hộp thoại lẫn khi mở thẳng bằng đường dẫn.
+(function ($) {
+    'use strict';
+
+    var $backdrop, $modal, $title, $body;
+
+    function ensureShell() {
+        if ($backdrop) return;
+
+        $backdrop = $('<div class="modal-backdrop" role="dialog" aria-modal="true">' +
+            '<div class="modal">' +
+            '<div class="modal-head"><span class="modal-title"></span>' +
+            '<button type="button" class="modal-close" aria-label="Đóng">&times;</button></div>' +
+            '<div class="modal-body"></div>' +
+            '</div></div>').appendTo('body');
+
+        $modal = $backdrop.find('.modal');
+        $title = $backdrop.find('.modal-title');
+        $body = $backdrop.find('.modal-body');
+
+        $backdrop.on('click', function (e) {
+            // Chỉ đóng khi bấm đúng vào nền, không đóng khi bấm bên trong hộp.
+            if (e.target === $backdrop[0]) close();
+        });
+        $backdrop.on('click', '.modal-close', close);
+        $(document).on('keydown', function (e) {
+            if (e.key === 'Escape' && $backdrop.hasClass('open')) close();
+        });
+    }
+
+    function close() {
+        if (!$backdrop) return;
+        $backdrop.removeClass('open');
+        $body.empty();
+        $('body').css('overflow', '');
+    }
+
+    function open(url, title, size) {
+        ensureShell();
+
+        $modal.removeClass('modal-sm modal-lg');
+        if (size) $modal.addClass('modal-' + size);
+
+        $title.text(title || '');
+        $body.html('<div class="modal-loading">Đang tải…</div>');
+        $backdrop.addClass('open');
+        $('body').css('overflow', 'hidden');
+
+        $.get(url)
+            .done(function (html) {
+                $body.html(html);
+                if (window.AppSelect2) window.AppSelect2.init($body[0]);
+            })
+            .fail(function () {
+                $body.html('<div class="modal-loading">Không tải được nội dung.</div>');
+            });
+    }
+
+    $(function () {
+        $(document).on('click', '[data-modal-url]', function (e) {
+            var $el = $(this);
+
+            // Cả dòng lưới và cả thẻ Kanban đều mở được hộp thoại, nhưng bên trong chúng còn có
+            // liên kết và nút riêng (menu thao tác, nút xoá, số lượt trao đổi). Bấm vào những chỗ
+            // đó thì để chính chúng xử lý, đừng nuốt mất thành lệnh mở hộp thoại.
+            var $inner = $(e.target).closest('a, button, input, select, textarea, summary');
+            if ($inner.length && !$inner.is($el)) return;
+
+            e.preventDefault();
+            // Dòng lồng trong dòng: chỉ phần tử trong cùng được mở, không mở chồng hai hộp thoại.
+            e.stopPropagation();
+
+            open($el.data('modal-url'), $el.data('modal-title'), $el.data('modal-size'));
+        });
+
+        // Gửi form trong hộp thoại bằng AJAX. Máy chủ trả JSON khi lưu được, trả lại HTML của
+        // form khi còn lỗi — nhờ vậy thông báo lỗi hiện ngay trong hộp, không mất dữ liệu đã nhập.
+        $(document).on('submit', '.modal-body form', function (e) {
+            var $form = $(this);
+
+            // Form đánh dấu data-native-submit thì gửi kiểu thường (chuyển trang) — ví dụ form
+            // upload file: serialize() của AJAX không mang được file.
+            if ($form.is('[data-native-submit]')) return;
+
+            e.preventDefault();
+            var $submit = $form.find('[type="submit"]').prop('disabled', true);
+
+            $.post($form.attr('action'), $form.serialize())
+                .done(function (res, status, xhr) {
+                    var type = xhr.getResponseHeader('Content-Type') || '';
+                    if (type.indexOf('json') >= 0 && res && res.ok) {
+                        // Nạp lại chính địa chỉ đang đứng: bộ lọc và số trang nằm sẵn trong đó
+                        // nên người dùng quay lại đúng chỗ cũ.
+                        window.location.reload();
+                        return;
+                    }
+                    $body.html(res);
+                    if (window.AppSelect2) window.AppSelect2.init($body[0]);
+                })
+                .fail(function () {
+                    $submit.prop('disabled', false);
+                    alert('Không lưu được. Hãy thử lại.');
+                });
+        });
+    });
+
+    window.AppModal = { open: open, close: close };
+})(jQuery);
+
+// Chuông thông báo trên thanh đầu trang: bấm mở panel (nạp AJAX), bấm ra ngoài thì đóng.
+(function ($) {
+    'use strict';
+
+    $(function () {
+        var $wrap = $('[data-notif]');
+        if (!$wrap.length) return;
+
+        var $panel = $wrap.find('[data-notif-panel]');
+
+        $wrap.on('click', '[data-notif-toggle]', function () {
+            if ($wrap.hasClass('open')) {
+                $wrap.removeClass('open');
+                return;
+            }
+
+            $wrap.addClass('open');
+            $panel.html('<div class="notif-empty">Đang tải…</div>');
+
+            $.get($panel.data('url'))
+                .done(function (html) { $panel.html(html); })
+                .fail(function () { $panel.html('<div class="notif-empty">Không tải được thông báo.</div>'); });
+        });
+
+        $(document).on('mousedown', function (e) {
+            if (!$(e.target).closest('[data-notif]').length) $wrap.removeClass('open');
+        });
+
+        // "Đánh dấu đã đọc tất cả": gửi ngầm rồi cập nhật ngay giao diện, không nạp lại trang.
+        $wrap.on('submit', 'form[data-notif-readall]', function (e) {
+            e.preventDefault();
+            var $form = $(this);
+
+            $.post($form.attr('action'), $form.serialize())
+                .done(function () {
+                    $wrap.find('.notif-badge').remove();
+                    $panel.find('.notif-item').removeClass('unread');
+                    $panel.find('.notif-dot').remove();
+                    $form.remove();
+                });
+        });
+    });
+})(jQuery);
+
 // Nút "Sao chép" các ô có khoá/giá trị: chép nội dung ô đích vào clipboard, báo nhanh trên nút.
 (function ($) {
     'use strict';
@@ -114,6 +295,121 @@
                 $btn.text('Đã chép');
                 setTimeout(function () { $btn.text(old); }, 1500);
             });
+        });
+    });
+})(jQuery);
+
+// Kéo thả thẻ trên bảng Kanban.
+// Dùng thẳng Drag and Drop của HTML5 — dự án không thêm thư viện ngoài.
+(function ($) {
+    'use strict';
+
+    var DRAG_TYPE = 'text/plain';
+    var $dragging = null;
+
+    function board() {
+        return $('[data-kanban]');
+    }
+
+    function refreshCounts() {
+        board().find('.kanban-col').each(function () {
+            var $col = $(this);
+            $col.find('[data-count]').text($col.find('[data-card]').length);
+        });
+    }
+
+    function fail($card, message) {
+        $card.removeClass('is-saving');
+        window.alert(message || 'Không đổi được trạng thái. Hãy tải lại trang rồi thử lại.');
+    }
+
+    $(function () {
+        var $board = board();
+        if (!$board.length) return;
+
+        var url = $board.data('url');
+        var token = $board.find('input[name="__RequestVerificationToken"]').val();
+
+        $board.on('dragstart', '[data-card]', function (e) {
+            var $card = $(this);
+            if ($card.hasClass('is-locked')) return false;
+
+            $dragging = $card;
+            $card.addClass('is-dragging');
+
+            // Firefox không khởi động thao tác kéo nếu chưa đặt dữ liệu vào sự kiện.
+            e.originalEvent.dataTransfer.setData(DRAG_TYPE, String($card.data('id')));
+            e.originalEvent.dataTransfer.effectAllowed = 'move';
+        });
+
+        $board.on('dragend', '[data-card]', function () {
+            $(this).removeClass('is-dragging');
+            $board.find('[data-drop]').removeClass('is-over');
+            $dragging = null;
+        });
+
+        // Phải chặn hành vi mặc định của dragover, nếu không trình duyệt sẽ không cho thả.
+        $board.on('dragover', '[data-drop]', function (e) {
+            if (!$dragging) return;
+            e.preventDefault();
+            e.originalEvent.dataTransfer.dropEffect = 'move';
+            $(this).addClass('is-over');
+        });
+
+        $board.on('dragleave', '[data-drop]', function (e) {
+            // dragleave còn bắn khi con trỏ đi qua các thẻ con bên trong; chỉ bỏ tô sáng khi
+            // đã thực sự rời khỏi vùng thả, nếu không viền sẽ nhấp nháy liên tục.
+            if (this.contains(e.originalEvent.relatedTarget)) return;
+            $(this).removeClass('is-over');
+        });
+
+        $board.on('drop', function (e) {
+            e.preventDefault();
+        });
+
+        $board.on('drop', '[data-drop]', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            var $drop = $(this);
+            $drop.removeClass('is-over');
+
+            var $card = $dragging;
+            if (!$card) return;
+
+            var $from = $card.parent('[data-drop]');
+            var state = $drop.closest('.kanban-col').data('state');
+            if ($from.is($drop)) return;
+
+            // Chuyển thẻ ngay cho thao tác mượt, hỏng thì trả về chỗ cũ.
+            var next = $card.next();
+            $card.appendTo($drop).addClass('is-saving');
+            refreshCounts();
+
+            $.post(url, { id: $card.data('id'), state: state, __RequestVerificationToken: token })
+                .done(function (res) {
+                    if (res && res.ok) {
+                        $card.removeClass('is-saving');
+
+                        // Cập nhật màu cảnh báo hạn ngay theo trạng thái mới: kéo sang Hoàn thành
+                        // thì thẻ hết đỏ/cam liền, không bắt người dùng tải lại trang mới thấy.
+                        $card.removeClass('card-danger card-warn');
+                        if (res.overdue) $card.addClass('card-danger');
+                        else if (res.dueSoon) $card.addClass('card-warn');
+                        else $card.find('.js-due-badge').remove();
+
+                        return;
+                    }
+
+                    if (next.length) $card.insertBefore(next); else $card.appendTo($from);
+                    refreshCounts();
+                    fail($card, res && res.message);
+                })
+                .fail(function () {
+                    if (next.length) $card.insertBefore(next); else $card.appendTo($from);
+                    refreshCounts();
+                    fail($card);
+                });
         });
     });
 })(jQuery);

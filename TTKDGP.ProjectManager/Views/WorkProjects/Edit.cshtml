@@ -1,0 +1,36 @@
+﻿@model TTKDGP.ProjectManager.Models.WorkProject
+@using TTKDGP.ProjectManager.Models
+@{
+    var isNew = Model.Id == 0;
+    ViewBag.Title = isNew ? "Thêm dự án" : "Sửa dự án";
+
+    var editCrumbs = new List<Crumb>
+    {
+        new Crumb { Label = "Dự án", Url = Url.Action("Index", "WorkProjects") }
+    };
+    if (!isNew)
+    {
+        editCrumbs.Add(new Crumb { Label = Model.Name, Url = Url.Action("Details", "WorkProjects", new { id = Model.Id }) });
+    }
+    editCrumbs.Add(new Crumb { Label = (string)ViewBag.Title });
+    ViewBag.Crumbs = editCrumbs;
+}
+
+@*
+    Trang riêng cho form dự án. Thường người dùng mở form bằng hộp thoại ngay trên danh sách;
+    trang này giữ lại để mở thẳng bằng đường dẫn vẫn dùng được (gửi link, mở tab mới, hoặc khi
+    trình duyệt tắt JavaScript).
+*@
+<div class="page-head">
+    <div>
+        <h1>@ViewBag.Title</h1>
+        <p>Thông tin chung, mốc thời gian và giai đoạn của dự án.</p>
+    </div>
+    <a class="btn btn-default" href="@Url.Action("Index", "WorkProjects")">&larr; Danh sách dự án</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        @Html.Partial("_EditForm", Model)
+    </div>
+</div>

@@ -1,0 +1,39 @@
+﻿@model TTKDGP.ProjectManager.Models.WorkAssignment
+@*
+    Form nhỏ chọn ngày rời dự án, mở trong hộp thoại. Tách riêng khỏi bảng để dòng dữ liệu không
+    phải nhét thêm ô ngày và hai nút, vốn làm bảng chật và phải cuộn ngang.
+*@
+@using (Html.BeginForm("EndMember", "WorkProjects", new { id = Model.ProjectId }, FormMethod.Post))
+{
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="assignmentId" value="@Model.Id" />
+
+    <p style="margin-top:0">
+        Kết thúc giai đoạn tham gia của <strong>@Model.UserFullName</strong>
+        @if (Model.IsPm)
+        {
+            <text>(đang là <strong>PM</strong> của dự án)</text>
+        }
+        trong dự án <strong>@Model.ProjectName</strong>.
+    </p>
+
+    <div class="form-field">
+        <label for="leftAt">Ngày rời dự án</label>
+        <input type="date" id="leftAt" name="leftAt"
+               value="@DateTime.Today.ToString("yyyy-MM-dd")"
+               min="@Model.JoinedAt.ToString("yyyy-MM-dd")" />
+        <span class="hint">
+            Không được sớm hơn ngày tham gia (@Model.JoinedAt.ToString("dd/MM/yyyy")).
+        </span>
+        @Html.ValidationMessage("leftAt", new { @class = "field-error" })
+    </div>
+
+    <span class="hint">
+        Người này vẫn còn trong lịch sử dự án. Muốn họ quay lại thì thêm một giai đoạn tham gia mới.
+    </span>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Kết thúc tham gia</button>
+        <button type="button" class="btn btn-default" onclick="window.AppModal.close()">Huỷ</button>
+    </div>
+}

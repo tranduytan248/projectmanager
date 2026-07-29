@@ -1,0 +1,182 @@
+﻿@model TTKDGP.ProjectManager.Models.WorkTask
+@using TTKDGP.ProjectManager.Models
+@*
+    Form một mục checklist, dùng chung cho hộp thoại và trang riêng.
+*@
+@{
+    var isNew = Model.Id == 0;
+    var users = ViewBag.Users as List<User> ?? new List<User>();
+    var parents = ViewBag.ParentOptions as List<WorkTask> ?? new List<WorkTask>();
+
+    // Nhãn tuần phải nói rõ ngày đầu–cuối, mà ngày đó phụ thuộc năm; chưa chọn năm thì lấy năm hiện tại.
+    var weekYear = Model.Year > 0 ? Model.Year : WeekHelper.CurrentYear;
+
+    // PM dự án và Quản lý Tổ sửa được mọi thứ. Người thực hiện chỉ báo cáo tiến độ việc của mình,
+    // nên phần giao việc chỉ hiện ra để đọc.
+    var canEditAll = ViewBag.CanEditAll == null || (bool)ViewBag.CanEditAll;
+    var assigneeName = users.Where(u => u.Id == Model.AssigneeUserId)
+        .Select(u => u.FullName).FirstOrDefault();
+}
+
+@using (Html.BeginForm("Edit", "Checklist", FormMethod.Post))
+{
+    @Html.AntiForgeryToken()
+    @Html.HiddenFor(m => m.Id)
+    @Html.HiddenFor(m => m.ProjectId)
+    @Html.ValidationSummary(true)
+
+    <div class="form-grid">
+    @if (!canEditAll)
+    {
+        <div class="form-static full">
+            <span class="form-static-label">Công việc</span>
+            <strong>@(string.IsNullOrWhiteSpace(Model.Code) ? Model.Title : Model.Code + " · " + Model.Title)</strong>
+        </div>
+
+        <div class="form-static">
+            <span class="form-static-label">Loại · Ưu tiên</span>
+            @TaskKinds.Display(Model.Kind) · @TaskPriorities.Display(Model.Priority)
+        </div>
+
+        <div class="form-static">
+            <span class="form-static-label">Người thực hiện</span>
+            @(string.IsNullOrWhiteSpace(assigneeName) ? "(chưa giao)" : assigneeName)
+        </div>
+
+        <div class="form-static">
+            <span class="form-static-label">Hạn hoàn thành</span>
+            @(Model.DueDate.HasValue ? Model.DueDate.Value.ToString("dd/MM/yyyy") : "—")
+        </div>
+
+        <div class="form-static">
+            <span class="form-static-label">Thuộc tuần</span>
+            @(Model.Week > 0 ? "Tuần " + Model.Week + "/" + Model.Year : "—")
+        </div>
+    }
+    else
+    {
+        <div class="form-field">
+            @Html.LabelFor(m => m.Kind)
+            @Html.DropDownListFor(m => m.Kind,
+                TaskKinds.InProject.Select(k => new SelectListItem
+                {
+                    Value = k,
+                    Text = TaskKinds.Display(k),
+                    Selected = Model.Kind == k
+                }))
+            <span class="hint">Việc theo checklist kế hoạch là "Triển khai"; việc phát sinh trong giai đoạn hỗ trợ là "Hỗ trợ".</span>
+        </div>
+
+        <div class="form-field">
+            @Html.LabelFor(m => m.Priority)
+            @Html.DropDownListFor(m => m.Priority,
+                TaskPriorities.All.Select(p => new SelectListItem
+                {
+                    Value = p,
+                    Text = TaskPriorities.Display(p),
+                    Selected = Model.Priority == p
+                }))
+        </div>
+
+        <div class="form-field full">
+            @Html.LabelFor(m => m.Title)
+            @Html.TextBoxFor(m => m.Title)
+            @Html.ValidationMessageFor(m => m.Title, "", new { @class = "field-error" })
+        </div>
+
+        <div class="form-field">
+            @Html.LabelFor(m => m.Code)
+            @Html.TextBoxFor(m => m.Code)
+            <span class="hint">Ví dụ CL-01. Chỉ cần duy nhất trong dự án này.</span>
+            @Html.ValidationMessageFor(m => m.Code, "", new { @class = "field-error" })
+        </div>
+
+        <div class="form-field">
+            <label for="ParentId">Mục cha</label>
+            <select id="ParentId" name="ParentId">
+                <option value="0">— Mục gốc —</option>
+                @foreach (var p in parents)
+                {
+                    <option value="@p.Id" selected="@(Model.ParentId == p.Id)">
+                        @(string.IsNullOrWhiteSpace(p.Code) ? p.Title : p.Code + " · " + p.Title)
+                    </option>
+                }
+            </select>
+            @Html.ValidationMessageFor(m => m.ParentId, "", new { @class = "field-error" })
+        </div>
+
+        <div class="form-field">
+            @Html.LabelFor(m => m.AssigneeUserId)
+            @Html.DropDownListFor(m => m.AssigneeUserId,
+                new SelectList(users, "Id", "FullName", Model.AssigneeUserId), "— Chưa giao —")
+        </div>
+
+        <div class="form-field">
+            @Html.LabelFor(m => m.StartDate)
+            @Html.TextBoxFor(m => m.StartDate, "{0:yyyy-MM-dd}", new { type = "date" })
+        </div>
+
+        <div class="form-field">
+            @Html.LabelFor(m => m.DueDate)
+            @Html.TextBoxFor(m => m.DueDate, "{0:yyyy-MM-dd}", new { type = "date" })
+            <span class="hint">Bắt buộc — bộ chấm chất lượng dựa vào đây để biết đúng hay trễ hạn.</span>
+            @Html.ValidationMessageFor(m => m.DueDate, "", new { @class = "field-error" })
+        </div>
+
+        <div class="form-field">
+            @Html.LabelFor(m => m.Week)
+            @Html.DropDownListFor(m => m.Week,
+                WeekHelper.WeekOptions(weekYear).Select(o => new SelectListItem
+                {
+                    Value = o.Key.ToString(),
+                    Text = o.Value,
+                    Selected = Model.Week == o.Key
+                }), "— Không gắn tuần —")
+        </div>
+
+        <div class="form-field">
+            @Html.LabelFor(m => m.Year)
+            @Html.TextBoxFor(m => m.Year, new { type = "number", min = "2000", max = "2100" })
+            <span class="hint">Bỏ trống tuần thì bỏ qua ô này.</span>
+        </div>
+    }
+
+        <div class="form-field">
+            @Html.LabelFor(m => m.State)
+            @Html.DropDownListFor(m => m.State,
+                TaskStates.All.Select(s => new SelectListItem
+                {
+                    Value = s,
+                    Text = TaskStates.Display(s),
+                    Selected = Model.State == s
+                }))
+        </div>
+
+        @if (!isNew)
+        {
+            <div class="form-field">
+                @Html.LabelFor(m => m.Progress)
+                @Html.TextBoxFor(m => m.Progress, new { type = "number", min = "0", max = "100" })
+                @Html.ValidationMessageFor(m => m.Progress, "", new { @class = "field-error" })
+            </div>
+        }
+
+        <div class="form-field full">
+            @Html.LabelFor(m => m.Description)
+            @Html.TextAreaFor(m => m.Description, new { rows = 3 })
+        </div>
+    </div>
+
+    if (!canEditAll)
+    {
+        <span class="hint">
+            Bạn là người thực hiện việc này nên chỉ cập nhật được trạng thái, tiến độ và mô tả.
+            Đổi hạn hoàn thành hay chuyển người thực hiện là việc của PM dự án hoặc Quản lý Tổ.
+        </span>
+    }
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">@(isNew ? "Thêm mục" : "Lưu thay đổi")</button>
+        <a class="btn btn-default" href="@Url.Action("Index", "Checklist", new { projectId = Model.ProjectId })">Huỷ</a>
+    </div>
+}

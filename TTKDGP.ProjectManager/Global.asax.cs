@@ -23,8 +23,16 @@ namespace TTKDGP.ProjectManager
             // Tạo bảng SQL nếu chưa có và nạp dữ liệu từ JSON sang khi bảng còn trống.
             Data.JsonToSqlMigration.RunIfNeeded();
 
+            // Chuyển dữ liệu công việc từ khoá nhân sự (WorkStaff cũ) sang khoá người dùng.
+            // Phải đứng TRƯỚC mọi truy cập Repository — store nạp xong mới sửa thì bản trong
+            // bộ nhớ vẫn là dữ liệu cũ cho tới lần khởi động sau.
+            Data.WorkUserMigration.RunIfNeeded();
+
             // Tạo ba nhóm quyền mặc định (Quản trị / Quản lý / Báo cáo) nếu bảng còn trống.
             Data.RoleGroupSeeder.EnsureDefaults();
+
+            // Cấp chức năng của các màn hình mới cho hai nhóm gốc trên bản đã vận hành.
+            Data.RoleGroupSeeder.EnsureNewModulePermissions();
 
             // Bộ lịch nhắc báo cáo qua Telegram (sáng thứ Hai và chiều thứ Sáu).
             Infrastructure.ReminderScheduler.Start();

@@ -61,14 +61,6 @@
                                     .FirstOrDefault(g => string.Equals(g.Code, r, StringComparison.OrdinalIgnoreCase));
                                 <span class="badge badge-role">@(grp != null ? grp.Name : r)</span>
                             }
-                            @if (u.MemberId > 0)
-                            {
-                                var linked = TTKDGP.ProjectManager.Data.Repository.Members.Find(u.MemberId);
-                                if (linked != null)
-                                {
-                                    <div class="muted" style="font-size:12px">@linked.FullName</div>
-                                }
-                            }
                         </td>
                         <td>
                             @if (u.IsActive)

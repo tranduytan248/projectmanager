@@ -83,6 +83,16 @@ namespace TTKDGP.ProjectManager.Models
         }
     }
 
+    /// <summary>
+    /// Một mắt trên thanh breadcrumb đầu trang. View nào cần thì gán ViewBag.Crumbs =
+    /// List&lt;Crumb&gt;; _Layout tự vẽ. Mắt cuối (trang hiện tại) không cần Url.
+    /// </summary>
+    public class Crumb
+    {
+        public string Label { get; set; }
+        public string Url { get; set; }
+    }
+
     /// <summary>Form tạo/sửa người dùng. Khi sửa, để trống mật khẩu nghĩa là giữ nguyên.</summary>
     public class UserEditViewModel
     {
@@ -108,13 +118,6 @@ namespace TTKDGP.ProjectManager.Models
         /// </summary>
         [Display(Name = "Phân quyền")]
         public string[] SelectedRoles { get; set; }
-
-        /// <summary>
-        /// Nhân sự tương ứng. Bắt buộc với quyền Báo cáo công việc để biết tài khoản được báo
-        /// cáo cho phân công nào; các quyền khác có thể bỏ trống.
-        /// </summary>
-        [Display(Name = "Nhân sự tương ứng")]
-        public int MemberId { get; set; }
 
         [DataType(DataType.Password)]
         [StringLength(100, MinimumLength = 6, ErrorMessage = "Mật khẩu tối thiểu 6 ký tự")]
@@ -152,18 +155,14 @@ namespace TTKDGP.ProjectManager.Models
     /// <summary>Dashboard "Tình trạng hệ thống" của Quản trị.</summary>
     public class AdminSystemViewModel
     {
-        public List<User> UnlinkedUsers { get; set; }
         public List<AutomationStatus> Flows { get; set; }
         public List<GroupUserCount> GroupCounts { get; set; }
 
         public int TotalUsers { get; set; }
         public int ActiveIntegrations { get; set; }
 
-        public int UnlinkedCount { get { return UnlinkedUsers == null ? 0 : UnlinkedUsers.Count; } }
-
         public AdminSystemViewModel()
         {
-            UnlinkedUsers = new List<User>();
             Flows = new List<AutomationStatus>();
             GroupCounts = new List<GroupUserCount>();
         }
@@ -263,49 +262,78 @@ namespace TTKDGP.ProjectManager.Models
         }
     }
 
-    /// <summary>Một nhân sự sẽ được mở tài khoản.</summary>
+    /// <summary>Một nhân sự HRM trong màn mở tài khoản.</summary>
     public class UserProvisionRow
     {
-        public int MemberId { get; set; }
-        public string MemberName { get; set; }
+        public string EmployeeCode { get; set; }
+        public string FullName { get; set; }
         public string Email { get; set; }
 
-        /// <summary>Tên đăng nhập suy ra từ email (bỏ phần đuôi miền).</summary>
+        /// <summary>Tên đăng nhập HRM, suy từ email (bỏ phần đuôi miền).</summary>
         public string UserName { get; set; }
+
+        /// <summary>Tài khoản đang có của người này; 0 nghĩa là sắp mở mới.</summary>
+        public int UserId { get; set; }
     }
 
     /// <summary>Một nhân sự bị bỏ qua, kèm lý do để quản trị biết đường xử lý tay.</summary>
     public class UserProvisionSkip
     {
-        public string MemberName { get; set; }
+        public string FullName { get; set; }
         public string Email { get; set; }
         public string Reason { get; set; }
     }
 
     /// <summary>
-    /// Xem trước rồi mở hàng loạt tài khoản cho nhân sự chưa có. Xem trước trước khi ghi để
+    /// Xem trước rồi mở hàng loạt tài khoản cho nhân sự HRM của đơn vị. Xem trước trước khi ghi để
     /// quản trị nhìn thấy đúng những tài khoản nào sắp sinh ra, tránh tạo nhầm bản trùng.
+    /// Chỉ MỞ tài khoản — không gắn tài khoản với hồ sơ nhân sự hay thành viên nào.
     /// </summary>
     public class UserProvisionViewModel
     {
+        /// <summary>Tên đơn vị HRM đang đối chiếu, kèm mã nếu có.</summary>
+        public string UnitName { get; set; }
+
+        /// <summary>Lỗi cấu hình/dữ liệu đơn vị HRM. Có giá trị thì không hiện bảng đối chiếu.</summary>
+        public string UnitError { get; set; }
+
         [Required(ErrorMessage = "Vui lòng nhập mật khẩu khởi tạo")]
         [DataType(DataType.Password)]
         [StringLength(100, MinimumLength = 6, ErrorMessage = "Mật khẩu tối thiểu 6 ký tự")]
         [Display(Name = "Mật khẩu khởi tạo")]
         public string Password { get; set; }
 
+        /// <summary>
+        /// Đặt lại mật khẩu cho cả những tài khoản ĐÃ CÓ về mật khẩu khởi tạo. Là một lựa chọn
+        /// riêng chứ không làm mặc định — đây là thao tác đụng vào mật khẩu người khác.
+        /// </summary>
+        [Display(Name = "Đặt lại mật khẩu tài khoản đã có")]
+        public bool ResetExisting { get; set; }
+
+        /// <summary>Nhân sự chưa có tài khoản — sẽ mở mới.</summary>
         public List<UserProvisionRow> ToCreate { get; set; }
+
+        /// <summary>Nhân sự đã có tài khoản — phạm vi áp dụng của việc đặt lại mật khẩu.</summary>
+        public List<UserProvisionRow> Existing { get; set; }
+
         public List<UserProvisionSkip> Skipped { get; set; }
 
         /// <summary>
-        /// Tài khoản đang có nhưng chưa gắn nhân sự nào. Nêu ra để quản trị gắn tay trước,
-        /// nếu không sẽ đẻ thêm tài khoản thứ hai cho cùng một người.
+        /// Tài khoản đang có nhưng không khớp nhân sự HRM nào (ví dụ tài khoản quản trị). Nêu ra
+        /// cho biết, chức năng này không đụng tới.
         /// </summary>
         public List<User> UnlinkedUsers { get; set; }
+
+        /// <summary>Có việc gì để làm không — không thì khỏi hiện nút.</summary>
+        public bool HasWork
+        {
+            get { return ToCreate.Count > 0 || Existing.Count > 0; }
+        }
 
         public UserProvisionViewModel()
         {
             ToCreate = new List<UserProvisionRow>();
+            Existing = new List<UserProvisionRow>();
             Skipped = new List<UserProvisionSkip>();
             UnlinkedUsers = new List<User>();
         }

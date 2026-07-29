@@ -4,7 +4,6 @@
     ViewBag.Title = Model.IsNew ? "Tạo người dùng" : "Sửa người dùng";
     var roleGroups = ViewBag.RoleGroupOptions as List<TTKDGP.ProjectManager.Models.RoleGroup>
         ?? new List<TTKDGP.ProjectManager.Models.RoleGroup>();
-    var members = ViewBag.MemberOptions as List<Member> ?? new List<Member>();
     var selectedRoles = Model.SelectedRoles ?? new string[0];
 }
 
@@ -61,23 +60,6 @@
                 <span class="hint">
                     Chọn được nhiều nhóm — quyền của tài khoản là hợp của các nhóm. Cấu hình chức năng
                     của từng nhóm ở màn <strong>Nhóm quyền</strong>.
-                </span>
-            </div>
-
-            <div class="form-field">
-                @Html.LabelFor(m => m.MemberId)
-                <select id="MemberId" name="MemberId">
-                    <option value="0">— Chưa gắn —</option>
-                    @foreach (var m in members)
-                    {
-                        <option value="@m.Id" selected="@(Model.MemberId == m.Id)">@m.FullName</option>
-                    }
-                </select>
-                @Html.ValidationMessageFor(m => m.MemberId, "", new { @class = "field-error" })
-                <span class="hint">
-                    Bắt buộc với quyền <strong>Báo cáo công việc</strong> — để biết tài khoản được báo cáo
-                    cho những phân công nào. Quyền khác có thể bỏ trống, nếu gắn thì cũng dùng được
-                    màn &quot;Báo cáo của tôi&quot;.
                 </span>
             </div>
 

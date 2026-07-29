@@ -1,0 +1,234 @@
+﻿@model TTKDGP.ProjectManager.Models.PagedList<TTKDGP.ProjectManager.Models.WorkProject>
+@using TTKDGP.ProjectManager.Models
+@using TTKDGP.ProjectManager.Services
+@{
+    ViewBag.Title = "Dự án";
+    var stats = ViewBag.Stats as Dictionary<int, TaskStat> ?? new Dictionary<int, TaskStat>();
+    var memberCounts = ViewBag.MemberCounts as Dictionary<int, int> ?? new Dictionary<int, int>();
+    var userOptions = ViewBag.UserOptions as List<User> ?? new List<User>();
+    var projectTypes = ViewBag.ProjectTypes as List<string> ?? new List<string>();
+    var can = ViewBag.Can as Func<string, bool>;
+}
+
+<div class="page-head">
+    <div>
+        <h1>Dự án</h1>
+        <p>Dự án của Tổ, mỗi dự án có một PM phụ trách. Tổng cộng @Model.Pager.TotalItems dự án.</p>
+    </div>
+    @if (can == null || can("wprojects.create"))
+    {
+        <div class="btn-row">
+            @* Nút "Lấy từ bộ cũ" đã gỡ — dữ liệu chuyển xong; màn ImportLegacy vẫn mở được bằng đường dẫn khi cần. *@
+            <a class="btn btn-primary" href="@Url.Action("Edit", "WorkProjects")"
+               data-modal-url="@Url.Action("Edit", "WorkProjects")"
+               data-modal-title="Thêm dự án">+ Thêm dự án</a>
+        </div>
+    }
+</div>
+
+<div class="card">
+    <div class="card-body">
+        @using (Html.BeginForm("Index", "WorkProjects", FormMethod.Get))
+        {
+            <div class="filters">
+                <div class="filter-field grow">
+                    <label for="keyword">Tìm kiếm</label>
+                    <input type="search" id="keyword" name="keyword" value="@ViewBag.Keyword"
+                           placeholder="Tên, mã, khách hàng, PM..." />
+                </div>
+                <div class="filter-field">
+                    <label for="phase">Giai đoạn</label>
+                    <select id="phase" name="phase">
+                        <option value="">— Tất cả —</option>
+                        @foreach (var p in ProjectPhases.All)
+                        {
+                            <option value="@p" selected="@((string)ViewBag.Phase == p)">@ProjectPhases.Display(p)</option>
+                        }
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label for="state">Trạng thái</label>
+                    <select id="state" name="state">
+                        <option value="">— Tất cả —</option>
+                        @foreach (var p in ProjectPhases.All)
+                        {
+                            <optgroup label="@ProjectPhases.Display(p)">
+                                @foreach (var s in ProjectStates.ForPhase(p).Where(s => s != ProjectStates.Cancelled))
+                                {
+                                    <option value="@s" selected="@((string)ViewBag.State == s)">@ProjectStates.Display(s)</option>
+                                }
+                            </optgroup>
+                        }
+                        <option value="@ProjectStates.Cancelled" selected="@((string)ViewBag.State == ProjectStates.Cancelled)">@ProjectStates.Display(ProjectStates.Cancelled)</option>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label for="projectType">Loại dự án</label>
+                    <select id="projectType" name="projectType">
+                        <option value="">— Tất cả —</option>
+                        @foreach (var t in projectTypes)
+                        {
+                            <option value="@t" selected="@((string)ViewBag.ProjectType == t)">@t</option>
+                        }
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label for="pmUserId">PM</label>
+                    <select id="pmUserId" name="pmUserId">
+                        <option value="">— Tất cả —</option>
+                        @foreach (var u in userOptions)
+                        {
+                            <option value="@u.Id" selected="@(ViewBag.PmUserId != null && (int)ViewBag.PmUserId == u.Id)">@u.FullName</option>
+                        }
+                    </select>
+                </div>
+                <div class="btn-row" style="padding-bottom:1px">
+                    <button type="submit" class="btn btn-primary">Lọc</button>
+                    <a class="btn btn-default" href="@Url.Action("Index", "WorkProjects")">Xoá lọc</a>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="card">
+    @if (Model.Items.Count == 0)
+    {
+        <div class="empty-state">Chưa có dự án nào.</div>
+    }
+    else
+    {
+        <div class="table-wrap with-menu">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th>Dự án</th>
+                        <th>Khách hàng</th>
+                        <th>Phụ trách</th>
+                        <th>Giai đoạn / Trạng thái</th>
+                        <th>Tiến độ checklist</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in Model.Items)
+                    {
+                        var stat = stats.ContainsKey(p.Id) ? stats[p.Id] : new TaskStat();
+                        var members = memberCounts.ContainsKey(p.Id) ? memberCounts[p.Id] : 0;
+                        @* Tô nền theo giai đoạn để quét mắt qua bảng là phân biệt được ngay;
+                           dự án đã đóng thì làm mờ hẳn. *@
+                        var rowClass = !p.IsOpen ? "row-closed"
+                            : (p.Phase == ProjectPhases.Support ? "row-support" : "row-implement");
+                        <tr class="@rowClass">
+                            @* Gộp mã, loại và khoảng thời gian vào cùng ô với tên, thay vì tách
+                               thành ba cột hẹp làm chữ bị ngắt dòng lung tung. *@
+                            <td>
+                                <div class="cell-title">@p.Name</div>
+                                <div class="cell-meta">
+                                    @if (!string.IsNullOrWhiteSpace(p.Code))
+                                    {
+                                        <text>@p.Code · </text>
+                                    }
+                                    @(string.IsNullOrWhiteSpace(p.ProjectType) ? "chưa phân loại" : p.ProjectType)
+                                </div>
+                                <div class="cell-meta">
+                                    @(p.StartDate.HasValue ? p.StartDate.Value.ToString("dd/MM/yyyy") : "?")
+                                    &ndash;
+                                    @(p.EndDate.HasValue ? p.EndDate.Value.ToString("dd/MM/yyyy") : "?")
+                                </div>
+                            </td>
+
+                            <td>@(string.IsNullOrWhiteSpace(p.Customer) ? "—" : p.Customer)</td>
+
+                            <td>
+                                @if (p.PmUserId > 0)
+                                {
+                                    <div>@p.PmName</div>
+                                }
+                                else
+                                {
+                                    <div class="muted">Chưa có PM</div>
+                                }
+                                <div class="cell-meta">@members người đang tham gia</div>
+                            </td>
+
+                            <td>
+                                @if (p.IsOpen)
+                                {
+                                    <span class="badge badge-active">@ProjectStates.Display(p.State)</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-inactive">@ProjectStates.Display(p.State)</span>
+                                }
+                                <div class="cell-meta">Giai đoạn @ProjectPhases.Display(p.Phase)</div>
+                            </td>
+
+                            <td class="cell-progress">
+                                @if (stat.Total == 0)
+                                {
+                                    <span class="muted">Chưa có checklist</span>
+                                }
+                                else
+                                {
+                                    <div>
+                                        <strong>@stat.Done/@stat.Total</strong>
+                                        <span class="muted">· @stat.Percent%</span>
+                                        @if (stat.Overdue > 0)
+                                        {
+                                            <span class="badge badge-inactive">@stat.Overdue quá hạn</span>
+                                        }
+                                    </div>
+                                    <div class="progress-track">
+                                        <div class="progress-fill" style="width:@(stat.Percent)%"></div>
+                                    </div>
+                                }
+                            </td>
+
+                            <td class="actions">
+                                @* Gom bốn nút thành một menu thả xuống: bốn nút xếp ngang làm dòng
+                                   bảng dài ra và đẩy các cột dữ liệu bị bóp lại. *@
+                                <details class="row-menu">
+                                    <summary>Thao tác ▾</summary>
+                                    <div class="row-menu-items">
+                                        <a href="@Url.Action("Details", "WorkProjects", new { id = p.Id })">Xem chi tiết</a>
+                                        <a href="@Url.Action("Index", "Checklist", new { projectId = p.Id })">Checklist</a>
+                                        <a href="@Url.Action("Members", "WorkProjects", new { id = p.Id })">Nhân sự dự án</a>
+                                        @if (can == null || can("wprojects.edit"))
+                                        {
+                                            <a href="@Url.Action("Edit", "WorkProjects", new { id = p.Id })"
+                                               data-modal-url="@Url.Action("Edit", "WorkProjects", new { id = p.Id })"
+                                               data-modal-title="Sửa dự án">Sửa thông tin</a>
+                                        }
+                                        @if (can == null || can("wprojects.delete"))
+                                        {
+                                            <div class="row-menu-sep"></div>
+                                            using (Html.BeginForm("Delete", "WorkProjects", new { id = p.Id }, FormMethod.Post))
+                                            {
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="danger"
+                                                        onclick="return confirm('Xoá dự án &quot;@p.Name&quot;?');">Xoá dự án</button>
+                                            }
+                                        }
+                                    </div>
+                                </details>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @Html.Partial("_Pager", Model.Pager)
+    }
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <span class="hint">
+            <span class="phase-key row-implement"></span> Giai đoạn Triển khai ·
+            <span class="phase-key row-support"></span> Giai đoạn Hỗ trợ ·
+            <span class="phase-key row-closed"></span> Đã đóng (hoàn thành hoặc huỷ)
+        </span>
+    </div>
+</div>

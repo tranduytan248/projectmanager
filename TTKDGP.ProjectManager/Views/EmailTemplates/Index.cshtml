@@ -1,0 +1,74 @@
+﻿@model List<TTKDGP.ProjectManager.Models.EmailTemplate>
+@{
+    ViewBag.Title = "Mẫu email thông báo";
+    var emailReady = ViewBag.EmailReady != null && (bool)ViewBag.EmailReady;
+}
+
+<div class="page-head">
+    <div>
+        <h1>Mẫu email thông báo</h1>
+        <p>
+            Nội dung mail gửi cho cá nhân khi có thông báo: vào/rút khỏi dự án, được nhắc tên
+            trong trao đổi, công việc gần tới hạn. Sửa được nội dung và tắt/bật từng loại.
+        </p>
+    </div>
+</div>
+
+@if (!emailReady)
+{
+    <div class="alert alert-danger">
+        Chưa cấu hình máy chủ gửi mail (SMTP) nên mail sẽ KHÔNG được gửi — mẫu vẫn sửa được.
+        Cấu hình trong Web.config, kiểm tra ở màn <strong>Tình trạng hệ thống</strong>.
+    </div>
+}
+
+<div class="card">
+    <div class="table-wrap">
+        <table class="data">
+            <thead>
+                <tr>
+                    <th>Loại thông báo</th>
+                    <th>Tiêu đề mail</th>
+                    <th>Trạng thái</th>
+                    <th>Sửa lần cuối</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var t in Model)
+                {
+                    <tr>
+                        <td><strong>@t.Name</strong></td>
+                        <td class="muted">@t.Subject</td>
+                        <td>
+                            @if (t.IsActive)
+                            {
+                                <span class="badge badge-active">Đang gửi mail</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-inactive">Đã tắt</span>
+                            }
+                        </td>
+                        <td class="muted nowrap">
+                            @(t.UpdatedAt.HasValue
+                                ? t.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm")
+                                    + (string.IsNullOrWhiteSpace(t.UpdatedBy) ? "" : " · " + t.UpdatedBy)
+                                : "Bản mặc định")
+                        </td>
+                        <td class="actions">
+                            <a class="btn btn-default btn-sm"
+                               href="@Url.Action("Edit", "EmailTemplates", new { code = t.Code })">Sửa mẫu</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <div class="card-body">
+        <span class="hint">
+            Mail chỉ gửi cho người nhận <strong>có khai email</strong> trong tài khoản. Mọi liên
+            kết trong mail (kể cả file đính kèm) đều yêu cầu <strong>đăng nhập</strong> mới xem được.
+        </span>
+    </div>
+</div>

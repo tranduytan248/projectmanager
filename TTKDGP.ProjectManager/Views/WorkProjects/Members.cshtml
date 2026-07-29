@@ -1,0 +1,172 @@
+﻿@model TTKDGP.ProjectManager.Models.PagedList<TTKDGP.ProjectManager.Models.WorkAssignment>
+@using TTKDGP.ProjectManager.Models
+@{
+    var project = ViewBag.Project as WorkProject;
+    ViewBag.Title = "Nhân sự — " + project.Name;
+
+    var canAll = ViewBag.Can is Func<string, bool> && ((Func<string, bool>)ViewBag.Can)("wprojects.view");
+    ViewBag.Crumbs = new List<Crumb>
+    {
+        canAll
+            ? new Crumb { Label = "Dự án", Url = Url.Action("Index", "WorkProjects") }
+            : new Crumb { Label = "Dự án của tôi", Url = Url.Action("Projects", "MyWork") },
+        new Crumb { Label = project.Name, Url = Url.Action("Details", "WorkProjects", new { id = project.Id }) },
+        new Crumb { Label = "Nhân sự dự án" }
+    };
+    var canEdit = (bool)ViewBag.CanEdit;
+    var roles = ViewBag.Roles as List<string> ?? new List<string>();
+    var pmName = ViewBag.PmName as string;
+    var active = (int)ViewBag.ActiveCount;
+    var total = (int)ViewBag.TotalCount;
+}
+
+<div class="page-head">
+    <div>
+        <h1>Nhân sự dự án</h1>
+        <p>
+            Dự án <strong>@project.Name</strong>
+            @if (!string.IsNullOrWhiteSpace(pmName))
+            {
+                <text>· PM @pmName</text>
+            }
+            · @active người đang tham gia, @total giai đoạn tất cả
+        </p>
+    </div>
+    <a class="btn btn-default" href="@Url.Action("Index", "WorkProjects")">&larr; Danh sách dự án</a>
+</div>
+
+@if (canEdit)
+{
+    <div class="card">
+        <div class="card-body">
+            <div class="btn-row">
+                <a class="btn btn-primary" href="@Url.Action("Members", "WorkProjects", new { id = project.Id })"
+                   data-modal-url="@Url.Action("AddMemberForm", "WorkProjects", new { id = project.Id })"
+                   data-modal-title="Thêm nhân sự vào dự án">+ Thêm nhân sự</a>
+            </div>
+            <ul style="margin:10px 0 0;padding-left:20px;font-size:13px;color:var(--text-muted)">
+                <li>
+                    Người rút ra rồi quay lại thì thêm một giai đoạn mới, đừng sửa giai đoạn cũ —
+                    giữ nguyên lịch sử thì bộ chấm chất lượng mới biết tháng đó ai ở trong dự án.
+                </li>
+                <li>
+                    Người tiếp tục hỗ trợ sau khi dự án triển khai xong: chọn giai đoạn
+                    <strong>Hỗ trợ</strong> và để trống ngày rời.
+                </li>
+            </ul>
+        </div>
+    </div>
+}
+
+<div class="card">
+    @if (Model.Items.Count == 0)
+    {
+        <div class="empty-state">Dự án chưa có nhân sự nào.</div>
+    }
+    else
+    {
+        <div class="table-wrap with-menu">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th>Nhân sự</th>
+                        <th>Vai trò</th>
+                        <th>Giai đoạn</th>
+                        <th>Thời gian tham gia</th>
+                        <th>Trạng thái</th>
+                        @if (canEdit)
+                        {
+                            <th></th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var a in Model.Items)
+                    {
+                        <tr class="@(a.IsActive ? "" : "row-closed")">
+                            <td>
+                                <strong>@a.UserFullName</strong>
+                                @if (a.IsPm && a.IsActive)
+                                {
+                                    <span class="badge badge-active">PM</span>
+                                }
+                                else if (a.IsPm)
+                                {
+                                    <span class="badge">PM giai đoạn này</span>
+                                }
+                            </td>
+                            <td class="muted">@(string.IsNullOrWhiteSpace(a.Role) ? "—" : a.Role)</td>
+                            <td class="muted nowrap">@AssignmentPhases.Display(string.IsNullOrWhiteSpace(a.Phase) ? AssignmentPhases.Both : a.Phase)</td>
+                            @* Gộp hai cột ngày làm một: hai cột hẹp làm bảng phải cuộn ngang. *@
+                            <td class="nowrap">
+                                @a.JoinedAt.ToString("dd/MM/yyyy")
+                                @if (a.LeftAt.HasValue)
+                                {
+                                    <text>&ndash; @a.LeftAt.Value.ToString("dd/MM/yyyy")</text>
+                                }
+                                else
+                                {
+                                    <span class="muted">&ndash; nay</span>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(a.Note))
+                                {
+                                    <div class="cell-meta">@a.Note</div>
+                                }
+                            </td>
+                            <td>
+                                @if (a.IsActive)
+                                {
+                                    <span class="badge badge-active">Đang tham gia</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-inactive">Đã rời</span>
+                                }
+                            </td>
+                            @if (canEdit)
+                            {
+                                <td class="actions">
+                                    <details class="row-menu">
+                                        <summary>Thao tác ▾</summary>
+                                        <div class="row-menu-items">
+                                            @if (a.IsActive && !a.IsPm)
+                                            {
+                                                using (Html.BeginForm("SetPm", "WorkProjects", new { id = project.Id }, FormMethod.Post))
+                                                {
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="assignmentId" value="@a.Id" />
+                                                    <button type="submit"
+                                                            onclick="return confirm('Đặt &quot;@a.UserFullName&quot; làm PM dự án này?');">Đặt làm PM</button>
+                                                }
+                                            }
+                                            @if (a.IsActive)
+                                            {
+                                                <a href="#"
+                                                   data-modal-url="@Url.Action("EndMemberForm", "WorkProjects", new { id = project.Id, assignmentId = a.Id })"
+                                                   data-modal-title="Kết thúc tham gia"
+                                                   data-modal-size="sm">Kết thúc tham gia</a>
+                                            }
+                                            else
+                                            {
+                                                <div class="row-menu-sep"></div>
+                                                using (Html.BeginForm("RemoveMember", "WorkProjects", new { id = project.Id }, FormMethod.Post))
+                                                {
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="assignmentId" value="@a.Id" />
+                                                    <button type="submit" class="danger"
+                                                            onclick="return confirm('Xoá hẳn giai đoạn này khỏi lịch sử?');">Xoá khỏi lịch sử</button>
+                                                }
+                                            }
+                                        </div>
+                                    </details>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @Html.Partial("_Pager", Model.Pager)
+    }
+</div>

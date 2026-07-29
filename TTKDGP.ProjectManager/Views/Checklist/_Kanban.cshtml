@@ -1,0 +1,85 @@
+﻿@model TTKDGP.ProjectManager.Models.ChecklistViewModel
+@using TTKDGP.ProjectManager.Models
+@*
+    Bảng Kanban của một dự án. Mỗi cột là một trạng thái; kéo thẻ sang cột khác là đổi trạng thái.
+
+    Thẻ nào người đang xem không được sửa thì KHÔNG đặt draggable — chặn ngay từ giao diện cho đỡ
+    hụt hẫng, còn quyền thật vẫn kiểm lại ở phía máy chủ khi nhận yêu cầu.
+*@
+<div class="kanban" data-kanban data-url="@Url.Action("SetState", "Checklist")">
+    @Html.AntiForgeryToken()
+
+    @foreach (var column in Model.Columns)
+    {
+        <div class="kanban-col" data-state="@column.State">
+            <div class="kanban-col-head">
+                <span>@column.Title</span>
+                <span class="kanban-count" data-count>@column.Cards.Count</span>
+            </div>
+
+            <div class="kanban-drop" data-drop>
+                @foreach (var card in column.Cards)
+                {
+                    var t = card.Task;
+                    @* Quá hạn tô đỏ, còn tối đa 1 ngày tô cam — nhìn lướt cả bảng là thấy ngay việc gấp. *@
+                    var alert = t.IsOverdue ? " card-danger" : (t.IsDueSoon ? " card-warn" : "");
+                    <div class="kanban-card@(card.CanEdit ? "" : " is-locked")@alert"
+                         data-card
+                         data-id="@t.Id"
+                         draggable="@(card.CanEdit ? "true" : "false")"
+                         data-modal-url="@Url.Action("Detail", "Checklist", new { id = t.Id })"
+                         data-modal-title="Chi tiết công việc"
+                         data-modal-size="lg">
+                        <span class="kanban-title">
+                            @if (!string.IsNullOrWhiteSpace(t.Code))
+                            {
+                                <span class="muted">@t.Code</span> <text>·</text>
+                            }
+                            @t.Title
+                        </span>
+
+                        <div class="kanban-meta">
+                            <span class="badge">@TaskKinds.Display(t.Kind)</span>
+                            <span class="chip chip-@(t.Priority == TaskPriorities.High ? "high" : t.Priority == TaskPriorities.Low ? "low" : "normal")">
+                                @TaskPriorities.Display(t.Priority)
+                            </span>
+                            @if (t.IsOverdue)
+                            {
+                                <span class="badge badge-danger js-due-badge">Quá hạn @(-t.DaysLeft) ngày</span>
+                            }
+                            else if (t.IsDueSoon)
+                            {
+                                <span class="badge badge-waiting js-due-badge">@(t.DaysLeft == 0 ? "Hết hạn hôm nay" : "Còn 1 ngày")</span>
+                            }
+                        </div>
+
+                        <div class="kanban-foot">
+                            <span>@(string.IsNullOrWhiteSpace(t.AssigneeName) ? "(chưa giao)" : t.AssigneeName)</span>
+                            <span class="muted">
+                                @(t.DueDate.HasValue ? t.DueDate.Value.ToString("dd/MM") : "—")
+                                · @t.Progress%
+                            </span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@{
+    var cardCount = ViewBag.KanbanCardCount == null ? Model.TotalCount : (int)ViewBag.KanbanCardCount;
+    var hiddenCount = ViewBag.KanbanHiddenCount == null ? 0 : (int)ViewBag.KanbanHiddenCount;
+}
+<div class="card">
+    <div class="card-body">
+        <span class="hint">
+            Bấm vào thẻ để xem chi tiết. Kéo thẻ sang cột khác để đổi trạng thái — chỉ kéo được
+            thẻ bạn có quyền sửa: PM dự án và Quản lý Tổ kéo được mọi thẻ, người còn lại chỉ kéo được
+            việc giao cho mình. Bảng hiển thị <strong>@cardCount việc có hạn hoàn thành</strong>@(
+                hiddenCount > 0 ? "; " + hiddenCount + " mục cha gom nhóm/việc chưa đặt hạn chỉ xem ở dạng lưới" : "").
+            Thẻ <span class="badge badge-waiting">cam</span> là việc còn tối đa 1 ngày,
+            thẻ <span class="badge badge-danger">đỏ</span> là việc đã quá hạn.
+        </span>
+    </div>
+</div>

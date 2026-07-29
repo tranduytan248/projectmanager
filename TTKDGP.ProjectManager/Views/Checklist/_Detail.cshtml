@@ -1,0 +1,403 @@
+﻿@model TTKDGP.ProjectManager.Models.WorkTask
+@using TTKDGP.ProjectManager.Models
+@*
+    Chi tiết một đầu việc, hiện trong hộp thoại. Cột trái để ĐỌC — nút Cập nhật mở tiếp form sửa
+    trong chính hộp thoại này, và chỉ hiện với người có quyền trên đúng việc này. Cột phải là
+    khung trao đổi: gửi ngay tại chỗ, gõ @@ để nhắc người đang tham gia dự án.
+*@
+@{
+    var canEdit = ViewBag.CanEdit != null && (bool)ViewBag.CanEdit;
+    var canEditAll = ViewBag.CanEditAll != null && (bool)ViewBag.CanEditAll;
+    var project = ViewBag.Project as WorkProject;
+    var parentTitle = ViewBag.ParentTitle as string;
+    var comments = ViewBag.CommentsModel as TaskCommentsViewModel ?? new TaskCommentsViewModel { TaskId = Model.Id };
+}
+
+<div class="task-detail-split">
+<div class="task-detail-main">
+<div class="form-section">
+    <h3>@(string.IsNullOrWhiteSpace(Model.Code) ? Model.Title : Model.Code + " · " + Model.Title)</h3>
+
+    <div class="form-grid-3">
+        <div class="form-static">
+            <span class="form-static-label">Dự án</span>
+            @(project == null ? "—" : project.Name)
+        </div>
+
+        <div class="form-static">
+            <span class="form-static-label">Loại công việc</span>
+            @TaskKinds.Display(Model.Kind)
+        </div>
+
+        <div class="form-static">
+            <span class="form-static-label">Độ ưu tiên</span>
+            @TaskPriorities.Display(Model.Priority)
+        </div>
+
+        <div class="form-static">
+            <span class="form-static-label">Người thực hiện</span>
+            @(string.IsNullOrWhiteSpace(Model.AssigneeName) ? "(chưa giao)" : Model.AssigneeName)
+        </div>
+
+        <div class="form-static">
+            <span class="form-static-label">Trạng thái</span>
+            @if (Model.State == TaskStates.Done)
+            {
+                <span class="badge badge-active">Hoàn thành @(Model.IsOnTime ? "đúng hạn" : "trễ hạn")</span>
+            }
+            else if (Model.IsOverdue)
+            {
+                <span class="badge badge-inactive">@TaskStates.Display(Model.State) · quá hạn</span>
+            }
+            else
+            {
+                <span class="badge">@TaskStates.Display(Model.State)</span>
+            }
+        </div>
+
+        <div class="form-static">
+            <span class="form-static-label">Tiến độ</span>
+            @Model.Progress%
+        </div>
+
+        <div class="form-static">
+            <span class="form-static-label">Ngày bắt đầu</span>
+            @(Model.StartDate.HasValue ? Model.StartDate.Value.ToString("dd/MM/yyyy") : "—")
+        </div>
+
+        <div class="form-static">
+            <span class="form-static-label">Hạn hoàn thành</span>
+            @if (Model.DueDate.HasValue)
+            {
+                @Model.DueDate.Value.ToString("dd/MM/yyyy")
+
+                if (Model.DaysLeft.HasValue && !TaskStates.IsClosed(Model.State))
+                {
+                    <span class="muted">
+                        @(Model.DaysLeft.Value >= 0
+                            ? "(còn " + Model.DaysLeft.Value + " ngày)"
+                            : "(trễ " + (-Model.DaysLeft.Value) + " ngày)")
+                    </span>
+                }
+            }
+            else
+            {
+                <text>—</text>
+            }
+        </div>
+
+        <div class="form-static">
+            <span class="form-static-label">Ngày hoàn thành</span>
+            @(Model.CompletedAt.HasValue ? Model.CompletedAt.Value.ToString("dd/MM/yyyy") : "—")
+        </div>
+
+        <div class="form-static">
+            <span class="form-static-label">Thuộc tuần</span>
+            @(Model.Week > 0 ? "Tuần " + Model.Week + "/" + Model.Year : "—")
+        </div>
+
+        <div class="form-static">
+            <span class="form-static-label">Mục cha</span>
+            @(string.IsNullOrWhiteSpace(parentTitle) ? "— Mục gốc —" : parentTitle)
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Description))
+    {
+        <div class="form-static">
+            <span class="form-static-label">Mô tả</span>
+            @Model.Description
+        </div>
+    }
+</div>
+
+<div class="form-actions">
+    @if (canEdit)
+    {
+        <button type="button" class="btn btn-primary"
+                data-modal-url="@Url.Action("Edit", "Checklist", new { projectId = Model.ProjectId, id = Model.Id })"
+                data-modal-title="@(canEditAll ? "Sửa công việc" : "Cập nhật tiến độ")">
+            @(canEditAll ? "Cập nhật" : "Cập nhật tiến độ")
+        </button>
+    }
+    <a class="btn btn-default" href="@Url.Action("Detail", "MyWork", new { id = Model.Id })">Mở trang chi tiết</a>
+</div>
+
+@if (!canEdit)
+{
+    <span class="hint">
+        Bạn chỉ xem được công việc này. Sửa được là PM dự án, Quản lý Tổ, hoặc chính người được giao việc.
+    </span>
+}
+</div>
+
+<div class="task-detail-chat">
+    <div class="chat-head">
+        Trao đổi <span class="muted">— <span id="chatCount">@comments.VisibleCount</span> nội dung</span>
+    </div>
+
+    <div id="chatComments" class="chat-scroll">
+        @Html.Partial("_Comments", comments)
+    </div>
+
+    <form id="chatForm" action="@Url.Action("Comment", "Checklist")" method="post"
+          enctype="multipart/form-data" autocomplete="off">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" value="@Model.Id" />
+
+        <div class="chat-input-wrap">
+            <div id="mentionMenu" class="mention-menu"></div>
+            <textarea id="chatInput" name="content" rows="2"
+                      placeholder="Trao đổi với PM và người tham gia... Gõ &#64; để nhắc tên"></textarea>
+        </div>
+
+        <div class="chat-send-row">
+            <div class="chat-attach">
+                <input type="file" id="chatFile" name="file" class="chat-file-input"
+                       accept=".png,.jpg,.jpeg,.gif,.webp,.bmp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.md,.zip,.rar,.7z" />
+                <label for="chatFile" class="btn btn-default btn-sm">&#128206; Đính kèm</label>
+                <span id="chatFileName" class="chat-file-name"></span>
+                <button type="button" id="chatFileClear" class="chat-file-clear" title="Bỏ file đã chọn"
+                        style="display:none">&times;</button>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Gửi</button>
+        </div>
+
+        <span class="hint">
+            Gõ <strong>&#64;</strong> để nhắc người tham gia · Ctrl+Enter để gửi ·
+            đính kèm tài liệu/ảnh/file nén tối đa 10 MB
+        </span>
+    </form>
+</div>
+</div>
+
+<script>
+    // Khung trao đổi trong hộp thoại: gửi/thu hồi bằng AJAX, chỉ vẽ lại danh sách — KHÔNG đi qua
+    // trình xử lý form chung của hộp thoại (nó thay cả thân hộp và nạp lại trang khi lưu xong).
+    (function ($) {
+        'use strict';
+
+        var $form = $('#chatForm');
+        if (!$form.length) return;
+
+        var $box = $('#chatComments');
+        var $input = $('#chatInput');
+        var $menu = $('#mentionMenu');
+
+        // Ký tự mở đầu một lượt nhắc tên. Không viết thẳng vào mã vì Razor giành mất ký tự này.
+        var AT = String.fromCharCode(64);
+
+        // Người nhắc được bằng ký tự trên — người đang tham gia dự án, do máy chủ đổ sẵn.
+        var participants = @Html.Raw(Json.Encode(
+            comments.Participants.Select(p => new { name = p.FullName, account = p.UserName })));
+
+        function scrollBottom() {
+            var el = $box[0];
+            if (el) el.scrollTop = el.scrollHeight;
+        }
+
+        function updateCount() {
+            $('#chatCount').text($box.find('.chat-item').not('.recalled').length);
+        }
+
+        scrollBottom();
+
+        // Bỏ dấu tiếng Việt để gõ không dấu vẫn khớp tên có dấu.
+        function plain(s) {
+            s = (s || '').toLowerCase();
+            if (String.prototype.normalize) {
+                s = s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            }
+            return s.replace(/đ/g, 'd');
+        }
+
+        // ---------- Gợi ý nhắc tên ----------
+
+        var items = [];
+        var active = -1;
+
+        function tokenAtCaret() {
+            var pos = $input[0].selectionStart;
+            var text = $input.val().slice(0, pos);
+            var at = text.lastIndexOf(AT);
+            if (at < 0) return null;
+
+            // Ký tự nhắc tên phải đứng đầu chuỗi hoặc sau khoảng trắng/dấu câu — địa chỉ email
+            // gõ giữa câu không phải là một lượt nhắc tên.
+            if (at > 0 && !/[\s.,;:!?()\[\]"']/.test(text.charAt(at - 1))) return null;
+
+            var query = text.slice(at + 1);
+            if (query.length > 40 || query.indexOf('\n') >= 0) return null;
+
+            return { start: at, query: query };
+        }
+
+        function hideMenu() {
+            $menu.removeClass('open').empty();
+            items = [];
+            active = -1;
+        }
+
+        function renderMenu(token) {
+            var q = plain(token.query);
+            items = $.grep(participants, function (p) {
+                if (!q) return true;
+                var name = plain(p.name);
+                var account = plain(p.account);
+                if (name.indexOf(q) === 0 || account.indexOf(q) === 0) return true;
+                // Khớp cả từng từ trong tên: gõ "long" vẫn ra "Trần Thiên Long".
+                var words = name.split(' ');
+                for (var i = 0; i < words.length; i++) {
+                    if (words[i].indexOf(q) === 0) return true;
+                }
+                return false;
+            });
+
+            if (!items.length) { hideMenu(); return; }
+
+            active = 0;
+            $menu.empty();
+            $.each(items, function (idx, p) {
+                var $item = $('<button type="button" class="mention-item"></button>')
+                    .attr('data-index', idx)
+                    .toggleClass('active', idx === active)
+                    .append($('<strong></strong>').text(p.name));
+                if (p.account) $item.append($('<span class="muted"></span>').text(' · ' + p.account));
+                $item.appendTo($menu);
+            });
+            $menu.addClass('open');
+        }
+
+        function pick(idx) {
+            var token = tokenAtCaret();
+            var p = items[idx];
+            if (!token || !p) { hideMenu(); return; }
+
+            var val = $input.val();
+            var pos = $input[0].selectionStart;
+            var before = val.slice(0, token.start) + AT + p.name + ' ';
+
+            $input.val(before + val.slice(pos));
+            $input[0].setSelectionRange(before.length, before.length);
+            $input.focus();
+            hideMenu();
+        }
+
+        function move(delta) {
+            if (!items.length) return;
+            active = (active + delta + items.length) % items.length;
+            $menu.children().removeClass('active').eq(active).addClass('active');
+        }
+
+        $input.on('input click', function () {
+            var token = tokenAtCaret();
+            if (token) renderMenu(token); else hideMenu();
+        });
+
+        $input.on('keydown', function (e) {
+            if ($menu.hasClass('open')) {
+                if (e.key === 'ArrowDown') { e.preventDefault(); move(1); return; }
+                if (e.key === 'ArrowUp') { e.preventDefault(); move(-1); return; }
+                if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); pick(active); return; }
+                if (e.key === 'Escape') {
+                    // Chỉ đóng bảng gợi ý, đừng để Esc lọt ra ngoài đóng luôn cả hộp thoại.
+                    e.stopPropagation();
+                    hideMenu();
+                    return;
+                }
+            }
+
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                $form.trigger('submit');
+            }
+        });
+
+        // mousedown thay vì click để chọn xong textarea không bị mất focus.
+        $menu.on('mousedown', '.mention-item', function (e) {
+            e.preventDefault();
+            pick(parseInt($(this).attr('data-index'), 10));
+        });
+
+        // ---------- File đính kèm ----------
+
+        var $file = $('#chatFile');
+        var $fileName = $('#chatFileName');
+        var $fileClear = $('#chatFileClear');
+        var maxFileBytes = 10 * 1024 * 1024;
+
+        function clearFile() {
+            $file.val('');
+            $fileName.text('');
+            $fileClear.hide();
+        }
+
+        $file.on('change', function () {
+            var f = this.files && this.files[0];
+            if (!f) { clearFile(); return; }
+
+            // Chặn file quá cỡ ngay tại chỗ, khỏi đẩy cả chục MB lên rồi mới bị từ chối.
+            if (f.size > maxFileBytes) {
+                alert('File đính kèm vượt quá 10 MB.');
+                clearFile();
+                return;
+            }
+
+            $fileName.text(f.name);
+            $fileClear.show();
+        });
+
+        $fileClear.on('click', clearFile);
+
+        // ---------- Gửi và thu hồi ----------
+
+        $form.on('submit', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            var hasFile = $file[0].files && $file[0].files.length > 0;
+            if (!$.trim($input.val()) && !hasFile) return;
+
+            var $btn = $form.find('[type="submit"]').prop('disabled', true);
+
+            // FormData để mang được cả file; serialize() thường chỉ gửi được chữ.
+            $.ajax({
+                url: $form.attr('action'),
+                method: 'POST',
+                data: new FormData($form[0]),
+                processData: false,
+                contentType: false
+            })
+                .done(function (html) {
+                    $box.html(html);
+                    $input.val('');
+                    clearFile();
+                    hideMenu();
+                    updateCount();
+                    scrollBottom();
+                })
+                .fail(function (xhr) {
+                    // Máy chủ từ chối file thì trả 400 kèm lý do ngắn — hiện đúng lý do đó.
+                    alert(xhr && xhr.status === 400 && xhr.responseText
+                        ? xhr.responseText
+                        : 'Không gửi được trao đổi. Hãy thử lại.');
+                })
+                .always(function () { $btn.prop('disabled', false); });
+        });
+
+        $box.on('click', '.chat-recall', function () {
+            if (!confirm('Thu hồi nội dung này?')) return;
+
+            $.post('@Url.Action("RecallComment", "Checklist")', {
+                id: @Model.Id,
+                commentId: $(this).data('comment-id'),
+                __RequestVerificationToken: $form.find('input[name="__RequestVerificationToken"]').val()
+            })
+                .done(function (html) {
+                    $box.html(html);
+                    updateCount();
+                })
+                .fail(function () { alert('Không thu hồi được. Hãy thử lại.'); });
+        });
+    })(jQuery);
+</script>

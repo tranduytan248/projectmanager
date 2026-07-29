@@ -1,0 +1,35 @@
+﻿@model TTKDGP.ProjectManager.Models.WorkTask
+@using TTKDGP.ProjectManager.Models
+@{
+    var isNew = Model.Id == 0;
+    ViewBag.Title = isNew ? "Thêm mục checklist" : "Sửa mục checklist";
+    var project = ViewBag.Project as WorkProject;
+
+    if (project != null)
+    {
+        ViewBag.Crumbs = new List<Crumb>
+        {
+            new Crumb { Label = project.Name, Url = Url.Action("Details", "WorkProjects", new { id = project.Id }) },
+            new Crumb { Label = "Checklist", Url = Url.Action("Index", "Checklist", new { projectId = project.Id }) },
+            new Crumb { Label = (string)ViewBag.Title }
+        };
+    }
+}
+
+@*
+    Trang riêng cho form mục checklist. Thường mở bằng hộp thoại ngay trên danh sách; trang này
+    giữ lại để mở thẳng bằng đường dẫn vẫn dùng được.
+*@
+<div class="page-head">
+    <div>
+        <h1>@ViewBag.Title</h1>
+        <p>Dự án <strong>@(project == null ? "" : project.Name)</strong></p>
+    </div>
+    <a class="btn btn-default" href="@Url.Action("Index", "Checklist", new { projectId = Model.ProjectId })">&larr; Checklist</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        @Html.Partial("_EditForm", Model)
+    </div>
+</div>

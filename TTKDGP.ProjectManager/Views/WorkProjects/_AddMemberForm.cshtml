@@ -1,0 +1,79 @@
+﻿@model TTKDGP.ProjectManager.Models.WorkProject
+@using TTKDGP.ProjectManager.Models
+@*
+    Form thêm một giai đoạn tham gia, mở trong hộp thoại từ màn Nhân sự dự án.
+*@
+@{
+    var userOptions = ViewBag.UserOptions as List<User> ?? new List<User>();
+    var roles = ViewBag.Roles as List<string> ?? new List<string>();
+}
+
+@using (Html.BeginForm("AddMember", "WorkProjects", new { id = Model.Id }, FormMethod.Post))
+{
+    @Html.AntiForgeryToken()
+
+    <div class="form-grid">
+        <div class="form-field full">
+            <label for="userId">Người dùng</label>
+            <select id="userId" name="userId" required>
+                <option value="">— Chọn người dùng —</option>
+                @foreach (var u in userOptions)
+                {
+                    <option value="@u.Id">@u.FullName@(string.IsNullOrWhiteSpace(u.UserName) ? "" : " · " + u.UserName)</option>
+                }
+            </select>
+        </div>
+
+        <div class="form-field">
+            <label for="role">Vai trò trong dự án</label>
+            <select id="role" name="role">
+                <option value="">— Chọn vai trò —</option>
+                @foreach (var r in roles)
+                {
+                    <option value="@r">@r</option>
+                }
+            </select>
+            <span class="hint">
+                Quản lý tại <a href="@Url.Action("Index", "MemberRoles")">Danh mục → Vai trò</a>.
+            </span>
+        </div>
+
+        <div class="form-field">
+            <label for="phase">Giai đoạn tham gia</label>
+            <select id="phase" name="phase">
+                @foreach (var p in AssignmentPhases.All)
+                {
+                    <option value="@p">@AssignmentPhases.Display(p)</option>
+                }
+            </select>
+            <span class="hint">Người ở lại hỗ trợ sau khi triển khai xong thì chọn <strong>Hỗ trợ</strong>.</span>
+        </div>
+
+        <div class="form-field">
+            <label for="joinedAt">Tham gia từ</label>
+            <input type="date" id="joinedAt" name="joinedAt" value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+        </div>
+
+        <div class="form-field">
+            <label for="note">Ghi chú</label>
+            <input type="text" id="note" name="note" placeholder="Không bắt buộc" />
+        </div>
+
+        <div class="form-field full">
+            <label>Vai trò PM</label>
+            <div class="check-inline">
+                <input type="checkbox" id="isPm" name="isPm" value="true" />
+                <input type="hidden" name="isPm" value="false" />
+                <label for="isPm">Đặt làm PM dự án</label>
+            </div>
+            <span class="hint">
+                Sẽ tự cho người đang làm PM thôi vai trò đó, nhưng họ vẫn ở lại dự án.
+            </span>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Thêm nhân sự</button>
+        <button type="button" class="btn btn-default" onclick="window.AppModal.close()">Huỷ</button>
+    </div>
+}

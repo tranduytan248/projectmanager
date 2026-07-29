@@ -8,7 +8,10 @@ using TTKDGP.ProjectManager.Models;
 
 namespace TTKDGP.ProjectManager.Controllers
 {
-    /// <summary>Quản trị tài khoản đăng nhập.</summary>
+    /// <summary>
+    /// Quản trị tài khoản đăng nhập. Quản lý ĐỘC LẬP: tài khoản không gắn với hồ sơ thành viên
+    /// hay nhân sự nào — công việc và dự án của bộ quản lý công việc gán thẳng theo tài khoản.
+    /// </summary>
     [AppAuthorize]
     public class UsersController : BaseController
     {
@@ -46,7 +49,6 @@ namespace TTKDGP.ProjectManager.Controllers
                 FullName = user.FullName,
                 Email = user.Email,
                 SelectedRoles = Roles.Split(user.Role),
-                MemberId = user.MemberId,
                 IsActive = user.IsActive
             });
         }
@@ -73,34 +75,6 @@ namespace TTKDGP.ProjectManager.Controllers
                 Repository.RoleGroups.FirstOrDefault(g => string.Equals(g.Code, code, StringComparison.OrdinalIgnoreCase)) == null))
             {
                 ModelState.AddModelError("SelectedRoles", "Có nhóm quyền không tồn tại.");
-            }
-
-            // Nhóm có quyền tự báo cáo công việc thì tài khoản phải gắn nhân sự — để biết báo cáo
-            // cho phân công nào. Các nhóm khác thì để trống cũng được.
-            var needsMember = Permissions.UserHas(roleValue, Permissions.MyReports.Perm("report"));
-            if (needsMember && model.MemberId <= 0)
-            {
-                ModelState.AddModelError("MemberId",
-                    "Nhóm có quyền báo cáo công việc phải chọn nhân sự tương ứng.");
-            }
-
-            if (model.MemberId > 0 && Repository.Members.Find(model.MemberId) == null)
-            {
-                ModelState.AddModelError("MemberId", "Nhân sự không tồn tại.");
-            }
-
-            // Một nhân sự chỉ nên gắn với một tài khoản báo cáo, tránh hai người cùng ghi một chỗ.
-            if (needsMember && model.MemberId > 0)
-            {
-                var taken = Repository.Users.FirstOrDefault(u =>
-                    u.Id != model.Id &&
-                    u.MemberId == model.MemberId &&
-                    Permissions.UserHas(u.Role, Permissions.MyReports.Perm("report")));
-                if (taken != null)
-                {
-                    ModelState.AddModelError("MemberId",
-                        "Nhân sự này đã gắn với tài khoản \"" + taken.UserName + "\".");
-                }
             }
 
             var duplicate = Repository.Users.FirstOrDefault(u =>
@@ -130,8 +104,6 @@ namespace TTKDGP.ProjectManager.Controllers
                 return View(model);
             }
 
-            // Giữ liên kết nhân sự cho mọi quyền: tài khoản Quản lý/Quản trị có gắn nhân sự thì
-            // cũng dùng được màn "Báo cáo của tôi" cho phần việc của chính họ.
             if (model.Id == 0)
             {
                 Repository.Users.Insert(new User
@@ -140,7 +112,6 @@ namespace TTKDGP.ProjectManager.Controllers
                     FullName = model.FullName.Trim(),
                     Email = email,
                     Role = roleValue,
-                    MemberId = model.MemberId,
                     PasswordHash = PasswordHasher.Hash(model.Password),
                     IsActive = model.IsActive,
                     CreatedAt = DateTime.Now
@@ -175,7 +146,6 @@ namespace TTKDGP.ProjectManager.Controllers
             user.FullName = model.FullName.Trim();
             user.Email = email;
             user.Role = roleValue;
-            user.MemberId = model.MemberId;
             user.IsActive = model.IsActive;
             if (!string.IsNullOrEmpty(model.Password))
             {
@@ -218,16 +188,19 @@ namespace TTKDGP.ProjectManager.Controllers
             return RedirectToAction("Index");
         }
 
-        // ---------- Mở tài khoản hàng loạt cho nhân sự ----------
+        // ---------- Mở tài khoản hàng loạt từ HRM ----------
 
         /// <summary>Đuôi email cơ quan; tên đăng nhập là phần đứng trước đuôi này.</summary>
         private const string EmailDomain = "@vnpt.vn";
 
         /// <summary>Mật khẩu gợi ý sẵn trên form, người tạo đổi lại được trước khi bấm.</summary>
-        private const string SuggestedPassword = "Ncpt@2026";
+        private const string SuggestedPassword = "Vnpt@2026";
+
+        /// <summary>Trần số nhân sự HRM nạp lên để lọc. Toàn tỉnh khoảng 800 người nên 5000 là dư.</summary>
+        private const int MaxHrmFetch = 5000;
 
         /// <summary>
-        /// Xem trước danh sách tài khoản sắp mở cho nhân sự chưa có, kèm lý do với những
+        /// Xem trước danh sách tài khoản sắp mở cho nhân sự HRM chưa có, kèm lý do với những
         /// người bị bỏ qua. Chưa ghi gì vào dữ liệu.
         /// </summary>
         [HttpGet]
@@ -249,6 +222,7 @@ namespace TTKDGP.ProjectManager.Controllers
             // người khác vừa thêm tài khoản trong lúc màn xem trước còn mở.
             var model = BuildProvisionModel();
             model.Password = form == null ? null : form.Password;
+            model.ResetExisting = form != null && form.ResetExisting;
 
             if (string.IsNullOrEmpty(model.Password) || model.Password.Length < 6)
             {
@@ -256,61 +230,122 @@ namespace TTKDGP.ProjectManager.Controllers
                 return View(model);
             }
 
-            if (model.ToCreate.Count == 0)
+            if (!model.HasWork)
             {
-                Notify("Mọi nhân sự đang làm việc đều đã có tài khoản, không có gì để tạo.");
+                Notify("Không có nhân sự nào để mở tài khoản.");
                 return RedirectToAction("Index");
             }
+
+            var now = DateTime.Now;
+            var created = 0;
+            var reset = 0;
 
             foreach (var row in model.ToCreate)
             {
                 Repository.Users.Insert(new User
                 {
                     UserName = row.UserName,
-                    FullName = row.MemberName,
+                    FullName = row.FullName,
                     Email = row.Email,
                     Role = Roles.Reporter,
-                    MemberId = row.MemberId,
                     PasswordHash = PasswordHasher.Hash(model.Password),
                     IsActive = true,
-                    CreatedAt = DateTime.Now
+                    CreatedAt = now
                 });
+
+                created++;
             }
 
-            Notify(string.Format("Đã mở {0} tài khoản Báo cáo công việc với mật khẩu khởi tạo vừa nhập.",
-                model.ToCreate.Count));
+            foreach (var row in model.Existing)
+            {
+                var user = Repository.Users.Find(row.UserId);
+                if (user == null) continue;
+
+                var changed = false;
+
+                // Tài khoản cũ có thể chưa điền email nên chỉ ghép được theo tên đăng nhập. Bù vào
+                // để lần sau còn đối chiếu được cả hai đường.
+                if (string.IsNullOrWhiteSpace(user.Email))
+                {
+                    user.Email = row.Email;
+                    changed = true;
+                }
+
+                if (model.ResetExisting)
+                {
+                    user.PasswordHash = PasswordHasher.Hash(model.Password);
+                    changed = true;
+                    reset++;
+                }
+
+                if (changed) Repository.Users.Update(user);
+            }
+
+            var parts = new List<string>();
+            if (created > 0) parts.Add(string.Format("mở {0} tài khoản", created));
+            if (reset > 0) parts.Add(string.Format("đặt lại mật khẩu {0} tài khoản đã có", reset));
+
+            Notify(parts.Count == 0
+                ? "Không có thay đổi nào."
+                : "Đã " + string.Join(", ", parts) + ".");
             return RedirectToAction("Index");
         }
 
         /// <summary>
-        /// Đối chiếu nhân sự đang làm việc với tài khoản hiện có để biết ai còn thiếu.
-        /// Mốc so sánh là TÊN ĐĂNG NHẬP suy từ email (bỏ đuôi <see cref="EmailDomain"/>):
-        /// có tài khoản trùng tên đó thì coi như nhân sự đã có tài khoản, không thì mở mới.
+        /// Đối chiếu nhân sự HRM (đơn vị khai ở Work:HrmWorkplace và toàn bộ đơn vị con) với tài
+        /// khoản hiện có. KHÔNG gắn tài khoản với hồ sơ nào — chỉ mở tài khoản còn thiếu.
+        ///
+        /// Mốc so sánh là TÊN ĐĂNG NHẬP suy từ email cơ quan (bỏ đuôi <see cref="EmailDomain"/>) —
+        /// đúng bằng tài khoản HRM của người đó. Có tài khoản trùng tên thì dùng lại chứ không mở
+        /// thêm; chưa có thì mở mới.
         /// </summary>
         private UserProvisionViewModel BuildProvisionModel()
         {
             var model = new UserProvisionViewModel();
 
             var users = Repository.Users.All();
+            var matchedUserIds = new HashSet<int>();
 
-            var members = Repository.Members.All()
-                .Where(m => m.IsActive)
-                .OrderBy(m => m.FullName, StringComparer.CurrentCulture)
+            List<HrWorkplace> subtree;
+            var root = FindWorkplaceSubtree(AppSettings.Work.HrmWorkplace, out subtree);
+
+            if (root == null)
+            {
+                // KHÔNG lùi về hiện tất cả — như vậy sẽ lặng lẽ mở tài khoản cho cả tỉnh. Báo rõ
+                // để người dùng biết mà sửa cấu hình hoặc đồng bộ lại cây đơn vị.
+                model.UnitError = string.Format(
+                    "Không tìm thấy đơn vị \"{0}\" trong dữ liệu HRM. Kiểm lại khoá Work:HrmWorkplace "
+                    + "trong Web.config, hoặc đồng bộ lại danh sách đơn vị ở màn HRM.",
+                    AppSettings.Work.HrmWorkplace);
+                model.UnlinkedUsers = users
+                    .OrderBy(u => u.UserName, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                return model;
+            }
+
+            model.UnitName = string.IsNullOrWhiteSpace(root.WpCode)
+                ? root.WpName
+                : root.WpName + " (" + root.WpCode + ")";
+
+            var ids = new HashSet<string>(subtree.Select(w => w.WpId), StringComparer.OrdinalIgnoreCase);
+            var employees = HrEmployeeStore.Page(1, MaxHrmFetch, null).Items
+                .Where(e => !string.IsNullOrWhiteSpace(e.WorkplaceId) && ids.Contains(e.WorkplaceId))
+                .OrderBy(e => e.FullName, StringComparer.CurrentCulture)
                 .ToList();
 
-            foreach (var m in members)
+            foreach (var e in employees)
             {
-                var email = (m.Email ?? string.Empty).Trim();
+                var email = (e.Email ?? string.Empty).Trim();
 
                 if (email.Length == 0)
                 {
-                    AddSkip(model, m, "Chưa có email nên không suy ra được tên đăng nhập.");
+                    AddSkip(model, e.FullName, email, "Chưa có email nên không suy ra được tài khoản HRM.");
                     continue;
                 }
 
                 if (!email.EndsWith(EmailDomain, StringComparison.OrdinalIgnoreCase))
                 {
-                    AddSkip(model, m, "Email không thuộc miền " + EmailDomain + ".");
+                    AddSkip(model, e.FullName, email, "Email không thuộc miền " + EmailDomain + ".");
                     continue;
                 }
 
@@ -318,72 +353,100 @@ namespace TTKDGP.ProjectManager.Controllers
 
                 if (userName.Length < 3)
                 {
-                    AddSkip(model, m, "Tên đăng nhập suy ra từ email quá ngắn.");
+                    AddSkip(model, e.FullName, email, "Tài khoản HRM suy ra từ email quá ngắn.");
                     continue;
                 }
 
-                // Đã có tài khoản mang đúng tên đăng nhập này — nhân sự coi như đã có tài khoản.
-                var sameName = users.FirstOrDefault(u =>
-                    string.Equals(u.UserName, userName, StringComparison.OrdinalIgnoreCase));
-                if (sameName != null)
+                var row = new UserProvisionRow
                 {
-                    continue;
-                }
-
-                // Nhân sự đã gắn với một tài khoản mang tên khác. Không mở thêm, mà nêu ra để
-                // quản trị tự quyết — mở nữa là một người hai tài khoản.
-                var linked = users.FirstOrDefault(u => u.MemberId == m.Id);
-                if (linked != null)
-                {
-                    AddSkip(model, m, "Đã gắn với tài khoản \"" + linked.UserName
-                        + "\" (khác tên đăng nhập suy từ email).");
-                    continue;
-                }
-
-                var sameEmail = users.FirstOrDefault(u =>
-                    !string.IsNullOrWhiteSpace(u.Email) &&
-                    string.Equals(u.Email, email, StringComparison.OrdinalIgnoreCase));
-                if (sameEmail != null)
-                {
-                    AddSkip(model, m, "Email đang dùng cho tài khoản \"" + sameEmail.UserName + "\".");
-                    continue;
-                }
-
-                model.ToCreate.Add(new UserProvisionRow
-                {
-                    MemberId = m.Id,
-                    MemberName = m.FullName,
+                    EmployeeCode = e.Code,
+                    FullName = e.FullName,
                     Email = email,
                     UserName = userName
-                });
+                };
+
+                // Khớp theo tên đăng nhập trước; một số tài khoản cũ chưa điền email nên không thể
+                // chỉ dựa vào email để nhận ra.
+                var account = users.FirstOrDefault(u =>
+                    string.Equals(u.UserName, userName, StringComparison.OrdinalIgnoreCase))
+                    ?? users.FirstOrDefault(u =>
+                        !string.IsNullOrWhiteSpace(u.Email)
+                        && string.Equals(u.Email.Trim(), email, StringComparison.OrdinalIgnoreCase));
+
+                if (account == null)
+                {
+                    model.ToCreate.Add(row);
+                    continue;
+                }
+
+                row.UserId = account.Id;
+                matchedUserIds.Add(account.Id);
+                model.Existing.Add(row);
             }
 
             model.UnlinkedUsers = users
-                .Where(u => u.MemberId <= 0)
+                .Where(u => !matchedUserIds.Contains(u.Id))
                 .OrderBy(u => u.UserName, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
             return model;
         }
 
-        private static void AddSkip(UserProvisionViewModel model, Member member, string reason)
+        private static void AddSkip(UserProvisionViewModel model, string fullName, string email, string reason)
         {
             model.Skipped.Add(new UserProvisionSkip
             {
-                MemberName = member.FullName,
-                Email = member.Email,
+                FullName = fullName,
+                Email = email,
                 Reason = reason
             });
         }
 
-        /// <summary>Nguồn cho form tài khoản: danh sách nhân sự và danh sách nhóm quyền để chọn.</summary>
+        /// <summary>
+        /// Tìm đơn vị HRM theo tên (hoặc mã) rồi gom toàn bộ đơn vị con của nó.
+        /// Trả về null nếu không có đơn vị nào khớp.
+        /// </summary>
+        private static HrWorkplace FindWorkplaceSubtree(string nameOrCode, out List<HrWorkplace> subtree)
+        {
+            subtree = new List<HrWorkplace>();
+            if (string.IsNullOrWhiteSpace(nameOrCode)) return null;
+
+            var all = HrWorkplaceStore.All();
+            var needle = nameOrCode.Trim();
+
+            var root = all.FirstOrDefault(w =>
+                string.Equals(w.WpName, needle, StringComparison.CurrentCultureIgnoreCase)
+                || string.Equals(w.WpCode, needle, StringComparison.OrdinalIgnoreCase));
+
+            if (root == null) return null;
+
+            // Đi xuống theo WpParent. Có canh chừng đã duyệt để dữ liệu lỗi tạo vòng lặp cũng không treo.
+            var byParent = all.Where(w => !string.IsNullOrWhiteSpace(w.WpParent))
+                .GroupBy(w => w.WpParent, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
+
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var queue = new Queue<HrWorkplace>();
+            queue.Enqueue(root);
+
+            while (queue.Count > 0)
+            {
+                var current = queue.Dequeue();
+                if (string.IsNullOrWhiteSpace(current.WpId) || !seen.Add(current.WpId)) continue;
+
+                subtree.Add(current);
+
+                List<HrWorkplace> children;
+                if (!byParent.TryGetValue(current.WpId, out children)) continue;
+                foreach (var child in children) queue.Enqueue(child);
+            }
+
+            return root;
+        }
+
+        /// <summary>Nguồn cho form tài khoản: danh sách nhóm quyền để chọn.</summary>
         private void PopulateLists()
         {
-            ViewBag.MemberOptions = Repository.Members.All()
-                .Where(m => m.IsActive)
-                .OrderBy(m => m.FullName, StringComparer.CurrentCulture)
-                .ToList();
-
             ViewBag.RoleGroupOptions = Repository.RoleGroups.All()
                 .Where(g => g.IsActive)
                 .OrderBy(g => g.SortOrder)

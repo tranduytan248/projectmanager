@@ -128,6 +128,19 @@
                 <div class="user-area">
                     @if (currentUser != null)
                     {
+                        var unread = TTKDGP.ProjectManager.Services.NotificationService.UnreadCount(currentUser.UserId);
+                        <div class="notif" data-notif>
+                            <button type="button" class="notif-bell" data-notif-toggle
+                                    title="Thông báo" aria-label="Thông báo">
+                                <span class="notif-bell-icon">&#128276;</span>
+                                @if (unread > 0)
+                                {
+                                    <span class="notif-badge">@(unread > 99 ? "99+" : unread.ToString())</span>
+                                }
+                            </button>
+                            <div class="notif-panel" data-notif-panel
+                                 data-url="@Url.Action("Panel", "UserNotifications")"></div>
+                        </div>
                         <a class="user-chip" href="@Url.Action("Profile", "Account")" title="Thông tin cá nhân">
                             @currentUser.FullName
                             <em>@TTKDGP.ProjectManager.Models.Roles.Display(currentUser.Role)</em>
@@ -147,6 +160,30 @@
         </header>
 
         <main class="container main">
+            @{
+                var crumbs = ViewBag.Crumbs as List<TTKDGP.ProjectManager.Models.Crumb>;
+            }
+            @if (crumbs != null && crumbs.Count > 0)
+            {
+                <nav class="breadcrumb" aria-label="Vị trí trang">
+                    @for (var i = 0; i < crumbs.Count; i++)
+                    {
+                        var c = crumbs[i];
+                        if (i > 0)
+                        {
+                            <span class="breadcrumb-sep">›</span>
+                        }
+                        if (!string.IsNullOrEmpty(c.Url) && i < crumbs.Count - 1)
+                        {
+                            <a href="@c.Url">@c.Label</a>
+                        }
+                        else
+                        {
+                            <span class="breadcrumb-current">@c.Label</span>
+                        }
+                    }
+                </nav>
+            }
             @if (TempData["Flash"] != null)
             {
                 <div class="alert alert-success">@TempData["Flash"]</div>

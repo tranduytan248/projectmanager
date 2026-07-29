@@ -1,0 +1,147 @@
+﻿@model TTKDGP.ProjectManager.Models.LegacyImportViewModel
+@using TTKDGP.ProjectManager.Models
+@{
+    ViewBag.Title = "Lấy dự án từ bộ cũ";
+}
+
+<div class="page-head">
+    <div>
+        <h1>Lấy dự án từ bộ cũ</h1>
+        <p>
+            Chuyển dự án từ màn <strong>Dự án (bộ cũ)</strong> sang bộ quản lý công việc.
+            Chỉ đọc bộ cũ, không sửa gì bên đó.
+        </p>
+    </div>
+    <a class="btn btn-default" href="@Url.Action("Index", "WorkProjects")">&larr; Danh sách dự án</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <p style="margin-top:0">
+            <strong>@Model.AddCount</strong> dự án sẽ được chuyển ·
+            <strong>@Model.SkipCount</strong> bỏ qua.
+        </p>
+
+        @if (Model.GuessedCount > 0 || Model.PmMissingCount > 0)
+        {
+            <ul style="margin:6px 0 0;padding-left:20px;font-size:13px;color:var(--text-muted)">
+                @if (Model.GuessedCount > 0)
+                {
+                    <li>
+                        <strong>@Model.GuessedCount dự án</strong> có trạng thái cũ không khớp bảng ánh xạ —
+                        hệ thống tạm đặt giá trị gần đúng, anh sửa lại sau ở màn sửa dự án.
+                    </li>
+                }
+                @if (Model.PmMissingCount > 0)
+                {
+                    <li>
+                        <strong>@Model.PmMissingCount dự án</strong> chưa nối được PM vì người đó chưa có
+                        tài khoản trong <a href="@Url.Action("Index", "Users")">Người dùng</a>. Mở tài
+                        khoản cho họ rồi đặt PM ở màn <em>Nhân sự dự án</em>.
+                    </li>
+                }
+            </ul>
+        }
+
+        <p class="hint" style="margin-top:10px">
+            Chưa có gì được ghi. Nhân sự tham gia <strong>không</strong> được chuyển — sau khi xong,
+            vào từng dự án bấm <em>Nhân sự dự án</em> để phân công.
+            Ghi chú, trạng thái hợp đồng, doanh thu và các đường dẫn Redmine/Git/SVN của bộ cũ được
+            gom vào ô <em>Mô tả</em> để không mất dữ liệu.
+        </p>
+
+        @if (Model.CanConfirm)
+        {
+            using (Html.BeginForm("ImportLegacyConfirm", "WorkProjects", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                <div class="form-actions" style="margin-top:6px">
+                    <button type="submit" class="btn btn-primary">Chuyển @Model.AddCount dự án sang</button>
+                    <a class="btn btn-default" href="@Url.Action("Index", "WorkProjects")">Huỷ</a>
+                </div>
+            }
+        }
+        else
+        {
+            <p class="hint"><strong>Không có dự án nào cần chuyển.</strong></p>
+        }
+    </div>
+</div>
+
+<div class="card">
+    @if (Model.Rows.Count == 0)
+    {
+        <div class="empty-state">Bộ cũ chưa có dự án nào.</div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th>Kết quả</th>
+                        <th>Dự án</th>
+                        <th>Khách hàng</th>
+                        <th>Loại</th>
+                        <th>Trạng thái cũ</th>
+                        <th>Giai đoạn / Trạng thái mới</th>
+                        <th>PM</th>
+                        <th>Ghi chú xử lý</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.Rows)
+                    {
+                        <tr>
+                            <td>
+                                @if (row.Outcome == LegacyProjectRow.Add)
+                                {
+                                    <span class="badge badge-active">Sẽ chuyển</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-inactive">Bỏ qua</span>
+                                }
+                            </td>
+                            <td class="cell-title">@row.Source.Name</td>
+                            <td class="muted">@row.Source.Customer</td>
+                            <td class="muted">@row.Source.ProjectType</td>
+                            <td class="muted">@row.Source.CurrentStatus</td>
+                            <td>
+                                @if (row.Prepared != null)
+                                {
+                                    <div>@ProjectStates.Display(row.Prepared.State)</div>
+                                    <div class="cell-meta">Giai đoạn @ProjectPhases.Display(row.Prepared.Phase)</div>
+                                    if (row.StatusGuessed)
+                                    {
+                                        <span class="badge badge-inactive">Đoán</span>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="muted">—</span>
+                                }
+                            </td>
+                            <td>
+                                @if (string.IsNullOrWhiteSpace(row.LegacyPmName))
+                                {
+                                    <span class="muted">—</span>
+                                }
+                                else if (row.PmMatched)
+                                {
+                                    <text>@row.LegacyPmName</text>
+                                }
+                                else
+                                {
+                                    <span class="muted">@row.LegacyPmName</span>
+                                    <span class="badge badge-inactive">Chưa nối</span>
+                                }
+                            </td>
+                            <td class="muted">@row.Message</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

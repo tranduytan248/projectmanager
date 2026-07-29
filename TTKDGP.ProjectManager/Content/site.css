@@ -21,9 +21,30 @@
     --warn: #9a6700;
     --warn-soft: #fdf5e2;
     --warn-border: #ecd9a6;
-    --radius: 10px;
-    --radius-sm: 7px;
-    --shadow: 0 1px 2px rgba(20, 35, 60, .05);
+    /* Bo góc theo Material: mặt phẳng lớn bo nhiều, ô nhập bo vừa, chip bo tròn hẳn. */
+    --radius: 14px;
+    --radius-sm: 10px;
+    --radius-xs: 8px;
+    --radius-pill: 999px;
+
+    /*
+      Độ nổi theo tầng của Material. Bóng gồm hai lớp: một lớp sát và đậm tạo mép, một lớp toả
+      rộng và nhạt tạo chiều sâu — một lớp thôi sẽ ra bóng bệt, nhìn phẳng.
+      Đã pha sắc xanh xám của nền thay vì đen thuần, để bóng không bị xám bẩn.
+    */
+    --elev-1: 0 1px 2px rgba(20, 35, 60, .10), 0 1px 3px 1px rgba(20, 35, 60, .06);
+    --elev-2: 0 1px 2px rgba(20, 35, 60, .12), 0 2px 6px 2px rgba(20, 35, 60, .08);
+    --elev-3: 0 1px 3px rgba(20, 35, 60, .14), 0 4px 12px 3px rgba(20, 35, 60, .10);
+
+    /* Giữ tên cũ để các khối chưa chuyển vẫn chạy. */
+    --shadow: var(--elev-1);
+
+    /*
+      Lớp phủ trạng thái của Material: chạm/di chuột không đổi hẳn màu nền mà phủ thêm một lớp
+      mờ của màu chữ lên trên. Nhờ vậy cùng một quy tắc dùng được cho cả nền sáng lẫn nền màu.
+    */
+    --state-hover: rgba(20, 35, 60, .055);
+    --state-press: rgba(20, 35, 60, .10);
 }
 
 * { box-sizing: border-box; }
@@ -32,10 +53,17 @@ body {
     margin: 0;
     background: var(--bg);
     color: var(--text);
-    font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: Roboto, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
     font-size: 14px;
     line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
 }
+
+/*
+  Thang chữ của Material: tiêu đề giãn chữ âm nhẹ cho đặc, nhãn và chữ nhỏ giãn chữ dương cho dễ
+  đọc. Đây là thứ tạo cảm giác "Material" rõ nhất sau bo góc và đổ bóng.
+*/
+h1, h2, h3 { letter-spacing: -.2px; }
 
 a { color: var(--primary); text-decoration: none; }
 a:hover { text-decoration: underline; }
@@ -129,7 +157,12 @@ body.has-sidebar .main, body.has-sidebar .topbar-inner, body.has-sidebar .footer
 }
 
 .sidenav a:hover { background: var(--primary-soft); color: var(--primary); text-decoration: none; }
-.sidenav a.active { background: var(--primary); color: #fff; font-weight: 600; }
+/* Mục đang mở theo kiểu ngăn điều hướng của Material: viên thuốc nền nhạt, chữ màu chính. */
+.sidenav a.active {
+    background: var(--primary-soft);
+    color: var(--primary);
+    font-weight: 600;
+}
 
 /* Nhãn phân nhóm, ví dụ "Quản trị" */
 .sidenav-title {
@@ -310,25 +343,30 @@ body.has-sidebar .main, body.has-sidebar .topbar-inner, body.has-sidebar .footer
 .week-box-stats { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 9px; }
 
 /* ===== Thẻ ===== */
+/*
+  Thẻ theo kiểu "elevated card" của Material: không viền, phân tách với nền bằng độ nổi.
+  Viền cộng bóng cùng lúc làm mép thẻ trông dày và cũ.
+*/
 .card {
     background: var(--surface);
-    border: 1px solid var(--border);
+    border: none;
     border-radius: var(--radius);
-    box-shadow: var(--shadow);
+    box-shadow: var(--elev-1);
     margin-bottom: 20px;
 }
 
 .card-head {
-    padding: 14px 18px;
-    border-bottom: 1px solid var(--border);
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-soft);
     font-weight: 600;
+    font-size: 15px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 12px;
 }
 
-.card-body { padding: 18px; }
+.card-body { padding: 20px; }
 
 /* ===== Ô số liệu ===== */
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 20px; }
@@ -450,24 +488,56 @@ body.has-sidebar .main, body.has-sidebar .topbar-inner, body.has-sidebar .footer
 .check-inline label { font-size: 13px; color: var(--text); font-weight: 500; }
 
 /* ===== Điều khiển nhập liệu ===== */
-input[type="text"], input[type="password"], input[type="search"], select, textarea {
+/*
+  Ô nhập kiểu "outlined text field" của Material: viền mảnh khi nghỉ, khi được chọn thì viền dày
+  lên 2px và đổi màu chính — KHÔNG dùng quầng sáng bên ngoài. Quầng sáng làm các ô sát nhau trông
+  như bị nhoè vào nhau; đổi độ dày viền thì gọn và rõ hơn hẳn.
+
+  Bù lại 1px vào phần đệm lúc được chọn để chữ trong ô không bị nhích khi viền dày lên.
+*/
+input[type="text"], input[type="password"], input[type="search"],
+input[type="number"], input[type="date"], input[type="email"], input[type="file"],
+select, textarea {
     font-family: inherit;
     font-size: 14px;
-    padding: 8px 11px;
+    padding: 10px 13px;
     border: 1px solid var(--border-strong);
-    border-radius: 6px;
+    border-radius: var(--radius-xs);
     background: #fff;
     color: var(--text);
     min-width: 160px;
+    transition: border-color .12s ease, background-color .12s ease;
 }
+
+input[type="text"]:hover, input[type="password"]:hover, input[type="search"]:hover,
+input[type="number"]:hover, input[type="date"]:hover, input[type="email"]:hover,
+select:hover, textarea:hover { border-color: var(--text-muted); }
 
 input:focus, select:focus, textarea:focus {
     outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px var(--primary-soft);
+    border: 2px solid var(--primary);
+    padding: 9px 12px;
+    box-shadow: none;
 }
 
+textarea:focus { padding: 9px 12px; }
 textarea { min-height: 84px; resize: vertical; width: 100%; }
+
+/*
+  Nhãn nổi phía trên ô, theo kiểu nhãn đã "bay lên" của Material outlined field: chữ nhỏ, giãn
+  chữ dương, đổi sang màu chính khi ô bên dưới đang được chọn.
+*/
+.form-field { position: relative; }
+
+.form-field > label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .3px;
+    color: var(--text-muted);
+    transition: color .12s ease;
+}
+
+.form-field:focus-within > label { color: var(--primary); }
 
 /* ===== Select2: chỉnh lại cho khớp với các ô nhập khác ===== */
 .select2-container { min-width: 170px; }
@@ -555,36 +625,58 @@ textarea { min-height: 84px; resize: vertical; width: 100%; }
 .form-field .select2-search__field { width: 100% !important; }
 
 /* ===== Nút ===== */
+/*
+  Nút theo Material 3: bo tròn hẳn hai đầu, chữ đậm vừa và giãn chữ dương nhẹ.
+  Nút đặc có độ nổi tăng dần khi di chuột rồi hạ xuống khi bấm — chính chuyển động lên/xuống này
+  tạo cảm giác bấm được, chứ không chỉ là đổi màu.
+*/
 .btn {
     display: inline-block;
     font-family: inherit;
     font-size: 14px;
     font-weight: 500;
-    padding: 9px 16px;
-    border-radius: var(--radius-sm);
+    letter-spacing: .2px;
+    padding: 10px 20px;
+    border-radius: var(--radius-pill);
     border: 1px solid transparent;
     cursor: pointer;
     text-decoration: none;
     line-height: 1.4;
     white-space: nowrap;
+    transition: background-color .12s ease, box-shadow .12s ease, border-color .12s ease;
 }
 
 .btn:hover { text-decoration: none; }
-.btn-sm { padding: 6px 12px; font-size: 13px; }
+.btn:active { box-shadow: none; }
+.btn-sm { padding: 6px 14px; font-size: 13px; }
 
-.btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
-.btn-primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
+.btn-primary {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+    box-shadow: var(--elev-1);
+}
+
+.btn-primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); box-shadow: var(--elev-2); }
 
 .btn-default { background: #fff; color: var(--text); border-color: var(--border-strong); }
-.btn-default:hover { background: #f3f5f9; }
+.btn-default:hover { background: var(--state-hover); border-color: var(--text-muted); }
 
 .btn-ghost { background: transparent; color: var(--text-muted); border-color: var(--border-strong); }
-.btn-ghost:hover { background: #f3f5f9; color: var(--text); }
+.btn-ghost:hover { background: var(--state-hover); color: var(--text); }
 
 .btn-danger { background: #fff; color: var(--danger); border-color: #e6b8b5; }
-.btn-danger:hover { background: var(--danger-soft); }
+.btn-danger:hover { background: var(--danger-soft); border-color: var(--danger); }
 
 .btn-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+/* Icon SVG nhúng trong nút — ăn theo màu chữ của nút (currentColor). */
+.btn .btn-icon {
+    display: inline-block;
+    vertical-align: -2px;
+    margin-right: 5px;
+    flex: 0 0 auto;
+}
 
 /* ===== Nhóm nút =====
    Các nút thao tác trên bảng dính liền thành một khối: chỉ bo góc hai đầu, viền giữa
@@ -615,34 +707,273 @@ textarea { min-height: 84px; resize: vertical; width: 100%; }
 /* ===== Bảng ===== */
 .table-wrap { overflow-x: auto; }
 
+/*
+  Bảng có menu thao tác thả xuống phải bỏ cắt tràn, nếu không menu bị overflow-x cắt mất (đặt
+  overflow-x: auto là trình duyệt tự cắt luôn chiều dọc). Đổi lại thì bảng không tự cuộn ngang
+  được nữa, nên chỉ dùng cho bảng đã gom cột cho gọn.
+*/
+.table-wrap.with-menu { overflow: visible; }
+
+/* ---- Menu thao tác trên từng dòng ---- */
+.row-menu { position: relative; display: inline-block; }
+
+.row-menu > summary {
+    list-style: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    font-size: 12.5px;
+    font-weight: 500;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: #fff;
+    color: var(--text);
+    white-space: nowrap;
+}
+
+.row-menu > summary::-webkit-details-marker { display: none; }
+.row-menu > summary::marker { content: ""; }
+.row-menu > summary:hover { background: var(--bg-soft); }
+.row-menu[open] > summary { background: var(--primary-soft); border-color: var(--primary); color: var(--primary); }
+
+.row-menu-items {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 4px);
+    z-index: 40;
+    min-width: 170px;
+    padding: 5px;
+    background: #fff;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 6px 18px rgba(20, 35, 60, .14);
+    text-align: left;
+}
+
+.row-menu-items a,
+.row-menu-items button {
+    display: block;
+    width: 100%;
+    padding: 7px 10px;
+    border: 0;
+    border-radius: 5px;
+    background: none;
+    font: inherit;
+    font-size: 13px;
+    text-align: left;
+    color: var(--text);
+    cursor: pointer;
+}
+
+.row-menu-items a:hover,
+.row-menu-items button:hover { background: var(--bg-soft); }
+.row-menu-items .danger { color: var(--danger); }
+.row-menu-items .danger:hover { background: var(--danger-soft); }
+.row-menu-sep { height: 1px; margin: 5px 2px; background: var(--border-soft); }
+
+/*
+  Tô nền dòng theo giai đoạn dự án. Dùng dải màu rất nhạt: đủ để mắt gom nhóm khi lướt bảng,
+  nhưng không lấn át chữ. Dòng của dự án đã đóng thì làm mờ chữ luôn để nó lùi hẳn ra sau.
+*/
+table.data tbody tr.row-implement { background: var(--primary-soft); }
+table.data tbody tr.row-closed { background: #f6f7f9; color: var(--text-muted); }
+
+/*
+  Dự án đang ở giai đoạn hỗ trợ tô nền xanh đặc như nút Lọc. Nền đậm thì mọi thứ bên trong phải
+  đổi sang màu sáng, nếu không chữ phụ và chip trạng thái sẽ chìm hẳn — đó là lý do phải ghi đè
+  cả .muted, .cell-meta, liên kết và .badge chứ không chỉ đổi mỗi màu chữ chính.
+*/
+table.data tbody tr.row-support {
+    background: var(--primary);
+    color: #fff;
+}
+
+table.data tbody tr.row-support .muted,
+table.data tbody tr.row-support .cell-meta { color: #cfe0f7; }
+
+table.data tbody tr.row-support a { color: #fff; text-decoration: underline; }
+
+table.data tbody tr.row-support .badge,
+table.data tbody tr.row-support .badge-active,
+table.data tbody tr.row-support .badge-inactive {
+    background: rgba(255, 255, 255, .18);
+    color: #fff;
+}
+
+/* Nút trong dòng nền đậm phải viền sáng mới nhìn ra. */
+table.data tbody tr.row-support .row-menu > summary {
+    background: rgba(255, 255, 255, .12);
+    border-color: rgba(255, 255, 255, .45);
+    color: #fff;
+}
+
+table.data tbody tr.row-support .row-menu > summary:hover {
+    background: rgba(255, 255, 255, .22);
+}
+
+/* Nút liên kết (.btn) trong dòng nền đậm cũng vậy — nếu giữ nền trắng thì rule chữ trắng
+   của dòng sẽ biến nút thành ô trắng rỗng không đọc được. */
+table.data tbody tr.row-support .btn {
+    background: rgba(255, 255, 255, .12);
+    border-color: rgba(255, 255, 255, .45);
+    color: #fff;
+    text-decoration: none;
+}
+
+table.data tbody tr.row-support .btn:hover {
+    background: rgba(255, 255, 255, .22);
+    border-color: #fff;
+}
+
+/*
+  Menu thả xuống nổi TRÊN dòng nhưng nền của nó luôn trắng, nên phải trả màu chữ về bình thường.
+  Không có mấy dòng này thì các quy tắc chữ trắng ở trên ăn luôn vào menu và chữ biến mất hẳn.
+*/
+table.data tbody tr .row-menu-items a,
+table.data tbody tr .row-menu-items button {
+    color: var(--text);
+    text-decoration: none;
+}
+
+table.data tbody tr .row-menu-items .danger { color: var(--danger); }
+table.data tbody tr .row-menu-items a:hover,
+table.data tbody tr .row-menu-items button:hover { background: var(--bg-soft); }
+table.data tbody tr .row-menu-items .danger:hover { background: var(--danger-soft); }
+
+/* Di chuột vẫn phải thấy rõ, nên phủ đậm/nhạt hơn nền của chính dòng đó. */
+table.data tbody tr.row-implement:hover { background: #dce9fa; }
+table.data tbody tr.row-support:hover { background: var(--primary-dark); }
+table.data tbody tr.row-closed:hover { background: #eef0f4; }
+
+/*
+  Ô màu nhỏ trong phần chú giải dưới bảng. Phải khai màu riêng ở đây: các lớp row-* bên trên chỉ
+  áp cho <tr> trong bảng, nên nếu dựa vào chúng thì ô chú giải sẽ trắng trơn và trông y hệt
+  một ô đánh dấu.
+*/
+.phase-key {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    border: 1px solid var(--border-strong);
+    vertical-align: -2px;
+    margin-right: 2px;
+}
+
+.phase-key.row-implement { background: var(--primary-soft); }
+.phase-key.row-support { background: var(--primary); border-color: var(--primary); }
+.phase-key.row-closed { background: #e4e7ec; }
+
+/* ===== Hộp thoại =====
+   Thao tác thêm/sửa mở ngay trên danh sách thay vì chuyển trang: giữ nguyên bộ lọc, số trang và
+   vị trí cuộn của người dùng. Kích thước chọn theo lượng nội dung của form. */
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: none;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 40px 16px;
+    overflow-y: auto;
+    background: rgba(16, 26, 42, .45);
+}
+
+.modal-backdrop.open { display: flex; }
+
+.modal {
+    width: 100%;
+    max-width: 720px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--elev-3);
+    overflow: hidden;
+    animation: modal-in .14s ease-out;
+}
+
+/* Hộp hẹp cho form ít ô, hộp rộng cho form nhiều ô hoặc có bảng bên trong. */
+.modal.modal-sm { max-width: 460px; }
+.modal.modal-lg { max-width: 980px; }
+
+@keyframes modal-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: none; }
+}
+
+.modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-soft);
+}
+
+.modal-title { font-size: 17px; font-weight: 600; }
+
+.modal-close {
+    border: 0;
+    background: none;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 4px 8px;
+    border-radius: var(--radius-pill);
+}
+
+.modal-close:hover { background: var(--state-hover); color: var(--text); }
+
+.modal-body { padding: 20px; }
+
+/* Form bên trong hộp thoại đã có nút ở chân hộp nên bỏ đường kẻ trên của .form-actions. */
+.modal-body .form-actions { margin-bottom: 0; }
+
+.modal-loading { padding: 40px; text-align: center; color: var(--text-muted); }
+
+/* ---- Ô gộp nhiều thông tin trong bảng ---- */
+.cell-title { font-weight: 600; }
+.cell-meta { font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-top: 2px; }
+.cell-progress { min-width: 130px; }
+.cell-progress .progress-track { margin-top: 5px; }
+
 table.data {
     width: 100%;
     border-collapse: collapse;
     font-size: 13px;
 }
 
+/*
+  Bảng theo kiểu data table của Material: dòng thoáng hơn, chỉ có đường kẻ ngang mảnh, và di chuột
+  thì phủ lớp trạng thái thay vì đổi hẳn màu nền.
+*/
 table.data th, table.data td {
-    padding: 8px 10px;
+    padding: 12px 14px;
     text-align: left;
-    border-bottom: 1px solid var(--border);
-    vertical-align: top;
+    border-bottom: 1px solid var(--border-soft);
+    vertical-align: middle;
     overflow-wrap: break-word;
 }
 
 table.data thead th {
-    background: #f7f9fc;
+    background: transparent;
     color: var(--text-muted);
     font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: .3px;
-    font-weight: 700;
-    border-bottom: 2px solid var(--border);
+    letter-spacing: .4px;
+    font-weight: 600;
+    text-transform: none;
+    border-bottom: 1px solid var(--border);
     white-space: nowrap;
     position: sticky;
     top: 0;
+    z-index: 1;
 }
 
-table.data tbody tr:hover { background: #fafbfe; }
+table.data tbody tr { transition: background-color .1s ease; }
+table.data tbody tr:hover { background: var(--state-hover); }
+table.data tbody tr:last-child td { border-bottom: none; }
 table.data td.num { text-align: right; font-variant-numeric: tabular-nums; }
 table.data td.actions { white-space: nowrap; text-align: right; }
 table.data .muted { color: var(--text-muted); }
@@ -979,18 +1310,23 @@ table.data .cell-sub.muted { font-size: 12.5px; line-height: 1.4; }
 .member-card table.data thead th { position: static; }
 
 /* ===== Nhãn trạng thái ===== */
+/* Chip trạng thái theo Material: nền phủ nhạt, không viền, bo tròn hẳn. */
 .badge {
     display: inline-block;
-    padding: 3px 10px;
-    border-radius: 999px;
+    padding: 4px 12px;
+    border-radius: var(--radius-pill);
     font-size: 12px;
     font-weight: 600;
+    letter-spacing: .2px;
     white-space: nowrap;
     border: 1px solid transparent;
+    background: var(--primary-soft);
+    color: var(--primary);
 }
 
-.badge-active   { background: var(--success-soft); color: var(--success); border-color: var(--success-border); }
-.badge-inactive { background: #eef0f4; color: var(--text-muted); border-color: var(--border-strong); }
+.badge-active   { background: var(--success-soft); color: var(--success); border-color: transparent; }
+.badge-inactive { background: #eceef3; color: var(--text-muted); border-color: transparent; }
+.badge-danger   { background: var(--danger-soft); color: var(--danger); border-color: #e6b8b5; }
 .badge-doing    { background: var(--primary-soft); color: var(--primary); border-color: #bcd5f2; }
 .badge-support  { background: var(--success-soft); color: var(--success); border-color: var(--success-border); }
 .badge-waiting  { background: var(--warn-soft); color: var(--warn); border-color: var(--warn-border); }
@@ -1074,6 +1410,52 @@ table.data .cell-sub.muted { font-size: 12.5px; line-height: 1.4; }
 }
 .form-field .hint { font-size: 12px; color: var(--text-muted); }
 
+/*
+  Lưới 3 cột cho các form nhập nhanh nhiều ô ngắn (thêm nhân sự vào dự án...). Không dùng .filters
+  cho những form này: .filters là flex, ô có "grow" sẽ nuốt hết chiều ngang và bóp méo các ô còn
+  lại — nhất là khi có select2 bên trong.
+*/
+.form-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.form-grid-3 .full { grid-column: 1 / -1; }
+@media (max-width: 980px) { .form-grid-3 { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 700px) { .form-grid-3 { grid-template-columns: 1fr; } }
+
+/*
+  Chia form dài thành từng khối có tiêu đề. Form dự án có tới 8 ô, để liền một dải thì mắt không
+  bám được nhóm nào với nhóm nào; tách khối giúp quét nhanh hơn hẳn.
+*/
+.form-section { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-soft); }
+.form-section:first-of-type { margin-top: 0; padding-top: 0; border-top: 0; }
+
+.form-section-title {
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+}
+
+/*
+  Giá trị chỉ đọc nằm giữa các ô nhập. Đệm trên dưới bằng đúng ô input (8px + viền 1px) để dòng
+  chữ nằm ngang hàng với ô bên cạnh, không bị lệch lên trên.
+*/
+.form-static {
+    padding: 9px 0;
+    font-size: 14px;
+    line-height: 1.35;
+}
+
+.form-static .muted { font-size: 13.5px; }
+
+/* Nhãn nhỏ phía trên giá trị chỉ đọc, thay cho <label> của ô nhập. */
+.form-static-label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+}
+
 .field-error { color: var(--danger); font-size: 12.5px; }
 .validation-summary-errors { color: var(--danger); margin-bottom: 14px; }
 .validation-summary-errors ul { margin: 0; padding-left: 18px; }
@@ -1129,3 +1511,535 @@ table.data .cell-sub.muted { font-size: 12.5px; line-height: 1.4; }
 .login-title { text-align: center; margin: 0 0 22px; font-size: 19px; }
 .login-wrap .form-field { margin-bottom: 15px; }
 .login-wrap .btn { width: 100%; text-align: center; }
+
+/* ===== Bảng Kanban =====
+   Các cột nằm ngang và CUỘN NGANG trong khung riêng, không kéo giãn cả trang: 5 trạng thái với
+   độ rộng đọc được là quá khổ màn hình hẹp, để tràn ra ngoài thì cả bố cục bị đẩy lệch.
+*/
+.kanban {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    margin-bottom: 16px;
+}
+
+.kanban-col {
+    flex: 0 0 268px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    display: flex;
+    flex-direction: column;
+    max-height: 72vh;
+}
+
+.kanban-col-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 11px 14px;
+    font-weight: 600;
+    font-size: 13.5px;
+    border-bottom: 1px solid var(--border);
+}
+
+.kanban-count {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    padding: 1px 9px;
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+/* Vùng thả phải luôn cao hơn nội dung để cột rỗng vẫn nhận được thẻ kéo tới. */
+.kanban-drop {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+    min-height: 90px;
+    flex: 1 1 auto;
+}
+
+.kanban-drop.is-over {
+    background: var(--primary-soft);
+    box-shadow: inset 0 0 0 2px var(--primary);
+    border-radius: var(--radius-sm);
+}
+
+.kanban-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--elev-1);
+    padding: 10px 12px;
+    cursor: grab;
+}
+
+.kanban-card:hover { box-shadow: var(--elev-2); }
+.kanban-card.is-dragging { opacity: .45; }
+.kanban-card.is-saving { opacity: .6; cursor: progress; }
+
+/* Thẻ không có quyền sửa: vẫn đọc và bấm xem được, chỉ là không kéo. */
+.kanban-card.is-locked {
+    cursor: default;
+    border-style: dashed;
+    box-shadow: none;
+}
+
+.kanban-title {
+    display: block;
+    font-weight: 500;
+    font-size: 13.5px;
+    line-height: 1.35;
+    margin-bottom: 8px;
+}
+
+.kanban-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 8px;
+}
+
+.kanban-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 12.5px;
+    color: var(--text-muted);
+}
+
+/* Chip độ ưu tiên. Ba mức ba màu, đọc được ngay mà không cần chú giải. */
+.chip-high {
+    background: var(--danger-soft);
+    color: var(--danger);
+    border: 1px solid var(--danger);
+}
+
+.chip-normal {
+    background: var(--bg);
+    color: var(--text-muted);
+    border: 1px solid var(--border-strong);
+}
+
+.chip-low {
+    background: var(--success-soft);
+    color: var(--success);
+    border: 1px solid var(--success-border);
+}
+
+.chip-high, .chip-normal, .chip-low {
+    display: inline-block;
+    border-radius: var(--radius-pill);
+    padding: 1px 9px;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+/* Dòng bấm được để mở hộp thoại chi tiết. Con trỏ phải đổi, nếu không người dùng không đoán
+   ra là bấm được — trong lưới không có gì gợi ý điều đó. */
+tr.row-clickable { cursor: pointer; }
+tr.row-clickable:hover { background: var(--state-hover); }
+
+/* Các phần tử bên trong vẫn giữ con trỏ riêng của chúng. */
+tr.row-clickable a,
+tr.row-clickable button,
+tr.row-clickable summary { cursor: pointer; }
+
+/* Tiêu đề thẻ Kanban không còn là liên kết (cả thẻ mới là chỗ bấm), nên tự lo màu chữ. */
+.kanban-title { color: var(--text); }
+
+/* ===== Cảnh báo theo hạn hoàn thành: cam = còn tối đa 1 ngày, đỏ = đã quá hạn =====
+   Đổi cả màu CHỮ chứ không chỉ nền, để việc gấp đập vào mắt ngay khi lướt bảng. */
+
+.kanban-card.card-warn {
+    background: var(--warn-soft);
+    border-color: var(--warn-border);
+}
+.kanban-card.card-warn .kanban-title,
+.kanban-card.card-warn .kanban-foot,
+.kanban-card.card-warn .muted { color: var(--warn); }
+
+.kanban-card.card-danger {
+    background: var(--danger-soft);
+    border-color: #e6b8b5;
+}
+.kanban-card.card-danger .kanban-title,
+.kanban-card.card-danger .kanban-foot,
+.kanban-card.card-danger .muted { color: var(--danger); }
+
+table.data tbody tr.row-due-warn { background: var(--warn-soft); }
+table.data tbody tr.row-due-warn td,
+table.data tbody tr.row-due-warn td .muted { color: var(--warn); }
+table.data tbody tr.row-due-warn:hover { background: #f7ecc9; }
+
+table.data tbody tr.row-due-danger { background: var(--danger-soft); }
+table.data tbody tr.row-due-danger td,
+table.data tbody tr.row-due-danger td .muted { color: var(--danger); }
+table.data tbody tr.row-due-danger:hover { background: #f6dcda; }
+
+/* ===== Breadcrumb đầu trang =====
+   Đường về của các màn lồng nhau (Dự án → tên dự án → Checklist...), thay cho nút Back
+   của trình duyệt. Mắt cuối là trang hiện tại nên không phải liên kết. */
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.breadcrumb a { color: var(--text-muted); }
+.breadcrumb a:hover { color: var(--primary); text-decoration: underline; }
+
+.breadcrumb-sep { color: var(--text-faint); }
+
+.breadcrumb-current {
+    color: var(--text);
+    font-weight: 600;
+    max-width: 360px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ===== Màn soạn mẫu email: trình soạn thảo + bảng tham số ===== */
+
+.tpl-layout { display: flex; gap: 18px; align-items: flex-start; }
+.tpl-main { flex: 1 1 64%; min-width: 0; }
+.tpl-side { flex: 1 1 36%; min-width: 260px; }
+@media (max-width: 900px) { .tpl-layout { flex-direction: column; } .tpl-side { width: 100%; } }
+
+.wys-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 6px 8px;
+    border: 1px solid var(--border-strong);
+    border-bottom: 0;
+    border-radius: var(--radius-xs) var(--radius-xs) 0 0;
+    background: var(--bg);
+}
+
+.wys-toolbar button {
+    border: 1px solid transparent;
+    background: none;
+    border-radius: 6px;
+    padding: 4px 9px;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--text);
+}
+.wys-toolbar button:hover { background: var(--primary-soft); }
+.wys-toolbar button.active { background: var(--primary-soft); border-color: var(--primary); color: var(--primary); }
+.wys-sep { width: 1px; height: 18px; background: var(--border); margin: 0 3px; }
+
+.wys-editor {
+    min-height: 240px;
+    max-height: 55vh;
+    overflow-y: auto;
+    padding: 12px 14px;
+    border: 1px solid var(--border-strong);
+    border-radius: 0 0 var(--radius-xs) var(--radius-xs);
+    background: var(--surface);
+    line-height: 1.6;
+}
+.wys-editor:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+.wys-editor blockquote { margin: 8px 0; padding: 8px 14px; border-left: 3px solid var(--primary); background: var(--bg-soft); }
+
+.wys-source {
+    width: 100%;
+    border-radius: 0 0 var(--radius-xs) var(--radius-xs);
+    font-family: Consolas, monospace;
+    font-size: 13px;
+}
+
+.tpl-params { display: flex; flex-direction: column; gap: 6px; }
+
+.tpl-param {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    width: 100%;
+    text-align: left;
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-xs);
+    background: var(--surface);
+    padding: 7px 10px;
+    cursor: pointer;
+}
+.tpl-param:hover { background: var(--primary-soft); border-color: var(--primary); }
+.tpl-param code { font-size: 12.5px; color: var(--primary); white-space: nowrap; }
+.tpl-param span { font-size: 12.5px; color: var(--text-muted); }
+
+/* ===== Chuông thông báo trên thanh đầu trang ===== */
+
+.notif { position: relative; }
+
+.notif-bell {
+    position: relative;
+    border: 1px solid transparent;
+    background: none;
+    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+}
+.notif-bell:hover { background: var(--primary-soft); }
+
+.notif-badge {
+    position: absolute;
+    top: -2px;
+    right: -4px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--danger);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+}
+
+.notif-panel {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 380px;
+    max-width: 92vw;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 12px 32px rgba(16, 42, 67, .22);
+    z-index: 60;
+    overflow: hidden;
+}
+.notif.open .notif-panel { display: block; }
+
+.notif-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 14px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border-soft);
+}
+
+.notif-readall {
+    border: 0;
+    background: none;
+    padding: 0;
+    color: var(--primary);
+    font-size: 12.5px;
+    cursor: pointer;
+}
+.notif-readall:hover { text-decoration: underline; }
+
+.notif-empty { padding: 22px 16px; color: var(--text-muted); font-size: 13px; text-align: center; }
+
+.notif-list { max-height: 60vh; overflow-y: auto; }
+
+.notif-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 14px;
+    color: var(--text);
+    border-bottom: 1px solid var(--border-soft);
+}
+.notif-item:last-child { border-bottom: 0; }
+.notif-item:hover { background: var(--primary-soft); text-decoration: none; }
+.notif-item.unread { background: #f3f7fd; }
+.notif-item.unread .notif-message { font-weight: 600; }
+
+.notif-icon {
+    flex: 0 0 auto;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 26px;
+    text-align: center;
+    margin-top: 1px;
+}
+.notif-icon-project { background: var(--primary-soft); color: var(--primary); }
+.notif-icon-mention { background: #f0eefb; color: #4b3f9e; }
+.notif-icon-due { background: var(--warn-soft); color: var(--warn); }
+
+.notif-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.notif-message { font-size: 13px; line-height: 1.45; }
+.notif-time { font-size: 11.5px; color: var(--text-faint); }
+
+.notif-dot {
+    flex: 0 0 auto;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--primary);
+    margin-top: 6px;
+}
+
+/* ===== Hộp thoại chi tiết công việc: hai cột, bên phải là khung trao đổi ===== */
+
+.task-detail-split { display: flex; gap: 22px; align-items: stretch; }
+
+.task-detail-main { flex: 1 1 58%; min-width: 0; }
+
+.task-detail-chat {
+    flex: 1 1 42%;
+    min-width: 260px;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid var(--border);
+    padding-left: 22px;
+}
+
+.chat-head { font-weight: 600; margin-bottom: 8px; }
+
+/* Danh sách cuộn riêng để hộp thoại không dài vô hạn khi trao đổi nhiều. */
+.chat-scroll {
+    flex: 1;
+    min-height: 220px;
+    max-height: 46vh;
+    overflow-y: auto;
+    padding-right: 6px;
+}
+
+.chat-empty { color: var(--text-muted); font-size: 13px; padding: 18px 0; }
+
+.chat-item { padding: 8px 0; border-bottom: 1px solid var(--border-soft); }
+.chat-item:last-child { border-bottom: 0; }
+
+.chat-meta { display: flex; align-items: baseline; gap: 8px; font-size: 13px; }
+.chat-meta .muted { font-size: 12px; }
+
+.chat-recall {
+    margin-left: auto;
+    border: 0;
+    background: none;
+    padding: 0;
+    color: var(--danger);
+    font-size: 12px;
+    cursor: pointer;
+}
+.chat-recall:hover { text-decoration: underline; }
+
+.chat-content { white-space: pre-wrap; word-wrap: break-word; margin-top: 2px; font-size: 14px; }
+
+.chat-input-wrap { position: relative; margin-top: 8px; }
+.chat-input-wrap textarea { min-height: 60px; }
+
+.chat-send-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 6px;
+}
+
+/* Cụm đính kèm trong khung trao đổi: nút chọn + tên file đã chọn + nút bỏ chọn. */
+.chat-attach { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.chat-file-input { display: none; }
+.chat-attach label { margin: 0; cursor: pointer; }
+.chat-file-name {
+    font-size: 12px;
+    color: var(--text-muted);
+    max-width: 170px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.chat-file-clear {
+    border: 0;
+    background: none;
+    padding: 0 2px;
+    color: var(--danger);
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+/* Liên kết tải file đính kèm trong một lượt trao đổi. */
+.chat-file {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 4px;
+    font-size: 13px;
+    max-width: 100%;
+}
+.chat-file .chat-file-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.chat-file:hover .chat-file-label { text-decoration: underline; }
+
+/* Cụm @Tên trong nội dung trao đổi. */
+.mention {
+    background: var(--primary-soft);
+    color: var(--primary);
+    border-radius: 4px;
+    padding: 0 3px;
+    font-weight: 600;
+}
+
+/* Bảng gợi ý người tham gia khi gõ @ — nổi lên PHÍA TRÊN ô nhập để không bị mép hộp thoại cắt. */
+.mention-menu {
+    display: none;
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    right: 0;
+    margin-bottom: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(16, 42, 67, .18);
+    max-height: 210px;
+    overflow-y: auto;
+    z-index: 30;
+}
+.mention-menu.open { display: block; }
+
+.mention-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    border: 0;
+    background: none;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 13px;
+}
+.mention-item.active,
+.mention-item:hover { background: var(--primary-soft); }
+
+/* Màn hẹp thì xếp dọc: chi tiết trước, trao đổi dưới. */
+@media (max-width: 860px) {
+    .task-detail-split { flex-direction: column; }
+    .task-detail-chat {
+        border-left: 0;
+        padding-left: 0;
+        border-top: 1px solid var(--border);
+        padding-top: 14px;
+    }
+}

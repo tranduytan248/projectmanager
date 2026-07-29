@@ -5,10 +5,15 @@
     màn hình không phải liệt kê lại tham số của mình.
 *@
 @{
+    // Màn hình có nhiều bảng thì mỗi bảng cần một tham số trang riêng, nếu không lật bảng này
+    // sẽ lật luôn bảng kia. Truyền tên tham số qua ViewData; mặc định vẫn là "page".
+    var pageParam = ViewData["PagerParam"] as string;
+    if (string.IsNullOrWhiteSpace(pageParam)) { pageParam = "page"; }
+
     Func<int, string> pageUrl = p =>
     {
         var query = System.Web.HttpUtility.ParseQueryString(Request.Url.Query);
-        query["page"] = p.ToString();
+        query[pageParam] = p.ToString();
         return Request.Path + "?" + query;
     };
 }

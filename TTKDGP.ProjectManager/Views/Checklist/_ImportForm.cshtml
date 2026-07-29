@@ -1,0 +1,31 @@
+﻿@model TTKDGP.ProjectManager.Models.WorkProject
+@*
+    Form import checklist, mở trong hộp thoại. Gửi kiểu THƯỜNG (data-native-submit) vì form mang
+    file — trình gửi AJAX chung của hộp thoại không mang được file; gửi xong chuyển sang màn
+    Xem trước import như luồng cũ.
+*@
+
+@using (Html.BeginForm("Import", "Checklist", new { projectId = Model.Id }, FormMethod.Post,
+    new { enctype = "multipart/form-data", data_native_submit = "true" }))
+{
+    @Html.AntiForgeryToken()
+
+    <div class="form-field full">
+        <label for="importFile">Chọn file checklist</label>
+        <input type="file" id="importFile" name="file" accept=".xlsx,.xls,.xml,.csv" required />
+    </div>
+
+    <span class="hint">
+        File mẫu (.xlsx) có hai sheet: <strong>CongViec</strong> và <strong>NhanSu</strong> —
+        sheet NhanSu đã đổ sẵn người đang tham gia dự án này, sheet CongViec trỏ người thực hiện
+        bằng tài khoản đăng nhập. Nhận .xlsx, .xls và .csv mã hoá UTF-8 (.csv chỉ có một sheet nên
+        bỏ qua phần nhân sự). Import chỉ <strong>thêm mới</strong>, không ghi đè mục đã có.
+        Bước tiếp theo là màn <strong>xem trước</strong> — chưa có gì được ghi cho tới khi bạn xác nhận.
+    </span>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Xem trước</button>
+        <a class="btn btn-default" href="@Url.Action("Template", "Checklist", new { projectId = Model.Id })">Tải file mẫu</a>
+        <button type="button" class="btn btn-default" onclick="window.AppModal.close()">Huỷ</button>
+    </div>
+}

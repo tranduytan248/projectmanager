@@ -16,29 +16,13 @@
         <span>Cần quản trị xử lý</span>
     </div>
     <div class="dash-panel-body">
-        @if (Model.UnlinkedCount == 0)
-        {
-            <div class="dash-item">
-                <span class="num-badge ok">✓</span>
-                <div class="dash-item-main">
-                    <div class="title">Không có việc cần xử lý</div>
-                    <div class="sub">Mọi tài khoản cần báo cáo đều đã gắn nhân sự.</div>
-                </div>
+        <div class="dash-item">
+            <span class="num-badge ok">✓</span>
+            <div class="dash-item-main">
+                <div class="title">Không có việc cần xử lý</div>
+                <div class="sub">Tài khoản quản lý độc lập — công việc và dự án gán thẳng theo người dùng.</div>
             </div>
-        }
-        else
-        {
-            <div class="dash-item">
-                <span class="num-badge danger">@Model.UnlinkedCount</span>
-                <div class="dash-item-main">
-                    <div class="title">@Model.UnlinkedCount tài khoản cần báo cáo nhưng chưa gắn nhân sự</div>
-                    <div class="sub">Không gắn nhân sự thì không thấy phân công để báo cáo: @string.Join(", ", Model.UnlinkedUsers.Select(u => u.UserName))</div>
-                </div>
-                <div class="dash-item-actions">
-                    <a class="btn btn-primary btn-sm" href="@Url.Action("Index", "Users")">Quản lý người dùng</a>
-                </div>
-            </div>
-        }
+        </div>
     </div>
 </div>
 
@@ -76,13 +60,6 @@
                 <div class="tile">
                     <div class="tile-num">@g.Count</div>
                     <div class="tile-label">@g.Name</div>
-                </div>
-            }
-            @if (Model.UnlinkedCount > 0)
-            {
-                <div class="tile">
-                    <div class="tile-num danger">@Model.UnlinkedCount</div>
-                    <div class="tile-label">Chưa gắn nhân sự</div>
                 </div>
             }
         </div>

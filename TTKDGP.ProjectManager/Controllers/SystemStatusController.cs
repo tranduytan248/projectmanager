@@ -24,17 +24,8 @@ namespace TTKDGP.ProjectManager.Controllers
                 .ThenBy(g => g.Name, StringComparer.CurrentCulture)
                 .ToList();
 
-            // Tài khoản cần báo cáo (nhóm có quyền myreports.report) nhưng chưa gắn nhân sự —
-            // sẽ không thấy phân công để báo cáo. Đây mới là vấn đề thực sự cần xử lý.
-            var unlinked = users
-                .Where(u => u.IsActive && u.MemberId <= 0
-                            && Permissions.UserHas(u.Role, Permissions.MyReports.Perm("report")))
-                .OrderBy(u => u.UserName, StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
             var model = new AdminSystemViewModel
             {
-                UnlinkedUsers = unlinked,
                 TotalUsers = users.Count,
                 ActiveIntegrations = Repository.IntegrationSystems.All().Count(s => s.IsActive),
                 Flows = BuildFlows(),

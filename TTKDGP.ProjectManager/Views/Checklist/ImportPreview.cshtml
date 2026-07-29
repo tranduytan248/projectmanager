@@ -1,0 +1,181 @@
+﻿@model TTKDGP.ProjectManager.Models.ImportPreviewViewModel
+@using TTKDGP.ProjectManager.Models
+@{
+    ViewBag.Title = "Xem trước import checklist";
+
+    ViewBag.Crumbs = new List<Crumb>
+    {
+        new Crumb { Label = Model.Project.Name, Url = Url.Action("Details", "WorkProjects", new { id = Model.Project.Id }) },
+        new Crumb { Label = "Checklist", Url = Url.Action("Index", "Checklist", new { projectId = Model.Project.Id }) },
+        new Crumb { Label = "Xem trước import" }
+    };
+}
+
+<div class="page-head">
+    <div>
+        <h1>Xem trước import</h1>
+        <p>
+            Dự án <strong>@Model.Project.Name</strong>
+            @if (!string.IsNullOrWhiteSpace(Model.FileName))
+            {
+                <text>· file @Model.FileName</text>
+            }
+        </p>
+    </div>
+    <a class="btn btn-default" href="@Url.Action("Index", "Checklist", new { projectId = Model.Project.Id })">&larr; Checklist</a>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.FileError))
+{
+    <div class="card">
+        <div class="empty-state">
+            <p><strong>Không đọc được file.</strong></p>
+            <p class="hint">@Model.FileError</p>
+            <p class="hint">
+                Tải <a href="@Url.Action("Template", "Checklist")">file mẫu</a> rồi điền vào đó là chắc chắn nhất.
+            </p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="card-body">
+            @if (!string.IsNullOrEmpty(Model.FileWarning))
+            {
+                <p class="hint" style="margin-top:0"><strong>Lưu ý:</strong> @Model.FileWarning</p>
+            }
+
+            <p style="margin-top:0">
+                <strong>Công việc:</strong>
+                @Model.AddCount sẽ thêm · @Model.SkipCount bỏ qua · @Model.ErrorCount lỗi.
+                <br />
+                <strong>Nhân sự:</strong>
+                @Model.MemberAddCount sẽ thêm vào dự án · @Model.MemberErrorCount không ghép được.
+            </p>
+            <p class="hint">
+                Chưa có gì được ghi vào hệ thống. Kiểm hai bảng bên dưới rồi bấm xác nhận — chỉ những
+                dòng <em>Sẽ thêm</em> mới được ghi.
+            </p>
+
+            @if (Model.CanConfirm)
+            {
+                using (Html.BeginForm("ImportConfirm", "Checklist", new { projectId = Model.Project.Id }, FormMethod.Post))
+                {
+                    @Html.AntiForgeryToken()
+                    <div class="form-actions" style="margin-top:6px">
+                        <button type="submit" class="btn btn-primary">Xác nhận import</button>
+                        <a class="btn btn-default" href="@Url.Action("Index", "Checklist", new { projectId = Model.Project.Id })">Huỷ</a>
+                    </div>
+                }
+            }
+            else
+            {
+                <p class="hint"><strong>Không có dòng nào hợp lệ để import.</strong></p>
+            }
+        </div>
+    </div>
+
+    if (Model.MemberRows.Count > 0)
+    {
+        <div class="card">
+            <div class="card-head">
+                <h2>Nhân sự tham gia (sheet NhanSu)</h2>
+            </div>
+            <div class="table-wrap">
+                <table class="data">
+                    <thead>
+                        <tr>
+                            <th class="num">Dòng</th>
+                            <th>Kết quả</th>
+                            <th>Tài khoản</th>
+                            <th>Họ tên</th>
+                            <th>Vai trò</th>
+                            <th>Ghi chú xử lý</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Model.MemberRows)
+                        {
+                            <tr>
+                                <td class="num muted">@row.LineNumber</td>
+                                <td>
+                                    @if (row.Outcome == ImportOutcomes.Add)
+                                    {
+                                        <span class="badge badge-active">Sẽ thêm</span>
+                                    }
+                                    else if (row.Outcome == ImportOutcomes.Skip)
+                                    {
+                                        <span class="badge">Bỏ qua</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-inactive">Lỗi</span>
+                                    }
+                                </td>
+                                <td>@row.Account</td>
+                                <td>@row.FullName</td>
+                                <td class="muted">@row.Role</td>
+                                <td class="muted">@row.Message</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    <div class="card">
+        <div class="card-head">
+            <h2>Công việc (sheet CongViec)</h2>
+        </div>
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th class="num">Dòng</th>
+                        <th>Kết quả</th>
+                        <th>Mã</th>
+                        <th>Tên công việc</th>
+                        <th>Mã cha</th>
+                        <th>Người thực hiện</th>
+                        <th>Ưu tiên</th>
+                        <th>Hạn</th>
+                        <th>Tuần</th>
+                        <th>Ghi chú xử lý</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.Rows)
+                    {
+                        <tr>
+                            <td class="num muted">@row.LineNumber</td>
+                            <td>
+                                @if (row.Outcome == ImportRow.Add)
+                                {
+                                    <span class="badge badge-active">Sẽ thêm</span>
+                                }
+                                else if (row.Outcome == ImportRow.Skip)
+                                {
+                                    <span class="badge">Bỏ qua</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-inactive">Lỗi</span>
+                                }
+                            </td>
+                            <td>@row.Code</td>
+                            <td>@row.Title</td>
+                            <td class="muted">@row.ParentCode</td>
+                            <td>@(string.IsNullOrWhiteSpace(row.AssigneeName) ? row.AssigneeAccount : row.AssigneeName)</td>
+                            <td class="muted">@(row.Prepared == null ? "" : TaskPriorities.Display(row.Prepared.Priority))</td>
+                            <td class="nowrap">@row.DueDateText</td>
+                            <td class="num muted">@(row.Prepared != null && row.Prepared.Week > 0 ? "T" + row.Prepared.Week : "")</td>
+                            <td class="muted">@row.Message</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

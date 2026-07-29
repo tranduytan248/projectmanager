@@ -74,6 +74,23 @@ namespace TTKDGP.ProjectManager.Infrastructure
             }
         }
 
+        /// <summary>Cấu hình cho bộ quản lý công việc &amp; KPI.</summary>
+        public static class Work
+        {
+            /// <summary>
+            /// Đơn vị được phép lấy nhân sự sang bộ quản lý công việc. Màn "Lấy từ HRM" chỉ hiện
+            /// người thuộc đơn vị này và TOÀN BỘ đơn vị con bên dưới — nhân sự thật nằm ở phòng/tổ
+            /// sâu vài cấp, lọc phẳng theo đúng một đơn vị sẽ không ra ai.
+            ///
+            /// Nhận cả MÃ lẫn TÊN đơn vị. Nên khai bằng mã (239.603 = Trung tâm Kinh doanh Giải
+            /// pháp) vì mã không đổi, còn tên có thể đổi hoặc lệch dấu.
+            /// </summary>
+            public static string HrmWorkplace
+            {
+                get { return Get("Work:HrmWorkplace", "239.603"); }
+            }
+        }
+
         /// <summary>Địa chỉ người dùng truy cập hệ thống, đính kèm cuối mỗi tin nhắc.</summary>
         public static string PublicUrl { get { return Get("App:PublicUrl", "pmncpt.cenit.vn"); } }
 

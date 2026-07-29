@@ -1,0 +1,258 @@
+﻿@model TTKDGP.ProjectManager.Models.ProjectDetailsViewModel
+@using TTKDGP.ProjectManager.Models
+@using TTKDGP.ProjectManager.Infrastructure
+@{
+    var p = Model.Project;
+    ViewBag.Title = p.Name;
+
+    // Người không có quyền xem toàn bộ dự án của Tổ thì đường về là "Dự án của tôi".
+    var canAll = ViewBag.Can is Func<string, bool> && ((Func<string, bool>)ViewBag.Can)("wprojects.view");
+    ViewBag.Crumbs = new List<Crumb>
+    {
+        canAll
+            ? new Crumb { Label = "Dự án", Url = Url.Action("Index", "WorkProjects") }
+            : new Crumb { Label = "Dự án của tôi", Url = Url.Action("Projects", "MyWork") },
+        new Crumb { Label = p.Name }
+    };
+}
+
+<div class="page-head">
+    <div>
+        <h1>@p.Name</h1>
+        <p>
+            @(string.IsNullOrWhiteSpace(p.Code) ? "" : p.Code + " · ")
+            @(string.IsNullOrWhiteSpace(p.ProjectType) ? "chưa phân loại" : p.ProjectType)
+            · Giai đoạn @ProjectPhases.Display(p.Phase)
+        </p>
+    </div>
+    <div class="btn-row">
+        <a class="btn btn-default" href="@Url.Action("Index", "Checklist", new { projectId = p.Id })">Checklist</a>
+        <a class="btn btn-default" href="@Url.Action("Members", "WorkProjects", new { id = p.Id })">Nhân sự</a>
+        @if (Model.CanEdit)
+        {
+            <a class="btn btn-primary" href="@Url.Action("Edit", "WorkProjects", new { id = p.Id })">Sửa</a>
+        }
+    </div>
+</div>
+
+<div class="stats">
+    <div class="stat">
+        <div class="stat-value">@Model.ActiveCount</div>
+        <div class="stat-label">Đang tham gia@(Model.PastCount > 0 ? " (" + Model.PastCount + " đã rời)" : "")</div>
+    </div>
+    <div class="stat">
+        <div class="stat-value">@Model.ChecklistStat.Done/@Model.ChecklistStat.Total</div>
+        <div class="stat-label">Mục checklist hoàn thành</div>
+    </div>
+    <div class="stat">
+        <div class="stat-value">@Model.ChecklistStat.Overdue</div>
+        <div class="stat-label">Đầu việc quá hạn</div>
+    </div>
+    <div class="stat">
+        <div class="stat-value">@Model.SupportThisWeek</div>
+        <div class="stat-label">Việc hỗ trợ tuần @Model.Week</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-head">Thông tin chung</div>
+    <div class="card-body">
+        <div class="form-grid">
+            <div class="form-field">
+                <label>Khách hàng</label>
+                <div class="form-static">@(string.IsNullOrWhiteSpace(p.Customer) ? "—" : p.Customer)</div>
+            </div>
+            <div class="form-field">
+                <label>Loại dự án</label>
+                <div class="form-static">@(string.IsNullOrWhiteSpace(p.ProjectType) ? "—" : p.ProjectType)</div>
+            </div>
+            <div class="form-field">
+                <label>Giai đoạn</label>
+                <div class="form-static">@ProjectPhases.Display(p.Phase)</div>
+            </div>
+            <div class="form-field">
+                <label>Trạng thái</label>
+                <div class="form-static">
+                    @if (p.IsOpen)
+                    {
+                        <span class="badge badge-active">@ProjectStates.Display(p.State)</span>
+                    }
+                    else
+                    {
+                        <span class="badge badge-inactive">@ProjectStates.Display(p.State)</span>
+                    }
+                </div>
+            </div>
+            <div class="form-field">
+                <label>Thời gian</label>
+                <div class="form-static">
+                    @(p.StartDate.HasValue ? p.StartDate.Value.ToString("dd/MM/yyyy") : "?")
+                    &ndash;
+                    @(p.EndDate.HasValue ? p.EndDate.Value.ToString("dd/MM/yyyy") : "?")
+                </div>
+            </div>
+            <div class="form-field">
+                <label>PM phụ trách</label>
+                <div class="form-static">
+                    @(p.PmUserId > 0 ? p.PmName : "Chưa chỉ định")
+                </div>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(p.Description))
+        {
+            <p class="hint" style="margin:14px 0 6px"><strong>Mô tả</strong></p>
+            <pre class="message-preview">@p.Description</pre>
+        }
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-head">
+        Nhân sự dự án
+        <span class="muted">— @Model.Assignments.Count giai đoạn tham gia</span>
+    </div>
+    @if (Model.Assignments.Count == 0)
+    {
+        <div class="empty-state">Dự án chưa có nhân sự nào.</div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th>Nhân sự</th>
+                        <th>Vai trò</th>
+                        <th>Giai đoạn</th>
+                        <th>Tham gia từ</th>
+                        <th>Rời ngày</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var a in Model.Assignments)
+                    {
+                        <tr class="@(a.IsActive ? "" : "row-closed")">
+                            <td>
+                                <strong>@a.UserFullName</strong>
+                                @if (a.IsPm)
+                                {
+                                    <span class="badge badge-active">PM</span>
+                                }
+                            </td>
+                            <td class="muted">@(string.IsNullOrWhiteSpace(a.Role) ? "—" : a.Role)</td>
+                            <td class="muted">@AssignmentPhases.Display(string.IsNullOrWhiteSpace(a.Phase) ? AssignmentPhases.Both : a.Phase)</td>
+                            <td class="nowrap">@a.JoinedAt.ToString("dd/MM/yyyy")</td>
+                            <td class="nowrap">@(a.LeftAt.HasValue ? a.LeftAt.Value.ToString("dd/MM/yyyy") : "—")</td>
+                            <td>
+                                @if (a.IsActive)
+                                {
+                                    <span class="badge badge-active">Đang tham gia</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-inactive">Đã rời</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@if (Model.OverdueTasks.Count > 0)
+{
+    <div class="card">
+        <div class="card-head">Đầu việc quá hạn</div>
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr><th>Công việc</th><th>Loại</th><th>Người thực hiện</th><th>Hạn</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var t in Model.OverdueTasks)
+                    {
+                        <tr>
+                            <td><a href="@Url.Action("Detail", "MyWork", new { id = t.Id })">@t.Title</a></td>
+                            <td class="muted">@TaskKinds.Display(t.Kind)</td>
+                            <td>@(string.IsNullOrWhiteSpace(t.AssigneeName) ? "(chưa giao)" : t.AssigneeName)</td>
+                            <td class="nowrap">
+                                @t.DueDate.Value.ToString("dd/MM/yyyy")
+                                <span class="badge badge-inactive">Quá @(-t.DaysLeft) ngày</span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+<div class="card">
+    <div class="card-head">
+        Báo cáo tuần
+        <span class="muted">— tuần hiện tại @Model.Week/@Model.Year</span>
+    </div>
+    <div class="card-body">
+        <div class="form-static">
+            @if (Model.CurrentReport != null && Model.CurrentReport.IsSubmitted)
+            {
+                <span class="badge badge-active">
+                    Đã nộp @(Model.CurrentReport.IsOnTime ? "đúng hạn" : "trễ hạn")
+                </span>
+                <span class="muted">lúc @Model.CurrentReport.SubmittedAt.Value.ToString("dd/MM/yyyy HH:mm")</span>
+            }
+            else if (Model.CurrentReport != null)
+            {
+                <span class="badge">Còn bản nháp</span>
+            }
+            else
+            {
+                <span class="badge badge-inactive">Chưa nộp báo cáo tuần này</span>
+            }
+        </div>
+    </div>
+
+    @if (Model.RecentReports.Count > 0)
+    {
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr><th>Tuần</th><th>Khoảng ngày</th><th>Nộp lúc</th><th>Đúng hạn</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model.RecentReports)
+                    {
+                        <tr>
+                            <td>Tuần @r.Week/@r.Year</td>
+                            <td class="muted nowrap">
+                                @WeekHelper.FirstDayOfWeek(r.Year, r.Week).ToString("dd/MM")
+                                &ndash; @WeekHelper.LastDayOfWeek(r.Year, r.Week).ToString("dd/MM/yyyy")
+                            </td>
+                            <td class="nowrap">
+                                @(r.IsSubmitted ? r.SubmittedAt.Value.ToString("dd/MM/yyyy HH:mm") : "Chưa nộp")
+                            </td>
+                            <td>
+                                @if (!r.IsSubmitted)
+                                {
+                                    <span class="muted">—</span>
+                                }
+                                else if (r.IsOnTime)
+                                {
+                                    <span class="badge badge-active">Đúng hạn</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-inactive">Trễ hạn</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
