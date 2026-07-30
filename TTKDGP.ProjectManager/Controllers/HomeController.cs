@@ -93,12 +93,22 @@ namespace TTKDGP.ProjectManager.Controllers
                     .OrderByDescending(s => s.Count)
                     .ToList(),
 
-                MemberLoads = BuildMemberLoads(FilterForWorkload(rows)),
-                ByMember = GroupByMember(rows)
+                MemberLoads = BuildMemberLoads(FilterForWorkload(rows))
             };
 
             FillCurrentWeek(model);
+            FillMonthTasks(model);
             return View(model);
+        }
+
+        /// <summary>
+        /// Trang tài liệu tích hợp API — công khai như trang tổng hợp, ai cần tích hợp
+        /// cũng xem được mà không phải đăng nhập.
+        /// </summary>
+        [AllowAnonymous]
+        public ActionResult Docs()
+        {
+            return View();
         }
 
         /// <summary>
@@ -165,50 +175,7 @@ namespace TTKDGP.ProjectManager.Controllers
             return View(model);
         }
 
-        /// <summary>
-        /// Gom các dòng tham gia theo từng thành viên, sắp theo độ ưu tiên của trạng thái dự án
-        /// (Đang thực hiện lên đầu). Trong mỗi khối, các dự án ở mức ưu tiên cao nhất được hiện
-        /// ngay, phần còn lại gập sau nút "Xem thêm".
-        /// </summary>
-        private static List<MemberParticipation> GroupByMember(IEnumerable<SummaryRow> rows)
-        {
-            var groups = rows
-                .GroupBy(r => new { r.MemberId, r.MemberName })
-                .Select(g =>
-                {
-                    var sorted = g
-                        .OrderBy(r => r.ProjectStatusPriority)
-                        .ThenByDescending(r => r.IsActive)
-                        .ThenBy(r => r.ProjectName, StringComparer.CurrentCulture)
-                        .ToList();
-
-                    // Mức ưu tiên cao nhất mà người này đang có — thường là "Đang thực hiện".
-                    var topPriority = sorted.Count == 0 ? 0 : sorted[0].ProjectStatusPriority;
-
-                    return new MemberParticipation
-                    {
-                        MemberId = g.Key.MemberId,
-                        MemberName = g.Key.MemberName,
-                        Rows = sorted,
-                        VisibleRows = sorted.Where(r => r.ProjectStatusPriority == topPriority).ToList(),
-                        HiddenRows = sorted.Where(r => r.ProjectStatusPriority != topPriority).ToList()
-                    };
-                })
-                .ToList();
-
-            // Người có dự án ưu tiên cao nhất xếp trước; cùng mức thì ai nhiều dự án hơn lên trước.
-            return groups
-                .OrderBy(m => m.Rows.Count == 0 ? int.MaxValue : m.Rows[0].ProjectStatusPriority)
-                .ThenByDescending(m => m.ActiveCount)
-                .ThenBy(m => m.MemberName, StringComparer.CurrentCulture)
-                .ToList();
-        }
-
-        /// <summary>
-        /// Điền thông tin tuần đang diễn ra và tình hình báo cáo của tuần đó.
-        /// Số liệu này tính trên toàn bộ dữ liệu, không phụ thuộc bộ lọc đang chọn,
-        /// để luôn phản ánh đúng tình hình chung.
-        /// </summary>
+        /// <summary>Điền thông tin tuần đang diễn ra.</summary>
         private static void FillCurrentWeek(SummaryViewModel model)
         {
             var year = WeekHelper.CurrentYear;
@@ -218,10 +185,101 @@ namespace TTKDGP.ProjectManager.Controllers
             model.CurrentWeek = week;
             model.CurrentWeekFrom = WeekHelper.FirstDayOfWeek(year, week);
             model.CurrentWeekTo = WeekHelper.LastDayOfWeek(year, week);
+        }
 
-            var report = Services.ReminderService.Build(Models.ReminderKind.FridayCurrentWeek, DateTime.Today);
-            model.MissingThisWeek = report.MissingProjectCount;
-            model.ReportedThisWeek = report.ReportedProjects;
+        /// <summary>
+        /// Tổng hợp công việc của nhân sự trong tháng hiện tại, đếm theo trạng thái — dữ liệu từ
+        /// bộ quản lý công việc mới (WorkTasks). Số liệu toàn cục, không phụ thuộc bộ lọc đang chọn.
+        /// </summary>
+        private static void FillMonthTasks(SummaryViewModel model)
+        {
+            var today = DateTime.Today;
+            var from = new DateTime(today.Year, today.Month, 1);
+            var to = from.AddMonths(1).AddDays(-1);
+
+            model.TaskMonth = today.Month;
+            model.TaskMonthYear = today.Year;
+
+            List<WorkTask> tasks;
+            try
+            {
+                tasks = Repository.WorkTasks.All()
+                    .Where(t => TaskInRange(t, from, to))
+                    .ToList();
+            }
+            catch (Exception)
+            {
+                // SQL chập chờn: trang tổng hợp vẫn phải mở được, chỉ thiếu bảng công việc.
+                return;
+            }
+
+            model.MonthTaskCount = tasks.Count;
+            model.MonthTaskProjectCount = tasks
+                .Where(t => t.ProjectId > 0)
+                .Select(t => t.ProjectId)
+                .Distinct()
+                .Count();
+
+            model.MonthTasks = tasks
+                .GroupBy(t => t.AssigneeUserId)
+                .Select(g =>
+                {
+                    var name = g.Select(t => t.AssigneeName)
+                        .FirstOrDefault(n => !string.IsNullOrWhiteSpace(n));
+                    var row = new MemberTaskSummary
+                    {
+                        UserId = g.Key,
+                        UserName = g.Key <= 0 ? "(Chưa giao)" : (name ?? "(Không rõ)"),
+                        Overdue = g.Count(t => t.IsOverdue),
+                        Total = g.Count()
+                    };
+                    foreach (var byState in g.GroupBy(t => t.State))
+                    {
+                        row.ByState[byState.Key ?? string.Empty] = byState.Count();
+                    }
+                    return row;
+                })
+                // Người chưa giao xếp cuối; còn lại ai nhiều việc hơn lên trước.
+                .OrderBy(r => r.UserId <= 0 ? 1 : 0)
+                .ThenByDescending(r => r.Total)
+                .ThenBy(r => r.UserName, StringComparer.CurrentCulture)
+                .ToList();
+
+            var total = new MemberTaskSummary
+            {
+                UserName = "Tổng cộng",
+                Overdue = model.MonthTasks.Sum(r => r.Overdue),
+                Total = model.MonthTasks.Sum(r => r.Total)
+            };
+            foreach (var state in TaskStates.All)
+            {
+                total.ByState[state] = model.MonthTasks.Sum(r => r.Count(state));
+            }
+            model.MonthTaskTotal = total;
+        }
+
+        /// <summary>
+        /// Đầu việc có thuộc khoảng ngày này không. Ưu tiên hạn hoàn thành (cùng quy tắc với bộ
+        /// chấm KPI: việc đến hạn trong kỳ); việc hỗ trợ không có hạn thì tính theo tuần được phân;
+        /// còn lại dựa vào mốc hoàn thành.
+        /// </summary>
+        private static bool TaskInRange(WorkTask task, DateTime from, DateTime to)
+        {
+            if (task.DueDate.HasValue)
+            {
+                var d = task.DueDate.Value.Date;
+                return d >= from && d <= to;
+            }
+
+            if (task.Year > 0 && task.Week > 0)
+            {
+                return WeekHelper.FirstDayOfWeek(task.Year, task.Week) <= to
+                    && WeekHelper.LastDayOfWeek(task.Year, task.Week) >= from;
+            }
+
+            return task.CompletedAt.HasValue
+                && task.CompletedAt.Value.Date >= from
+                && task.CompletedAt.Value.Date <= to;
         }
 
         /// <summary>

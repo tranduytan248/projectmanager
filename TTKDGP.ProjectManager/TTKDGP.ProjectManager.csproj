@@ -102,6 +102,7 @@
     <Compile Include="Infrastructure\AppAuthorizeAttribute.cs" />
     <Compile Include="Infrastructure\PasswordHasher.cs" />
     <Compile Include="Infrastructure\ViewHelpers.cs" />
+    <Compile Include="Infrastructure\HtmlSanitizer.cs" />
     <Compile Include="Models\Member.cs" />
     <Compile Include="Models\HrEmployee.cs" />
     <Compile Include="Models\Project.cs" />
@@ -141,6 +142,7 @@
     <Compile Include="Infrastructure\XlsxFile.cs" />
     <Compile Include="Data\WorkUserMigration.cs" />
     <Compile Include="Models\Work\WorkProject.cs" />
+    <Compile Include="Models\Work\WorkProjectFile.cs" />
     <Compile Include="Models\Work\WorkTask.cs" />
     <Compile Include="Models\Work\WorkWeekReport.cs" />
     <Compile Include="Models\Work\KpiSheet.cs" />
@@ -210,6 +212,7 @@
     <Content Include="Views\Shared\_Layout.cshtml" />
     <Content Include="Views\Shared\Error.cshtml" />
     <Content Include="Views\Home\Index.cshtml" />
+    <Content Include="Views\Home\Docs.cshtml" />
     <Content Include="Views\Home\Project.cshtml" />
     <Content Include="Views\Account\Login.cshtml" />
     <Content Include="Views\Account\Profile.cshtml" />

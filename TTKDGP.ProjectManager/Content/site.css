@@ -282,6 +282,19 @@ body.has-sidebar .main, body.has-sidebar .topbar-inner, body.has-sidebar .footer
 .topbar-week-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); flex: 0 0 auto; }
 .topbar-week-range { color: var(--text-faint); }
 
+/* Mục menu trên thanh trên — dành cho trang công khai (Tài liệu tích hợp) */
+.topbar-link {
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    padding: 6px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+}
+.topbar-link:hover { color: var(--primary); background: var(--primary-soft); text-decoration: none; }
+.topbar-link.active { color: var(--primary); background: var(--primary-soft); }
+
 /* Điều hướng đã chuyển hết sang menu dọc, thanh trên chỉ còn khối tài khoản bên phải */
 .user-area { display: flex; align-items: center; gap: 12px; margin-left: auto; }
 
@@ -2043,3 +2056,54 @@ table.data tbody tr.row-due-danger:hover { background: #f6dcda; }
         padding-top: 14px;
     }
 }
+
+/* ===== Trình soạn thảo WYSIWYG gọn (textarea[data-rich], xem AppRichText trong app.js) ===== */
+
+.rich-editor { border: 1px solid var(--border-strong); border-radius: var(--radius-xs); background: var(--surface); }
+
+.rich-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 3px;
+    padding: 5px 7px;
+    border-bottom: 1px solid var(--border-soft);
+    background: var(--bg-soft);
+    border-radius: var(--radius-xs) var(--radius-xs) 0 0;
+}
+
+.rich-btn {
+    border: 1px solid transparent;
+    background: none;
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 12.5px;
+    cursor: pointer;
+    color: var(--text);
+}
+.rich-btn:hover { background: var(--primary-soft); }
+
+.rich-area {
+    min-height: 110px;
+    max-height: 40vh;
+    overflow-y: auto;
+    padding: 10px 12px;
+    line-height: 1.55;
+    border-radius: 0 0 var(--radius-xs) var(--radius-xs);
+}
+.rich-area:focus { outline: none; box-shadow: 0 0 0 3px var(--primary-soft); }
+
+/* Nội dung HTML đã lọc, hiển thị ở trang chi tiết. */
+.rich-content { line-height: 1.6; overflow-wrap: break-word; }
+.rich-content ul, .rich-content ol { margin: 6px 0 6px 22px; }
+.rich-content blockquote { margin: 8px 0; padding: 8px 14px; border-left: 3px solid var(--primary); background: var(--bg-soft); }
+
+/* ===== Ô mật khẩu che *** với nút sao chép (thông tin FTP / Database của dự án) ===== */
+
+.secret-row { display: inline-flex; align-items: center; gap: 8px; }
+.secret-mask { letter-spacing: 2px; color: var(--text-muted); }
+
+/* Ô nhập kèm nút bên cạnh (ví dụ ô mật khẩu + nút Copy trên form). */
+.input-row { display: flex; align-items: center; gap: 8px; }
+.input-row input { flex: 1; min-width: 0; }
+.input-row .btn { flex: 0 0 auto; }

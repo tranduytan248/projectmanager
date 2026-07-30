@@ -49,6 +49,9 @@ namespace TTKDGP.ProjectManager.Models
         public WorkWeekReport CurrentReport { get; set; }
         public List<WorkWeekReport> RecentReports { get; set; }
 
+        /// <summary>Tài liệu đính kèm của dự án, file mới nhất trước.</summary>
+        public List<WorkProjectFile> Files { get; set; }
+
         public int ActiveCount { get { return Assignments.Count(a => a.IsActive); } }
         public int PastCount { get { return Assignments.Count(a => !a.IsActive); } }
 
@@ -57,6 +60,7 @@ namespace TTKDGP.ProjectManager.Models
             Assignments = new List<WorkAssignment>();
             OverdueTasks = new List<WorkTask>();
             RecentReports = new List<WorkWeekReport>();
+            Files = new List<WorkProjectFile>();
             ChecklistStat = new Services.TaskStat();
         }
     }

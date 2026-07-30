@@ -1,0 +1,53 @@
+﻿@{
+    ViewBag.Title = "Tài liệu tích hợp";
+}
+
+<div class="page-head">
+    <div>
+        <h1>Tài liệu tích hợp</h1>
+        <p>Hướng dẫn và bộ Postman cho các API mà hệ thống bên ngoài dùng để tích hợp.</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-head">API lấy dữ liệu HRM</div>
+    <div class="card-body">
+        <p class="muted" style="margin-top:0">
+            API lấy dữ liệu HRM (nhân sự, đơn vị, chức danh). Tải về để xem hướng dẫn và thử bằng Postman.
+        </p>
+        <div class="btn-row">
+            <a class="btn btn-primary" href="@Url.Action("Download", "Home", new { doc = "guide" })">
+                Hướng dẫn sử dụng (.md)
+            </a>
+            <a class="btn btn-default" href="@Url.Action("Download", "Home", new { doc = "postman" })">
+                Bộ Postman (.json)
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-head">API gửi tin nhắn SMS</div>
+    <div class="card-body">
+        <p class="muted" style="margin-top:0">
+            API gửi tin nhắn SMS tới một hoặc nhiều số máy. Tải về để xem hướng dẫn và thử bằng Postman.
+        </p>
+        <div class="btn-row">
+            <a class="btn btn-primary" href="@Url.Action("Download", "Home", new { doc = "sms-guide" })">
+                Hướng dẫn sử dụng (.md)
+            </a>
+            <a class="btn btn-default" href="@Url.Action("Download", "Home", new { doc = "sms-postman" })">
+                Bộ Postman (.json)
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <p class="hint" style="margin:0">
+            Mã hệ thống và khoá bí mật được cấp riêng cho từng hệ thống tích hợp; cả hai API dùng chung
+            một cặp mã và khoá. Liên hệ Tổ NCPT để được cấp.
+        </p>
+    </div>
+</div>

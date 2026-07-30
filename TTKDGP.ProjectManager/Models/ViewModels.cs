@@ -387,21 +387,12 @@ namespace TTKDGP.ProjectManager.Models
     {
         public List<SummaryRow> Rows { get; set; }
 
-        /// <summary>Chi tiết tham gia gom nhóm theo thành viên — cách hiển thị chính ở FrontEnd.</summary>
-        public List<MemberParticipation> ByMember { get; set; }
-
         // ----- Tuần hiện tại -----
 
         public int CurrentYear { get; set; }
         public int CurrentWeek { get; set; }
         public DateTime CurrentWeekFrom { get; set; }
         public DateTime CurrentWeekTo { get; set; }
-
-        /// <summary>Số dự án đang chạy đã có báo cáo trong tuần hiện tại.</summary>
-        public int ReportedThisWeek { get; set; }
-
-        /// <summary>Số dự án đang chạy còn thiếu báo cáo trong tuần hiện tại.</summary>
-        public int MissingThisWeek { get; set; }
 
         // Bộ lọc hiện tại
         public string Keyword { get; set; }
@@ -435,17 +426,64 @@ namespace TTKDGP.ProjectManager.Models
         /// <summary>Khối lượng của mỗi thành viên: tham gia bao nhiêu dự án.</summary>
         public List<MemberLoad> MemberLoads { get; set; }
 
+        // ----- Công việc trong tháng hiện tại (bộ quản lý công việc mới) -----
+
+        /// <summary>Tháng/năm của bảng tổng hợp công việc — luôn là tháng hiện tại.</summary>
+        public int TaskMonth { get; set; }
+        public int TaskMonthYear { get; set; }
+
+        /// <summary>Công việc của từng nhân sự trong tháng, đếm theo trạng thái.</summary>
+        public List<MemberTaskSummary> MonthTasks { get; set; }
+
+        /// <summary>Dòng tổng cộng của bảng công việc trong tháng.</summary>
+        public MemberTaskSummary MonthTaskTotal { get; set; }
+
+        /// <summary>Tổng số công việc trong tháng hiện tại.</summary>
+        public int MonthTaskCount { get; set; }
+
+        /// <summary>Số dự án có ít nhất một công việc trong tháng hiện tại.</summary>
+        public int MonthTaskProjectCount { get; set; }
+
         public SummaryViewModel()
         {
             Rows = new List<SummaryRow>();
-            ByMember = new List<MemberParticipation>();
             Members = new List<Member>();
             Projects = new List<Project>();
             Pms = new List<Member>();
             WorkStatuses = new List<string>();
             StatusBreakdown = new List<StatusCount>();
             MemberLoads = new List<MemberLoad>();
+            MonthTasks = new List<MemberTaskSummary>();
             ActiveOnly = true;
+        }
+    }
+
+    /// <summary>
+    /// Tổng hợp công việc của một người trong một tháng, đếm theo trạng thái
+    /// (dữ liệu từ bộ quản lý công việc mới — bảng WorkTasks).
+    /// </summary>
+    public class MemberTaskSummary
+    {
+        public int UserId { get; set; }
+        public string UserName { get; set; }
+
+        /// <summary>Số việc theo mã trạng thái, xem <see cref="TaskStates"/>.</summary>
+        public Dictionary<string, int> ByState { get; set; }
+
+        /// <summary>Việc đã quá hạn mà chưa đóng — nhắc riêng vì cần chú ý nhất.</summary>
+        public int Overdue { get; set; }
+
+        public int Total { get; set; }
+
+        public MemberTaskSummary()
+        {
+            ByState = new Dictionary<string, int>();
+        }
+
+        public int Count(string state)
+        {
+            int n;
+            return ByState.TryGetValue(state, out n) ? n : 0;
         }
     }
 
@@ -461,46 +499,6 @@ namespace TTKDGP.ProjectManager.Models
         public string MemberName { get; set; }
         public int ProjectCount { get; set; }
         public int ActiveProjectCount { get; set; }
-    }
-
-    /// <summary>Khối "Chi tiết tham gia" của một thành viên: các dự án người đó đang làm.</summary>
-    public class MemberParticipation
-    {
-        public int MemberId { get; set; }
-        public string MemberName { get; set; }
-
-        /// <summary>Các dự án của thành viên này, đã sắp theo độ ưu tiên trạng thái dự án.</summary>
-        public List<SummaryRow> Rows { get; set; }
-
-        /// <summary>Các dòng hiện ngay — dự án ở mức ưu tiên cao nhất mà thành viên này đang có.</summary>
-        public List<SummaryRow> VisibleRows { get; set; }
-
-        /// <summary>Các dòng còn lại, gập sau nút "Xem thêm".</summary>
-        public List<SummaryRow> HiddenRows { get; set; }
-
-        public int ProjectCount { get { return Rows.Select(r => r.ProjectId).Distinct().Count(); } }
-        public int ActiveCount { get { return Rows.Count(r => r.IsActive); } }
-
-        /// <summary>Các vai trò người này đảm nhận, để hiện gọn ở tiêu đề khối.</summary>
-        public List<string> Roles
-        {
-            get
-            {
-                return Rows
-                    .Select(r => r.Role)
-                    .Where(r => !string.IsNullOrWhiteSpace(r))
-                    .Distinct(StringComparer.CurrentCultureIgnoreCase)
-                    .OrderBy(r => r, StringComparer.CurrentCulture)
-                    .ToList();
-            }
-        }
-
-        public MemberParticipation()
-        {
-            Rows = new List<SummaryRow>();
-            VisibleRows = new List<SummaryRow>();
-            HiddenRows = new List<SummaryRow>();
-        }
     }
 
     /// <summary>Chi tiết một dự án ở FrontEnd công khai.</summary>

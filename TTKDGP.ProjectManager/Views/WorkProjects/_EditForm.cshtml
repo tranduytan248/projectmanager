@@ -10,7 +10,10 @@
     var projectTypes = ViewBag.ProjectTypes as List<string> ?? new List<string>();
 }
 
-@using (Html.BeginForm("Edit", "WorkProjects", FormMethod.Post))
+@* Gửi kiểu THƯỜNG (data-native-submit) vì form mang được file đính kèm — serialize() của AJAX
+   không mang file. Có lỗi nhập liệu thì quay về trang form đầy đủ. *@
+@using (Html.BeginForm("Edit", "WorkProjects", FormMethod.Post,
+    new { enctype = "multipart/form-data", data_native_submit = "true" }))
 {
     @Html.AntiForgeryToken()
     @Html.HiddenFor(m => m.Id)
@@ -90,7 +93,74 @@
 
             <div class="form-field full">
                 @Html.LabelFor(m => m.Description)
-                @Html.TextAreaFor(m => m.Description, new { rows = 3 })
+                @Html.TextAreaFor(m => m.Description, new { rows = 3, data_rich = "true" })
+            </div>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <div class="form-section-title">Thông tin triển khai</div>
+        <div class="form-grid">
+            <div class="form-field">
+                @Html.LabelFor(m => m.GithubLink)
+                @Html.TextBoxFor(m => m.GithubLink, new { placeholder = "https://github.com/..." })
+            </div>
+
+            <div class="form-field">
+                @Html.LabelFor(m => m.SvnLink)
+                @Html.TextBoxFor(m => m.SvnLink, new { placeholder = "svn://... hoặc https://..." })
+            </div>
+
+            <div class="form-field">
+                @Html.LabelFor(m => m.FtpAccount)
+                @Html.TextBoxFor(m => m.FtpAccount, new { autocomplete = "off", placeholder = "host / tài khoản FTP" })
+            </div>
+
+            <div class="form-field">
+                @Html.LabelFor(m => m.FtpPassword)
+                <div class="input-row">
+                    @* TextBoxFor + type=password thay vì PasswordFor: PasswordFor không đổ giá trị
+                       cũ vào ô, mở form sửa rồi lưu lại là mất mật khẩu. *@
+                    @Html.TextBoxFor(m => m.FtpPassword, new { type = "password", autocomplete = "new-password" })
+                    <button type="button" class="btn btn-default btn-sm" data-copy-target="#FtpPassword">Copy</button>
+                </div>
+            </div>
+
+            <div class="form-field">
+                @Html.LabelFor(m => m.DbType)
+                @Html.TextBoxFor(m => m.DbType, new { placeholder = "SQL Server / MySQL / PostgreSQL..." })
+            </div>
+
+            <div class="form-field">
+                @Html.LabelFor(m => m.DbServer)
+                @Html.TextBoxFor(m => m.DbServer, new { autocomplete = "off", placeholder = "địa chỉ máy chủ CSDL" })
+            </div>
+
+            <div class="form-field">
+                @Html.LabelFor(m => m.DbUsername)
+                @Html.TextBoxFor(m => m.DbUsername, new { autocomplete = "off" })
+            </div>
+
+            <div class="form-field">
+                @Html.LabelFor(m => m.DbPassword)
+                <div class="input-row">
+                    @Html.TextBoxFor(m => m.DbPassword, new { type = "password", autocomplete = "new-password" })
+                    <button type="button" class="btn btn-default btn-sm" data-copy-target="#DbPassword">Copy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <div class="form-section-title">Tài liệu đính kèm</div>
+        <div class="form-grid">
+            <div class="form-field full">
+                <label for="files">Thêm file (chọn được nhiều file)</label>
+                <input type="file" id="files" name="files" multiple
+                       accept=".png,.jpg,.jpeg,.gif,.webp,.bmp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.md,.zip,.rar,.7z" />
+                <span class="hint">
+                    Mỗi file tối đa 10 MB; nhận tài liệu, ảnh và file nén. Danh sách file đã có xem ở trang chi tiết dự án.
+                </span>
             </div>
         </div>
     </div>

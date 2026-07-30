@@ -66,6 +66,9 @@ namespace TTKDGP.ProjectManager.Data
         private static readonly Lazy<SqlStore<WorkComment>> _workComments =
             new Lazy<SqlStore<WorkComment>>(() => new SqlStore<WorkComment>("WorkComments"));
 
+        private static readonly Lazy<SqlStore<WorkProjectFile>> _workProjectFiles =
+            new Lazy<SqlStore<WorkProjectFile>>(() => new SqlStore<WorkProjectFile>("WorkProjectFiles"));
+
         private static readonly Lazy<SqlStore<WorkWeekReport>> _workWeekReports =
             new Lazy<SqlStore<WorkWeekReport>>(() => new SqlStore<WorkWeekReport>("WorkWeekReports"));
 
@@ -95,6 +98,9 @@ namespace TTKDGP.ProjectManager.Data
 
         /// <summary>Trao đổi trong từng đầu việc.</summary>
         public static SqlStore<WorkComment> WorkComments { get { return _workComments.Value; } }
+
+        /// <summary>File tài liệu đính kèm vào từng dự án.</summary>
+        public static SqlStore<WorkProjectFile> WorkProjectFiles { get { return _workProjectFiles.Value; } }
 
         /// <summary>Báo cáo tuần của PM cho từng dự án.</summary>
         public static SqlStore<WorkWeekReport> WorkWeekReports { get { return _workWeekReports.Value; } }

@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Web.Mvc;
 
 namespace TTKDGP.ProjectManager.Models
 {
@@ -167,8 +168,49 @@ namespace TTKDGP.ProjectManager.Models
         [Display(Name = "Ngày kết thúc dự kiến")]
         public DateTime? EndDate { get; set; }
 
+        /// <summary>
+        /// Mô tả dạng HTML từ trình soạn thảo WYSIWYG. [AllowHtml] để MVC không chặn khi gửi form;
+        /// nội dung LUÔN được lọc qua HtmlSanitizer trước khi lưu và trước khi hiển thị.
+        /// </summary>
         [Display(Name = "Mô tả")]
+        [AllowHtml]
         public string Description { get; set; }
+
+        // ---------- Thông tin triển khai: nguồn mã, FTP, cơ sở dữ liệu ----------
+
+        [Display(Name = "Link Source Github")]
+        [StringLength(500)]
+        public string GithubLink { get; set; }
+
+        [Display(Name = "Link Source SVN")]
+        [StringLength(500)]
+        public string SvnLink { get; set; }
+
+        [Display(Name = "FTP — Tài khoản")]
+        [StringLength(250)]
+        public string FtpAccount { get; set; }
+
+        /// <summary>Hiển thị luôn che dạng ***; chỉ lấy được nội dung qua nút "Sao chép".</summary>
+        [Display(Name = "FTP — Mật khẩu")]
+        [StringLength(250)]
+        public string FtpPassword { get; set; }
+
+        [Display(Name = "Sử dụng database")]
+        [StringLength(100)]
+        public string DbType { get; set; }
+
+        [Display(Name = "Database — Server")]
+        [StringLength(250)]
+        public string DbServer { get; set; }
+
+        [Display(Name = "Database — Username")]
+        [StringLength(250)]
+        public string DbUsername { get; set; }
+
+        /// <summary>Hiển thị luôn che dạng ***; chỉ lấy được nội dung qua nút "Sao chép".</summary>
+        [Display(Name = "Database — Password")]
+        [StringLength(250)]
+        public string DbPassword { get; set; }
 
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }

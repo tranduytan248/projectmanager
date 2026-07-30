@@ -102,9 +102,203 @@
         @if (!string.IsNullOrWhiteSpace(p.Description))
         {
             <p class="hint" style="margin:14px 0 6px"><strong>Mô tả</strong></p>
-            <pre class="message-preview">@p.Description</pre>
+            @* Nội dung từ WYSIWYG, đã lọc khi lưu; ToDisplay lọc thêm lần nữa rồi mới Raw. *@
+            <div class="rich-content">@Html.Raw(HtmlSanitizer.ToDisplay(p.Description))</div>
         }
     </div>
+</div>
+
+@{
+    var hasDeployInfo = !string.IsNullOrWhiteSpace(p.GithubLink) || !string.IsNullOrWhiteSpace(p.SvnLink)
+        || !string.IsNullOrWhiteSpace(p.FtpAccount) || !string.IsNullOrWhiteSpace(p.FtpPassword)
+        || !string.IsNullOrWhiteSpace(p.DbType) || !string.IsNullOrWhiteSpace(p.DbServer)
+        || !string.IsNullOrWhiteSpace(p.DbUsername) || !string.IsNullOrWhiteSpace(p.DbPassword);
+}
+@if (hasDeployInfo)
+{
+    <div class="card">
+        <div class="card-head">Thông tin triển khai</div>
+        <div class="card-body">
+            <div class="form-grid">
+                @if (!string.IsNullOrWhiteSpace(p.GithubLink))
+                {
+                    <div class="form-field">
+                        <label>Link Source Github</label>
+                        <div class="form-static">
+                            @if (p.GithubLink.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                            {
+                                <a href="@p.GithubLink" target="_blank" rel="noopener noreferrer">@p.GithubLink</a>
+                            }
+                            else
+                            {
+                                @p.GithubLink
+                            }
+                        </div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(p.SvnLink))
+                {
+                    <div class="form-field">
+                        <label>Link Source SVN</label>
+                        <div class="form-static">
+                            @if (p.SvnLink.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                            {
+                                <a href="@p.SvnLink" target="_blank" rel="noopener noreferrer">@p.SvnLink</a>
+                            }
+                            else
+                            {
+                                @p.SvnLink
+                            }
+                        </div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(p.FtpAccount))
+                {
+                    <div class="form-field">
+                        <label>FTP — Tài khoản</label>
+                        <div class="form-static secret-row">
+                            <span>@p.FtpAccount</span>
+                            <input type="hidden" id="ftpAccount" value="@p.FtpAccount" />
+                            <button type="button" class="btn btn-ghost btn-sm" data-copy-target="#ftpAccount">Sao chép</button>
+                        </div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(p.FtpPassword))
+                {
+                    <div class="form-field">
+                        <label>FTP — Mật khẩu</label>
+                        <div class="form-static secret-row">
+                            <span class="secret-mask">••••••••</span>
+                            <input type="hidden" id="ftpPassword" value="@p.FtpPassword" />
+                            <button type="button" class="btn btn-ghost btn-sm" data-copy-target="#ftpPassword">Sao chép</button>
+                        </div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(p.DbType))
+                {
+                    <div class="form-field">
+                        <label>Sử dụng database</label>
+                        <div class="form-static">@p.DbType</div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(p.DbServer))
+                {
+                    <div class="form-field">
+                        <label>Database — Server</label>
+                        <div class="form-static secret-row">
+                            <span>@p.DbServer</span>
+                            <input type="hidden" id="dbServer" value="@p.DbServer" />
+                            <button type="button" class="btn btn-ghost btn-sm" data-copy-target="#dbServer">Sao chép</button>
+                        </div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(p.DbUsername))
+                {
+                    <div class="form-field">
+                        <label>Database — Username</label>
+                        <div class="form-static secret-row">
+                            <span>@p.DbUsername</span>
+                            <input type="hidden" id="dbUsername" value="@p.DbUsername" />
+                            <button type="button" class="btn btn-ghost btn-sm" data-copy-target="#dbUsername">Sao chép</button>
+                        </div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(p.DbPassword))
+                {
+                    <div class="form-field">
+                        <label>Database — Password</label>
+                        <div class="form-static secret-row">
+                            <span class="secret-mask">••••••••</span>
+                            <input type="hidden" id="dbPassword" value="@p.DbPassword" />
+                            <button type="button" class="btn btn-ghost btn-sm" data-copy-target="#dbPassword">Sao chép</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<div class="card">
+    <div class="card-head">
+        Tài liệu dự án
+        <span class="muted">— @Model.Files.Count file</span>
+    </div>
+
+    @if (Model.Files.Count == 0)
+    {
+        <div class="empty-state">Chưa có tài liệu nào.</div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Dung lượng</th>
+                        <th>Người tải lên</th>
+                        <th>Ngày</th>
+                        @if (Model.CanEdit)
+                        {
+                            <th></th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var f in Model.Files)
+                    {
+                        <tr>
+                            <td>
+                                <a href="@Url.Action("DownloadFile", "WorkProjects", new { id = p.Id, fileId = f.Id })">
+                                    @f.OriginalName
+                                </a>
+                            </td>
+                            <td class="muted nowrap">@CommentAttachments.SizeLabel(f.Size)</td>
+                            <td class="muted">@(string.IsNullOrWhiteSpace(f.UploadedByName) ? "—" : f.UploadedByName)</td>
+                            <td class="muted nowrap">@f.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                            @if (Model.CanEdit)
+                            {
+                                <td class="nowrap" style="text-align:right">
+                                    @using (Html.BeginForm("DeleteFile", "WorkProjects",
+                                        new { id = p.Id, fileId = f.Id }, FormMethod.Post, new { @class = "inline-form" }))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-ghost btn-sm"
+                                                onclick="return confirm('Xoá file này?');">Xoá</button>
+                                    }
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    @if (Model.CanEdit)
+    {
+        <div class="card-body" style="border-top:1px solid var(--border-soft)">
+            @using (Html.BeginForm("UploadFiles", "WorkProjects", new { id = p.Id },
+                FormMethod.Post, new { enctype = "multipart/form-data" }))
+            {
+                @Html.AntiForgeryToken()
+                <div class="btn-row" style="align-items:center">
+                    <input type="file" name="files" multiple
+                           accept=".png,.jpg,.jpeg,.gif,.webp,.bmp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.md,.zip,.rar,.7z" />
+                    <button type="submit" class="btn btn-default btn-sm">Tải lên</button>
+                    <span class="hint">Mỗi file tối đa 10 MB; nhận tài liệu, ảnh và file nén.</span>
+                </div>
+            }
+        </div>
+    }
 </div>
 
 <div class="card">

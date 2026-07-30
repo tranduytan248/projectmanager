@@ -161,6 +161,7 @@
             .done(function (html) {
                 $body.html(html);
                 if (window.AppSelect2) window.AppSelect2.init($body[0]);
+                if (window.AppRichText) window.AppRichText.init($body[0]);
             })
             .fail(function () {
                 $body.html('<div class="modal-loading">Không tải được nội dung.</div>');
@@ -207,6 +208,7 @@
                     }
                     $body.html(res);
                     if (window.AppSelect2) window.AppSelect2.init($body[0]);
+                    if (window.AppRichText) window.AppRichText.init($body[0]);
                 })
                 .fail(function () {
                     $submit.prop('disabled', false);
@@ -297,6 +299,80 @@
             });
         });
     });
+})(jQuery);
+
+// Trình soạn thảo WYSIWYG gọn cho textarea[data-rich] — tự viết trên contenteditable, không
+// thêm thư viện ngoài (server không có internet). Nội dung HTML đồng bộ ngược về textarea để
+// gửi form như thường; máy chủ LUÔN lọc lại bằng HtmlSanitizer nên đây chỉ là lớp soạn thảo.
+(function ($) {
+    'use strict';
+
+    var BUTTONS = [
+        { cmd: 'bold', html: '<strong>B</strong>', title: 'Đậm' },
+        { cmd: 'italic', html: '<em>I</em>', title: 'Nghiêng' },
+        { cmd: 'underline', html: '<u>U</u>', title: 'Gạch chân' },
+        { cmd: 'insertUnorderedList', html: '&bull; Danh sách', title: 'Danh sách chấm' },
+        { cmd: 'insertOrderedList', html: '1. Danh sách', title: 'Danh sách đánh số' },
+        { cmd: 'link', html: '&#128279; Liên kết', title: 'Chèn liên kết' },
+        { cmd: 'removeFormat', html: 'X&#818;', title: 'Xoá định dạng' }
+    ];
+
+    function insertLink() {
+        var url = window.prompt('Địa chỉ liên kết (http/https):', 'https://');
+        if (!url) return;
+        if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+
+        var sel = window.getSelection();
+        if (sel && !sel.isCollapsed) {
+            document.execCommand('createLink', false, url);
+        } else {
+            // Chưa bôi đen gì thì chèn thẳng địa chỉ thành liên kết.
+            var a = $('<a></a>').attr('href', url).text(url);
+            document.execCommand('insertHTML', false, a[0].outerHTML);
+        }
+    }
+
+    function init(root) {
+        $(root || document).find('textarea[data-rich]').each(function () {
+            var ta = this;
+            if (ta.getAttribute('data-rich-ready')) return;
+            ta.setAttribute('data-rich-ready', '1');
+
+            var $ta = $(ta).hide();
+            var $wrap = $('<div class="rich-editor"></div>').insertAfter($ta);
+            var $bar = $('<div class="rich-toolbar"></div>').appendTo($wrap);
+            var $area = $('<div class="rich-area" contenteditable="true"></div>').appendTo($wrap);
+
+            // Dữ liệu cũ là chữ thường: mã hoá rồi đổi xuống dòng thành <br> để không mất dòng.
+            var value = ta.value || '';
+            if (value && value.indexOf('<') < 0) {
+                value = $('<div></div>').text(value).html().replace(/\r?\n/g, '<br />');
+            }
+            $area.html(value);
+
+            BUTTONS.forEach(function (b) {
+                $('<button type="button" class="rich-btn"></button>')
+                    .attr('title', b.title)
+                    .html(b.html)
+                    // preventDefault ở mousedown để không mất vùng bôi đen trong ô soạn thảo.
+                    .on('mousedown', function (e) { e.preventDefault(); })
+                    .on('click', function () {
+                        $area.trigger('focus');
+                        if (b.cmd === 'link') { insertLink(); } else { document.execCommand(b.cmd, false, null); }
+                        sync();
+                    })
+                    .appendTo($bar);
+            });
+
+            function sync() { ta.value = $area.html(); }
+
+            $area.on('input blur', sync);
+            if (ta.form) $(ta.form).on('submit', sync);
+        });
+    }
+
+    $(function () { init(document); });
+    window.AppRichText = { init: init };
 })(jQuery);
 
 // Kéo thả thẻ trên bảng Kanban.

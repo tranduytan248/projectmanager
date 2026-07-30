@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Web;
 using System.Web.Mvc;
 using TTKDGP.ProjectManager.Data;
 using TTKDGP.ProjectManager.Infrastructure;
@@ -105,6 +107,10 @@ namespace TTKDGP.ProjectManager.Controllers
                     .Where(r => r.ProjectId == id)
                     .OrderByDescending(r => r.Year).ThenByDescending(r => r.Week)
                     .Take(5)
+                    .ToList(),
+                Files = Repository.WorkProjectFiles.All()
+                    .Where(f => f.ProjectId == id)
+                    .OrderByDescending(f => f.CreatedAt)
                     .ToList()
             };
 
@@ -157,7 +163,7 @@ namespace TTKDGP.ProjectManager.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [AppAuthorize(Permission = "wprojects.create,wprojects.edit")]
-        public ActionResult Edit(WorkProject model)
+        public ActionResult Edit(WorkProject model, IEnumerable<HttpPostedFileBase> files)
         {
             if (model.StartDate.HasValue && model.EndDate.HasValue
                 && model.EndDate.Value.Date < model.StartDate.Value.Date)
@@ -207,12 +213,18 @@ namespace TTKDGP.ProjectManager.Controllers
             if (!string.IsNullOrWhiteSpace(model.Code)) model.Code = model.Code.Trim();
             model.PmName = WorkService.UserFullName(model.PmUserId);
 
+            // Mô tả đến từ trình soạn thảo WYSIWYG (HTML) — lọc về tập thẻ an toàn TRƯỚC khi lưu,
+            // vì chỗ hiển thị dùng Html.Raw.
+            model.Description = HtmlSanitizer.Clean(model.Description);
+            TrimDeployInfo(model);
+
             var now = DateTime.Now;
 
             if (model.Id == 0)
             {
                 model.CreatedAt = now;
                 var saved = Repository.WorkProjects.Insert(model);
+                SaveProjectFiles(saved.Id, files);
 
                 Notify(string.Format("Đã thêm dự án \"{0}\". Bước tiếp theo: phân công nhân sự.", saved.Name));
                 return RedirectToAction("Members", new { id = saved.Id });
@@ -224,6 +236,7 @@ namespace TTKDGP.ProjectManager.Controllers
             model.CreatedAt = current.CreatedAt;
             model.UpdatedAt = now;
             Repository.WorkProjects.Update(model);
+            SaveProjectFiles(model.Id, files);
 
             // Tên PM lưu kèm ở phân công/đầu việc không tự đổi theo, nhưng tên dự án thì nên đồng bộ
             // để danh sách "Công việc của tôi" không hiện tên cũ.
@@ -257,10 +270,125 @@ namespace TTKDGP.ProjectManager.Controllers
             }
 
             Repository.WorkAssignments.DeleteWhere(a => a.ProjectId == id);
+
+            // Xoá cả tài liệu đính kèm: bản ghi lẫn file trên đĩa, không để file mồ côi.
+            foreach (var f in Repository.WorkProjectFiles.All().Where(f => f.ProjectId == id))
+            {
+                CommentAttachments.Delete(f.StoredName);
+            }
+            Repository.WorkProjectFiles.DeleteWhere(f => f.ProjectId == id);
+
             Repository.WorkProjects.Delete(id);
 
             Notify(string.Format("Đã xoá dự án \"{0}\".", project.Name));
             return RedirectToAction("Index");
+        }
+
+        // ---------- Tài liệu đính kèm của dự án ----------
+
+        /// <summary>Cắt khoảng trắng thừa của các trường thông tin triển khai trước khi lưu.</summary>
+        private static void TrimDeployInfo(WorkProject model)
+        {
+            model.GithubLink = TrimOrNull(model.GithubLink);
+            model.SvnLink = TrimOrNull(model.SvnLink);
+            model.FtpAccount = TrimOrNull(model.FtpAccount);
+            model.FtpPassword = TrimOrNull(model.FtpPassword);
+            model.DbType = TrimOrNull(model.DbType);
+            model.DbServer = TrimOrNull(model.DbServer);
+            model.DbUsername = TrimOrNull(model.DbUsername);
+            model.DbPassword = TrimOrNull(model.DbPassword);
+        }
+
+        private static string TrimOrNull(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        }
+
+        /// <summary>
+        /// Lưu các file gửi kèm form vào kho đính kèm chung. File bị từ chối (quá cỡ, sai đuôi)
+        /// không chặn việc lưu dự án — chỉ báo lại để người dùng gửi lại file đó.
+        /// </summary>
+        private void SaveProjectFiles(int projectId, IEnumerable<HttpPostedFileBase> files)
+        {
+            if (files == null) return;
+
+            var rejected = new List<string>();
+            foreach (var file in files)
+            {
+                if (file == null || file.ContentLength <= 0) continue;
+
+                string stored, name, error;
+                long size;
+                if (!CommentAttachments.TrySaveFile(file, out stored, out name, out size, out error))
+                {
+                    rejected.Add(string.Format("\"{0}\" ({1})", Path.GetFileName(file.FileName), error));
+                    continue;
+                }
+                if (stored == null) continue;
+
+                Repository.WorkProjectFiles.Insert(new WorkProjectFile
+                {
+                    ProjectId = projectId,
+                    StoredName = stored,
+                    OriginalName = name,
+                    Size = size,
+                    UploadedByUserId = CurrentUserId,
+                    UploadedByName = CurrentUser == null ? null : CurrentUser.FullName,
+                    CreatedAt = DateTime.Now
+                });
+            }
+
+            if (rejected.Count > 0)
+            {
+                NotifyError("Không nhận được file: " + string.Join("; ", rejected));
+            }
+        }
+
+        /// <summary>Thêm tài liệu từ trang chi tiết dự án.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "wtasks.view")]
+        public ActionResult UploadFiles(int id, IEnumerable<HttpPostedFileBase> files)
+        {
+            var project = Repository.WorkProjects.Find(id);
+            if (project == null || !CanEditProject(id)) return HttpNotFound();
+
+            var before = Repository.WorkProjectFiles.All().Count(f => f.ProjectId == id);
+            SaveProjectFiles(id, files);
+            var added = Repository.WorkProjectFiles.All().Count(f => f.ProjectId == id) - before;
+
+            if (added > 0) Notify(string.Format("Đã thêm {0} file vào dự án.", added));
+            return RedirectToAction("Details", new { id = id });
+        }
+
+        /// <summary>Tải một tài liệu của dự án. Ai xem được dự án thì tải được.</summary>
+        [AppAuthorize(Permission = "wtasks.view")]
+        public ActionResult DownloadFile(int id, int fileId)
+        {
+            var record = Repository.WorkProjectFiles.Find(fileId);
+            if (record == null || record.ProjectId != id || !CanViewProject(id)) return HttpNotFound();
+
+            var path = CommentAttachments.FullPath(record.StoredName);
+            if (path == null) return HttpNotFound();
+
+            // Luôn trả kiểu tải-về chung chung: trình duyệt tải file chứ không thực thi/nhúng.
+            return File(path, "application/octet-stream",
+                string.IsNullOrWhiteSpace(record.OriginalName) ? "tai-lieu" : record.OriginalName);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "wtasks.view")]
+        public ActionResult DeleteFile(int id, int fileId)
+        {
+            var record = Repository.WorkProjectFiles.Find(fileId);
+            if (record == null || record.ProjectId != id || !CanEditProject(id)) return HttpNotFound();
+
+            CommentAttachments.Delete(record.StoredName);
+            Repository.WorkProjectFiles.Delete(fileId);
+
+            Notify(string.Format("Đã xoá file \"{0}\".", record.OriginalName));
+            return RedirectToAction("Details", new { id = id });
         }
 
         // ---------- Sinh mã dự án ----------

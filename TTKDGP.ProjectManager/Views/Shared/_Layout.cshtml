@@ -114,6 +114,10 @@
                     </a>
                 }
 
+                @* Tài liệu tích hợp là trang công khai nên đặt ở thanh trên, hiện cả khi chưa đăng nhập *@
+                <a class="topbar-link @(controller == "Home" && action == "Docs" ? "active" : "")"
+                   href="@Url.Action("Docs", "Home")">Tài liệu tích hợp</a>
+
                 @if (currentUser != null)
                 {
                     var wy = WeekHelper.CurrentYear;

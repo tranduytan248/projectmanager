@@ -20,15 +20,12 @@
             @Model.CurrentWeekFrom.ToString("dd/MM") – @Model.CurrentWeekTo.ToString("dd/MM/yyyy")
         </div>
         <div class="week-box-stats">
-            <span class="badge badge-active" title="Dự án đang chạy đã có báo cáo tuần này">
-                @Model.ReportedThisWeek đã báo cáo
+            <span class="badge badge-active" title="Tổng số công việc trong tháng @Model.TaskMonth/@Model.TaskMonthYear">
+                @Model.MonthTaskCount việc trong tháng
             </span>
-            @if (Model.MissingThisWeek > 0)
-            {
-                <span class="badge badge-waiting" title="Dự án đang chạy còn thiếu báo cáo tuần này">
-                    @Model.MissingThisWeek chưa báo cáo
-                </span>
-            }
+            <span class="badge badge-doing" title="Số dự án có ít nhất một công việc trong tháng @Model.TaskMonth/@Model.TaskMonthYear">
+                @Model.MonthTaskProjectCount dự án có việc
+            </span>
         </div>
     </div>
 </div>
@@ -49,40 +46,6 @@
     <div class="stat">
         <div class="stat-value">@Model.ActiveAssignments</div>
         <div class="stat-label">Đang tham gia</div>
-    </div>
-</div>
-
-<div class="card">
-    <div class="card-head">Tài liệu tích hợp API</div>
-    <div class="card-body">
-        <p class="muted" style="margin-top:0">
-            API lấy dữ liệu HRM (nhân sự, đơn vị, chức danh). Tải về để xem hướng dẫn và thử bằng Postman.
-        </p>
-        <div class="btn-row">
-            <a class="btn btn-primary" href="@Url.Action("Download", "Home", new { doc = "guide" })">
-                Hướng dẫn sử dụng (.md)
-            </a>
-            <a class="btn btn-default" href="@Url.Action("Download", "Home", new { doc = "postman" })">
-                Bộ Postman (.json)
-            </a>
-        </div>
-
-        <p class="muted" style="margin:18px 0 0;padding-top:16px;border-top:1px solid var(--border)">
-            API gửi tin nhắn SMS tới một hoặc nhiều số máy. Tải về để xem hướng dẫn và thử bằng Postman.
-        </p>
-        <div class="btn-row" style="margin-top:10px">
-            <a class="btn btn-primary" href="@Url.Action("Download", "Home", new { doc = "sms-guide" })">
-                Hướng dẫn sử dụng (.md)
-            </a>
-            <a class="btn btn-default" href="@Url.Action("Download", "Home", new { doc = "sms-postman" })">
-                Bộ Postman (.json)
-            </a>
-        </div>
-
-        <p class="hint" style="margin:16px 0 0">
-            Mã hệ thống và khoá bí mật được cấp riêng cho từng hệ thống tích hợp; cả hai API dùng chung
-            một cặp mã và khoá.
-        </p>
     </div>
 </div>
 
@@ -215,105 +178,81 @@
     </div>
 </div>
 
-<div class="section-head">
-    <h2>Chi tiết tham gia</h2>
-    <span class="muted">@Model.ByMember.Count thành viên &middot; @Model.Rows.Count lượt phân công</span>
-</div>
-
-@if (Model.ByMember.Count == 0)
-{
-    <div class="card">
-        <div class="empty-state">Không tìm thấy dữ liệu phù hợp với bộ lọc hiện tại.</div>
+<div class="card">
+    <div class="card-head">
+        <span>Công việc của nhân sự trong tháng @Model.TaskMonth/@Model.TaskMonthYear</span>
+        <span class="muted" style="font-weight:400;font-size:12px">
+            Việc đến hạn trong tháng; việc hỗ trợ tính theo tuần được phân
+        </span>
     </div>
-}
-else
-{
-    foreach (var person in Model.ByMember)
+
+    @if (Model.MonthTasks.Count == 0)
     {
-        var roleText = person.Roles.Count > 0
-            ? string.Join(" · ", person.Roles)
-            : "Chưa đặt vai trò";
-
-        <div class="card member-card">
-            <div class="card-head member-head">
-                <div class="member-id">
-                    <span class="member-avatar">@ViewHelpers.Initials(person.MemberName)</span>
-                    <span>
-                        <strong>@person.MemberName</strong>
-                        <em class="member-roles">@roleText</em>
-                    </span>
-                </div>
-                <span class="muted" style="font-weight:400">
-                    @person.ProjectCount dự án
-                    @if (person.ActiveCount < person.Rows.Count)
-                    {
-                        <text>(@person.ActiveCount đang tham gia)</text>
-                    }
-                </span>
-            </div>
-
-            <div class="table-wrap">
-                <table class="data">
-                    <thead>
-                        <tr>
-                            <th>Dự án</th>
-                            <th>Vai trò</th>
-                            <th>Tuần báo cáo</th>
-                            <th>Nội dung tuần mới nhất</th>
-                            <th>Trạng thái công việc</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var row in person.VisibleRows)
-                        {
-                            @Html.Partial("_ParticipationRow", row)
-                        }
-                    </tbody>
-
-                    @if (person.HiddenRows.Count > 0)
-                    {
-                        <tbody id="more-@person.MemberId" hidden="hidden">
-                            @foreach (var row in person.HiddenRows)
-                            {
-                                @Html.Partial("_ParticipationRow", row)
-                            }
-                        </tbody>
-                    }
-                </table>
-            </div>
-
-            @if (person.HiddenRows.Count > 0)
-            {
-                <div class="card-foot">
-                    <button type="button" class="btn btn-default btn-sm show-more"
-                            data-target="more-@person.MemberId"
-                            data-more="Xem thêm @person.HiddenRows.Count dự án"
-                            data-less="Thu gọn">
-                        Xem thêm @person.HiddenRows.Count dự án
-                    </button>
-                </div>
-            }
+        <div class="card-body">
+            <p class="muted" style="margin:0">Chưa có công việc nào trong tháng này.</p>
         </div>
     }
-}
+    else
+    {
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th>Nhân sự</th>
+                        @foreach (var state in TaskStates.All)
+                        {
+                            <th style="text-align:center">@TaskStates.Display(state)</th>
+                        }
+                        <th style="text-align:center">Quá hạn</th>
+                        <th style="text-align:center">Tổng</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.MonthTasks)
+                    {
+                        <tr>
+                            <td>@row.UserName</td>
+                            @foreach (var state in TaskStates.All)
+                            {
+                                var n = row.Count(state);
+                                <td style="text-align:center">
+                                    @if (n > 0) { @n } else { <span class="muted">–</span> }
+                                </td>
+                            }
+                            <td style="text-align:center">
+                                @if (row.Overdue > 0)
+                                {
+                                    <strong style="color:var(--danger)">@row.Overdue</strong>
+                                }
+                                else
+                                {
+                                    <span class="muted">–</span>
+                                }
+                            </td>
+                            <td style="text-align:center"><strong>@row.Total</strong></td>
+                        </tr>
+                    }
+                </tbody>
+                @if (Model.MonthTaskTotal != null && Model.MonthTasks.Count > 1)
+                {
+                    <tfoot>
+                        <tr>
+                            <td><strong>@Model.MonthTaskTotal.UserName</strong></td>
+                            @foreach (var state in TaskStates.All)
+                            {
+                                <td style="text-align:center"><strong>@Model.MonthTaskTotal.Count(state)</strong></td>
+                            }
+                            <td style="text-align:center">
+                                <strong style="color:@(Model.MonthTaskTotal.Overdue > 0 ? "var(--danger)" : "inherit")">
+                                    @Model.MonthTaskTotal.Overdue
+                                </strong>
+                            </td>
+                            <td style="text-align:center"><strong>@Model.MonthTaskTotal.Total</strong></td>
+                        </tr>
+                    </tfoot>
+                }
+            </table>
+        </div>
+    }
+</div>
 
-<script>
-    // Gập/mở phần dự án còn lại trong mỗi khối thành viên.
-    document.addEventListener('click', function (e) {
-        var btn = e.target.closest('.show-more');
-        if (!btn) return;
-
-        var body = document.getElementById(btn.getAttribute('data-target'));
-        if (!body) return;
-
-        var expanded = !body.hasAttribute('hidden');
-        if (expanded) {
-            body.setAttribute('hidden', 'hidden');
-            btn.textContent = btn.getAttribute('data-more');
-        } else {
-            body.removeAttribute('hidden');
-            btn.textContent = btn.getAttribute('data-less');
-        }
-    });
-</script>
