@@ -178,9 +178,19 @@ namespace TTKDGP.ProjectManager.Controllers
         /// Gửi từ hộp thoại thì chỉ trả JSON báo xong, để trình duyệt tự nạp lại đúng địa chỉ đang
         /// đứng — nhờ vậy bộ lọc và số trang giữ nguyên. Gửi kiểu thường thì chuyển trang như cũ.
         /// </summary>
-        protected ActionResult Saved(string action, object routeValues = null)
+        /// <param name="goToTarget">
+        /// Đặt true khi lưu xong phải sang hẳn màn khác chứ không ở lại chỗ cũ (ví dụ thêm dự án
+        /// xong thì sang màn phân công nhân sự). Lúc đó JSON mang kèm địa chỉ đích để hộp thoại
+        /// biết đường đi, thay vì nạp lại trang đang đứng.
+        /// </param>
+        protected ActionResult Saved(string action, object routeValues = null, bool goToTarget = false)
         {
-            if (Request.IsAjaxRequest()) return Json(new { ok = true });
+            if (Request.IsAjaxRequest())
+            {
+                return goToTarget
+                    ? Json(new { ok = true, redirect = Url.Action(action, routeValues) })
+                    : Json(new { ok = true });
+            }
 
             return routeValues == null
                 ? RedirectToAction(action)

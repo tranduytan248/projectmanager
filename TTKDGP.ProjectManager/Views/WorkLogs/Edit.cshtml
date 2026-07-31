@@ -41,17 +41,17 @@
             @Html.AntiForgeryToken()
             @Html.HiddenFor(m => m.Id)
             @Html.HiddenFor(m => m.AssignmentId)
-            @Html.ValidationSummary(true)
+            @Html.ValidationSummary(false, null, new { @class = "validation-summary-errors" })
 
             <div class="form-grid">
                 <div class="form-field">
-                    @Html.LabelFor(m => m.Year)
+                    @Html.LabelReq(m => m.Year)
                     @Html.DropDownListFor(m => m.Year, new SelectList(years, Model.Year))
                     @Html.ValidationMessageFor(m => m.Year, "", new { @class = "field-error" })
                 </div>
 
                 <div class="form-field">
-                    @Html.LabelFor(m => m.Week)
+                    @Html.LabelReq(m => m.Week)
                     <select id="Week" name="Week">
                         @foreach (var opt in WeekHelper.WeekOptions(Model.Year))
                         {
@@ -63,7 +63,7 @@
             </div>
 
             <div class="form-field">
-                @Html.LabelFor(m => m.Status)
+                @Html.LabelReq(m => m.Status)
                 @Html.DropDownListFor(m => m.Status, new SelectList(workStatuses, Model.Status), "— Chọn trạng thái —")
                 @Html.ValidationMessageFor(m => m.Status, "", new { @class = "field-error" })
                 <span class="hint">
@@ -72,7 +72,7 @@
             </div>
 
             <div class="form-field">
-                @Html.LabelFor(m => m.Content)
+                @Html.LabelReq(m => m.Content)
                 @Html.TextAreaFor(m => m.Content, new { rows = 6, placeholder = "Tuần này làm gì, kết quả ra sao, vướng mắc gì..." })
                 @Html.ValidationMessageFor(m => m.Content, "", new { @class = "field-error" })
             </div>

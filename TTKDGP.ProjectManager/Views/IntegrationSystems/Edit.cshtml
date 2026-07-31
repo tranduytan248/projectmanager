@@ -21,17 +21,17 @@
         {
             @Html.AntiForgeryToken()
             @Html.HiddenFor(m => m.Id)
-            @Html.ValidationSummary(true)
+            @Html.ValidationSummary(false, null, new { @class = "validation-summary-errors" })
 
             <div class="form-field">
-                @Html.LabelFor(m => m.Code)
+                @Html.LabelReq(m => m.Code)
                 @Html.TextBoxFor(m => m.Code, new { autofocus = "autofocus", maxlength = "50", placeholder = "VD: CRM, PORTAL, ERP..." })
                 @Html.ValidationMessageFor(m => m.Code, "", new { @class = "field-error" })
                 <span class="hint">Mã định danh hệ thống, không trùng với hệ thống khác.</span>
             </div>
 
             <div class="form-field">
-                @Html.LabelFor(m => m.Name)
+                @Html.LabelReq(m => m.Name)
                 @Html.TextBoxFor(m => m.Name, new { maxlength = "200" })
                 @Html.ValidationMessageFor(m => m.Name, "", new { @class = "field-error" })
             </div>
@@ -44,7 +44,7 @@
             }
 
             <div class="form-field">
-                @Html.LabelFor(m => m.PrivateKey)
+                @Html.LabelReq(m => m.PrivateKey)
                 <div class="key-box">
                     <input type="text" id="privateKey" value="@Model.PrivateKey" readonly
                            class="key-input" onclick="this.select();" />
@@ -58,7 +58,7 @@
 
             <div class="check-inline">
                 @Html.CheckBoxFor(m => m.IsActive)
-                @Html.LabelFor(m => m.IsActive)
+                @Html.LabelReq(m => m.IsActive)
             </div>
             <span class="hint">Bỏ đánh dấu để tạm ngừng cho hệ thống này tích hợp mà vẫn giữ cấu hình.</span>
 

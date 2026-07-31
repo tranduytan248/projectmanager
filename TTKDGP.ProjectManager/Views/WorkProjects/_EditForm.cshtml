@@ -10,29 +10,29 @@
     var projectTypes = ViewBag.ProjectTypes as List<string> ?? new List<string>();
 }
 
-@* Gửi kiểu THƯỜNG (data-native-submit) vì form mang được file đính kèm — serialize() của AJAX
-   không mang file. Có lỗi nhập liệu thì quay về trang form đầy đủ. *@
+@* Gửi bằng AJAX như các form khác: trình gửi dùng FormData nên file đính kèm vẫn đi kèm được,
+   và lỗi nhập liệu hiện ngay trong hộp thoại thay vì nhảy sang trang riêng. *@
 @using (Html.BeginForm("Edit", "WorkProjects", FormMethod.Post,
-    new { enctype = "multipart/form-data", data_native_submit = "true" }))
+    new { enctype = "multipart/form-data" }))
 {
     @Html.AntiForgeryToken()
     @Html.HiddenFor(m => m.Id)
     @Html.HiddenFor(m => m.PmUserId)
     @Html.HiddenFor(m => m.PmName)
     @Html.HiddenFor(m => m.Code)
-    @Html.ValidationSummary(true)
+    @Html.ValidationSummary(false, null, new { @class = "validation-summary-errors" })
 
     <div class="form-section">
         <div class="form-section-title">Thông tin chung</div>
         <div class="form-grid">
             <div class="form-field full">
-                @Html.LabelFor(m => m.Name)
+                @Html.LabelReq(m => m.Name)
                 @Html.TextBoxFor(m => m.Name, new { id = "Name" })
                 @Html.ValidationMessageFor(m => m.Name, "", new { @class = "field-error" })
             </div>
 
             <div class="form-field">
-                @Html.LabelFor(m => m.Customer)
+                @Html.LabelReq(m => m.Customer)
                 @Html.TextBoxFor(m => m.Customer)
             </div>
 
@@ -51,13 +51,13 @@
             </div>
 
             <div class="form-field">
-                @Html.LabelFor(m => m.ProjectType)
+                @Html.LabelReq(m => m.ProjectType)
                 @Html.DropDownListFor(m => m.ProjectType,
                     new SelectList(projectTypes, Model.ProjectType), "— Chọn loại dự án —")
             </div>
 
             <div class="form-field">
-                @Html.LabelFor(m => m.Phase)
+                @Html.LabelReq(m => m.Phase)
                 @Html.DropDownListFor(m => m.Phase,
                     ProjectPhases.All.Select(p => new SelectListItem
                     {
@@ -67,8 +67,10 @@
                     }), new { @class = "js-phase", data_no_select2 = "true" })
             </div>
 
+            @* Trạng thái luôn phải chọn và phải thuộc đúng giai đoạn — WorkProjectsController
+               kiểm bằng ProjectStates.BelongsTo chứ không bằng [Required]. *@
             <div class="form-field">
-                @Html.LabelFor(m => m.State)
+                @Html.LabelReq(m => m.State, required: true)
                 @Html.DropDownListFor(m => m.State,
                     ProjectStates.All.Select(s => new SelectListItem
                     {
@@ -81,18 +83,18 @@
             </div>
 
             <div class="form-field">
-                @Html.LabelFor(m => m.StartDate)
+                @Html.LabelReq(m => m.StartDate)
                 @Html.TextBoxFor(m => m.StartDate, "{0:yyyy-MM-dd}", new { type = "date" })
             </div>
 
             <div class="form-field">
-                @Html.LabelFor(m => m.EndDate)
+                @Html.LabelReq(m => m.EndDate)
                 @Html.TextBoxFor(m => m.EndDate, "{0:yyyy-MM-dd}", new { type = "date" })
                 @Html.ValidationMessageFor(m => m.EndDate, "", new { @class = "field-error" })
             </div>
 
             <div class="form-field full">
-                @Html.LabelFor(m => m.Description)
+                @Html.LabelReq(m => m.Description)
                 @Html.TextAreaFor(m => m.Description, new { rows = 3, data_rich = "true" })
             </div>
         </div>
@@ -102,22 +104,22 @@
         <div class="form-section-title">Thông tin triển khai</div>
         <div class="form-grid">
             <div class="form-field">
-                @Html.LabelFor(m => m.GithubLink)
+                @Html.LabelReq(m => m.GithubLink)
                 @Html.TextBoxFor(m => m.GithubLink, new { placeholder = "https://github.com/..." })
             </div>
 
             <div class="form-field">
-                @Html.LabelFor(m => m.SvnLink)
+                @Html.LabelReq(m => m.SvnLink)
                 @Html.TextBoxFor(m => m.SvnLink, new { placeholder = "svn://... hoặc https://..." })
             </div>
 
             <div class="form-field">
-                @Html.LabelFor(m => m.FtpAccount)
+                @Html.LabelReq(m => m.FtpAccount)
                 @Html.TextBoxFor(m => m.FtpAccount, new { autocomplete = "off", placeholder = "host / tài khoản FTP" })
             </div>
 
             <div class="form-field">
-                @Html.LabelFor(m => m.FtpPassword)
+                @Html.LabelReq(m => m.FtpPassword)
                 <div class="input-row">
                     @* TextBoxFor + type=password thay vì PasswordFor: PasswordFor không đổ giá trị
                        cũ vào ô, mở form sửa rồi lưu lại là mất mật khẩu. *@
@@ -127,22 +129,22 @@
             </div>
 
             <div class="form-field">
-                @Html.LabelFor(m => m.DbType)
+                @Html.LabelReq(m => m.DbType)
                 @Html.TextBoxFor(m => m.DbType, new { placeholder = "SQL Server / MySQL / PostgreSQL..." })
             </div>
 
             <div class="form-field">
-                @Html.LabelFor(m => m.DbServer)
+                @Html.LabelReq(m => m.DbServer)
                 @Html.TextBoxFor(m => m.DbServer, new { autocomplete = "off", placeholder = "địa chỉ máy chủ CSDL" })
             </div>
 
             <div class="form-field">
-                @Html.LabelFor(m => m.DbUsername)
+                @Html.LabelReq(m => m.DbUsername)
                 @Html.TextBoxFor(m => m.DbUsername, new { autocomplete = "off" })
             </div>
 
             <div class="form-field">
-                @Html.LabelFor(m => m.DbPassword)
+                @Html.LabelReq(m => m.DbPassword)
                 <div class="input-row">
                     @Html.TextBoxFor(m => m.DbPassword, new { type = "password", autocomplete = "new-password" })
                     <button type="button" class="btn btn-default btn-sm" data-copy-target="#DbPassword">Copy</button>

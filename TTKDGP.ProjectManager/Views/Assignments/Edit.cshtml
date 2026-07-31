@@ -22,11 +22,11 @@
         {
             @Html.AntiForgeryToken()
             @Html.HiddenFor(m => m.Id)
-            @Html.ValidationSummary(true)
+            @Html.ValidationSummary(false, null, new { @class = "validation-summary-errors" })
 
             <div class="form-grid">
                 <div class="form-field">
-                    @Html.LabelFor(m => m.MemberId)
+                    @Html.LabelReq(m => m.MemberId)
                     @Html.DropDownListFor(m => m.MemberId,
                         new SelectList(members, "Id", "FullName", Model.MemberId),
                         "— Chọn thành viên —")
@@ -34,7 +34,7 @@
                 </div>
 
                 <div class="form-field">
-                    @Html.LabelFor(m => m.ProjectId)
+                    @Html.LabelReq(m => m.ProjectId)
                     @Html.DropDownListFor(m => m.ProjectId,
                         new SelectList(projects, "Id", "Name", Model.ProjectId),
                         "— Chọn dự án —")
@@ -42,19 +42,19 @@
                 </div>
 
                 <div class="form-field">
-                    @Html.LabelFor(m => m.Role)
+                    @Html.LabelReq(m => m.Role)
                     @Html.DropDownListFor(m => m.Role, new SelectList(roles, Model.Role), "— Chọn vai trò —")
                     <span class="hint">Quản lý tại mục <a href="@Url.Action("Index", "MemberRoles")">Vai trò</a>.</span>
                 </div>
 
                 <div class="form-field">
-                    @Html.LabelFor(m => m.WorkStatus)
+                    @Html.LabelReq(m => m.WorkStatus)
                     @Html.DropDownListFor(m => m.WorkStatus, new SelectList(workStatuses, Model.WorkStatus), "— Chọn trạng thái —")
                     <span class="hint">Quản lý tại mục <a href="@Url.Action("Index", "WorkStatuses")">Trạng thái tham gia</a>.</span>
                 </div>
 
                 <div class="form-field full">
-                    @Html.LabelFor(m => m.WorkContent)
+                    @Html.LabelReq(m => m.WorkContent)
                     @Html.TextAreaFor(m => m.WorkContent)
                     <span class="hint">Mô tả công việc thành viên đang làm trong dự án này.</span>
                 </div>
@@ -62,7 +62,7 @@
 
             <div class="check-inline">
                 @Html.CheckBoxFor(m => m.IsActive)
-                @Html.LabelFor(m => m.IsActive)
+                @Html.LabelReq(m => m.IsActive)
             </div>
             <span class="hint">Bỏ đánh dấu khi thành viên đã ngừng tham gia dự án nhưng vẫn muốn giữ lại lịch sử.</span>
 

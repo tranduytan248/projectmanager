@@ -20,10 +20,11 @@
         {
             @Html.AntiForgeryToken()
             @Html.HiddenFor(m => m.Id)
-            @Html.ValidationSummary(true)
+            @Html.ValidationSummary(false, null, new { @class = "validation-summary-errors" })
 
             <div class="form-field">
-                <label for="Name">@Model.Config.NameLabel</label>
+                @* Nhãn đổi theo từng danh mục nên phải truyền chữ vào, không lấy từ [Display]. *@
+                @Html.LabelReq(m => m.Name, labelText: Model.Config.NameLabel)
                 @Html.TextBoxFor(m => m.Name, new { autofocus = "autofocus" })
                 @Html.ValidationMessageFor(m => m.Name, "", new { @class = "field-error" })
                 @if (!Model.IsNew)
@@ -33,7 +34,7 @@
             </div>
 
             <div class="form-field">
-                @Html.LabelFor(m => m.Description)
+                @Html.LabelReq(m => m.Description)
                 @Html.TextAreaFor(m => m.Description)
                 @Html.ValidationMessageFor(m => m.Description, "", new { @class = "field-error" })
             </div>
@@ -55,7 +56,7 @@
             if (Model.Config.ShowPriority)
             {
                 <div class="form-field">
-                    @Html.LabelFor(m => m.Priority)
+                    @Html.LabelReq(m => m.Priority)
                     @Html.TextBoxFor(m => m.Priority, new { type = "number", min = "1", step = "1" })
                     @Html.ValidationMessageFor(m => m.Priority, "", new { @class = "field-error" })
                     <span class="hint">
@@ -70,14 +71,14 @@
             }
 
             <div class="form-field">
-                @Html.LabelFor(m => m.SortOrder)
+                @Html.LabelReq(m => m.SortOrder)
                 @Html.TextBoxFor(m => m.SortOrder, new { type = "number", step = "10" })
                 <span class="hint">Số nhỏ hiển thị trước trong danh sách chọn.</span>
             </div>
 
             <div class="check-inline">
                 @Html.CheckBoxFor(m => m.IsActive)
-                @Html.LabelFor(m => m.IsActive)
+                @Html.LabelReq(m => m.IsActive)
             </div>
             <span class="hint">Bỏ đánh dấu để ẩn khỏi danh sách chọn mà vẫn giữ nguyên các bản ghi cũ.</span>
 

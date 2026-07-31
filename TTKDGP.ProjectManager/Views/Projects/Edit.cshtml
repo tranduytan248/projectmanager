@@ -22,22 +22,22 @@
         {
             @Html.AntiForgeryToken()
             @Html.HiddenFor(m => m.Id)
-            @Html.ValidationSummary(true)
+            @Html.ValidationSummary(false, null, new { @class = "validation-summary-errors" })
 
             <div class="form-grid">
                 <div class="form-field full">
-                    @Html.LabelFor(m => m.Name)
+                    @Html.LabelReq(m => m.Name)
                     @Html.TextBoxFor(m => m.Name, new { autofocus = "autofocus" })
                     @Html.ValidationMessageFor(m => m.Name, "", new { @class = "field-error" })
                 </div>
 
                 <div class="form-field">
-                    @Html.LabelFor(m => m.Customer)
+                    @Html.LabelReq(m => m.Customer)
                     @Html.TextBoxFor(m => m.Customer)
                 </div>
 
                 <div class="form-field">
-                    @Html.LabelFor(m => m.PmMemberId)
+                    @Html.LabelReq(m => m.PmMemberId)
                     @Html.DropDownListFor(m => m.PmMemberId,
                         new SelectList(members, "Id", "FullName", Model.PmMemberId),
                         "— Chọn PM phụ trách —")
@@ -45,7 +45,7 @@
                 </div>
 
                 <div class="form-field">
-                    @Html.LabelFor(m => m.ProjectType)
+                    @Html.LabelReq(m => m.ProjectType)
                     @Html.DropDownListFor(m => m.ProjectType,
                         new SelectList(ViewBag.ProjectTypes as List<string> ?? new List<string>(), Model.ProjectType),
                         "— Chọn loại dự án —")
@@ -55,7 +55,7 @@
                 </div>
 
                 <div class="form-field">
-                    @Html.LabelFor(m => m.CurrentStatus)
+                    @Html.LabelReq(m => m.CurrentStatus)
                     @Html.DropDownListFor(m => m.CurrentStatus,
                         new SelectList(ViewBag.ProjectStatuses as List<string> ?? new List<string>(), Model.CurrentStatus),
                         "— Chọn trạng thái —")
@@ -65,42 +65,42 @@
                 </div>
 
                 <div class="form-field">
-                    @Html.LabelFor(m => m.ContractStatus)
+                    @Html.LabelReq(m => m.ContractStatus)
                     @Html.TextBoxFor(m => m.ContractStatus)
                 </div>
 
                 <div class="form-field">
-                    @Html.LabelFor(m => m.ExpectedRevenue)
+                    @Html.LabelReq(m => m.ExpectedRevenue)
                     @Html.TextBoxFor(m => m.ExpectedRevenue)
                 </div>
 
                 <div class="form-field full">
-                    @Html.LabelFor(m => m.Note)
+                    @Html.LabelReq(m => m.Note)
                     @Html.TextAreaFor(m => m.Note)
                 </div>
 
                 <div class="form-field">
-                    @Html.LabelFor(m => m.Redmine)
+                    @Html.LabelReq(m => m.Redmine)
                     @Html.TextBoxFor(m => m.Redmine)
                 </div>
 
                 <div class="form-field">
-                    @Html.LabelFor(m => m.Svn)
+                    @Html.LabelReq(m => m.Svn)
                     @Html.TextBoxFor(m => m.Svn)
                 </div>
 
                 <div class="form-field">
-                    @Html.LabelFor(m => m.Github)
+                    @Html.LabelReq(m => m.Github)
                     @Html.TextBoxFor(m => m.Github)
                 </div>
 
                 <div class="form-field">
-                    @Html.LabelFor(m => m.GeneralReport)
+                    @Html.LabelReq(m => m.GeneralReport)
                     @Html.TextBoxFor(m => m.GeneralReport)
                 </div>
 
                 <div class="form-field full">
-                    @Html.LabelFor(m => m.ParticipantIds)
+                    @Html.LabelReq(m => m.ParticipantIds)
                     <div class="checkbox-grid">
                         @foreach (var m in members)
                         {

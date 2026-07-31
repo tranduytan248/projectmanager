@@ -28,17 +28,17 @@
                 @Html.HiddenFor(m => m.Id)
                 @Html.HiddenFor(m => m.Code)
                 @Html.HiddenFor(m => m.Name)
-                @Html.ValidationSummary(true)
+                @Html.ValidationSummary(false, null, new { @class = "validation-summary-errors" })
 
                 <div class="form-field">
-                    @Html.LabelFor(m => m.Subject)
+                    @Html.LabelReq(m => m.Subject)
                     @Html.TextBoxFor(m => m.Subject)
                     @Html.ValidationMessageFor(m => m.Subject, "", new { @class = "field-error" })
                     <span class="hint">Tiêu đề cũng chèn được tham số, ví dụ {{TenDuAn}}.</span>
                 </div>
 
                 <div class="form-field">
-                    @Html.LabelFor(m => m.Body)
+                    @Html.LabelReq(m => m.Body)
 
                     @* Thanh công cụ của trình soạn thảo — không phụ thuộc thư viện ngoài. *@
                     <div class="wys-toolbar" id="wysToolbar">
@@ -63,7 +63,7 @@
 
                 <div class="check-inline">
                     @Html.CheckBoxFor(m => m.IsActive)
-                    @Html.LabelFor(m => m.IsActive)
+                    @Html.LabelReq(m => m.IsActive)
                 </div>
                 <span class="hint">Bỏ đánh dấu thì loại này không gửi mail nữa — thông báo trên web vẫn hoạt động.</span>
 

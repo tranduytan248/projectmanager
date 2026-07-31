@@ -27,6 +27,12 @@ namespace TTKDGP.ProjectManager.Models
         public string Subject { get; set; }
 
         /// <summary>Thân mail dạng HTML, soạn bằng trình soạn thảo trên màn quản trị.</summary>
+        /// <remarks>
+        /// [Required] ở đây để nhãn tự hiện dấu bắt buộc; máy chủ vẫn kiểm lại bằng tay trong
+        /// EmailTemplatesController vì nội dung là HTML — chuỗi rỗng kiểu "&lt;p&gt;&lt;/p&gt;"
+        /// lọt qua được [Required].
+        /// </remarks>
+        [Required(ErrorMessage = "Nội dung mail không được để trống")]
         [Display(Name = "Nội dung mail")]
         public string Body { get; set; }
 

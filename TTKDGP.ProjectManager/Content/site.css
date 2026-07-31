@@ -1469,6 +1469,25 @@ table.data .cell-sub.muted { font-size: 12.5px; line-height: 1.4; }
     margin-bottom: 2px;
 }
 
+/*
+  Nhãn của ô bắt buộc: chữ đỏ kèm dấu * đứng sau, để nhìn lướt là biết phải nhập những gì.
+  Đặt SAU luật .form-field:focus-within > label (đổi nhãn sang màu chính khi đang nhập) thì
+  ô bắt buộc mới giữ được màu đỏ lúc con trỏ nằm trong ô.
+*/
+.form-field > label.is-required,
+.form-field:focus-within > label.is-required,
+label.is-required { color: var(--danger); }
+
+.req-mark { margin-left: 2px; font-weight: 700; }
+
+/* Chú thích "* Trường bắt buộc" đặt đầu biểu mẫu. */
+.form-required-note {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+}
+.form-required-note .req-mark { color: var(--danger); }
+
 .field-error { color: var(--danger); font-size: 12.5px; }
 .validation-summary-errors { color: var(--danger); margin-bottom: 14px; }
 .validation-summary-errors ul { margin: 0; padding-left: 18px; }

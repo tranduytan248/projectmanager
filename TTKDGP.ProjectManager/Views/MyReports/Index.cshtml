@@ -142,7 +142,7 @@ else
 
                         <div class="form-field">
                             <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-                                <label for="content-@row.AssignmentId" style="margin:0">Nội dung thực hiện trong tuần</label>
+                                @Html.LabelReq("content-" + row.AssignmentId, "Nội dung thực hiện trong tuần")
                                 @if (row.HasPrevious)
                                 {
                                     <button type="button" class="btn btn-default btn-sm" data-reuse="@row.AssignmentId">

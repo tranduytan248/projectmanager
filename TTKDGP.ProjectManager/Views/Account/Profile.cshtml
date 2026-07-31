@@ -40,9 +40,10 @@
                 @using (Html.BeginForm("UpdateProfile", "Account", FormMethod.Post))
                 {
                     @Html.AntiForgeryToken()
+                    @Html.ValidationSummary(false, null, new { @class = "validation-summary-errors" })
 
                     <div class="form-field">
-                        @Html.LabelFor(m => m.Profile.FullName)
+                        @Html.LabelReq(m => m.Profile.FullName)
                         @Html.TextBoxFor(m => m.Profile.FullName)
                         @Html.ValidationMessageFor(m => m.Profile.FullName, "", new { @class = "field-error" })
                     </div>
@@ -63,20 +64,20 @@
                 @Html.AntiForgeryToken()
 
                 <div class="form-field">
-                    @Html.LabelFor(m => m.ChangePassword.CurrentPassword)
+                    @Html.LabelReq(m => m.ChangePassword.CurrentPassword)
                     @Html.PasswordFor(m => m.ChangePassword.CurrentPassword, new { autocomplete = "current-password" })
                     @Html.ValidationMessageFor(m => m.ChangePassword.CurrentPassword, "", new { @class = "field-error" })
                 </div>
 
                 <div class="form-field">
-                    @Html.LabelFor(m => m.ChangePassword.NewPassword)
+                    @Html.LabelReq(m => m.ChangePassword.NewPassword)
                     @Html.PasswordFor(m => m.ChangePassword.NewPassword, new { autocomplete = "new-password" })
                     @Html.ValidationMessageFor(m => m.ChangePassword.NewPassword, "", new { @class = "field-error" })
                     <span class="hint">Tối thiểu 6 ký tự.</span>
                 </div>
 
                 <div class="form-field">
-                    @Html.LabelFor(m => m.ChangePassword.ConfirmPassword)
+                    @Html.LabelReq(m => m.ChangePassword.ConfirmPassword)
                     @Html.PasswordFor(m => m.ChangePassword.ConfirmPassword, new { autocomplete = "new-password" })
                     @Html.ValidationMessageFor(m => m.ChangePassword.ConfirmPassword, "", new { @class = "field-error" })
                 </div>

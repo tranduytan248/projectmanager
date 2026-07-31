@@ -162,6 +162,7 @@
                 $body.html(html);
                 if (window.AppSelect2) window.AppSelect2.init($body[0]);
                 if (window.AppRichText) window.AppRichText.init($body[0]);
+                if (window.AppRequiredNote) window.AppRequiredNote.init($body[0]);
             })
             .fail(function () {
                 $body.html('<div class="modal-loading">Không tải được nội dung.</div>');
@@ -190,25 +191,37 @@
         $(document).on('submit', '.modal-body form', function (e) {
             var $form = $(this);
 
-            // Form đánh dấu data-native-submit thì gửi kiểu thường (chuyển trang) — ví dụ form
-            // upload file: serialize() của AJAX không mang được file.
+            // Form đánh dấu data-native-submit thì gửi kiểu thường (chuyển trang).
             if ($form.is('[data-native-submit]')) return;
 
             e.preventDefault();
             var $submit = $form.find('[type="submit"]').prop('disabled', true);
 
-            $.post($form.attr('action'), $form.serialize())
+            // FormData mang được cả file đính kèm, khác serialize() chỉ lấy được ô chữ. Nhờ vậy
+            // form có file vẫn báo lỗi ngay trong hộp thoại thay vì phải nhảy sang trang riêng.
+            var options = { url: $form.attr('action'), type: 'POST' };
+            if (window.FormData) {
+                options.data = new FormData(this);
+                options.processData = false;
+                options.contentType = false;
+            } else {
+                options.data = $form.serialize();
+            }
+
+            $.ajax(options)
                 .done(function (res, status, xhr) {
                     var type = xhr.getResponseHeader('Content-Type') || '';
                     if (type.indexOf('json') >= 0 && res && res.ok) {
-                        // Nạp lại chính địa chỉ đang đứng: bộ lọc và số trang nằm sẵn trong đó
-                        // nên người dùng quay lại đúng chỗ cũ.
-                        window.location.reload();
+                        // Máy chủ chỉ đường thì đi theo (ví dụ thêm dự án xong sang màn phân công),
+                        // không thì nạp lại chỗ đang đứng — bộ lọc và số trang nằm sẵn trong địa chỉ.
+                        if (res.redirect) window.location.href = res.redirect;
+                        else window.location.reload();
                         return;
                     }
                     $body.html(res);
                     if (window.AppSelect2) window.AppSelect2.init($body[0]);
                     if (window.AppRichText) window.AppRichText.init($body[0]);
+                    if (window.AppRequiredNote) window.AppRequiredNote.init($body[0]);
                 })
                 .fail(function () {
                     $submit.prop('disabled', false);
@@ -488,4 +501,28 @@
                 });
         });
     });
+})(jQuery);
+
+// Chú thích "* Trường bắt buộc" ở đầu biểu mẫu, để người dùng biết dấu sao nghĩa là gì.
+// Chèn bằng JavaScript thay vì gõ vào từng view: biểu mẫu nào có nhãn bắt buộc thì tự có
+// chú thích, thêm biểu mẫu mới về sau cũng không phải nhớ thêm dòng này.
+(function ($) {
+    'use strict';
+
+    function init(context) {
+        $(context || document).find('form').each(function () {
+            var $form = $(this);
+
+            if ($form.find('.form-required-note').length) return;
+            if (!$form.find('label.is-required').length) return;
+
+            $('<div class="form-required-note">')
+                .html('<span class="req-mark">*</span> Trường bắt buộc nhập')
+                .prependTo($form);
+        });
+    }
+
+    $(function () { init(document); });
+
+    window.AppRequiredNote = { init: init };
 })(jQuery);

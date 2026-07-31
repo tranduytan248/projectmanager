@@ -2,8 +2,8 @@
 @using System.Globalization
 @using TTKDGP.ProjectManager.Models
 @*
-    Form giao/sửa một việc riêng, dùng chung cho hộp thoại và trang riêng. Form mang file nên
-    gửi kiểu THƯỜNG (data-native-submit) — có lỗi nhập liệu thì quay về trang form đầy đủ.
+    Form giao/sửa một việc riêng, dùng chung cho hộp thoại và trang riêng. Gửi bằng AJAX: trình
+    gửi dùng FormData nên file đính kèm vẫn đi kèm, lỗi nhập liệu hiện ngay trong hộp thoại.
 *@
 @{
     var isNew = Model.Id == 0;
@@ -12,28 +12,30 @@
 }
 
 @using (Html.BeginForm("Edit", "PrivateTasks", FormMethod.Post,
-    new { enctype = "multipart/form-data", data_native_submit = "true" }))
+    new { enctype = "multipart/form-data" }))
 {
     @Html.AntiForgeryToken()
     @Html.HiddenFor(m => m.Id)
-    @Html.ValidationSummary(true)
+    @Html.ValidationSummary(false, null, new { @class = "validation-summary-errors" })
 
     <div class="form-grid">
         <div class="form-field full">
-            @Html.LabelFor(m => m.Title)
+            @Html.LabelReq(m => m.Title)
             @Html.TextBoxFor(m => m.Title, new { placeholder = "Tên công việc giao cho cá nhân" })
             @Html.ValidationMessageFor(m => m.Title, "", new { @class = "field-error" })
         </div>
 
+        @* Việc riêng luôn phải có người nhận — khác việc trong dự án, nơi "chưa giao" là hợp lệ.
+           Vì hai form dùng chung model WorkTask nên phải đánh dấu tay ở đây. *@
         <div class="form-field">
-            @Html.LabelFor(m => m.AssigneeUserId)
+            @Html.LabelReq(m => m.AssigneeUserId, required: true)
             @Html.DropDownListFor(m => m.AssigneeUserId,
                 new SelectList(users, "Id", "FullName", Model.AssigneeUserId), "— Chọn người thực hiện —")
             @Html.ValidationMessageFor(m => m.AssigneeUserId, "", new { @class = "field-error" })
         </div>
 
         <div class="form-field">
-            <label for="bonus">Điểm cộng KPI khi đúng hạn</label>
+            @Html.LabelReq("bonus", "Điểm cộng KPI khi đúng hạn")
             <select id="bonus" name="bonus">
                 @foreach (var b in bonusOptions)
                 {
@@ -46,19 +48,19 @@
         </div>
 
         <div class="form-field">
-            @Html.LabelFor(m => m.StartDate)
+            @Html.LabelReq(m => m.StartDate)
             @Html.TextBoxFor(m => m.StartDate, "{0:yyyy-MM-dd}", new { type = "date" })
         </div>
 
         <div class="form-field">
-            @Html.LabelFor(m => m.DueDate)
+            @Html.LabelReq(m => m.DueDate, required: true)
             @Html.TextBoxFor(m => m.DueDate, "{0:yyyy-MM-dd}", new { type = "date" })
-            <span class="hint">Bắt buộc — căn cứ tính đúng/trễ hạn và điểm cộng.</span>
+            <span class="hint">Căn cứ tính đúng/trễ hạn và điểm cộng.</span>
             @Html.ValidationMessageFor(m => m.DueDate, "", new { @class = "field-error" })
         </div>
 
         <div class="form-field">
-            @Html.LabelFor(m => m.State)
+            @Html.LabelReq(m => m.State)
             @Html.DropDownListFor(m => m.State,
                 TaskStates.All.Select(s => new SelectListItem
                 {
@@ -71,13 +73,13 @@
         @if (!isNew)
         {
             <div class="form-field">
-                @Html.LabelFor(m => m.Progress)
+                @Html.LabelReq(m => m.Progress)
                 @Html.TextBoxFor(m => m.Progress, new { type = "number", min = "0", max = "100" })
             </div>
         }
 
         <div class="form-field full">
-            @Html.LabelFor(m => m.Description)
+            @Html.LabelReq(m => m.Description)
             @Html.TextAreaFor(m => m.Description, new { rows = 4, placeholder = "Nội dung, yêu cầu, kết quả mong muốn..." })
         </div>
 

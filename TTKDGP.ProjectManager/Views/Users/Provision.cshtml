@@ -17,7 +17,7 @@
     <a class="btn btn-default" href="@Url.Action("Index", "Users")">Về danh sách</a>
 </div>
 
-@Html.ValidationSummary(true)
+@Html.ValidationSummary(false, null, new { @class = "validation-summary-errors" })
 
 @if (!string.IsNullOrEmpty(Model.UnitError))
 {
@@ -77,7 +77,7 @@
         <div class="card">
             <div class="card-body">
                 <div class="form-field" style="max-width:320px">
-                    <label for="Password">Mật khẩu khởi tạo</label>
+                    @Html.LabelReq(m => m.Password, labelText: "Mật khẩu khởi tạo")
                     @Html.PasswordFor(m => m.Password, new { id = "Password", value = Model.Password })
                     @Html.ValidationMessageFor(m => m.Password)
                     <span class="hint">Dùng chung cho tất cả tài khoản mở lần này.</span>
@@ -87,7 +87,7 @@
                 {
                     <div class="check-inline" style="margin-top:12px">
                         @Html.CheckBoxFor(m => m.ResetExisting)
-                        @Html.LabelFor(m => m.ResetExisting)
+                        @Html.LabelReq(m => m.ResetExisting)
                     </div>
                     <span class="hint">
                         Đặt lại mật khẩu của <strong>@Model.Existing.Count</strong> tài khoản nhân sự

@@ -24,29 +24,31 @@
         {
             @Html.AntiForgeryToken()
             @Html.HiddenFor(m => m.Id)
-            @Html.ValidationSummary(true)
+            @Html.ValidationSummary(false, null, new { @class = "validation-summary-errors" })
 
             <div class="form-field">
-                @Html.LabelFor(m => m.UserName)
+                @Html.LabelReq(m => m.UserName)
                 @Html.TextBoxFor(m => m.UserName, new { autofocus = "autofocus", autocomplete = "off" })
                 @Html.ValidationMessageFor(m => m.UserName, "", new { @class = "field-error" })
             </div>
 
             <div class="form-field">
-                @Html.LabelFor(m => m.FullName)
+                @Html.LabelReq(m => m.FullName)
                 @Html.TextBoxFor(m => m.FullName)
                 @Html.ValidationMessageFor(m => m.FullName, "", new { @class = "field-error" })
             </div>
 
             <div class="form-field">
-                @Html.LabelFor(m => m.Email)
+                @Html.LabelReq(m => m.Email)
                 @Html.TextBoxFor(m => m.Email, new { type = "email", autocomplete = "off" })
                 @Html.ValidationMessageFor(m => m.Email, "", new { @class = "field-error" })
                 <span class="hint">Không bắt buộc. Dùng để liên hệ và gửi thông báo sau này.</span>
             </div>
 
             <div class="form-field">
-                <label for="SelectedRoles">Nhóm quyền</label>
+                @* Bắt buộc chọn ít nhất một nhóm — [Required] trên mảng không chặn được mảng
+                   rỗng nên UsersController kiểm tay, nhãn phải tự đánh dấu. *@
+                @Html.LabelReq("SelectedRoles", "Nhóm quyền")
                 @* Chọn được nhiều nhóm: quyền của tài khoản là hợp của các nhóm được chọn. *@
                 <select id="SelectedRoles" name="SelectedRoles" multiple="multiple" size="@(Math.Min(Math.Max(roleGroups.Count, 2), 6))">
                     @foreach (var g in roleGroups)
@@ -63,8 +65,10 @@
                 </span>
             </div>
 
+            @* Mật khẩu chỉ bắt buộc lúc tạo tài khoản; sửa mà để trống là giữ mật khẩu cũ,
+               nên dấu bắt buộc cũng phải theo đúng như vậy. *@
             <div class="form-field">
-                @Html.LabelFor(m => m.Password)
+                @Html.LabelReq(m => m.Password, required: Model.IsNew)
                 @Html.PasswordFor(m => m.Password, new { autocomplete = "new-password" })
                 @Html.ValidationMessageFor(m => m.Password, "", new { @class = "field-error" })
                 <span class="hint">
@@ -73,14 +77,14 @@
             </div>
 
             <div class="form-field">
-                @Html.LabelFor(m => m.ConfirmPassword)
+                @Html.LabelReq(m => m.ConfirmPassword, required: Model.IsNew)
                 @Html.PasswordFor(m => m.ConfirmPassword, new { autocomplete = "new-password" })
                 @Html.ValidationMessageFor(m => m.ConfirmPassword, "", new { @class = "field-error" })
             </div>
 
             <div class="check-inline">
                 @Html.CheckBoxFor(m => m.IsActive)
-                @Html.LabelFor(m => m.IsActive)
+                @Html.LabelReq(m => m.IsActive)
             </div>
             @Html.ValidationMessageFor(m => m.IsActive, "", new { @class = "field-error" })
             <span class="hint">Bỏ đánh dấu để khoá đăng nhập mà không xoá tài khoản.</span>

@@ -227,7 +227,7 @@ namespace TTKDGP.ProjectManager.Controllers
                 SaveProjectFiles(saved.Id, files);
 
                 Notify(string.Format("Đã thêm dự án \"{0}\". Bước tiếp theo: phân công nhân sự.", saved.Name));
-                return RedirectToAction("Members", new { id = saved.Id });
+                return Saved("Members", new { id = saved.Id }, goToTarget: true);
             }
 
             var current = Repository.WorkProjects.Find(model.Id);

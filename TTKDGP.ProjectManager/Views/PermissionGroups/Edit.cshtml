@@ -24,12 +24,12 @@
 {
     @Html.AntiForgeryToken()
     @Html.HiddenFor(m => m.Id)
-    @Html.ValidationSummary(true)
+    @Html.ValidationSummary(false, null, new { @class = "validation-summary-errors" })
 
     <div class="card form-narrow">
         <div class="card-body">
             <div class="form-field">
-                @Html.LabelFor(m => m.Code)
+                @Html.LabelReq(m => m.Code)
                 @if (Model.IsNew)
                 {
                     @Html.TextBoxFor(m => m.Code, new { autocomplete = "off", placeholder = "vd: Editor" })
@@ -44,19 +44,19 @@
             </div>
 
             <div class="form-field">
-                @Html.LabelFor(m => m.Name)
+                @Html.LabelReq(m => m.Name)
                 @Html.TextBoxFor(m => m.Name, new { autofocus = "autofocus" })
                 @Html.ValidationMessageFor(m => m.Name, "", new { @class = "field-error" })
             </div>
 
             <div class="form-field">
-                @Html.LabelFor(m => m.Description)
+                @Html.LabelReq(m => m.Description)
                 @Html.TextBoxFor(m => m.Description)
             </div>
 
             <div class="check-inline">
                 @Html.CheckBoxFor(m => m.IsActive)
-                @Html.LabelFor(m => m.IsActive)
+                @Html.LabelReq(m => m.IsActive)
             </div>
         </div>
     </div>

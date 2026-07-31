@@ -92,9 +92,8 @@ namespace TTKDGP.ProjectManager.Controllers
             return Request.IsAjaxRequest() ? (ActionResult)PartialView("_EditForm", task) : View(task);
         }
 
-        // Form mang file nên gửi kiểu thường (data-native-submit), không đi qua trình gửi AJAX
-        // của hộp thoại. Điểm cộng nhận dạng CHUỖI rồi tự parse theo InvariantCulture — model
-        // binder mặc định đọc số thập phân theo culture vi-VN (dấu phẩy) sẽ hiểu sai "0.5".
+        // Điểm cộng nhận dạng CHUỖI rồi tự parse theo InvariantCulture — model binder mặc định
+        // đọc số thập phân theo culture vi-VN (dấu phẩy) sẽ hiểu sai "0.5".
         [HttpPost]
         [ValidateAntiForgeryToken]
         [AppAuthorize(Permission = "wtasks.create")]
@@ -136,11 +135,7 @@ namespace TTKDGP.ProjectManager.Controllers
                 if (current == null || current.Kind != TaskKinds.Standalone) return HttpNotFound();
             }
 
-            if (!ModelState.IsValid)
-            {
-                PopulateLists();
-                return View(model);
-            }
+            if (!ModelState.IsValid) return EditFormWithErrors(model);
 
             WorkService.FillNames(model);
             var now = DateTime.Now;
@@ -157,8 +152,7 @@ namespace TTKDGP.ProjectManager.Controllers
                 if (!CommentAttachments.TrySave(file, model, out error))
                 {
                     ModelState.AddModelError("", error);
-                    PopulateLists();
-                    return View(model);
+                    return EditFormWithErrors(model);
                 }
 
                 Repository.WorkTasks.Insert(model);
@@ -190,8 +184,7 @@ namespace TTKDGP.ProjectManager.Controllers
                 if (!CommentAttachments.TrySave(file, model, out error))
                 {
                     ModelState.AddModelError("", error);
-                    PopulateLists();
-                    return View(model);
+                    return EditFormWithErrors(model);
                 }
 
                 WorkService.ApplyState(model, model.State, model.Progress);
@@ -206,7 +199,20 @@ namespace TTKDGP.ProjectManager.Controllers
                 Notify(string.Format("Đã cập nhật việc \"{0}\".", model.Title));
             }
 
-            return RedirectToAction("Index");
+            return Saved("Index");
+        }
+
+        /// <summary>
+        /// Trả lại form kèm lỗi. Mở trong hộp thoại thì chỉ trả phần form để lỗi hiện tại chỗ,
+        /// không mất dữ liệu đã nhập; mở thẳng bằng đường dẫn thì trả cả trang.
+        /// </summary>
+        private ActionResult EditFormWithErrors(WorkTask model)
+        {
+            PopulateLists();
+
+            return Request.IsAjaxRequest()
+                ? (ActionResult)PartialView("_EditForm", model)
+                : View(model);
         }
 
         [HttpPost]

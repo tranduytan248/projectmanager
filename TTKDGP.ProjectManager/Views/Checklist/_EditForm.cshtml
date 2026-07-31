@@ -56,7 +56,7 @@
     @Html.AntiForgeryToken()
     @Html.HiddenFor(m => m.Id)
     @Html.HiddenFor(m => m.ProjectId)
-    @Html.ValidationSummary(true)
+    @Html.ValidationSummary(false, null, new { @class = "validation-summary-errors" })
 
     <div class="form-grid">
     @if (!canEditAll)
@@ -89,7 +89,7 @@
     else
     {
         <div class="form-field">
-            @Html.LabelFor(m => m.Kind)
+            @Html.LabelReq(m => m.Kind)
             @Html.DropDownListFor(m => m.Kind,
                 TaskKinds.InProject.Select(k => new SelectListItem
                 {
@@ -101,7 +101,7 @@
         </div>
 
         <div class="form-field">
-            @Html.LabelFor(m => m.Priority)
+            @Html.LabelReq(m => m.Priority)
             @Html.DropDownListFor(m => m.Priority,
                 TaskPriorities.All.Select(p => new SelectListItem
                 {
@@ -112,13 +112,13 @@
         </div>
 
         <div class="form-field full">
-            @Html.LabelFor(m => m.Title)
+            @Html.LabelReq(m => m.Title)
             @Html.TextBoxFor(m => m.Title)
             @Html.ValidationMessageFor(m => m.Title, "", new { @class = "field-error" })
         </div>
 
         <div class="form-field">
-            @Html.LabelFor(m => m.Code)
+            @Html.LabelReq(m => m.Code)
             @Html.TextBoxFor(m => m.Code)
             <span class="hint">Ví dụ CL-01. Chỉ cần duy nhất trong dự án này.</span>
             @Html.ValidationMessageFor(m => m.Code, "", new { @class = "field-error" })
@@ -141,7 +141,7 @@
         @* Chiếm trọn hàng để Ngày bắt đầu rơi xuống nằm cạnh Hạn hoàn thành,
            kéo theo Tuần cạnh Năm và Trạng thái cạnh Tiến độ. *@
         <div class="form-field full">
-            @Html.LabelFor(m => m.AssigneeUserId)
+            @Html.LabelReq(m => m.AssigneeUserId)
             @Html.DropDownListFor(m => m.AssigneeUserId,
                 new SelectList(users, "Id", "FullName", Model.AssigneeUserId), "— Chưa giao —")
             <span class="hint">Chỉ gồm người đang tham gia dự án này.</span>
@@ -149,19 +149,21 @@
         </div>
 
         <div class="form-field">
-            @Html.LabelFor(m => m.StartDate)
+            @Html.LabelReq(m => m.StartDate)
             @Html.TextBoxFor(m => m.StartDate, "{0:yyyy-MM-dd}", new { type = "date" })
         </div>
 
+        @* Bắt buộc theo nghiệp vụ, ChecklistController kiểm tay. Không khai [Required] trên
+           model được vì WorkTask còn dùng cho luồng nhập tiến độ và luồng nhập từ file. *@
         <div class="form-field">
-            @Html.LabelFor(m => m.DueDate)
+            @Html.LabelReq(m => m.DueDate, required: true)
             @Html.TextBoxFor(m => m.DueDate, "{0:yyyy-MM-dd}", new { type = "date" })
-            <span class="hint">Bắt buộc — bộ chấm chất lượng dựa vào đây để biết đúng hay trễ hạn.</span>
+            <span class="hint">Bộ chấm chất lượng dựa vào đây để biết đúng hay trễ hạn.</span>
             @Html.ValidationMessageFor(m => m.DueDate, "", new { @class = "field-error" })
         </div>
 
         <div class="form-field">
-            @Html.LabelFor(m => m.Week)
+            @Html.LabelReq(m => m.Week)
             @Html.DropDownListFor(m => m.Week,
                 WeekHelper.WeekOptions(weekYear).Select(o => new SelectListItem
                 {
@@ -173,14 +175,14 @@
         </div>
 
         <div class="form-field">
-            @Html.LabelFor(m => m.Year)
+            @Html.LabelReq(m => m.Year)
             @Html.TextBoxFor(m => m.Year, new { type = "number", min = "2000", max = "2100" })
             <span class="hint">Bỏ trống tuần thì bỏ qua ô này.</span>
         </div>
     }
 
         <div class="form-field">
-            @Html.LabelFor(m => m.State)
+            @Html.LabelReq(m => m.State)
             @Html.DropDownListFor(m => m.State,
                 TaskStates.All.Select(s => new SelectListItem
                 {
@@ -193,7 +195,7 @@
         @if (!isNew)
         {
             <div class="form-field">
-                @Html.LabelFor(m => m.Progress)
+                @Html.LabelReq(m => m.Progress)
                 @Html.DropDownListFor(m => m.Progress,
                     progressOptions.Select(p => new SelectListItem
                     {
@@ -206,7 +208,7 @@
         }
 
         <div class="form-field full">
-            @Html.LabelFor(m => m.Description)
+            @Html.LabelReq(m => m.Description)
             @Html.TextAreaFor(m => m.Description, new { rows = 3 })
         </div>
     </div>
