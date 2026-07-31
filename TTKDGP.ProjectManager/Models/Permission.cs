@@ -285,7 +285,8 @@ namespace TTKDGP.ProjectManager.Models
                 Nodes = new List<MenuNode>
                 {
                     L("Dự án", "WorkProjects", WorkProjects.Perm(View)),
-                    L("Giao việc riêng", "PrivateTasks", WorkTasks.Perm(Create))
+                    L("Giao việc riêng", "PrivateTasks", WorkTasks.Perm(Create)),
+                    L("KPI theo tháng", "Kpi", Kpi.Perm(View))
                 }
             },
 

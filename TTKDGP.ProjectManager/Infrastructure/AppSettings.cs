@@ -74,6 +74,36 @@ namespace TTKDGP.ProjectManager.Infrastructure
             }
         }
 
+        /// <summary>
+        /// Trọng số và mức trừ của bộ chấm KPI tháng (KPI_Config). Khai trong Web.config với
+        /// khoá "Kpi:..." để đổi được mà không phải build lại; không khai thì dùng mặc định.
+        /// </summary>
+        public static class Kpi
+        {
+            private static decimal GetDecimal(string key, decimal fallback)
+            {
+                decimal result;
+                var raw = Get(key).Replace(',', '.');
+                return decimal.TryParse(raw, System.Globalization.NumberStyles.Number,
+                    System.Globalization.CultureInfo.InvariantCulture, out result) ? result : fallback;
+            }
+
+            /// <summary>Điểm tối đa nhóm công việc hỗ trợ.</summary>
+            public static decimal SupportMaxPoint { get { return GetDecimal("Kpi:SupportMaxPoint", 30); } }
+
+            /// <summary>Điểm tối đa nhóm công việc thực hiện (triển khai).</summary>
+            public static decimal ExecuteMaxPoint { get { return GetDecimal("Kpi:ExecuteMaxPoint", 70); } }
+
+            /// <summary>Mức trừ nhóm hỗ trợ khi báo cáo trễ đúng 2 lần trong tháng.</summary>
+            public static decimal SupportLate2Penalty { get { return GetDecimal("Kpi:SupportLate2Penalty", 1); } }
+
+            /// <summary>Mức trừ nhóm hỗ trợ khi báo cáo trễ hơn 2 lần.</summary>
+            public static decimal SupportLateMorePenalty { get { return GetDecimal("Kpi:SupportLateMorePenalty", 2); } }
+
+            /// <summary>Mức trừ nhóm thực hiện cho MỖI lần báo cáo trễ.</summary>
+            public static decimal ExecuteLatePenalty { get { return GetDecimal("Kpi:ExecuteLatePenalty", 0.25m); } }
+        }
+
         /// <summary>Cấu hình cho bộ quản lý công việc &amp; KPI.</summary>
         public static class Work
         {

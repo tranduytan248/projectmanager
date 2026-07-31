@@ -1,0 +1,327 @@
+﻿@model TTKDGP.ProjectManager.Models.KpiMonth
+@using TTKDGP.ProjectManager.Models
+@using TTKDGP.ProjectManager.Services
+@{
+    ViewBag.Title = "Chi tiết KPI — " + Model.UserFullName;
+
+    var supportTasks = ViewBag.SupportTasks as List<WorkTask> ?? new List<WorkTask>();
+    var executeTasks = ViewBag.ExecuteTasks as List<WorkTask> ?? new List<WorkTask>();
+    var assignedTasks = ViewBag.AssignedTasks as List<WorkTask> ?? new List<WorkTask>();
+    var isSaved = ViewBag.IsSaved != null && (bool)ViewBag.IsSaved;
+
+    var can = ViewBag.Can as Func<string, bool>;
+    var canGenerate = can != null && can("kpi.generate");
+
+    // Điểm từng dòng = phần chia đều của điểm tối đa cho số việc trong nhóm; việc chưa xong
+    // không được phần của mình. Mức trừ báo cáo trễ trừ vào TỔNG nhóm, hiển thị ở dòng cộng.
+    var supportUnit = Model.SupportTotal > 0 ? KpiService.SupportMaxPoint / Model.SupportTotal : 0;
+    var executeUnit = Model.ExecuteTotal > 0 ? KpiService.ExecuteMaxPoint / Model.ExecuteTotal : 0;
+
+    Func<WorkTask, string> timeRange = t =>
+    {
+        var start = t.StartDate.HasValue ? t.StartDate.Value.ToString("dd/MM") : "…";
+        var due = t.DueDate.HasValue ? t.DueDate.Value.ToString("dd/MM/yyyy") : "…";
+        return start + " – " + due;
+    };
+}
+
+<div class="page-head">
+    <div>
+        <h1>Chi tiết KPI tháng @Model.Month/@Model.Year</h1>
+        <p><strong>@Model.UserFullName</strong></p>
+    </div>
+    <div class="btn-row">
+        @if (canGenerate)
+        {
+            using (Html.BeginForm("Recalculate", "Kpi", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="year" value="@Model.Year" />
+                <input type="hidden" name="month" value="@Model.Month" />
+                <input type="hidden" name="userId" value="@Model.UserId" />
+                <button type="submit" class="btn btn-default">Tính lại KPI</button>
+            }
+        }
+        <a class="btn btn-default" href="@Url.Action("Index", "Kpi", new { year = Model.Year, month = Model.Month })">&larr; Danh sách</a>
+    </div>
+</div>
+
+@if (!isSaved)
+{
+    <div class="card">
+        <div class="card-body">
+            <span class="hint">
+                Đây là bản <strong>xem trước</strong> tính từ dữ liệu công việc hiện tại — tháng này
+                chưa được bấm "Tính KPI" nên chưa có kết quả lưu.
+            </span>
+        </div>
+    </div>
+}
+
+@* ---------- Thông tin ngày công ---------- *@
+<div class="card">
+    <div class="card-body">
+        <h3>Thông tin</h3>
+        <div class="form-grid">
+            <div class="form-static">
+                <span class="form-static-label">Họ tên</span>
+                <strong>@Model.UserFullName</strong>
+            </div>
+            <div class="form-static">
+                <span class="form-static-label">Tháng</span>
+                @Model.Month/@Model.Year
+            </div>
+            <div class="form-static">
+                <span class="form-static-label">Số ngày công chuẩn</span>
+                @Model.StandardDays ngày
+            </div>
+            <div class="form-static">
+                <span class="form-static-label">Số ngày nghỉ có phép</span>
+                @Model.LeaveDays.ToString("0.##") ngày
+            </div>
+            <div class="form-static">
+                <span class="form-static-label">Tổng giờ yêu cầu</span>
+                @Model.RequiredHours.ToString("0.##") giờ
+            </div>
+            <div class="form-static">
+                <span class="form-static-label">Tổng giờ thực hiện</span>
+                @Model.WorkedHours.ToString("0.##") giờ
+                <span class="muted">— tự tính từ việc đã hoàn thành/đang làm</span>
+            </div>
+        </div>
+
+        @if (canGenerate)
+        {
+            using (Html.BeginForm("Attendance", "Kpi", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="year" value="@Model.Year" />
+                <input type="hidden" name="month" value="@Model.Month" />
+                <input type="hidden" name="userId" value="@Model.UserId" />
+                <div class="filters">
+                    <div class="filter-field">
+                        <label for="leaveDays">Ngày nghỉ có phép</label>
+                        <input type="number" id="leaveDays" name="leaveDays" step="0.5" min="0"
+                               value="@Model.LeaveDays.ToString("0.##")" />
+                    </div>
+                    <div class="btn-row" style="padding-bottom:1px">
+                        <button type="submit" class="btn btn-primary">Lưu nghỉ phép &amp; tính lại</button>
+                    </div>
+                </div>
+                <span class="hint">
+                    Nghỉ phép làm giảm giờ yêu cầu (mỗi ngày công = @KpiService.HoursPerDay giờ).
+                    Giờ thực hiện do hệ thống tự tính: số ngày làm việc (bỏ Thứ 7, Chủ nhật) từ ngày
+                    bắt đầu đến hạn hoàn thành của các việc đã hoàn thành hoặc đang làm.
+                    Thấp hơn giờ yêu cầu thì KPI cuối cùng bị nhân tỷ lệ ngày công.
+                </span>
+            }
+        }
+    </div>
+</div>
+
+@* ---------- I. Công việc hỗ trợ ---------- *@
+<div class="card">
+    <div class="card-body">
+        <h3>I. Công việc hỗ trợ <span class="muted">(tối đa @KpiService.SupportMaxPoint.ToString("0.##")%)</span></h3>
+    </div>
+    @if (supportTasks.Count == 0)
+    {
+        <div class="card-body"><p class="muted">Không có việc hỗ trợ trong tháng — hưởng nguyên điểm tối đa.</p></div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Công việc</th>
+                        <th class="nowrap">Thời gian</th>
+                        <th>Báo cáo đúng hạn</th>
+                        <th class="num">Điểm</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var t in supportTasks)
+                    {
+                        <tr>
+                            <td>@(string.IsNullOrWhiteSpace(t.Code) ? t.Title : t.Code + " · " + t.Title)</td>
+                            <td class="nowrap">@timeRange(t)</td>
+                            <td>
+                                @if (t.State == TaskStates.Done)
+                                {
+                                    if (t.IsOnTime)
+                                    { <span class="badge badge-active">Đúng hạn</span> }
+                                    else
+                                    { <span class="badge badge-danger">Trễ @t.LateDays ngày</span> }
+                                }
+                                else
+                                { <span class="badge">@TaskStates.Display(t.State)</span> }
+                            </td>
+                            <td class="num">@((t.State == TaskStates.Done ? supportUnit : 0).ToString("0.##"))</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    <div class="card-body">
+        <p>
+            Hoàn thành @Model.SupportDone/@Model.SupportTotal việc ·
+            Số lần báo cáo trễ: <strong>@Model.SupportLateCount</strong>
+            (trừ @KpiService.SupportLatePenalty(Model.SupportLateCount).ToString("0.##")%) ·
+            Tổng điểm hỗ trợ: <strong>@Model.SupportPoint.ToString("0.##")</strong>
+        </p>
+    </div>
+</div>
+
+@* ---------- II. Công việc thực hiện ---------- *@
+<div class="card">
+    <div class="card-body">
+        <h3>II. Công việc thực hiện <span class="muted">(tối đa @KpiService.ExecuteMaxPoint.ToString("0.##")%)</span></h3>
+    </div>
+    @if (executeTasks.Count == 0)
+    {
+        <div class="card-body"><p class="muted">Không có việc triển khai trong tháng — hưởng nguyên điểm tối đa.</p></div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Công việc</th>
+                        <th class="nowrap">Thời gian</th>
+                        <th>Báo cáo đúng hạn</th>
+                        <th class="num">Điểm</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var t in executeTasks)
+                    {
+                        <tr>
+                            <td>
+                                @(string.IsNullOrWhiteSpace(t.Code) ? t.Title : t.Code + " · " + t.Title)
+                                @if (t.ProjectId > 0 && !string.IsNullOrWhiteSpace(t.ProjectName))
+                                {
+                                    <span class="muted">· @t.ProjectName</span>
+                                }
+                            </td>
+                            <td class="nowrap">@timeRange(t)</td>
+                            <td>
+                                @if (t.State == TaskStates.Done)
+                                {
+                                    if (t.IsOnTime)
+                                    { <span class="badge badge-active">Đúng hạn</span> }
+                                    else
+                                    { <span class="badge badge-danger">Trễ @t.LateDays ngày</span> }
+                                }
+                                else
+                                { <span class="badge">@TaskStates.Display(t.State)</span> }
+                            </td>
+                            <td class="num">@((t.State == TaskStates.Done ? executeUnit : 0).ToString("0.##"))</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    <div class="card-body">
+        <p>
+            Hoàn thành @Model.ExecuteDone/@Model.ExecuteTotal việc ·
+            Số lần báo cáo trễ: <strong>@Model.ExecuteLateCount</strong>
+            (trừ @KpiService.ExecuteLatePenalty(Model.ExecuteLateCount).ToString("0.##")%) ·
+            Tổng điểm thực hiện: <strong>@Model.ExecutePoint.ToString("0.##")</strong>
+        </p>
+    </div>
+</div>
+
+@* ---------- III. Công việc được giao ---------- *@
+<div class="card">
+    <div class="card-body">
+        <h3>III. Công việc được giao <span class="muted">(việc riêng, cộng % khi hoàn thành đúng hạn)</span></h3>
+    </div>
+    @if (assignedTasks.Count == 0)
+    {
+        <div class="card-body"><p class="muted">Không có việc riêng trong tháng.</p></div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Công việc</th>
+                        <th class="num">KPI (%)</th>
+                        <th>Hoàn thành</th>
+                        <th class="num">Điểm</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var t in assignedTasks)
+                    {
+                        var earned = t.State == TaskStates.Done && t.IsOnTime;
+                        <tr>
+                            <td>@t.Title</td>
+                            <td class="num">@t.BonusPercent.ToString("0.##")</td>
+                            <td>
+                                @if (t.State == TaskStates.Done)
+                                {
+                                    if (t.IsOnTime)
+                                    { <span class="badge badge-active">Đúng hạn</span> }
+                                    else
+                                    { <span class="badge badge-danger">Trễ hạn — không cộng</span> }
+                                }
+                                else
+                                { <span class="badge">@TaskStates.Display(t.State)</span> }
+                            </td>
+                            <td class="num">@((earned ? t.BonusPercent : 0).ToString("0.##"))</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    <div class="card-body">
+        <p>Tổng điểm được giao: <strong>@Model.AssignedPoint.ToString("0.##")</strong></p>
+    </div>
+</div>
+
+@* ---------- IV. Tổng hợp ---------- *@
+<div class="card">
+    <div class="card-body">
+        <h3>IV. Tổng hợp</h3>
+        <div class="table-wrap">
+            <table>
+                <tbody>
+                    <tr><td>Điểm hỗ trợ</td><td class="num">@Model.SupportPoint.ToString("0.##")</td></tr>
+                    <tr><td>Điểm thực hiện</td><td class="num">@Model.ExecutePoint.ToString("0.##")</td></tr>
+                    <tr><td>Điểm được giao</td><td class="num">@Model.AssignedPoint.ToString("0.##")</td></tr>
+                    <tr>
+                        <td><strong>Tổng KPI chất lượng</strong></td>
+                        <td class="num"><strong>@Model.QualityPoint.ToString("0.##")</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Tỷ lệ ngày công</td>
+                        <td class="num">
+                            @Model.AttendanceRate.ToString("0.##")%
+                            <span class="muted">(@Model.WorkedHours.ToString("0.##") / @Model.RequiredHours.ToString("0.##") giờ)</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>KPI cuối cùng</strong> <span class="muted">(đã làm tròn)</span></td>
+                        <td class="num"><strong>@Model.FinalPoint.ToString("0")</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Xếp loại</td>
+                        <td class="num"><span class="@KpiRanks.BadgeClass(Model.Rank)">@Model.Rank</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <span class="hint">
+            KPI cuối cùng = KPI chất lượng nếu đủ giờ công; thiếu giờ thì nhân tỷ lệ ngày công.
+            Làm tròn về số nguyên, từ 0,5 trở lên làm tròn lên.
+            Xếp loại: &ge;100 Xuất sắc · 95–99 Tốt · 90–94 Khá · 80–89 Đạt · &lt;80 Chưa đạt.
+        </span>
+    </div>
+</div>

@@ -18,13 +18,14 @@ namespace TTKDGP.ProjectManager.Controllers
         }
 
         /// <summary>
-        /// Màn hình mở đầu sau khi đăng nhập, tuỳ theo quyền. Tài khoản Báo cáo công việc không
-        /// vào được danh sách dự án nên phải đưa thẳng về màn báo cáo của họ.
+        /// Màn hình mở đầu sau khi đăng nhập là "Dự án của tôi" — nơi ai cũng thấy dự án mình
+        /// tham gia. Tài khoản không có quyền xem công việc (ví dụ Báo cáo công việc) không vào
+        /// được màn đó nên đưa thẳng về màn báo cáo của họ.
         /// </summary>
         private ActionResult HomeFor(string role)
         {
-            return Roles.CanManage(role)
-                ? RedirectToAction("Index", "Projects")
+            return Permissions.UserHas(role, Permissions.WorkTasks.Perm(Permissions.View))
+                ? RedirectToAction("Projects", "MyWork")
                 : RedirectToAction("Index", "MyReports");
         }
 

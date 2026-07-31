@@ -11,6 +11,39 @@
     // Nhãn tuần phải nói rõ ngày đầu–cuối, mà ngày đó phụ thuộc năm; chưa chọn năm thì lấy năm hiện tại.
     var weekYear = Model.Year > 0 ? Model.Year : WeekHelper.CurrentYear;
 
+    // Tiến độ chọn theo nấc 10%. Giá trị lẻ đã lưu từ trước (ví dụ 35) vẫn phải có trong danh
+    // sách, nếu không mở form ra là bị đổi ngầm sang nấc gần nhất.
+    var progressOptions = Enumerable.Range(0, 11).Select(i => i * 10).ToList();
+    if (!progressOptions.Contains(Model.Progress))
+    {
+        progressOptions.Add(Model.Progress);
+        progressOptions.Sort();
+    }
+
+    // Bảng tra tuần theo năm để đổi hạn hoàn thành là tuần/năm bám theo ngay, không nạp lại trang.
+    // Kèm ngày đầu–cuối mỗi tuần để phía JS chỉ so chuỗi ngày, logic tính tuần ISO vẫn ở máy chủ.
+    var weekYears = new SortedSet<int>();
+    for (var y = WeekHelper.CurrentYear - 1; y <= WeekHelper.CurrentYear + 3; y++) { weekYears.Add(y); }
+    weekYears.Add(weekYear);
+    if (Model.DueDate.HasValue) { weekYears.Add(WeekHelper.GetYear(Model.DueDate.Value)); }
+
+    var weeksByYear = new Dictionary<string, object>();
+    foreach (var y in weekYears)
+    {
+        var list = new List<object>();
+        foreach (var opt in WeekHelper.WeekOptions(y))
+        {
+            list.Add(new
+            {
+                w = opt.Key,
+                label = opt.Value,
+                from = WeekHelper.FirstDayOfWeek(y, opt.Key).ToString("yyyy-MM-dd"),
+                to = WeekHelper.LastDayOfWeek(y, opt.Key).ToString("yyyy-MM-dd")
+            });
+        }
+        weeksByYear[y.ToString()] = list;
+    }
+
     // PM dự án và Quản lý Tổ sửa được mọi thứ. Người thực hiện chỉ báo cáo tiến độ việc của mình,
     // nên phần giao việc chỉ hiện ra để đọc.
     var canEditAll = ViewBag.CanEditAll == null || (bool)ViewBag.CanEditAll;
@@ -105,10 +138,14 @@
             @Html.ValidationMessageFor(m => m.ParentId, "", new { @class = "field-error" })
         </div>
 
-        <div class="form-field">
+        @* Chiếm trọn hàng để Ngày bắt đầu rơi xuống nằm cạnh Hạn hoàn thành,
+           kéo theo Tuần cạnh Năm và Trạng thái cạnh Tiến độ. *@
+        <div class="form-field full">
             @Html.LabelFor(m => m.AssigneeUserId)
             @Html.DropDownListFor(m => m.AssigneeUserId,
                 new SelectList(users, "Id", "FullName", Model.AssigneeUserId), "— Chưa giao —")
+            <span class="hint">Chỉ gồm người đang tham gia dự án này.</span>
+            @Html.ValidationMessageFor(m => m.AssigneeUserId, "", new { @class = "field-error" })
         </div>
 
         <div class="form-field">
@@ -132,6 +169,7 @@
                     Text = o.Value,
                     Selected = Model.Week == o.Key
                 }), "— Không gắn tuần —")
+            <span class="hint">Tự chọn theo hạn hoàn thành; vẫn đổi tay được.</span>
         </div>
 
         <div class="form-field">
@@ -156,7 +194,13 @@
         {
             <div class="form-field">
                 @Html.LabelFor(m => m.Progress)
-                @Html.TextBoxFor(m => m.Progress, new { type = "number", min = "0", max = "100" })
+                @Html.DropDownListFor(m => m.Progress,
+                    progressOptions.Select(p => new SelectListItem
+                    {
+                        Value = p.ToString(),
+                        Text = p + "%",
+                        Selected = Model.Progress == p
+                    }))
                 @Html.ValidationMessageFor(m => m.Progress, "", new { @class = "field-error" })
             </div>
         }
@@ -179,4 +223,67 @@
         <button type="submit" class="btn btn-primary">@(isNew ? "Thêm mục" : "Lưu thay đổi")</button>
         <a class="btn btn-default" href="@Url.Action("Index", "Checklist", new { projectId = Model.ProjectId })">Huỷ</a>
     </div>
+}
+
+@if (canEditAll)
+{
+    <script type="application/json" id="cl-weeks-by-year">@Html.Raw(Json.Encode(weeksByYear))</script>
+    <script>
+        (function () {
+            function init() {
+                var $ = window.jQuery;
+                var dataEl = document.getElementById('cl-weeks-by-year');
+                var $due = $('#DueDate'), $week = $('#Week'), $year = $('#Year');
+                if (!dataEl || !$due.length || !$week.length || !$year.length) return;
+
+                var data = JSON.parse(dataEl.textContent);
+
+                // Dựng lại danh sách tuần của một năm, giữ ô "— Không gắn tuần —" ở đầu.
+                function rebuild(year, selected) {
+                    var weeks = data[String(year)];
+                    if (!weeks) return;
+
+                    var empty = $week.find('option').first().clone();
+                    $week.empty().append(empty);
+                    $.each(weeks, function (_, item) {
+                        $week.append(new Option(item.label, item.w, false, item.w === selected));
+                    });
+
+                    // Danh sách vừa đổi, báo Select2 vẽ lại phần hiển thị.
+                    $week.trigger('change');
+                }
+
+                // Hạn hoàn thành đổi thì tuần/năm bám theo: chọn đúng tuần chứa ngày đó.
+                // Ngày giáp ranh đầu/cuối năm có thể thuộc tuần của năm ISO kề bên, nên dò cả ba năm.
+                $due.on('change', function () {
+                    var v = $due.val();
+                    if (!v) return;
+
+                    var dueYear = parseInt(v.substring(0, 4), 10);
+                    for (var y = dueYear - 1; y <= dueYear + 1; y++) {
+                        var weeks = data[String(y)];
+                        if (!weeks) continue;
+
+                        for (var i = 0; i < weeks.length; i++) {
+                            if (weeks[i].from <= v && v <= weeks[i].to) {
+                                $year.val(y);
+                                rebuild(y, weeks[i].w);
+                                return;
+                            }
+                        }
+                    }
+                });
+
+                // Đổi năm bằng tay cũng dựng lại danh sách tuần, giữ số tuần đang chọn nếu năm mới vẫn có.
+                $year.on('change', function () {
+                    var y = parseInt($year.val(), 10);
+                    if (y > 0) rebuild(y, parseInt($week.val(), 10));
+                });
+            }
+
+            // Trong hộp thoại jQuery đã có sẵn; mở bằng trang riêng thì jQuery nạp ở cuối trang
+            // nên phải chờ DOMContentLoaded.
+            if (window.jQuery) { init(); } else { document.addEventListener('DOMContentLoaded', init); }
+        })();
+    </script>
 }

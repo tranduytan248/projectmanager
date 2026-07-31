@@ -87,6 +87,9 @@ namespace TTKDGP.ProjectManager.Data
         private static readonly Lazy<SqlStore<KpiLine>> _kpiLines =
             new Lazy<SqlStore<KpiLine>>(() => new SqlStore<KpiLine>("KpiLines"));
 
+        private static readonly Lazy<SqlStore<KpiMonth>> _kpiMonths =
+            new Lazy<SqlStore<KpiMonth>>(() => new SqlStore<KpiMonth>("KpiMonths"));
+
         /// <summary>Dự án trong bộ quản lý công việc.</summary>
         public static SqlStore<WorkProject> WorkProjects { get { return _workProjects.Value; } }
 
@@ -113,6 +116,9 @@ namespace TTKDGP.ProjectManager.Data
 
         /// <summary>Dòng chi tiết của phiếu chấm KPI.</summary>
         public static SqlStore<KpiLine> KpiLines { get { return _kpiLines.Value; } }
+
+        /// <summary>Kết quả KPI tháng của từng người theo bộ chấm 30/70 + tỷ lệ ngày công.</summary>
+        public static SqlStore<KpiMonth> KpiMonths { get { return _kpiMonths.Value; } }
 
         /// <summary>Thông báo cá nhân hiện ở chuông trên thanh đầu trang.</summary>
         public static SqlStore<UserNotification> UserNotifications { get { return _userNotifications.Value; } }

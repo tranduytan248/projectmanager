@@ -1,0 +1,204 @@
+﻿@model List<TTKDGP.ProjectManager.Models.KpiMonth>
+@using TTKDGP.ProjectManager.Models
+@{
+    ViewBag.Title = "KPI theo tháng";
+
+    int year = ViewBag.Year;
+    int month = ViewBag.Month;
+    int userId = ViewBag.UserId;
+    var users = ViewBag.Users as List<User> ?? new List<User>();
+
+    var can = ViewBag.Can as Func<string, bool>;
+    var canGenerate = can != null && can("kpi.generate");
+    var canExport = can != null && can("kpi.export");
+
+    // Năm quanh hiện tại là đủ: KPI chấm theo tháng vừa qua, không ai chấm trước cả năm.
+    var yearOptions = new List<int>();
+    for (var y = DateTime.Today.Year - 2; y <= DateTime.Today.Year + 1; y++) { yearOptions.Add(y); }
+}
+
+<div class="page-head">
+    <div>
+        <h1>KPI theo tháng</h1>
+        <p>
+            Đánh giá chất lượng làm việc hàng tháng: hỗ trợ tối đa 30%, thực hiện tối đa 70%,
+            việc riêng cộng theo % từng việc; thiếu giờ công thì nhân tỷ lệ ngày công.
+        </p>
+    </div>
+    <div class="btn-row">
+        @if (canGenerate)
+        {
+            using (Html.BeginForm("Calculate", "Kpi", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="year" value="@year" />
+                <input type="hidden" name="month" value="@month" />
+                <button type="submit" class="btn btn-primary"
+                        onclick="return confirm('Chốt KPI tháng @month/@year cho toàn bộ nhân sự? Điểm đã lưu của tháng này sẽ được tính lại; ngày nghỉ phép và giờ công đã nhập vẫn giữ nguyên.');">
+                    Tính &amp; lưu KPI tháng @month/@year
+                </button>
+            }
+        }
+        @if (canExport && Model.Count > 0)
+        {
+            <a class="btn btn-default"
+               href="@Url.Action("Export", "Kpi", new { year = year, month = month, userId = userId > 0 ? (int?)userId : null })">Xuất Excel</a>
+        }
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        @using (Html.BeginForm("Index", "Kpi", FormMethod.Get))
+        {
+            <div class="filters">
+                <div class="filter-field">
+                    <label for="month">Tháng</label>
+                    <select id="month" name="month">
+                        @for (var m = 1; m <= 12; m++)
+                        {
+                            <option value="@m" selected="@(month == m)">Tháng @m</option>
+                        }
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label for="year">Năm</label>
+                    <select id="year" name="year">
+                        @foreach (var y in yearOptions)
+                        {
+                            <option value="@y" selected="@(year == y)">@y</option>
+                        }
+                    </select>
+                </div>
+                <div class="filter-field grow">
+                    <label for="userId">Nhân viên</label>
+                    <select id="userId" name="userId">
+                        <option value="">— Tất cả —</option>
+                        @foreach (var u in users)
+                        {
+                            <option value="@u.Id" selected="@(userId == u.Id)">@u.FullName</option>
+                        }
+                    </select>
+                </div>
+                <div class="btn-row" style="padding-bottom:1px">
+                    <button type="submit" class="btn btn-primary">Tìm kiếm</button>
+                </div>
+            </div>
+        }
+        <span class="hint">Ngày công chuẩn của tháng: <strong>@ViewBag.StandardDays ngày</strong> (đã trừ Thứ 7, Chủ nhật).</span>
+    </div>
+</div>
+
+<div class="card">
+    @if (Model.Count == 0)
+    {
+        <div class="card-body">
+            <p class="muted">Không có nhân sự nào khớp bộ lọc trong tháng @month/@year.</p>
+        </div>
+    }
+    else
+    {
+        if (ViewBag.HasPreview != null && (bool)ViewBag.HasPreview)
+        {
+            <div class="card-body">
+                <span class="hint">
+                    Dòng đánh dấu <span class="badge badge-waiting">tạm tính</span> được tính trực tiếp
+                    từ dữ liệu công việc hiện tại, chưa lưu.
+                    @if (canGenerate)
+                    {
+                        <text>Bấm <strong>Tính &amp; lưu KPI tháng @month/@year</strong> để chốt kết quả.</text>
+                    }
+                </span>
+            </div>
+        }
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="num">STT</th>
+                        <th>Nhân sự</th>
+                        <th class="num nowrap">Hỗ trợ</th>
+                        <th class="num nowrap">Thực hiện</th>
+                        <th class="num nowrap">Được giao</th>
+                        <th class="num nowrap">KPI chất lượng</th>
+                        <th class="num nowrap">Nghỉ phép (ngày)</th>
+                        <th class="num nowrap">Giờ thực hiện</th>
+                        <th class="num nowrap">Tỷ lệ ngày công</th>
+                        <th class="num nowrap">KPI cuối cùng</th>
+                        <th>Xếp loại</th>
+                        @if (canGenerate)
+                        {
+                            <th></th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (var i = 0; i < Model.Count; i++)
+                    {
+                        var r = Model[i];
+                        var formId = "att-" + r.UserId;
+                        <tr>
+                            <td class="num">@(i + 1)</td>
+                            <td class="nowrap">
+                                <a href="@Url.Action("Detail", "Kpi", new { year = r.Year, month = r.Month, userId = r.UserId })">@r.UserFullName</a>
+                                @if (r.Id == 0)
+                                {
+                                    <span class="badge badge-waiting">tạm tính</span>
+                                }
+                            </td>
+                            <td class="num">@r.SupportPoint.ToString("0.##")</td>
+                            <td class="num">@r.ExecutePoint.ToString("0.##")</td>
+                            <td class="num">@r.AssignedPoint.ToString("0.##")</td>
+                            <td class="num"><strong>@r.QualityPoint.ToString("0.##")</strong></td>
+                            @if (canGenerate)
+                            {
+                                @* Ô nhập gắn vào form của dòng qua thuộc tính form="..." — form
+                                   không thể ôm trọn một <tr> nên phải nối kiểu này. *@
+                                <td class="num">
+                                    <input form="@formId" type="number" name="leaveDays" step="0.5" min="0"
+                                           style="width:72px" value="@r.LeaveDays.ToString("0.##")" />
+                                </td>
+                            }
+                            else
+                            {
+                                <td class="num">@r.LeaveDays.ToString("0.##")</td>
+                            }
+                            <td class="num nowrap"
+                                title="Tự tính từ thời gian các việc đã hoàn thành/đang làm; số sau dấu / là giờ yêu cầu">
+                                @r.WorkedHours.ToString("0.##")
+                                <span class="muted">/ @r.RequiredHours.ToString("0.##")h</span>
+                            </td>
+                            <td class="num">@r.AttendanceRate.ToString("0.##")%</td>
+                            <td class="num"><strong>@r.FinalPoint.ToString("0")</strong></td>
+                            <td class="nowrap"><span class="@KpiRanks.BadgeClass(r.Rank)">@r.Rank</span></td>
+                            @if (canGenerate)
+                            {
+                                <td class="nowrap">
+                                    <form id="@formId" method="post" action="@Url.Action("Attendance", "Kpi")">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="year" value="@r.Year" />
+                                        <input type="hidden" name="month" value="@r.Month" />
+                                        <input type="hidden" name="userId" value="@r.UserId" />
+                                        <input type="hidden" name="back" value="index" />
+                                        <button type="submit" class="btn btn-default">Lưu</button>
+                                    </form>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="card-body">
+            <span class="hint">
+                Bấm vào tên nhân sự để xem chi tiết công việc và cách tính điểm.
+                Sửa <strong>Nghỉ phép</strong> rồi bấm <strong>Lưu</strong> ở cuối dòng — hệ thống
+                tính lại KPI của người đó ngay.
+                <strong>Giờ thực hiện</strong> do hệ thống tự tính: số ngày làm việc (bỏ Thứ 7, Chủ nhật)
+                từ ngày bắt đầu đến hạn hoàn thành của các việc <strong>đã hoàn thành</strong> hoặc
+                <strong>đang làm</strong>, nhân @TTKDGP.ProjectManager.Services.KpiService.HoursPerDay giờ;
+                số sau dấu "/" là tổng giờ yêu cầu của tháng.
+            </span>
+        </div>
+    }
+</div>

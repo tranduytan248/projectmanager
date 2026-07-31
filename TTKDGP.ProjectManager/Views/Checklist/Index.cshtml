@@ -178,7 +178,11 @@ else
                                     <details class="row-menu">
                                         <summary>Thao tác ▾</summary>
                                         <div class="row-menu-items">
-                                            <a href="@Url.Action("Detail", "MyWork", new { id = t.Id })">Trang chi tiết &amp; trao đổi</a>
+                                            @* href giữ trang đầy đủ làm dự phòng khi không có JS; bình thường mở hộp thoại. *@
+                                            <a href="@Url.Action("Detail", "MyWork", new { id = t.Id })"
+                                               data-modal-url="@Url.Action("Detail", "Checklist", new { id = t.Id })"
+                                               data-modal-title="Chi tiết công việc"
+                                               data-modal-size="lg">Chi tiết &amp; trao đổi</a>
                                             @if (row.CanEdit)
                                             {
                                                 <a href="@Url.Action("Edit", "Checklist", new { projectId = Model.Project.Id, id = t.Id })"

@@ -360,7 +360,7 @@ namespace TTKDGP.ProjectManager.Controllers
                 };
             }
 
-            PopulateEditLists(projectId, task.Id);
+            PopulateEditLists(task);
             ViewBag.Project = project;
             ViewBag.CanEditAll = CanEditAllOfTask(task) || task.Id == 0;
 
@@ -436,9 +436,18 @@ namespace TTKDGP.ProjectManager.Controllers
 
             ValidateParent(model);
 
+            // Người thực hiện phải đang tham gia dự án. Người đã lưu từ trước vẫn giữ được
+            // (kể cả đã rời dự án), nhưng ĐỔI sang người ngoài dự án là chặn — form sửa tay được.
+            if (canEditAll && model.AssigneeUserId > 0
+                && model.AssigneeUserId != (current == null ? 0 : current.AssigneeUserId)
+                && ProjectMembers(model.ProjectId).All(m => m.User.Id != model.AssigneeUserId))
+            {
+                ModelState.AddModelError("AssigneeUserId", "Người thực hiện phải đang tham gia dự án này.");
+            }
+
             if (!ModelState.IsValid)
             {
-                PopulateEditLists(model.ProjectId, model.Id);
+                PopulateEditLists(model);
                 ViewBag.Project = project;
 
                 // Trả lại form kèm lỗi để hộp thoại hiện tại chỗ, không mất dữ liệu đã nhập.
@@ -1235,13 +1244,33 @@ namespace TTKDGP.ProjectManager.Controllers
             return siblings.Count == 0 ? 10 : siblings.Max(t => t.SortOrder) + 10;
         }
 
-        private void PopulateEditLists(int projectId, int currentTaskId)
+        private void PopulateEditLists(WorkTask task)
         {
-            ViewBag.Users = WorkService.ActiveUsers();
+            ViewBag.Users = AssignableUsers(task);
             ViewBag.States = TaskStates.All;
-            ViewBag.ParentOptions = ProjectTasks(projectId)
-                .Where(t => t.Id != currentTaskId)
+            ViewBag.ParentOptions = ProjectTasks(task.ProjectId)
+                .Where(t => t.Id != task.Id)
                 .ToList();
+        }
+
+        /// <summary>
+        /// Người giao được việc: thành viên ĐANG tham gia dự án, PM lên đầu. Người thực hiện
+        /// hiện tại của việc vẫn được giữ trong danh sách dù đã rời dự án — mở form sửa mà
+        /// thiếu người đó là mất lựa chọn đang lưu.
+        /// </summary>
+        private static List<User> AssignableUsers(WorkTask task)
+        {
+            var users = ProjectMembers(task.ProjectId)
+                .Select(m => m.User)
+                .ToList();
+
+            if (task.AssigneeUserId > 0 && users.All(u => u.Id != task.AssigneeUserId))
+            {
+                var current = Repository.Users.Find(task.AssigneeUserId);
+                if (current != null) users.Add(current);
+            }
+
+            return users;
         }
     }
 }
