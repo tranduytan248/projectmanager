@@ -2126,3 +2126,66 @@ table.data tbody tr.row-due-danger:hover { background: #f6dcda; }
 .input-row { display: flex; align-items: center; gap: 8px; }
 .input-row input { flex: 1; min-width: 0; }
 .input-row .btn { flex: 0 0 auto; }
+
+/* ===== Khối gập "Thống kê khối lượng" trên màn checklist ===== */
+
+/* Thẻ <details> vốn là khối trắng của .card nên chỉ cần chỉnh riêng phần tiêu đề gập. */
+.workload-summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    border-radius: var(--radius);
+    user-select: none;
+}
+
+.workload-summary::-webkit-details-marker { display: none; }
+.workload-summary::marker { content: ""; }
+
+/* Mũi tên tự xoay theo trạng thái gập/mở, đặt sau chữ cho khỏi lệch hàng. */
+.workload-summary::after {
+    content: "▾";
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+.workload-card[open] > .workload-summary::after { content: "▴"; }
+
+.workload-summary:hover { background: var(--primary-soft); }
+
+/* Mở ra thì tiêu đề chỉ bo góc trên, để liền mạch với phần thân bên dưới. */
+.workload-card[open] > .workload-summary {
+    border-radius: var(--radius) var(--radius) 0 0;
+    border-bottom: 1px solid var(--border);
+}
+
+/*
+  Bảng khối lượng căn GIỮA các cột số thay vì căn phải như mặc định của .num: mỗi ô ở đây là một
+  con số ngắn kèm dòng chú thích nhỏ bên dưới ("1 việc", "đã cắt trần"), căn phải làm hai dòng
+  lệch nhau và cột trông rời khỏi tiêu đề. Chỉ áp cho bảng này, không đụng .num của bảng khác.
+*/
+table.data.workload-table th.num,
+table.data.workload-table td.num {
+    text-align: center;
+}
+
+/* Hàng tổng cộng cũng phải theo, nếu không số tổng lệch khỏi cột dữ liệu bên trên. */
+table.data.workload-table tfoot td { text-align: center; }
+table.data.workload-table tfoot td:first-child { text-align: left; }
+
+/* Hàng tổng cộng của bảng thống kê — tách khỏi phần dữ liệu bằng nền và đường kẻ đậm. */
+table.data tfoot td {
+    background: var(--bg);
+    border-top: 2px solid var(--border-strong);
+    padding: 10px 12px;
+}
+
+/* Ô nhập ý kiến duyệt trên màn Duyệt nghỉ phép: nằm ngay trên cặp nút Duyệt/Từ chối. */
+.leave-approve-form .leave-note {
+    width: 100%;
+    min-width: 190px;
+    margin-bottom: 6px;
+}

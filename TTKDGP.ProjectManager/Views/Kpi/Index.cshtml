@@ -150,19 +150,11 @@
                             <td class="num">@r.ExecutePoint.ToString("0.##")</td>
                             <td class="num">@r.AssignedPoint.ToString("0.##")</td>
                             <td class="num"><strong>@r.QualityPoint.ToString("0.##")</strong></td>
-                            @if (canGenerate)
-                            {
-                                @* Ô nhập gắn vào form của dòng qua thuộc tính form="..." — form
-                                   không thể ôm trọn một <tr> nên phải nối kiểu này. *@
-                                <td class="num">
-                                    <input form="@formId" type="number" name="leaveDays" step="0.5" min="0"
-                                           style="width:72px" value="@r.LeaveDays.ToString("0.##")" />
-                                </td>
-                            }
-                            else
-                            {
-                                <td class="num">@r.LeaveDays.ToString("0.##")</td>
-                            }
+                            @* Không còn nhập tay: số ngày nghỉ lấy từ các đơn ĐÃ DUYỆT ở màn
+                               Duyệt nghỉ phép, nên chỉ hiển thị. *@
+                            <td class="num" title="Tổng ngày nghỉ phép đã duyệt trong tháng">
+                                @r.LeaveDays.ToString("0.##")
+                            </td>
                             <td class="num nowrap"
                                 title="Tự tính từ thời gian các việc đã hoàn thành/đang làm; số sau dấu / là giờ yêu cầu">
                                 @r.WorkedHours.ToString("0.##")
@@ -180,7 +172,7 @@
                                         <input type="hidden" name="month" value="@r.Month" />
                                         <input type="hidden" name="userId" value="@r.UserId" />
                                         <input type="hidden" name="back" value="index" />
-                                        <button type="submit" class="btn btn-default">Lưu</button>
+                                        <button type="submit" class="btn btn-default">Tính lại</button>
                                     </form>
                                 </td>
                             }
@@ -192,8 +184,9 @@
         <div class="card-body">
             <span class="hint">
                 Bấm vào tên nhân sự để xem chi tiết công việc và cách tính điểm.
-                Sửa <strong>Nghỉ phép</strong> rồi bấm <strong>Lưu</strong> ở cuối dòng — hệ thống
-                tính lại KPI của người đó ngay.
+                <strong>Nghỉ phép</strong> là tổng ngày nghỉ <strong>đã duyệt</strong> trong tháng,
+                lấy từ màn <a href="@Url.Action("Approve", "Leaves")">Duyệt nghỉ phép</a> — không sửa
+                trực tiếp ở đây. Duyệt thêm đơn xong thì bấm <strong>Tính lại</strong> ở cuối dòng.
                 <strong>Giờ thực hiện</strong> do hệ thống tự tính: số ngày làm việc (bỏ Thứ 7, Chủ nhật)
                 từ ngày bắt đầu đến hạn hoàn thành của các việc <strong>đã hoàn thành</strong> hoặc
                 <strong>đang làm</strong>, nhân @TTKDGP.ProjectManager.Services.KpiService.HoursPerDay giờ;

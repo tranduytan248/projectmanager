@@ -98,18 +98,16 @@
                 <input type="hidden" name="year" value="@Model.Year" />
                 <input type="hidden" name="month" value="@Model.Month" />
                 <input type="hidden" name="userId" value="@Model.UserId" />
-                <div class="filters">
-                    <div class="filter-field">
-                        <label for="leaveDays">Ngày nghỉ có phép</label>
-                        <input type="number" id="leaveDays" name="leaveDays" step="0.5" min="0"
-                               value="@Model.LeaveDays.ToString("0.##")" />
-                    </div>
-                    <div class="btn-row" style="padding-bottom:1px">
-                        <button type="submit" class="btn btn-primary">Lưu nghỉ phép &amp; tính lại</button>
-                    </div>
+                <div class="btn-row">
+                    <button type="submit" class="btn btn-primary">Tính lại KPI</button>
+                    <a class="btn btn-default"
+                       href="@Url.Action("Approve", "Leaves", new { userId = Model.UserId, year = Model.Year, month = Model.Month, state = "" })">
+                        Xem đơn nghỉ phép
+                    </a>
                 </div>
                 <span class="hint">
-                    Nghỉ phép làm giảm giờ yêu cầu (mỗi ngày công = @KpiService.HoursPerDay giờ).
+                    Nghỉ phép làm giảm giờ yêu cầu (mỗi ngày công = @KpiService.HoursPerDay giờ) và
+                    lấy từ các đơn <strong>đã duyệt</strong> ở màn Duyệt nghỉ phép — không nhập tay ở đây.
                     Giờ thực hiện do hệ thống tự tính: số ngày làm việc (bỏ Thứ 7, Chủ nhật) từ ngày
                     bắt đầu đến hạn hoàn thành của các việc đã hoàn thành hoặc đang làm.
                     Thấp hơn giờ yêu cầu thì KPI cuối cùng bị nhân tỷ lệ ngày công.

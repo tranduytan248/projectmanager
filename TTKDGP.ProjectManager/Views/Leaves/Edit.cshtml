@@ -1,0 +1,28 @@
+﻿@model TTKDGP.ProjectManager.Models.LeaveRequest
+@using TTKDGP.ProjectManager.Models
+@*
+    Trang đầy đủ cho form đăng ký nghỉ phép — dùng khi mở thẳng bằng đường dẫn (không qua hộp
+    thoại). Phần form nằm ở _EditForm để hai lối vào không bao giờ lệch nhau.
+*@
+@{
+    var isNew = Model.Id == 0;
+    ViewBag.Title = isNew ? "Đăng ký nghỉ phép" : "Sửa đơn nghỉ phép";
+    ViewBag.Crumbs = new List<Crumb>
+    {
+        new Crumb { Label = "Nghỉ phép của tôi", Url = Url.Action("My", "Leaves") },
+        new Crumb { Label = ViewBag.Title as string }
+    };
+}
+
+<div class="page-head">
+    <div>
+        <h1>@ViewBag.Title</h1>
+        <p>Ngày nghỉ được duyệt sẽ trừ vào giờ công yêu cầu khi chấm KPI tháng.</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        @Html.Partial("_EditForm", Model)
+    </div>
+</div>

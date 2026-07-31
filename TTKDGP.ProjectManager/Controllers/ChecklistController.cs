@@ -37,7 +37,8 @@ namespace TTKDGP.ProjectManager.Controllers
         }
 
         [AppAuthorize(Permission = "wtasks.view")]
-        public ActionResult Index(int projectId, int page = 1, string view = null)
+        public ActionResult Index(int projectId, int page = 1, string view = null,
+            int wlYear = 0, int wlMonth = 0)
         {
             var project = Repository.WorkProjects.Find(projectId);
             if (project == null || !CanViewProject(projectId)) return HttpNotFound();
@@ -64,6 +65,23 @@ namespace TTKDGP.ProjectManager.Controllers
                 AllRows = allRows,
                 Users = WorkService.ActiveUsers()
             };
+
+            // Thống kê khối lượng là số liệu quản lý — chỉ dựng khi tài khoản có quyền, để nó
+            // không lộ ra ở HTML của người thường dù khối có đang gập lại.
+            if (Can(Permissions.Workload.Perm(Permissions.View)))
+            {
+                var wYear = wlYear > 0 ? wlYear : DateTime.Today.Year;
+                var wMonth = wlMonth >= 1 && wlMonth <= 12 ? wlMonth : DateTime.Today.Month;
+
+                model.ShowWorkload = true;
+                model.WorkloadYear = wYear;
+                model.WorkloadMonth = wMonth;
+                model.Workload = WorkloadService.Build(projectId, wYear, wMonth);
+
+                // Khối tự mở sẵn khi người dùng vừa đổi tháng — nếu không, đổi tháng xong trang
+                // nạp lại và khối gập lại như cũ, nhìn như bấm không ăn.
+                model.WorkloadOpen = wlYear > 0 || wlMonth > 0;
+            }
 
             if (model.View == TaskViews.Kanban)
             {

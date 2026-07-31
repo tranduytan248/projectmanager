@@ -148,6 +148,23 @@ namespace TTKDGP.ProjectManager.Models
                         A("pmapprove", "PM duyệt"), A("approve", "Duyệt lần cuối"),
                         A("export", "Kết xuất"), A("send", "Gửi email") });
 
+        /// <summary>
+        /// Nghỉ phép. "Xem" là quyền nền AI CŨNG CÓ — đó là màn tự đăng ký và xem đơn của chính
+        /// mình. "Duyệt" và "Xem tất cả" là quyền của Quản lý Tổ; thiếu tách đôi này thì cấp quyền
+        /// đăng ký cho nhân sự cũng là cấp luôn quyền duyệt đơn của người khác.
+        /// </summary>
+        public static readonly PermModule Leaves =
+            new PermModule("leaves", "Nghỉ phép", "Công việc",
+                new[] { A(View, "Đăng ký / xem đơn của mình"), A("all", "Xem đơn của tất cả"),
+                        A("approve", "Duyệt đơn") });
+
+        /// <summary>
+        /// Thống kê khối lượng công việc theo tháng trên màn checklist dự án. Tách riêng khỏi
+        /// wtasks.view vì đây là số liệu quản lý — chỉ Quản lý Tổ được thấy.
+        /// </summary>
+        public static readonly PermModule Workload =
+            new PermModule("workload", "Thống kê khối lượng", "Công việc", new[] { A(View, "Xem") });
+
         public static readonly PermModule Catalog =
             new PermModule("catalog", "Danh mục", "Danh mục", Crud());
 
@@ -176,7 +193,7 @@ namespace TTKDGP.ProjectManager.Models
         public static readonly List<PermModule> All = new List<PermModule>
         {
             Home, MyReports, Projects, Members, Assignments, TeamReports, WorkLogs, Catalog,
-            Team, WorkProjects, WorkTasks, WorkReports, Kpi,
+            Team, WorkProjects, WorkTasks, WorkReports, Kpi, Leaves, Workload,
             Hrm, Notifications, GoConnect, Integrations, Users, Roles
         };
 
@@ -192,7 +209,7 @@ namespace TTKDGP.ProjectManager.Models
             var codes = new List<string> { Home.Perm(View), Team.Perm(View) };
             codes.AddRange(new[] { MyReports, Projects, Members, Assignments, TeamReports,
                                    Catalog, WorkLogs,
-                                   WorkProjects, WorkTasks, WorkReports, Kpi }
+                                   WorkProjects, WorkTasks, WorkReports, Kpi, Leaves, Workload }
                 .SelectMany(m => m.Actions.Select(a => m.Perm(a.Code))));
             return codes;
         }
@@ -220,7 +237,11 @@ namespace TTKDGP.ProjectManager.Models
                 WorkTasks.Perm("import"),
                 WorkReports.Perm(View), WorkReports.Perm(Edit),
 
-                Kpi.Perm(View), Kpi.Perm("pmapprove")
+                Kpi.Perm(View), Kpi.Perm("pmapprove"),
+
+                // Tự đăng ký nghỉ phép và xem đơn của CHÍNH MÌNH. Không cấp leaves.all/approve —
+                // xem đơn người khác và duyệt đơn là việc của Quản lý Tổ.
+                Leaves.Perm(View)
             };
         }
 
@@ -273,7 +294,8 @@ namespace TTKDGP.ProjectManager.Models
                 Nodes = new List<MenuNode>
                 {
                     L("Công việc của tôi", "MyWork", WorkTasks.Perm(View), "Tasks"),
-                    L("Dự án của tôi", "MyWork", WorkTasks.Perm(View), "Projects")
+                    L("Dự án của tôi", "MyWork", WorkTasks.Perm(View), "Projects"),
+                    L("Nghỉ phép của tôi", "Leaves", Leaves.Perm(View), "My")
                 }
             },
 
@@ -286,6 +308,7 @@ namespace TTKDGP.ProjectManager.Models
                 {
                     L("Dự án", "WorkProjects", WorkProjects.Perm(View)),
                     L("Giao việc riêng", "PrivateTasks", WorkTasks.Perm(Create)),
+                    L("Duyệt nghỉ phép", "Leaves", Leaves.Perm("approve"), "Approve"),
                     L("KPI theo tháng", "Kpi", Kpi.Perm(View))
                 }
             },

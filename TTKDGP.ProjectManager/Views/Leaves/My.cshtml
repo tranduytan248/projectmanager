@@ -1,0 +1,175 @@
+﻿@model TTKDGP.ProjectManager.Models.PagedList<TTKDGP.ProjectManager.Models.LeaveRequest>
+@using TTKDGP.ProjectManager.Models
+@{
+    ViewBag.Title = "Nghỉ phép của tôi";
+    var years = ViewBag.Years as List<int> ?? new List<int>();
+    var year = (int)ViewBag.Year;
+    var state = ViewBag.State as string;
+    var statYear = (int)ViewBag.StatYear;
+    var approvedDays = (decimal)ViewBag.ApprovedDaysInYear;
+    var pendingCount = (int)ViewBag.PendingCount;
+    var hasFilter = year > 0 || !string.IsNullOrWhiteSpace(state);
+}
+
+<div class="page-head">
+    <div>
+        <h1>Nghỉ phép của tôi</h1>
+        <p>
+            Năm @statYear đã nghỉ <strong>@approvedDays.ToString("0.#")</strong> ngày công đã duyệt.
+            @if (pendingCount > 0)
+            {
+                <text>· <strong>@pendingCount</strong> đơn đang chờ duyệt.</text>
+            }
+        </p>
+    </div>
+    <a class="btn btn-primary" href="@Url.Action("Edit", "Leaves")"
+       data-modal-url="@Url.Action("Edit", "Leaves")"
+       data-modal-title="Đăng ký nghỉ phép"
+       data-modal-size="sm">+ Đăng ký nghỉ phép</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        @using (Html.BeginForm("My", "Leaves", FormMethod.Get))
+        {
+            <div class="filters">
+                <div class="filter-field">
+                    <label for="year">Năm</label>
+                    <select id="year" name="year">
+                        <option value="0">— Tất cả —</option>
+                        @foreach (var y in years)
+                        {
+                            <option value="@y" selected="@(year == y)">@y</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label for="state">Trạng thái</label>
+                    <select id="state" name="state">
+                        <option value="">— Tất cả —</option>
+                        @foreach (var s in LeaveStates.All)
+                        {
+                            <option value="@s" selected="@(state == s)">@LeaveStates.Display(s)</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="btn-row" style="padding-bottom:1px">
+                    <button type="submit" class="btn btn-primary">Lọc</button>
+                    @if (hasFilter)
+                    {
+                        <a class="btn btn-default" href="@Url.Action("My", "Leaves")">Bỏ lọc</a>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="card">
+    @if (Model.Items.Count == 0)
+    {
+        <div class="empty-state">
+            @if (hasFilter)
+            {
+                <text>Không có đơn nào khớp bộ lọc.</text>
+            }
+            else
+            {
+                <text>Bạn chưa đăng ký nghỉ phép lần nào.</text>
+                <span class="hint">Bấm "Đăng ký nghỉ phép" để tạo đơn đầu tiên.</span>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th>Thời gian nghỉ</th>
+                        <th>Loại</th>
+                        <th class="num">Số ngày</th>
+                        <th>Lý do</th>
+                        <th>Trạng thái</th>
+                        <th>Người duyệt</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var l in Model.Items)
+                    {
+                        <tr>
+                            <td class="nowrap">
+                                <strong>@l.FromDate.ToString("dd/MM/yyyy")</strong>
+                                @if (l.ToDate.Date != l.FromDate.Date)
+                                {
+                                    <text>&ndash; @l.ToDate.ToString("dd/MM/yyyy")</text>
+                                }
+                                @if (l.IsHalfDay)
+                                {
+                                    <div class="muted">@(string.IsNullOrWhiteSpace(l.HalfDaySession) ? "Nửa ngày" : l.HalfDaySession)</div>
+                                }
+                            </td>
+                            <td>@LeaveKinds.Display(l.Kind)</td>
+                            <td class="num">@l.Days.ToString("0.#")</td>
+                            <td>
+                                @if (string.IsNullOrWhiteSpace(l.Reason))
+                                {
+                                    <span class="muted">—</span>
+                                }
+                                else
+                                {
+                                    @l.Reason
+                                }
+                            </td>
+                            <td>
+                                <span class="@LeaveStates.BadgeClass(l.State)">@LeaveStates.Display(l.State)</span>
+                                @if (!string.IsNullOrWhiteSpace(l.ApproverNote))
+                                {
+                                    <div class="muted">@l.ApproverNote</div>
+                                }
+                            </td>
+                            <td>
+                                @if (l.ApprovedAt.HasValue)
+                                {
+                                    <text>@l.ApprovedByName</text>
+                                    <div class="muted nowrap">@l.ApprovedAt.Value.ToString("dd/MM/yyyy HH:mm")</div>
+                                }
+                                else
+                                {
+                                    <span class="muted">—</span>
+                                }
+                            </td>
+                            <td class="actions">
+                                @if (LeaveStates.IsEditable(l.State))
+                                {
+                                    <div class="btn-group">
+                                        <a class="btn btn-default btn-sm" href="@Url.Action("Edit", "Leaves", new { id = l.Id })"
+                                           data-modal-url="@Url.Action("Edit", "Leaves", new { id = l.Id })"
+                                           data-modal-title="Sửa đơn nghỉ phép"
+                                           data-modal-size="sm">Sửa</a>
+                                        @using (Html.BeginForm("Cancel", "Leaves", FormMethod.Post, new { @class = "inline-form" }))
+                                        {
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@l.Id" />
+                                            <button type="submit" class="btn btn-default btn-sm"
+                                                    onclick="return confirm('Thu hồi đơn nghỉ phép này?');">Thu hồi</button>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="muted">—</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @Html.Partial("_Pager", Model.Pager)
+    }
+</div>

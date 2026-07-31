@@ -1,0 +1,123 @@
+﻿@model TTKDGP.ProjectManager.Models.LeaveRequest
+@using TTKDGP.ProjectManager.Models
+@*
+    Form đăng ký/sửa một đơn nghỉ phép, dùng chung cho hộp thoại và trang riêng.
+
+    Số ngày hiển thị được tính lại ngay trên trình duyệt khi người dùng đổi ngày, để họ thấy trước
+    con số sẽ được trừ vào giờ công — nhưng con số THẬT luôn do máy chủ tính lại ở LeaveRequest.Days.
+*@
+@{
+    var isNew = Model.Id == 0;
+}
+
+@using (Html.BeginForm("Edit", "Leaves", FormMethod.Post))
+{
+    @Html.AntiForgeryToken()
+    @Html.HiddenFor(m => m.Id)
+    @Html.ValidationSummary(false, null, new { @class = "validation-summary-errors" })
+
+    <div class="form-grid">
+        <div class="form-field">
+            @Html.LabelReq(m => m.Kind, required: true)
+            @Html.DropDownListFor(m => m.Kind,
+                LeaveKinds.All.Select(k => new SelectListItem
+                {
+                    Value = k,
+                    Text = LeaveKinds.Display(k),
+                    Selected = Model.Kind == k
+                }))
+        </div>
+
+        <div class="form-field">
+            <label>Số ngày nghỉ</label>
+            <div class="form-static">
+                <strong data-leave-days>@Model.Days.ToString("0.#")</strong> ngày công
+            </div>
+            <span class="hint">Đã bỏ Thứ 7 và Chủ nhật.</span>
+        </div>
+
+        <div class="form-field">
+            @Html.LabelReq(m => m.FromDate, required: true)
+            @Html.TextBoxFor(m => m.FromDate, "{0:yyyy-MM-dd}", new { type = "date", data_leave_from = "1" })
+            @Html.ValidationMessageFor(m => m.FromDate, "", new { @class = "field-error" })
+        </div>
+
+        <div class="form-field">
+            @Html.LabelReq(m => m.ToDate, required: true)
+            @Html.TextBoxFor(m => m.ToDate, "{0:yyyy-MM-dd}", new { type = "date", data_leave_to = "1" })
+            <span class="hint">Nghỉ một ngày thì để trùng ngày bắt đầu.</span>
+            @Html.ValidationMessageFor(m => m.ToDate, "", new { @class = "field-error" })
+        </div>
+
+        <div class="form-field full">
+            <div class="check-inline">
+                @Html.CheckBoxFor(m => m.IsHalfDay, new { data_leave_half = "1" })
+                @Html.LabelReq(m => m.IsHalfDay, required: false)
+            </div>
+            <span class="hint">Chỉ dùng khi ngày bắt đầu và kết thúc là cùng một ngày — khi đó tính 0,5 ngày.</span>
+            @Html.ValidationMessageFor(m => m.IsHalfDay, "", new { @class = "field-error" })
+        </div>
+
+        <div class="form-field full" data-leave-session style="@(Model.IsHalfDay ? "" : "display:none")">
+            @Html.LabelReq(m => m.HalfDaySession, required: false)
+            @Html.DropDownListFor(m => m.HalfDaySession,
+                new[] { "Buổi sáng", "Buổi chiều" }.Select(s => new SelectListItem
+                {
+                    Value = s,
+                    Text = s,
+                    Selected = Model.HalfDaySession == s
+                }), "— Chọn buổi —")
+        </div>
+
+        <div class="form-field full">
+            @Html.LabelReq(m => m.Reason, required: false)
+            @Html.TextAreaFor(m => m.Reason, new { rows = 3, placeholder = "Lý do nghỉ (không bắt buộc)" })
+            @Html.ValidationMessageFor(m => m.Reason, "", new { @class = "field-error" })
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">@(isNew ? "Gửi đơn" : "Lưu thay đổi")</button>
+        <a class="btn btn-default" href="@Url.Action("My", "Leaves")">Huỷ</a>
+    </div>
+
+    if (isNew)
+    {
+        <span class="hint">Đơn gửi đi sẽ ở trạng thái "Chờ duyệt" cho tới khi Quản lý Tổ duyệt.</span>
+    }
+}
+
+<script>
+    // Tính trước số ngày công ngay khi người dùng đổi ngày — cùng quy tắc với LeaveRequest.Days
+    // ở máy chủ (bỏ Thứ 7/Chủ nhật; nửa ngày thì 0,5). Đây CHỈ là xem trước: con số được lưu
+    // luôn do máy chủ tính lại, nên lệch nhau cũng không sinh dữ liệu sai.
+    (function () {
+        var from = document.querySelector('[data-leave-from]');
+        var to = document.querySelector('[data-leave-to]');
+        var half = document.querySelector('[data-leave-half]');
+        var session = document.querySelector('[data-leave-session]');
+        var output = document.querySelector('[data-leave-days]');
+        if (!from || !to || !half || !output) { return; }
+
+        function recalc() {
+            if (session) { session.style.display = half.checked ? '' : 'none'; }
+
+            var start = new Date(from.value);
+            var end = new Date(to.value);
+            if (isNaN(start) || isNaN(end) || end < start) { output.textContent = '0'; return; }
+
+            var days = 0;
+            for (var d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                if (d.getDay() !== 0 && d.getDay() !== 6) { days++; }
+            }
+
+            if (days > 0 && half.checked) { days = 0.5; }
+            output.textContent = String(days).replace('.', ',');
+        }
+
+        from.addEventListener('change', recalc);
+        to.addEventListener('change', recalc);
+        half.addEventListener('change', recalc);
+        recalc();
+    })();
+</script>

@@ -92,7 +92,8 @@ namespace TTKDGP.ProjectManager.Controllers
         /// checklist của chính dự án mình.
         /// </summary>
         [AppAuthorize(Permission = "wtasks.view")]
-        public ActionResult Projects(int page = 1)
+        public ActionResult Projects(string q = null, string phase = null, string state = null,
+            string role = null, bool showClosed = false, int page = 1)
         {
             var userId = CurrentUserId;
             var year = WeekHelper.CurrentYear;
@@ -136,16 +137,79 @@ namespace TTKDGP.ProjectManager.Controllers
                 });
             }
 
-            ViewBag.Year = year;
-            ViewBag.Week = week;
-
-            ViewBag.PmCount = rows.Count(r => r.IsPm);
-
-            return View(PagedList<MyProjectRow>.From(rows
+            // Sắp xếp TRƯỚC khi lọc để các ô đếm và danh sách trạng thái luôn theo cùng một thứ tự,
+            // dù người dùng đang lọc kiểu gì.
+            rows = rows
                 .OrderByDescending(r => r.IsPm)
                 .ThenByDescending(r => r.IsActiveMember)
                 .ThenBy(r => r.Project.Name, StringComparer.CurrentCulture)
-                .ToList(), page, WorkService.PageSize));
+                .ToList();
+
+            // Danh sách trạng thái để đổ ô lọc lấy từ CHÍNH dự án của người này — lọc theo trạng
+            // thái mình không có dự án nào thì chỉ ra danh sách rỗng. Cùng lối nghĩ với ô lọc dự án
+            // ở màn Công việc của tôi.
+            var stateOptions = rows
+                .Select(r => r.Project.State)
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Distinct()
+                .OrderBy(s => Array.IndexOf(ProjectStates.All, s))
+                .ToList();
+
+            var roleOptions = rows
+                .Select(r => r.Role)
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Distinct(StringComparer.CurrentCultureIgnoreCase)
+                .OrderBy(s => s, StringComparer.CurrentCulture)
+                .ToList();
+
+            var items = rows.AsEnumerable();
+
+            // Mặc định giấu dự án đã đóng (huỷ / kết thúc hỗ trợ) — danh sách dài dần theo năm
+            // tháng, người dùng gần như luôn chỉ quan tâm dự án còn chạy.
+            if (!showClosed) items = items.Where(r => r.Project.IsOpen);
+
+            if (!string.IsNullOrWhiteSpace(phase)) items = items.Where(r => r.Project.Phase == phase);
+            if (!string.IsNullOrWhiteSpace(state)) items = items.Where(r => r.Project.State == state);
+
+            // "pm" là quy ước cho "dự án tôi làm PM" — vai trò tự do không bao giờ nhận giá trị này.
+            if (!string.IsNullOrWhiteSpace(role))
+            {
+                items = role == MyProjectsViewModel.RolePm
+                    ? items.Where(r => r.IsPm)
+                    : items.Where(r => string.Equals(r.Role, role, StringComparison.CurrentCultureIgnoreCase));
+            }
+
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var needle = q.Trim();
+                items = items.Where(r =>
+                    (r.Project.Name ?? string.Empty).IndexOf(needle, StringComparison.CurrentCultureIgnoreCase) >= 0
+                    || (r.Project.Code ?? string.Empty).IndexOf(needle, StringComparison.CurrentCultureIgnoreCase) >= 0
+                    || (r.Project.Customer ?? string.Empty).IndexOf(needle, StringComparison.CurrentCultureIgnoreCase) >= 0
+                    || (r.Project.PmName ?? string.Empty).IndexOf(needle, StringComparison.CurrentCultureIgnoreCase) >= 0);
+            }
+
+            var list = items.ToList();
+
+            ViewBag.Year = year;
+            ViewBag.Week = week;
+
+            return View(new MyProjectsViewModel
+            {
+                Query = q,
+                Phase = phase,
+                State = state,
+                Role = role,
+                ShowClosed = showClosed,
+                States = stateOptions,
+                Roles = roleOptions,
+                // Các con số tổng đếm trên TOÀN BỘ dự án của người này, không theo bộ lọc — để
+                // người dùng còn biết mình đang giấu mất bao nhiêu.
+                TotalCount = rows.Count,
+                PmCount = rows.Count(r => r.IsPm),
+                ClosedCount = rows.Count(r => !r.Project.IsOpen),
+                Rows = PagedList<MyProjectRow>.From(list, page, WorkService.PageSize)
+            });
         }
 
         // ---------- Chi tiết một đầu việc ----------
@@ -354,6 +418,56 @@ namespace TTKDGP.ProjectManager.Controllers
         {
             Projects = new List<ProjectOption>();
             Tasks = new PagedList<WorkTask>();
+        }
+    }
+
+    /// <summary>
+    /// Màn "Dự án của tôi" kèm bộ lọc. Tách thành view model thay vì nhét vào ViewBag để các liên
+    /// kết phân trang dựng lại được đúng điều kiện lọc đang áp dụng.
+    /// </summary>
+    public class MyProjectsViewModel
+    {
+        /// <summary>Giá trị quy ước của ô lọc vai trò cho "dự án tôi làm PM".</summary>
+        public const string RolePm = "pm";
+
+        // ----- Điều kiện lọc đang áp dụng -----
+        public string Query { get; set; }
+        public string Phase { get; set; }
+        public string State { get; set; }
+        public string Role { get; set; }
+        public bool ShowClosed { get; set; }
+
+        /// <summary>Các trạng thái có thật trong dự án của người này — nguồn của ô lọc trạng thái.</summary>
+        public List<string> States { get; set; }
+
+        /// <summary>Các vai trò có thật trong dự án của người này.</summary>
+        public List<string> Roles { get; set; }
+
+        // ----- Các con số đếm trên TOÀN BỘ dự án, không theo bộ lọc -----
+        public int TotalCount { get; set; }
+        public int PmCount { get; set; }
+        public int ClosedCount { get; set; }
+
+        public PagedList<MyProjectRow> Rows { get; set; }
+
+        /// <summary>Có điều kiện lọc nào đang bật không — để hiện nút bỏ lọc.</summary>
+        public bool HasFilter
+        {
+            get
+            {
+                return ShowClosed
+                       || !string.IsNullOrWhiteSpace(Query)
+                       || !string.IsNullOrWhiteSpace(Phase)
+                       || !string.IsNullOrWhiteSpace(State)
+                       || !string.IsNullOrWhiteSpace(Role);
+            }
+        }
+
+        public MyProjectsViewModel()
+        {
+            States = new List<string>();
+            Roles = new List<string>();
+            Rows = new PagedList<MyProjectRow>();
         }
     }
 

@@ -63,14 +63,16 @@ namespace TTKDGP.ProjectManager.Controllers
         }
 
         /// <summary>
-        /// Nhập số ngày nghỉ có phép của một người — số này không có trong dữ liệu công việc nên
-        /// phải nhập tay — rồi tính lại ngay cho khớp. Giờ thực hiện thì hệ thống tự tính từ
-        /// thời gian các việc đã hoàn thành/đang làm, không nhập.
+        /// Nạp lại số ngày nghỉ phép của một người từ các đơn ĐÃ DUYỆT rồi tính lại KPI.
+        ///
+        /// Trước đây đây là ô nhập tay. Nay số ngày nghỉ lấy thẳng từ màn Duyệt nghỉ phép nên
+        /// hành động duy nhất còn lại là "tính lại cho khớp" — giữ endpoint để nút trên màn KPI
+        /// và các liên kết cũ không gãy.
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         [AppAuthorize(Permission = "kpi.generate")]
-        public ActionResult Attendance(int year, int month, int userId, decimal leaveDays, string back = null)
+        public ActionResult Attendance(int year, int month, int userId, string back = null)
         {
             var user = Repository.Users.Find(userId);
             if (user == null) return HttpNotFound();
@@ -81,26 +83,11 @@ namespace TTKDGP.ProjectManager.Controllers
                 ? RedirectToAction("Index", new { year = year, month = month })
                 : RedirectToAction("Detail", new { year = year, month = month, userId = userId });
 
-            if (leaveDays < 0)
-            {
-                NotifyError("Ngày nghỉ phép không được âm.");
-                return backResult;
-            }
+            var row = KpiService.CalculateUser(year, month, user);
 
-            // Lưu ô nhập tay trước rồi mới tính — CalculateUser giữ nguyên nó khi tính lại.
-            var row = Repository.KpiMonths.FirstOrDefault(
-                k => k.Year == year && k.Month == month && k.UserId == userId);
+            Notify(string.Format("Đã tính lại KPI của {0} — ghi nhận {1:0.#} ngày nghỉ phép đã duyệt.",
+                user.FullName, row.LeaveDays));
 
-            if (row == null)
-            {
-                row = KpiService.CalculateUser(year, month, user);
-            }
-
-            row.LeaveDays = leaveDays;
-            Repository.KpiMonths.Update(row);
-
-            KpiService.CalculateUser(year, month, user);
-            Notify(string.Format("Đã cập nhật ngày nghỉ phép và tính lại KPI của {0}.", user.FullName));
             return backResult;
         }
 

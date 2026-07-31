@@ -167,8 +167,9 @@ namespace TTKDGP.ProjectManager.Services
         }
 
         /// <summary>
-        /// Tính (hoặc tính lại) KPI tháng cho một người và lưu xuống. Ô nhập tay duy nhất —
-        /// số ngày nghỉ có phép — giữ nguyên qua các lần tính lại.
+        /// Tính (hoặc tính lại) KPI tháng cho một người và lưu xuống. Toàn bộ số liệu đều được
+        /// tính lại từ nguồn: điểm từ các đầu việc trong tháng, số ngày nghỉ từ các đơn nghỉ phép
+        /// đã duyệt. Không còn ô nhập tay nào trên dòng KPI.
         /// </summary>
         public static KpiMonth CalculateUser(int year, int month, User user)
         {
@@ -234,9 +235,12 @@ namespace TTKDGP.ProjectManager.Services
 
             row.QualityPoint = Math.Round(row.SupportPoint + row.ExecutePoint + row.AssignedPoint, 2);
 
-            // Ngày công: LeaveDays là ô nhập tay đã có sẵn trên dòng, không đụng vào.
-            // Giờ thực hiện thì tính lại từ chính các đầu việc trong tháng.
+            // Ngày công. LeaveDays nay lấy thẳng từ các ĐƠN NGHỈ PHÉP ĐÃ DUYỆT của tháng, không
+            // còn là ô nhập tay: hai nguồn số liệu song song thì sớm muộn cũng lệch nhau, và ô
+            // nhập tay sửa được nghĩa là ai có quyền chấm KPI cũng tự nâng điểm được cho mình.
+            // Muốn đổi số ngày nghỉ thì sửa ở màn Duyệt nghỉ phép.
             row.StandardDays = StandardWorkingDays(row.Year, row.Month);
+            row.LeaveDays = LeaveService.ApprovedDays(row.UserId, row.Year, row.Month);
             var requiredDays = row.StandardDays - row.LeaveDays;
             row.RequiredHours = requiredDays > 0 ? requiredDays * HoursPerDay : 0;
             row.WorkingHours = Math.Round(WorkedHours(tasks), 2);

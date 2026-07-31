@@ -85,12 +85,30 @@ namespace TTKDGP.ProjectManager.Models
         /// <summary>Có sửa được ít nhất một việc không — dùng để quyết định hiện cột thao tác.</summary>
         public bool CanEditAny { get { return AllRows.Any(r => r.CanEdit); } }
 
+        // ---------- Thống kê khối lượng theo tháng (chỉ Quản lý Tổ) ----------
+
+        /// <summary>
+        /// Có dựng khối thống kê khối lượng không. Controller chỉ bật khi tài khoản có quyền
+        /// workload.view — view KHÔNG được tự quyết định, để số liệu quản lý không lọt vào HTML
+        /// của người thường.
+        /// </summary>
+        public bool ShowWorkload { get; set; }
+
+        /// <summary>Khối thống kê có mở sẵn không (vừa đổi tháng thì mở, còn lại thì gập).</summary>
+        public bool WorkloadOpen { get; set; }
+
+        public int WorkloadYear { get; set; }
+        public int WorkloadMonth { get; set; }
+
+        public List<Services.WorkloadRow> Workload { get; set; }
+
         public ChecklistViewModel()
         {
             Rows = new PagedList<ChecklistRow>();
             AllRows = new List<ChecklistRow>();
             Columns = new List<KanbanColumn>();
             Users = new List<User>();
+            Workload = new List<Services.WorkloadRow>();
             View = TaskViews.Grid;
         }
     }

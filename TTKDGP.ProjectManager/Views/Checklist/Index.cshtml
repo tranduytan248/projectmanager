@@ -83,6 +83,11 @@
     </div>
 }
 
+@if (Model.ShowWorkload)
+{
+    @Html.Partial("_Workload", Model)
+}
+
 @if (Model.View == TaskViews.Kanban)
 {
     @Html.Partial("_Kanban", Model)

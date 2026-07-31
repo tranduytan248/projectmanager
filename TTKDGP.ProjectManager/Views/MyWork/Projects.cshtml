@@ -1,17 +1,16 @@
-﻿@model TTKDGP.ProjectManager.Models.PagedList<TTKDGP.ProjectManager.Controllers.MyProjectRow>
+﻿@model TTKDGP.ProjectManager.Controllers.MyProjectsViewModel
 @using TTKDGP.ProjectManager.Models
 @{
     ViewBag.Title = "Dự án của tôi";
     var year = (int)ViewBag.Year;
     var week = (int)ViewBag.Week;
-    var pmCount = (int)ViewBag.PmCount;
 }
 
 <div class="page-head">
     <div>
         <h1>Dự án của tôi</h1>
         <p>
-            @Model.Pager.TotalItems dự án đang hoặc đã tham gia@(pmCount > 0 ? ", trong đó " + pmCount + " dự án bạn làm PM" : "").
+            @Model.TotalCount dự án đang hoặc đã tham gia@(Model.PmCount > 0 ? ", trong đó " + Model.PmCount + " dự án bạn làm PM" : "").
             Tuần @week/@year.
         </p>
     </div>
@@ -19,11 +18,95 @@
 </div>
 
 <div class="card">
-    @if (Model.Items.Count == 0)
+    <div class="card-body">
+        @using (Html.BeginForm("Projects", "MyWork", FormMethod.Get))
+        {
+            <div class="filters">
+                <div class="filter-field grow">
+                    <label for="q">Tìm kiếm</label>
+                    <input type="search" id="q" name="q" value="@Model.Query"
+                           placeholder="Tên, mã dự án, khách hàng hoặc PM..." />
+                </div>
+
+                <div class="filter-field">
+                    <label for="phase">Giai đoạn</label>
+                    <select id="phase" name="phase">
+                        <option value="">— Tất cả —</option>
+                        @foreach (var p in ProjectPhases.All)
+                        {
+                            <option value="@p" selected="@(Model.Phase == p)">@ProjectPhases.Display(p)</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label for="state">Trạng thái</label>
+                    <select id="state" name="state">
+                        <option value="">— Tất cả —</option>
+                        @foreach (var s in Model.States)
+                        {
+                            <option value="@s" selected="@(Model.State == s)">@ProjectStates.Display(s)</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label for="role">Vai trò</label>
+                    <select id="role" name="role">
+                        <option value="">— Tất cả —</option>
+                        @if (Model.PmCount > 0)
+                        {
+                            <option value="@TTKDGP.ProjectManager.Controllers.MyProjectsViewModel.RolePm"
+                                    selected="@(Model.Role == TTKDGP.ProjectManager.Controllers.MyProjectsViewModel.RolePm)">
+                                Tôi làm PM (@Model.PmCount)
+                            </option>
+                        }
+                        @foreach (var r in Model.Roles)
+                        {
+                            <option value="@r" selected="@(Model.Role == r)">@r</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="btn-row" style="padding-bottom:1px">
+                    <button type="submit" class="btn btn-primary">Lọc</button>
+                    @if (Model.HasFilter)
+                    {
+                        <a class="btn btn-default" href="@Url.Action("Projects", "MyWork")">Bỏ lọc</a>
+                    }
+                </div>
+            </div>
+
+            if (Model.ClosedCount > 0)
+            {
+                <div class="check-inline" style="margin-top:10px">
+                    <input type="checkbox" id="showClosed" name="showClosed" value="true"
+                           @(Model.ShowClosed ? "checked=\"checked\"" : "") />
+                    <label for="showClosed">Hiện cả dự án đã đóng (@Model.ClosedCount dự án đã huỷ hoặc kết thúc hỗ trợ)</label>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<div class="card">
+    @if (Model.Rows.Items.Count == 0)
     {
         <div class="empty-state">
-            Bạn chưa tham gia dự án nào.
-            <span class="hint">Nhờ Quản lý Tổ phân công ở màn Dự án → Nhân sự.</span>
+            @if (Model.HasFilter)
+            {
+                <text>Không có dự án nào khớp bộ lọc.</text>
+            }
+            else if (Model.TotalCount > 0)
+            {
+                <text>Các dự án của bạn đều đã đóng.</text>
+                <span class="hint">Đánh dấu "Hiện cả dự án đã đóng" để xem.</span>
+            }
+            else
+            {
+                <text>Bạn chưa tham gia dự án nào.</text>
+                <span class="hint">Nhờ Quản lý Tổ phân công ở màn Dự án → Nhân sự.</span>
+            }
         </div>
     }
     else
@@ -42,7 +125,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var r in Model.Items)
+                    @foreach (var r in Model.Rows.Items)
                     {
                         var rowClass = !r.Project.IsOpen ? "row-closed"
                             : (r.Project.Phase == ProjectPhases.Support ? "row-support" : "row-implement");
@@ -125,6 +208,6 @@
             </table>
         </div>
 
-        @Html.Partial("_Pager", Model.Pager)
+        @Html.Partial("_Pager", Model.Rows.Pager)
     }
 </div>

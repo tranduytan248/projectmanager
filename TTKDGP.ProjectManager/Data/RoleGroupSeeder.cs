@@ -74,7 +74,9 @@ namespace TTKDGP.ProjectManager.Data
                     Models.Permissions.WorkProjects,
                     Models.Permissions.WorkTasks,
                     Models.Permissions.WorkReports,
-                    Models.Permissions.Kpi
+                    Models.Permissions.Kpi,
+                    Models.Permissions.Leaves,
+                    Models.Permissions.Workload
                 };
 
                 GrantMissingModules(Roles.Manager, newModules, Permissions.ManagerDefaults());

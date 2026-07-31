@@ -1,0 +1,153 @@
+﻿@model TTKDGP.ProjectManager.Models.ChecklistViewModel
+@using TTKDGP.ProjectManager.Services
+@*
+    Thống kê khối lượng công việc của từng cá nhân trong dự án theo tháng.
+
+    Khối này CHỈ được dựng khi tài khoản có quyền workload.view — kiểm tra nằm ở
+    ChecklistController.Index, không phải ở đây, để số liệu không lọt vào HTML của người thường
+    dù khối đang gập lại.
+*@
+@{
+    var totalSupport = Model.Workload.Sum(r => r.SupportHours);
+    var totalImplement = Model.Workload.Sum(r => r.ImplementHours);
+    var cappedCount = Model.Workload.Count(r => r.SupportCapped);
+}
+
+<details class="card workload-card" @(Model.WorkloadOpen ? "open" : "")>
+    <summary class="workload-summary">
+        <strong>Thống kê khối lượng công việc</strong>
+        <span class="muted">
+            &mdash; tháng @Model.WorkloadMonth/@Model.WorkloadYear
+            @if (Model.Workload.Count > 0)
+            {
+                <text>· @Model.Workload.Count nhân sự · @((totalSupport + totalImplement).ToString("0.#")) giờ</text>
+            }
+        </span>
+    </summary>
+
+    <div class="card-body">
+        @using (Html.BeginForm("Index", "Checklist", FormMethod.Get))
+        {
+            <input type="hidden" name="projectId" value="@Model.Project.Id" />
+            <input type="hidden" name="view" value="@Model.View" />
+
+            <div class="filters">
+                <div class="filter-field">
+                    <label for="wlMonth">Tháng</label>
+                    <select id="wlMonth" name="wlMonth">
+                        @for (var m = 1; m <= 12; m++)
+                        {
+                            <option value="@m" selected="@(Model.WorkloadMonth == m)">Tháng @m</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label for="wlYear">Năm</label>
+                    <select id="wlYear" name="wlYear">
+                        @for (var y = DateTime.Today.Year - 3; y <= DateTime.Today.Year + 1; y++)
+                        {
+                            <option value="@y" selected="@(Model.WorkloadYear == y)">@y</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="btn-row" style="padding-bottom:1px">
+                    <button type="submit" class="btn btn-primary">Xem</button>
+                </div>
+            </div>
+        }
+    </div>
+
+    @if (Model.Workload.Count == 0)
+    {
+        <div class="empty-state">
+            Tháng @Model.WorkloadMonth/@Model.WorkloadYear chưa có nhân sự nào tham gia hoặc có công việc trong dự án này.
+        </div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="data workload-table">
+                <thead>
+                    <tr>
+                        <th class="num">STT</th>
+                        <th>Họ tên</th>
+                        <th class="num">Thời gian hỗ trợ</th>
+                        <th class="num">Thời gian thực hiện triển khai</th>
+                        <th class="num">Tổng</th>
+                        <th class="num">Quỹ giờ tháng</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{ var stt = 0; }
+                    @foreach (var r in Model.Workload)
+                    {
+                        stt++;
+                        <tr>
+                            <td class="num">@stt</td>
+                            <td>
+                                <strong>@r.FullName</strong>
+                                @if (r.LeaveDays > 0)
+                                {
+                                    <div class="muted nowrap">Nghỉ phép @r.LeaveDays.ToString("0.#") ngày</div>
+                                }
+                            </td>
+                            <td class="num nowrap">
+                                <strong>@r.SupportHours.ToString("0.#")</strong>h
+                                @if (r.SupportCapped)
+                                {
+                                    <div class="muted" title="Giờ hỗ trợ vượt trần 30% quỹ giờ tháng nên chỉ tính 30%">
+                                        <span class="badge badge-waiting">đã cắt trần</span>
+                                        thực tế @r.SupportHoursRaw.ToString("0.#")h
+                                    </div>
+                                }
+                                else if (r.SupportTaskCount > 0)
+                                {
+                                    <div class="muted">@r.SupportTaskCount việc</div>
+                                }
+                            </td>
+                            <td class="num nowrap">
+                                <strong>@r.ImplementHours.ToString("0.#")</strong>h
+                                @if (r.ImplementTaskCount > 0)
+                                {
+                                    <div class="muted">@r.ImplementTaskCount việc</div>
+                                }
+                            </td>
+                            <td class="num nowrap"><strong>@r.TotalHours.ToString("0.#")</strong>h</td>
+                            <td class="num nowrap">
+                                @r.MonthHours.ToString("0.#")h
+                                <div class="muted" title="Trần giờ hỗ trợ = 30% quỹ giờ tháng">
+                                    trần hỗ trợ @r.SupportCap.ToString("0.#")h
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="2"><strong>Tổng cộng</strong></td>
+                        <td class="num"><strong>@totalSupport.ToString("0.#")</strong>h</td>
+                        <td class="num"><strong>@totalImplement.ToString("0.#")</strong>h</td>
+                        <td class="num"><strong>@((totalSupport + totalImplement).ToString("0.#"))</strong>h</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <div class="card-body">
+            <span class="hint">
+                <strong>Quỹ giờ tháng</strong> = (số ngày làm việc của tháng &minus; số ngày phép đã duyệt)
+                &times; @KpiService.HoursPerDay giờ; ngày làm việc đã trừ Thứ 7 và Chủ nhật.
+                <strong>Thời gian hỗ trợ</strong> vượt quá
+                @((WorkloadService.SupportCapRate * 100).ToString("0"))% quỹ giờ tháng thì chỉ tính
+                @((WorkloadService.SupportCapRate * 100).ToString("0"))%@(cappedCount > 0 ? " — tháng này có " + cappedCount + " người bị cắt trần" : "").
+                Giờ của mỗi đầu việc tính theo số ngày làm việc từ ngày bắt đầu đến hạn hoàn thành,
+                nhân @KpiService.HoursPerDay giờ — cùng cách tính với bảng KPI.
+                Ngày nghỉ phép lấy từ các đơn <strong>đã duyệt</strong> ở màn
+                <a href="@Url.Action("Approve", "Leaves")">Duyệt nghỉ phép</a>.
+            </span>
+        </div>
+    }
+</details>
