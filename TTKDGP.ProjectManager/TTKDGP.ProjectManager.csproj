@@ -100,6 +100,7 @@
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="Infrastructure\AppAuthorizeAttribute.cs" />
+    <Compile Include="Infrastructure\AppCache.cs" />
     <Compile Include="Infrastructure\PasswordHasher.cs" />
     <Compile Include="Infrastructure\ViewHelpers.cs" />
     <Compile Include="Infrastructure\LabelHelpers.cs" />

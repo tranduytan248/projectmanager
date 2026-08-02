@@ -41,6 +41,23 @@ namespace TTKDGP.ProjectManager.Data
             _table = tableName;
         }
 
+        /// <summary>
+        /// Báo hiệu dữ liệu của bảng vừa đổi (thêm/sửa/xoá). Dùng để bỏ các kết quả đã gom nhóm
+        /// giữ trong <see cref="AppCache"/> — đăng ký ở đây thì mọi nơi ghi dữ liệu đều được tính
+        /// đến, khỏi phải nhớ gọi tay ở từng controller.
+        /// </summary>
+        public event Action Changed;
+
+        /// <summary>
+        /// Bắn sự kiện <see cref="Changed"/>. Luôn gọi SAU khi đã nhả khoá ghi: handler chạy trong
+        /// cùng luồng, nếu còn giữ khoá mà handler lỡ đọc lại kho này thì treo.
+        /// </summary>
+        private void OnChanged()
+        {
+            var handler = Changed;
+            if (handler != null) handler();
+        }
+
         // ---------- Ánh xạ thuộc tính ↔ cột ----------
 
         private static bool IsId(PropertyInfo p)
@@ -320,18 +337,21 @@ namespace TTKDGP.ProjectManager.Data
                     InsertRow(connection, item);
                 }
                 _items.Add(item);
-                return item;
             }
             finally
             {
                 _lock.ExitWriteLock();
             }
+
+            OnChanged();
+            return item;
         }
 
         /// <summary>Thay thế bản ghi cùng Id. Trả về false nếu không tìm thấy.</summary>
         public bool Update(T item)
         {
             EnsureLoaded();
+            var updated = false;
             _lock.EnterWriteLock();
             try
             {
@@ -343,17 +363,21 @@ namespace TTKDGP.ProjectManager.Data
                     UpdateRow(connection, item);
                 }
                 _items[index] = item;
-                return true;
+                updated = true;
             }
             finally
             {
                 _lock.ExitWriteLock();
             }
+
+            if (updated) OnChanged();
+            return updated;
         }
 
         public bool Delete(int id)
         {
             EnsureLoaded();
+            var deleted = false;
             _lock.EnterWriteLock();
             try
             {
@@ -365,18 +389,22 @@ namespace TTKDGP.ProjectManager.Data
                     DeleteRow(connection, id);
                 }
                 _items.RemoveAt(index);
-                return true;
+                deleted = true;
             }
             finally
             {
                 _lock.ExitWriteLock();
             }
+
+            if (deleted) OnChanged();
+            return deleted;
         }
 
         /// <summary>Xoá nhiều bản ghi. Trả về số bản ghi đã xoá.</summary>
         public int DeleteWhere(Predicate<T> predicate)
         {
             EnsureLoaded();
+            var removed = 0;
             _lock.EnterWriteLock();
             try
             {
@@ -389,18 +417,22 @@ namespace TTKDGP.ProjectManager.Data
                 }
 
                 _items.RemoveAll(predicate);
-                return toRemove.Count;
+                removed = toRemove.Count;
             }
             finally
             {
                 _lock.ExitWriteLock();
             }
+
+            if (removed > 0) OnChanged();
+            return removed;
         }
 
         /// <summary>Sửa hàng loạt các bản ghi khớp điều kiện rồi ghi từng dòng xuống SQL.</summary>
         public void UpdateWhere(Func<T, bool> predicate, Action<T> mutate)
         {
             EnsureLoaded();
+            var changed = false;
             _lock.EnterWriteLock();
             try
             {
@@ -413,11 +445,15 @@ namespace TTKDGP.ProjectManager.Data
                 {
                     foreach (var item in affected) UpdateRow(connection, item);
                 }
+
+                changed = true;
             }
             finally
             {
                 _lock.ExitWriteLock();
             }
+
+            if (changed) OnChanged();
         }
 
         // ---------- Dùng cho việc nạp dữ liệu ban đầu từ JSON ----------
@@ -467,6 +503,8 @@ namespace TTKDGP.ProjectManager.Data
             {
                 _lock.ExitWriteLock();
             }
+
+            OnChanged();
         }
     }
 }

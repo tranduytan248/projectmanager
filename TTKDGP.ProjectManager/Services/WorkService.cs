@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using TTKDGP.ProjectManager.Data;
+using TTKDGP.ProjectManager.Infrastructure;
 using TTKDGP.ProjectManager.Models;
 
 namespace TTKDGP.ProjectManager.Services
@@ -32,6 +33,16 @@ namespace TTKDGP.ProjectManager.Services
     {
         /// <summary>Số dòng mỗi trang cho mọi bảng danh sách của bộ quản lý công việc.</summary>
         public const int PageSize = 10;
+
+        /// <summary>
+        /// Gắn việc bỏ chỉ mục vào chính kho đầu việc: mỗi lần thêm/sửa/xoá ở bất kỳ đâu, chỉ mục
+        /// trong bộ đệm đều bị bỏ để lượt xem kế tiếp dựng lại từ dữ liệu mới. Đăng ký tại đây thay
+        /// vì gọi tay ở từng controller — controller viết thêm sau này khỏi phải nhớ gọi.
+        /// </summary>
+        static WorkService()
+        {
+            Repository.WorkTasks.Changed += ClearTaskIndex;
+        }
 
         // ---------- Người dùng ----------
 
@@ -198,7 +209,46 @@ namespace TTKDGP.ProjectManager.Services
         public static List<WorkTask> TasksOfUser(int userId, IEnumerable<WorkTask> source = null)
         {
             if (userId <= 0) return new List<WorkTask>();
-            return Sort((source ?? AllTasks()).Where(t => t.AssigneeUserId == userId));
+
+            // Không truyền sẵn nguồn thì đi qua chỉ mục theo người thực hiện, khỏi quét cả bảng.
+            if (source == null) return Sort(TasksByAssignee(userId));
+
+            return Sort(source.Where(t => t.AssigneeUserId == userId));
+        }
+
+        /// <summary>Nhóm cache của chỉ mục đầu việc theo người thực hiện.</summary>
+        private const string TaskIndexGroup = "wtasks-by-assignee";
+
+        /// <summary>
+        /// Đầu việc của một người, lấy qua chỉ mục gom sẵn theo người thực hiện.
+        ///
+        /// Cả bảng đã nằm trong bộ nhớ nhưng mỗi lượt xem vẫn phải duyệt hết để lọc ra việc của
+        /// một người — số việc lớn dần theo năm tháng thì đây là phép quét tuyến tính lặp lại ở mọi
+        /// màn hình cá nhân. Chỉ mục được dựng một lần rồi dùng lại trong thời gian còn hạn.
+        /// </summary>
+        public static List<WorkTask> TasksByAssignee(int userId)
+        {
+            if (userId <= 0) return new List<WorkTask>();
+
+            var index = AppCache.GetOrAdd(AppCache.Key(TaskIndexGroup),
+                () => AllTasks()
+                    .Where(t => t.AssigneeUserId > 0)
+                    .GroupBy(t => t.AssigneeUserId)
+                    .ToDictionary(g => g.Key, g => g.ToList()));
+
+            if (index == null) return new List<WorkTask>();
+
+            List<WorkTask> mine;
+            return index.TryGetValue(userId, out mine) ? mine.ToList() : new List<WorkTask>();
+        }
+
+        /// <summary>
+        /// Bỏ chỉ mục đầu việc đang giữ trong bộ đệm. Gọi sau mỗi lần thêm/sửa/xoá đầu việc để
+        /// lần xem kế tiếp dựng lại từ dữ liệu mới.
+        /// </summary>
+        public static void ClearTaskIndex()
+        {
+            AppCache.RemoveGroup(TaskIndexGroup);
         }
 
         public static List<WorkTask> TasksOfProject(int projectId, string kind = null,
