@@ -60,8 +60,9 @@ namespace TTKDGP.ProjectManager.Services
     ///     Đây là trần cứng: hỗ trợ là việc nền, không được phép chiếm hết quỹ thời gian.
     ///   • Thời gian thực hiện triển khai: tính đủ, không có trần.
     ///
-    /// Giờ của từng đầu việc dùng lại <see cref="KpiService.TaskHours"/> để bảng này và bảng KPI
-    /// không bao giờ ra hai con số khác nhau cho cùng một đầu việc.
+    /// Giờ của một nhóm việc dùng lại <see cref="KpiService.HoursOf"/> để bảng này và bảng KPI
+    /// không bao giờ ra hai con số khác nhau. Hàm đó đếm theo NGÀY LÀM VIỆC RIÊNG BIỆT: nhiều việc
+    /// chạy song song trong cùng khoảng chỉ tính một lần, không nhân lên theo số đầu việc.
     /// </summary>
     public static class WorkloadService
     {
@@ -126,7 +127,7 @@ namespace TTKDGP.ProjectManager.Services
                 var monthHours = workingDays * KpiService.HoursPerDay;
                 var cap = Math.Round(monthHours * SupportCapRate, 2);
 
-                var supportRaw = Math.Round(support.Sum(t => KpiService.TaskHours(t)), 2);
+                var supportRaw = Math.Round(KpiService.HoursOf(support), 2);
 
                 string name;
                 if (!users.TryGetValue(userId, out name) || string.IsNullOrWhiteSpace(name))
@@ -145,7 +146,7 @@ namespace TTKDGP.ProjectManager.Services
                     SupportHoursRaw = supportRaw,
                     SupportHours = supportRaw > cap ? cap : supportRaw,
                     ImplementTaskCount = implement.Count,
-                    ImplementHours = Math.Round(implement.Sum(t => KpiService.TaskHours(t)), 2),
+                    ImplementHours = Math.Round(KpiService.HoursOf(implement), 2),
                     StandardDays = standardDays,
                     LeaveDays = leaveDays,
                     MonthHours = monthHours,

@@ -13,97 +13,6 @@
     <a class="btn btn-default" href="@Url.Action("Tasks", "MyWork")">Công việc của tôi &rarr;</a>
 </div>
 
-@* ----- Ô số liệu cá nhân ----- *@
-<div class="tile-grid">
-    <div class="tile">
-        <div class="tile-num">@t.OpenCount</div>
-        <div class="tile-label">Việc chưa xong</div>
-    </div>
-    <div class="tile">
-        <div class="tile-num @(t.OverdueCount > 0 ? "danger" : "")">@t.OverdueCount</div>
-        <div class="tile-label">Quá hạn</div>
-    </div>
-    <div class="tile">
-        <div class="tile-num">@t.DueSoonCount</div>
-        <div class="tile-label">Sắp tới hạn (7 ngày)</div>
-    </div>
-    <div class="tile">
-        <div class="tile-num">@t.DoneCount</div>
-        <div class="tile-label">Đã hoàn thành</div>
-    </div>
-</div>
-
-@* ----- Việc cần làm trước ----- *@
-<div class="card">
-    <div class="card-head">
-        <span>Cần làm trước</span>
-        <span class="muted" style="font-weight:400">Quá hạn và sắp tới hạn</span>
-    </div>
-    @if (t.Focus.Count == 0)
-    {
-        <div class="empty-state">
-            @if (t.OpenCount == 0)
-            {
-                <text>Bạn không còn việc nào đang mở.</text>
-            }
-            else
-            {
-                <text>Không có việc nào quá hạn hay sắp tới hạn. Còn @t.OpenCount việc đang mở.</text>
-            }
-        </div>
-    }
-    else
-    {
-        <div class="table-wrap">
-            <table class="data">
-                <thead>
-                    <tr>
-                        <th>Công việc</th>
-                        <th>Dự án</th>
-                        <th>Hạn</th>
-                        <th class="num">Tiến độ</th>
-                        <th>Trạng thái</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var task in t.Focus)
-                    {
-                        <tr class="row-clickable"
-                            data-modal-url="@Url.Action("Detail", "Checklist", new { id = task.Id })"
-                            data-modal-title="Chi tiết công việc"
-                            data-modal-size="lg">
-                            <td class="wrap-text">
-                                @if (!string.IsNullOrWhiteSpace(task.Code))
-                                {
-                                    <span class="muted">@task.Code</span> <text>·</text>
-                                }
-                                @task.Title
-                            </td>
-                            <td class="col-project">@(string.IsNullOrWhiteSpace(task.ProjectName) ? "—" : task.ProjectName)</td>
-                            <td class="nowrap">
-                                @if (task.DueDate.HasValue)
-                                {
-                                    @task.DueDate.Value.ToString("dd/MM/yyyy")
-                                    if (task.IsOverdue)
-                                    {
-                                        <span class="badge badge-inactive">Trễ @task.LateDays ngày</span>
-                                    }
-                                }
-                                else
-                                {
-                                    <span class="muted">—</span>
-                                }
-                            </td>
-                            <td class="num">@task.Progress%</td>
-                            <td><span class="badge">@TaskStates.Display(task.State)</span></td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    }
-</div>
-
 <div class="two-col">
     @* ----- KPI tháng ----- *@
     <div class="card">
@@ -200,6 +109,138 @@
     </div>
 </div>
 
+@* ----- Ô số liệu cá nhân ----- *@
+<div class="tile-grid">
+    <div class="tile">
+        <div class="tile-num">@t.OpenCount</div>
+        <div class="tile-label">Việc chưa xong</div>
+    </div>
+    <div class="tile">
+        <div class="tile-num @(t.OverdueCount > 0 ? "danger" : "")">@t.OverdueCount</div>
+        <div class="tile-label">Quá hạn</div>
+    </div>
+    <div class="tile">
+        <div class="tile-num">@t.DueSoonCount</div>
+        <div class="tile-label">Sắp tới hạn (7 ngày)</div>
+    </div>
+    <div class="tile">
+        <div class="tile-num">@t.DoneCount</div>
+        <div class="tile-label">Đã hoàn thành</div>
+    </div>
+</div>
+
+@* ----- Việc cần làm trước ----- *@
+<div class="card">
+    <div class="card-head">
+        <span>Cần làm trước</span>
+        <span class="muted" style="font-weight:400">Quá hạn và sắp tới hạn</span>
+    </div>
+    @if (t.Focus.Count == 0)
+    {
+        <div class="empty-state">
+            @if (t.OpenCount == 0)
+            {
+                <text>Bạn không còn việc nào đang mở.</text>
+            }
+            else
+            {
+                <text>Không có việc nào quá hạn hay sắp tới hạn. Còn @t.OpenCount việc đang mở.</text>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th>Công việc</th>
+                        <th>Dự án</th>
+                        <th>Hạn</th>
+                        <th class="num">Tiến độ</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var task in t.Focus)
+                    {
+                        <tr class="row-clickable"
+                            data-modal-url="@Url.Action("Detail", "Checklist", new { id = task.Id })"
+                            data-modal-title="Chi tiết công việc"
+                            data-modal-size="lg">
+                            <td class="wrap-text">
+                                @if (!string.IsNullOrWhiteSpace(task.Code))
+                                {
+                                    <span class="muted">@task.Code</span> <text>·</text>
+                                }
+                                @task.Title
+                            </td>
+                            <td class="col-project">@(string.IsNullOrWhiteSpace(task.ProjectName) ? "—" : task.ProjectName)</td>
+                            <td class="nowrap">
+                                @if (task.DueDate.HasValue)
+                                {
+                                    @task.DueDate.Value.ToString("dd/MM/yyyy")
+                                    if (task.IsOverdue)
+                                    {
+                                        <span class="badge badge-inactive">Trễ @task.LateDays ngày</span>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="muted">—</span>
+                                }
+                            </td>
+                            <td class="num">@task.Progress%</td>
+                            <td><span class="badge">@TaskStates.Display(task.State)</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+
+@* ----- Biểu đồ ----- *@
+<div class="two-col">
+    <div class="card">
+        <div class="card-head">
+            <span>Việc của tôi theo trạng thái</span>
+        </div>
+        <div class="card-body">
+            @if (Model.StateChart.HasData)
+            {
+                <div class="chart-box">
+                    <canvas id="chart-state"></canvas>
+                </div>
+            }
+            else
+            {
+                <div class="muted">Chưa có công việc nào để thống kê.</div>
+            }
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-head">
+            <span>Hoàn thành theo tháng</span>
+            <span class="muted" style="font-weight:400">6 tháng gần đây</span>
+        </div>
+        <div class="card-body">
+            @if (Model.TrendChart.HasData)
+            {
+                <div class="chart-box">
+                    <canvas id="chart-trend"></canvas>
+                </div>
+            }
+            else
+            {
+                <div class="muted">Chưa có việc nào hoàn thành trong 6 tháng gần đây.</div>
+            }
+        </div>
+    </div>
+</div>
+
 @* ----- Phần toàn Tổ: chỉ Quản lý Tổ mới thấy ----- *@
 @if (Model.CanSeeTeam && Model.Team != null)
 {
@@ -273,4 +314,92 @@
             </div>
         }
     </div>
+}
+
+@* Số liệu để riêng trong thẻ json, không nhúng thẳng vào mã lệnh — chuỗi tiếng Việt nằm trong
+   JavaScript dễ vỡ khi có dấu nháy. *@
+<script type="application/json" id="dash-state">@Html.Raw(Json.Encode(Model.StateChart))</script>
+<script type="application/json" id="dash-trend">@Html.Raw(Json.Encode(Model.TrendChart))</script>
+
+@section Scripts {
+    <script src="@Url.Content("~/Scripts/lib/chart.min.js")"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            if (typeof Chart === 'undefined') return;
+
+            function read(id) {
+                var el = document.getElementById(id);
+                if (!el) return null;
+                try { return JSON.parse(el.textContent || el.innerText); } catch (e) { return null; }
+            }
+
+            // Lấy màu từ biến CSS để biểu đồ đổi theo bảng màu chung, khỏi chép cứng mã màu.
+            function themeColor(name, fallback) {
+                var value = getComputedStyle(document.documentElement).getPropertyValue(name);
+                return (value || '').trim() || fallback;
+            }
+
+            Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+            Chart.defaults.color = themeColor('--text-muted', '#6b7280');
+
+            var state = read('dash-state');
+            var stateCanvas = document.getElementById('chart-state');
+            if (state && stateCanvas) {
+                new Chart(stateCanvas, {
+                    type: 'doughnut',
+                    data: {
+                        labels: state.Labels,
+                        datasets: [{
+                            data: state.Values,
+                            // Theo thứ tự trạng thái: chưa bắt đầu, đang làm, tạm dừng, hoàn thành, huỷ.
+                            backgroundColor: ['#94a3b8', '#3b82f6', '#f59e0b', '#22a06b', '#ef4444'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '62%',
+                        plugins: {
+                            legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14 } }
+                        }
+                    }
+                });
+            }
+
+            var trend = read('dash-trend');
+            var trendCanvas = document.getElementById('chart-trend');
+            if (trend && trendCanvas) {
+                var line = themeColor('--primary', '#2563eb');
+
+                new Chart(trendCanvas, {
+                    type: 'line',
+                    data: {
+                        labels: trend.Labels,
+                        datasets: [{
+                            label: 'Việc hoàn thành',
+                            data: trend.Values,
+                            borderColor: line,
+                            backgroundColor: 'rgba(37, 99, 235, .12)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: .3,
+                            pointRadius: 3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            // Số việc là số nguyên — bỏ các vạch lẻ như 0,5.
+                            y: { beginAtZero: true, ticks: { precision: 0 } }
+                        }
+                    }
+                });
+            }
+        })();
+    </script>
 }

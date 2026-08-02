@@ -88,12 +88,13 @@ namespace TTKDGP.ProjectManager.Services
         // ---------- Giờ thực hiện ----------
 
         /// <summary>
-        /// Giờ thực hiện của MỘT đầu việc: số ngày làm việc (bỏ Thứ 7, Chủ nhật) từ ngày bắt đầu
-        /// đến HẠN HOÀN THÀNH, nhân 8 giờ. Thiếu ngày bắt đầu thì lấy ngày tạo; việc không có hạn
-        /// nhưng gắn tuần thì lấy trọn tuần đó; không có cả hai thì không tính được — 0 giờ.
+        /// Các ngày làm việc (bỏ Thứ 7, Chủ nhật) mà một đầu việc chiếm chỗ. Khoảng lấy từ ngày bắt
+        /// đầu đến hạn hoàn thành; thiếu ngày bắt đầu thì lấy ngày tạo; việc không có hạn nhưng gắn
+        /// tuần thì lấy trọn tuần đó; không có cả hai thì không tính được — rỗng.
         /// </summary>
-        public static decimal TaskHours(WorkTask task)
+        private static List<DateTime> WorkingDaysOf(WorkTask task)
         {
+            var days = new List<DateTime>();
             DateTime from, to;
 
             if (task.DueDate.HasValue)
@@ -109,27 +110,43 @@ namespace TTKDGP.ProjectManager.Services
             }
             else
             {
-                return 0;
+                return days;
             }
 
-            var days = 0;
             for (var d = from; d <= to; d = d.AddDays(1))
             {
-                if (d.DayOfWeek != DayOfWeek.Saturday && d.DayOfWeek != DayOfWeek.Sunday) days++;
+                if (d.DayOfWeek != DayOfWeek.Saturday && d.DayOfWeek != DayOfWeek.Sunday) days.Add(d);
             }
 
-            return days * HoursPerDay;
+            return days;
         }
 
         /// <summary>
-        /// Tổng giờ thực hiện trong tháng: cộng giờ của những việc ĐÃ HOÀN THÀNH hoặc ĐANG LÀM.
+        /// Giờ của một NHÓM đầu việc, đếm theo NGÀY LÀM VIỆC RIÊNG BIỆT.
+        ///
+        /// Không cộng giờ của từng việc: một người làm nhiều việc song song trong cùng khoảng thì
+        /// vẫn chỉ là bấy nhiêu ngày công. Cộng dồn từng việc sẽ thổi phồng số giờ theo số đầu việc
+        /// — 5 việc cùng khoảng 1/8–5/8 thành 25 ngày thay vì 5.
+        /// </summary>
+        public static decimal HoursOf(IEnumerable<WorkTask> tasks)
+        {
+            var days = new HashSet<DateTime>();
+
+            foreach (var task in tasks)
+            {
+                foreach (var day in WorkingDaysOf(task)) days.Add(day);
+            }
+
+            return days.Count * HoursPerDay;
+        }
+
+        /// <summary>
+        /// Tổng giờ thực hiện trong tháng, tính trên những việc ĐÃ HOÀN THÀNH hoặc ĐANG LÀM.
         /// Việc chưa bắt đầu hay tạm dừng chưa phải là giờ đã bỏ ra nên không đếm.
         /// </summary>
         public static decimal WorkedHours(IEnumerable<WorkTask> tasks)
         {
-            return tasks
-                .Where(t => t.State == TaskStates.Done || t.State == TaskStates.InProgress)
-                .Sum(t => TaskHours(t));
+            return HoursOf(tasks.Where(t => t.State == TaskStates.Done || t.State == TaskStates.InProgress));
         }
 
         // ---------- Tính điểm ----------

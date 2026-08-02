@@ -26,6 +26,9 @@ namespace TTKDGP.ProjectManager.Controllers
         /// <summary>Số dòng tối đa cho mỗi danh sách gợi ý trên màn tổng quan.</summary>
         private const int ListLimit = 5;
 
+        /// <summary>Số tháng gần đây vẽ trên biểu đồ xu hướng hoàn thành.</summary>
+        private const int TrendMonths = 6;
+
         [AppAuthorize(Permission = "wtasks.view")]
         public ActionResult Index()
         {
@@ -46,6 +49,8 @@ namespace TTKDGP.ProjectManager.Controllers
                 MyTasks = BuildMyTasks(mine, today),
                 MyKpi = BuildMyKpi(userId, today),
                 MyLeave = BuildMyLeave(userId, today),
+                StateChart = BuildStateChart(mine),
+                TrendChart = BuildTrendChart(mine, today),
 
                 CanSeeTeam = IsTeamManager,
                 CanApproveLeave = Can(Permissions.Leaves.Perm("approve"))
@@ -95,6 +100,47 @@ namespace TTKDGP.ProjectManager.Controllers
                 .ToList();
 
             return result;
+        }
+
+        /// <summary>
+        /// Việc của cá nhân tách theo trạng thái, cho biểu đồ tròn. Giữ đúng thứ tự của
+        /// <see cref="TaskStates.All"/> để màu của mỗi trạng thái không đổi giữa các lần xem.
+        /// </summary>
+        private static DashboardChart BuildStateChart(List<WorkTask> mine)
+        {
+            var chart = new DashboardChart();
+
+            foreach (var state in TaskStates.All)
+            {
+                var count = mine.Count(t => t.State == state);
+                if (count == 0) continue;
+
+                chart.Labels.Add(TaskStates.Display(state));
+                chart.Values.Add(count);
+            }
+
+            return chart;
+        }
+
+        /// <summary>
+        /// Số việc hoàn thành theo từng tháng trong nửa năm gần đây, cho biểu đồ đường.
+        /// Mốc tính là <see cref="WorkTask.CompletedAt"/> — thời điểm việc thật sự xong.
+        /// </summary>
+        private static DashboardChart BuildTrendChart(List<WorkTask> mine, DateTime today)
+        {
+            var chart = new DashboardChart();
+            var done = mine.Where(t => t.CompletedAt.HasValue).ToList();
+
+            for (var back = TrendMonths - 1; back >= 0; back--)
+            {
+                var month = today.AddMonths(-back);
+
+                chart.Labels.Add(month.ToString("MM/yyyy"));
+                chart.Values.Add(done.Count(t => t.CompletedAt.Value.Year == month.Year
+                                                 && t.CompletedAt.Value.Month == month.Month));
+            }
+
+            return chart;
         }
 
         /// <summary>
@@ -200,6 +246,12 @@ namespace TTKDGP.ProjectManager.Controllers
 
         public DashboardMyLeave MyLeave { get; set; }
 
+        /// <summary>Việc tách theo trạng thái — biểu đồ tròn.</summary>
+        public DashboardChart StateChart { get; set; }
+
+        /// <summary>Số việc hoàn thành theo tháng — biểu đồ đường.</summary>
+        public DashboardChart TrendChart { get; set; }
+
         /// <summary>Phần toàn Tổ; null khi tài khoản không phải Quản lý Tổ.</summary>
         public DashboardTeam Team { get; set; }
 
@@ -213,6 +265,28 @@ namespace TTKDGP.ProjectManager.Controllers
         {
             MyTasks = new DashboardMyTasks();
             MyLeave = new DashboardMyLeave();
+        }
+    }
+
+    /// <summary>
+    /// Một bộ số liệu để vẽ biểu đồ: nhãn và giá trị đi theo cặp cùng chỉ số.
+    /// View tự chuyển sang JSON cho Chart.js.
+    /// </summary>
+    public class DashboardChart
+    {
+        public List<string> Labels { get; set; }
+        public List<int> Values { get; set; }
+
+        /// <summary>Không có số liệu thì view hiện dòng chữ thay vì khung biểu đồ trống.</summary>
+        public bool HasData
+        {
+            get { return Values != null && Values.Any(v => v > 0); }
+        }
+
+        public DashboardChart()
+        {
+            Labels = new List<string>();
+            Values = new List<int>();
         }
     }
 

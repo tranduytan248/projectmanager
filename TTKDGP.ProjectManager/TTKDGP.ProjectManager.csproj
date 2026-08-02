@@ -186,6 +186,7 @@
     </Content>
     <Content Include="Content\site.css" />
     <Content Include="Content\lib\select2.min.css" />
+    <Content Include="Scripts\lib\chart.min.js" />
     <Content Include="Scripts\lib\jquery.min.js" />
     <Content Include="Scripts\lib\select2.min.js" />
     <Content Include="Scripts\lib\select2.vi.js" />
