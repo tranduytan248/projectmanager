@@ -1,0 +1,276 @@
+﻿@model TTKDGP.ProjectManager.Controllers.DashboardViewModel
+@using TTKDGP.ProjectManager.Models
+@{
+    ViewBag.Title = "Tổng quan";
+    var t = Model.MyTasks;
+}
+
+<div class="page-head">
+    <div>
+        <h1>Tổng quan</h1>
+        <p>@Model.UserFullName · @Model.Today.ToString("dd/MM/yyyy")</p>
+    </div>
+    <a class="btn btn-default" href="@Url.Action("Tasks", "MyWork")">Công việc của tôi &rarr;</a>
+</div>
+
+@* ----- Ô số liệu cá nhân ----- *@
+<div class="tile-grid">
+    <div class="tile">
+        <div class="tile-num">@t.OpenCount</div>
+        <div class="tile-label">Việc chưa xong</div>
+    </div>
+    <div class="tile">
+        <div class="tile-num @(t.OverdueCount > 0 ? "danger" : "")">@t.OverdueCount</div>
+        <div class="tile-label">Quá hạn</div>
+    </div>
+    <div class="tile">
+        <div class="tile-num">@t.DueSoonCount</div>
+        <div class="tile-label">Sắp tới hạn (7 ngày)</div>
+    </div>
+    <div class="tile">
+        <div class="tile-num">@t.DoneCount</div>
+        <div class="tile-label">Đã hoàn thành</div>
+    </div>
+</div>
+
+@* ----- Việc cần làm trước ----- *@
+<div class="card">
+    <div class="card-head">
+        <span>Cần làm trước</span>
+        <span class="muted" style="font-weight:400">Quá hạn và sắp tới hạn</span>
+    </div>
+    @if (t.Focus.Count == 0)
+    {
+        <div class="empty-state">
+            @if (t.OpenCount == 0)
+            {
+                <text>Bạn không còn việc nào đang mở.</text>
+            }
+            else
+            {
+                <text>Không có việc nào quá hạn hay sắp tới hạn. Còn @t.OpenCount việc đang mở.</text>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th>Công việc</th>
+                        <th>Dự án</th>
+                        <th>Hạn</th>
+                        <th class="num">Tiến độ</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var task in t.Focus)
+                    {
+                        <tr class="row-clickable"
+                            data-modal-url="@Url.Action("Detail", "Checklist", new { id = task.Id })"
+                            data-modal-title="Chi tiết công việc"
+                            data-modal-size="lg">
+                            <td class="wrap-text">
+                                @if (!string.IsNullOrWhiteSpace(task.Code))
+                                {
+                                    <span class="muted">@task.Code</span> <text>·</text>
+                                }
+                                @task.Title
+                            </td>
+                            <td class="col-project">@(string.IsNullOrWhiteSpace(task.ProjectName) ? "—" : task.ProjectName)</td>
+                            <td class="nowrap">
+                                @if (task.DueDate.HasValue)
+                                {
+                                    @task.DueDate.Value.ToString("dd/MM/yyyy")
+                                    if (task.IsOverdue)
+                                    {
+                                        <span class="badge badge-inactive">Trễ @task.LateDays ngày</span>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="muted">—</span>
+                                }
+                            </td>
+                            <td class="num">@task.Progress%</td>
+                            <td><span class="badge">@TaskStates.Display(task.State)</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<div class="two-col">
+    @* ----- KPI tháng ----- *@
+    <div class="card">
+        <div class="card-head">
+            <span>KPI tháng @Model.Month/@Model.Year</span>
+            <span class="muted" style="font-weight:400">Tạm tính theo dữ liệu hiện có</span>
+        </div>
+        <div class="card-body">
+            @if (Model.MyKpi == null)
+            {
+                <div class="muted">Chưa có dữ liệu KPI tháng này.</div>
+            }
+            else
+            {
+                <div class="kpi-head">
+                    <div class="kpi-score">@Model.MyKpi.FinalPoint.ToString("0.##")</div>
+                    <span class="@KpiRanks.BadgeClass(Model.MyKpi.Rank)">@Model.MyKpi.Rank</span>
+                </div>
+
+                <div class="progress-track" style="margin-top:12px">
+                    <div class="progress-fill" style="width:@(Math.Min(100, (int)Model.MyKpi.FinalPoint))%"></div>
+                </div>
+
+                <div class="kpi-lines">
+                    <div class="kpi-line">
+                        <span>Hỗ trợ</span>
+                        <strong>@Model.MyKpi.SupportDone/@Model.MyKpi.SupportTotal việc · @Model.MyKpi.SupportPoint.ToString("0.##") điểm</strong>
+                    </div>
+                    <div class="kpi-line">
+                        <span>Triển khai</span>
+                        <strong>@Model.MyKpi.ExecuteDone/@Model.MyKpi.ExecuteTotal việc · @Model.MyKpi.ExecutePoint.ToString("0.##") điểm</strong>
+                    </div>
+                    <div class="kpi-line">
+                        <span>Giao việc riêng</span>
+                        <strong>@Model.MyKpi.AssignedDone/@Model.MyKpi.AssignedTotal việc · @Model.MyKpi.AssignedPoint.ToString("0.##") điểm</strong>
+                    </div>
+                    <div class="kpi-line">
+                        <span>Ngày công chuẩn</span>
+                        <strong>@Model.MyKpi.StandardDays ngày</strong>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    @* ----- Nghỉ phép ----- *@
+    <div class="card">
+        <div class="card-head">
+            <span>Nghỉ phép</span>
+            <a class="muted" style="font-weight:400" href="@Url.Action("My", "Leaves")">Xem tất cả</a>
+        </div>
+        <div class="card-body">
+            <div class="kpi-lines">
+                <div class="kpi-line">
+                    <span>Đã nghỉ tháng @Model.Month</span>
+                    <strong>@Model.MyLeave.ApprovedDays.ToString("0.##") ngày</strong>
+                </div>
+                <div class="kpi-line">
+                    <span>Đơn của tôi đang chờ duyệt</span>
+                    <strong>@Model.MyLeave.PendingCount</strong>
+                </div>
+                @if (Model.CanApproveLeave)
+                {
+                    <div class="kpi-line">
+                        <span>Chờ tôi duyệt</span>
+                        <strong>
+                            @if (Model.PendingLeaveCount > 0)
+                            {
+                                <a href="@Url.Action("Approve", "Leaves")">@Model.PendingLeaveCount đơn</a>
+                            }
+                            else
+                            {
+                                <text>0</text>
+                            }
+                        </strong>
+                    </div>
+                }
+            </div>
+
+            @if (Model.MyLeave.Upcoming.Count > 0)
+            {
+                <div class="muted" style="font-size:12.5px;margin-top:14px">Lịch nghỉ sắp tới</div>
+                <div class="kpi-lines">
+                    @foreach (var leave in Model.MyLeave.Upcoming)
+                    {
+                        <div class="kpi-line">
+                            <span>@LeaveKinds.Display(leave.Kind)</span>
+                            <strong>@leave.FromDate.ToString("dd/MM") – @leave.ToDate.ToString("dd/MM") · @leave.Days.ToString("0.##") ngày</strong>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@* ----- Phần toàn Tổ: chỉ Quản lý Tổ mới thấy ----- *@
+@if (Model.CanSeeTeam && Model.Team != null)
+{
+    <div class="tile-grid">
+        <div class="tile">
+            <div class="tile-num">@Model.Team.OpenProjectCount</div>
+            <div class="tile-label">Dự án đang chạy</div>
+        </div>
+        <div class="tile">
+            <div class="tile-num">@Model.Team.MyPmCount</div>
+            <div class="tile-label">Dự án tôi làm PM</div>
+        </div>
+        <div class="tile">
+            <div class="tile-num">@Model.Team.OpenTaskCount</div>
+            <div class="tile-label">Việc chưa xong toàn Tổ</div>
+        </div>
+        <div class="tile">
+            <div class="tile-num @(Model.Team.OverdueTaskCount > 0 ? "danger" : "")">@Model.Team.OverdueTaskCount</div>
+            <div class="tile-label">Quá hạn toàn Tổ</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-head">
+            <span>Dự án cần chú ý</span>
+            <a class="muted" style="font-weight:400" href="@Url.Action("Index", "WorkProjects")">Tất cả dự án</a>
+        </div>
+        @if (Model.Team.Projects.Count == 0)
+        {
+            <div class="empty-state">Chưa có dự án nào đang chạy.</div>
+        }
+        else
+        {
+            <div class="table-wrap">
+                <table class="data">
+                    <thead>
+                        <tr>
+                            <th>Dự án</th>
+                            <th>PM</th>
+                            <th class="num">Quá hạn</th>
+                            <th class="num">Tiến độ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Model.Team.Projects)
+                        {
+                            <tr>
+                                <td class="col-project">
+                                    <a href="@Url.Action("Details", "WorkProjects", new { id = row.Project.Id })">@row.Project.Name</a>
+                                    @if (!string.IsNullOrWhiteSpace(row.Project.Customer))
+                                    {
+                                        <div class="cell-sub muted">@row.Project.Customer</div>
+                                    }
+                                </td>
+                                <td class="col-name">@(string.IsNullOrWhiteSpace(row.Project.PmName) ? "—" : row.Project.PmName)</td>
+                                <td class="num">
+                                    @if (row.OverdueCount > 0)
+                                    {
+                                        <span class="badge badge-inactive">@row.OverdueCount</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="muted">0</span>
+                                    }
+                                </td>
+                                <td class="num">@row.Stat.Percent%</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+}

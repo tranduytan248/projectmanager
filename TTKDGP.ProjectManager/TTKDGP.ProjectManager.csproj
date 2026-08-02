@@ -86,6 +86,7 @@
     <Compile Include="Controllers\CatalogControllers.cs" />
     <Compile Include="Controllers\UsersController.cs" />
     <Compile Include="Controllers\PermissionGroupsController.cs" />
+    <Compile Include="Controllers\DashboardController.cs" />
     <Compile Include="Controllers\WorkQueueController.cs" />
     <Compile Include="Controllers\SystemStatusController.cs" />
     <Compile Include="Data\JsonStore.cs" />
@@ -253,6 +254,7 @@
     <Content Include="Views\Users\Provision.cshtml" />
     <Content Include="Views\PermissionGroups\Index.cshtml" />
     <Content Include="Views\PermissionGroups\Edit.cshtml" />
+    <Content Include="Views\Dashboard\Index.cshtml" />
     <Content Include="Views\WorkQueue\Index.cshtml" />
     <Content Include="Views\SystemStatus\Index.cshtml" />
     <Content Include="Views\WorkProjects\Index.cshtml" />

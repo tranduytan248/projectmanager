@@ -302,6 +302,20 @@ body.has-sidebar .main, body.has-sidebar .topbar-inner, body.has-sidebar .footer
     .topbar-week-range { display: none; }
 }
 
+/* Thanh trên trên điện thoại: mọi mục đều nowrap nên chỉ cần dư một mục là tràn ngang.
+   Bỏ bớt những thứ có chỗ khác thay thế — điều hướng đã nằm trong menu dọc, tuần thì các
+   màn liên quan đều tự hiện. */
+@media (max-width: 640px) {
+    .topbar-inner { gap: 10px; height: 54px; }
+    .topbar-link { display: none; }
+    .topbar-week { display: none; }
+    .user-area { gap: 8px; }
+
+    /* Tên dài đẩy nút Đăng xuất ra ngoài màn hình. */
+    .user-chip { max-width: 38vw; overflow: hidden; }
+    .user-chip, .user-chip em { white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+}
+
 .user-chip {
     display: flex;
     flex-direction: column;
@@ -721,11 +735,12 @@ textarea { min-height: 84px; resize: vertical; width: 100%; }
 .table-wrap { overflow-x: auto; }
 
 /*
-  Bảng có menu thao tác thả xuống phải bỏ cắt tràn, nếu không menu bị overflow-x cắt mất (đặt
-  overflow-x: auto là trình duyệt tự cắt luôn chiều dọc). Đổi lại thì bảng không tự cuộn ngang
-  được nữa, nên chỉ dùng cho bảng đã gom cột cho gọn.
+  Bảng có menu thao tác thả xuống vẫn cuộn ngang bình thường: khi mở, app.js neo bảng chọn
+  theo toạ độ màn hình (position: fixed) nên nó nằm ngoài khung, không bị overflow cắt mất.
+  Giữ lại tên lớp cho các view đang dùng — trước đây lớp này tắt cuộn ngang, khiến bảng nhiều
+  cột đẩy tràn cả trang trên điện thoại.
 */
-.table-wrap.with-menu { overflow: visible; }
+.table-wrap.with-menu { overflow-x: auto; }
 
 /* ---- Menu thao tác trên từng dòng ---- */
 .row-menu { position: relative; display: inline-block; }
@@ -755,7 +770,8 @@ textarea { min-height: 84px; resize: vertical; width: 100%; }
     position: absolute;
     right: 0;
     top: calc(100% + 4px);
-    z-index: 40;
+    /* Trên menu dọc (40) — bằng nhau thì chỉ hơn nhờ thứ tự thẻ, đổi bố cục là hỏng. */
+    z-index: 50;
     min-width: 170px;
     padding: 5px;
     background: #fff;
@@ -1024,6 +1040,48 @@ table.data .cell-sub.muted { font-size: 12.5px; line-height: 1.4; }
 
     /* Đầu bảng dính trên đỉnh chỉ có ích khi trang cuộn dọc dài; màn hẹp thì bỏ đi cho nhẹ */
     table.data thead th { position: static; }
+}
+
+/* ===== Điện thoại =====
+   Dải 360-430px: lấy lại từng chục pixel một. Bảng vẫn cuộn ngang được (.table-wrap) nên
+   không cần ép cột hẹp thêm — chỗ đáng lấy lại là lề, khoảng đệm và những chỗ nowrap thừa. */
+@media (max-width: 640px) {
+    /* Lề trang và lề thẻ ăn tới 80px trên màn 360px — hơn 1/5 bề ngang. */
+    .container { padding-left: 12px; padding-right: 12px; }
+    .card-body, .dash-panel-body { padding-left: 12px; padding-right: 12px; }
+    .card-head, .dash-panel-head { padding-left: 12px; padding-right: 12px; }
+
+    .page-head h1 { font-size: 19px; }
+    .page-head p { font-size: 12.5px; }
+
+    /* Nhóm nút để nguyên một khối thì tràn; cho xuống dòng và bỏ nối viền âm. */
+    .btn-group { flex-wrap: wrap; gap: 6px; }
+    .btn-group > * + * > .btn { margin-left: 0; }
+    .btn-group .btn { border-radius: var(--radius-sm); }
+
+    /* Ô thao tác canh trái cho thẳng hàng với phần còn lại của dòng. */
+    table.data td.actions { text-align: left; }
+
+    /* Đầu bảng xuống dòng được thì bảng hẹp lại đáng kể, đỡ phải cuộn ngang nhiều. */
+    table.data thead th { white-space: normal; }
+
+    /* Đường dẫn phân cấp dài hơn cả bề ngang máy. */
+    .breadcrumb-current { max-width: 100%; }
+
+    /* Bộ lọc: mỗi ô một dòng, khỏi chen chúc. */
+    .filter-field, .filter-field.grow { min-width: 100%; }
+    .form-control, .filter-field .select2-container { min-width: 0; }
+
+    /* Ô số liệu 2 cột thay vì 1 cột dài thượt. */
+    .tile-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .tile { padding: 12px; }
+    .tile-num { font-size: 20px; }
+    .tile-label { font-size: 11.5px; }
+
+    .member-grid, .flow-grid { grid-template-columns: 1fr; }
+
+    /* Menu thao tác neo theo màn hình: chừa lề hai bên cho máy hẹp nhất. */
+    .row-menu-items { max-width: calc(100vw - 16px); }
 }
 
 /* Nhãn tuần báo cáo trên bảng chi tiết tham gia */
@@ -1352,6 +1410,27 @@ table.data .cell-sub.muted { font-size: 12.5px; line-height: 1.4; }
 .bar-track { background: #eef1f6; border-radius: 999px; height: 9px; overflow: hidden; }
 .bar-fill { background: var(--primary); height: 100%; border-radius: 999px; }
 .bar-count { font-size: 13px; color: var(--text-muted); text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ===== Khối KPI và các dòng số liệu trên màn Tổng quan ===== */
+.kpi-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.kpi-score { font-size: 30px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+
+.kpi-lines { margin-top: 12px; }
+
+/* Nhãn bên trái, số bên phải. Nhãn dài thì xuống dòng chứ không đẩy số ra ngoài. */
+.kpi-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 7px 0;
+    font-size: 13.5px;
+    border-bottom: 1px solid var(--border-soft);
+}
+.kpi-line:last-child { border-bottom: none; }
+.kpi-line > span { color: var(--text-muted); }
+.kpi-line > strong { font-weight: 600; text-align: right; }
 
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 @media (max-width: 900px) {

@@ -293,6 +293,7 @@ namespace TTKDGP.ProjectManager.Models
                 Title = null,
                 Nodes = new List<MenuNode>
                 {
+                    L("Tổng quan", "Dashboard", WorkTasks.Perm(View)),
                     L("Công việc của tôi", "MyWork", WorkTasks.Perm(View), "Tasks"),
                     L("Dự án của tôi", "MyWork", WorkTasks.Perm(View), "Projects"),
                     L("Nghỉ phép của tôi", "Leaves", Leaves.Perm(View), "My")

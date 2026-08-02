@@ -88,14 +88,75 @@
 
     function closeAll(except) {
         $('details.row-menu[open]').each(function () {
-            if (this !== except) this.removeAttribute('open');
+            if (this === except) return;
+            this.removeAttribute('open');
+
+            // Trả bảng chọn về đúng cách đặt của CSS. place() vẫn ghi đè đủ các thuộc tính ở lần
+            // mở sau, nhưng để lại toạ độ cũ thì trạng thái lúc đóng phụ thuộc vào lần mở trước.
+            $(this).children('.row-menu-items').css({ position: '', top: '', left: '', right: '' });
+        });
+    }
+
+    /*
+      Đặt bảng chọn theo toạ độ màn hình.
+
+      Bảng nằm trong khung cuộn ngang được (.table-wrap), mà khung đã cắt tràn thì menu con
+      cũng bị cắt theo. Gỡ bằng cách khi mở thì tính sẵn toạ độ rồi neo menu theo màn hình —
+      menu thoát khỏi khung nên không bị cắt, còn khung vẫn cuộn ngang bình thường.
+
+      Mặc định thả xuống dưới và canh phải theo nút; sát mép nào thì lật về phía còn chỗ.
+    */
+    function place($menu, summary) {
+        var rect = summary.getBoundingClientRect();
+        var margin = 8;
+
+        $menu.css({ position: 'fixed', top: '0px', left: '0px', right: 'auto' });
+
+        var width = $menu.outerWidth();
+        var height = $menu.outerHeight();
+        var viewW = $(window).width();
+        var viewH = $(window).height();
+
+        // Canh mép phải của menu theo mép phải của nút, rồi kéo lại nếu lọt ra ngoài màn hình.
+        var left = rect.right - width;
+        if (left + width > viewW - margin) left = viewW - margin - width;
+        if (left < margin) left = margin;
+
+        // Không đủ chỗ bên dưới thì lật lên trên nút.
+        var top = rect.bottom + 4;
+        if (top + height > viewH - margin && rect.top - height - 4 >= margin) {
+            top = rect.top - height - 4;
+        }
+        if (top < margin) top = margin;
+
+        $menu.css({ top: top + 'px', left: left + 'px' });
+    }
+
+    function placeOpen() {
+        $('details.row-menu[open]').each(function () {
+            place($(this).children('.row-menu-items'), $(this).children('summary')[0]);
         });
     }
 
     $(function () {
         // Mở menu này thì đóng các menu khác ngay, khỏi chờ tới lượt bấm ra ngoài.
         $(document).on('click', 'details.row-menu > summary', function () {
-            closeAll($(this).parent()[0]);
+            var details = $(this).parent()[0];
+            closeAll(details);
+
+            // Lúc bấm thì <details> chưa kịp đổi trạng thái, nên đo ở nhịp kế tiếp.
+            var summary = this;
+            window.setTimeout(function () {
+                if (details.hasAttribute('open')) {
+                    place($(details).children('.row-menu-items'), summary);
+                }
+            }, 0);
+        });
+
+        // Chọn xong một mục thì đóng menu. Thiếu bước này, menu neo theo màn hình vẫn mở trong khi
+        // hộp thoại của mục vừa chọn hiện lên, rồi trôi theo lúc cuộn trang.
+        $(document).on('click', '.row-menu-items a, .row-menu-items button', function () {
+            closeAll(null);
         });
 
         $(document).on('mousedown', function (e) {
@@ -105,6 +166,11 @@
         $(document).on('keydown', function (e) {
             if (e.key === 'Escape') closeAll(null);
         });
+
+        // Neo theo màn hình thì menu không tự đi theo khi trang/bảng cuộn — tính lại toạ độ.
+        // Bắt ở nhánh capture để nhận cả cuộn bên trong .table-wrap.
+        window.addEventListener('scroll', placeOpen, true);
+        $(window).on('resize', placeOpen);
     });
 })(jQuery);
 
