@@ -88,6 +88,59 @@ namespace TTKDGP.ProjectManager.Data
             }
         }
 
+        /// <summary>
+        /// Thu hồi những chức năng lẽ ra không thuộc nhóm "Báo cáo công việc".
+        ///
+        /// <see cref="EnsureNewModulePermissions"/> chỉ biết CẤP THÊM, không bao giờ gỡ — nên khi
+        /// một quyền đã cấp nhầm thì bản đang vận hành giữ nguyên mãi, sửa danh sách mặc định
+        /// không có tác dụng. Danh sách dưới đây là các mã cần gỡ hẳn.
+        ///
+        /// Chỉ chạm nhóm gốc Reporter; nhóm do quản trị viên tự tạo không bị đụng tới.
+        /// </summary>
+        public static void RevokeMisgrantedPermissions()
+        {
+            try
+            {
+                // kpi.view bày điểm của TOÀN BỘ nhân sự — số liệu quản lý, không dành cho nhân sự
+                // thường. kpi.pmapprove đi kèm nó nhưng chưa có màn nào dùng.
+                var revoke = new[]
+                {
+                    Models.Permissions.Kpi.Perm(Models.Permissions.View),
+                    Models.Permissions.Kpi.Perm("pmapprove")
+                };
+
+                RevokeFrom(Roles.Reporter, revoke);
+            }
+            catch (Exception)
+            {
+                // Như trên: lỗi hạ tầng thì bỏ qua, lần khởi động sau làm lại.
+            }
+        }
+
+        private static void RevokeFrom(string roleCode, IEnumerable<string> codes)
+        {
+            var group = Repository.RoleGroups.FirstOrDefault(
+                g => string.Equals(g.Code, roleCode, StringComparison.OrdinalIgnoreCase));
+
+            if (group == null || group.Permissions == "*") return;
+
+            var current = new HashSet<string>(
+                (group.Permissions ?? string.Empty).Split(',')
+                    .Select(p => p.Trim()).Where(p => p.Length > 0),
+                StringComparer.OrdinalIgnoreCase);
+
+            var removed = false;
+            foreach (var code in codes)
+            {
+                if (current.Remove(code)) removed = true;
+            }
+
+            if (!removed) return;
+
+            group.Permissions = string.Join(",", current.OrderBy(c => c, StringComparer.OrdinalIgnoreCase));
+            Repository.RoleGroups.Update(group);
+        }
+
         private static void GrantMissingModules(
             string roleCode, IEnumerable<PermModule> modules, IEnumerable<string> defaults)
         {

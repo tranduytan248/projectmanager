@@ -34,6 +34,9 @@ namespace TTKDGP.ProjectManager
             // Cấp chức năng của các màn hình mới cho hai nhóm gốc trên bản đã vận hành.
             Data.RoleGroupSeeder.EnsureNewModulePermissions();
 
+            // Gỡ các chức năng từng cấp nhầm cho nhóm Báo cáo công việc — bước trên chỉ biết cấp thêm.
+            Data.RoleGroupSeeder.RevokeMisgrantedPermissions();
+
             // Bộ lịch nhắc báo cáo qua Telegram (sáng thứ Hai và chiều thứ Sáu).
             Infrastructure.ReminderScheduler.Start();
 

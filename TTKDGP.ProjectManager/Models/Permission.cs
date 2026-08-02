@@ -237,8 +237,9 @@ namespace TTKDGP.ProjectManager.Models
                 WorkTasks.Perm("import"),
                 WorkReports.Perm(View), WorkReports.Perm(Edit),
 
-                Kpi.Perm(View), Kpi.Perm("pmapprove"),
-
+                // KHÔNG cấp kpi.view: màn "KPI theo tháng" bày điểm của TOÀN BỘ nhân sự, đó là số
+                // liệu quản lý. Điểm của chính mình đã có trên màn Tổng quan.
+                //
                 // Tự đăng ký nghỉ phép và xem đơn của CHÍNH MÌNH. Không cấp leaves.all/approve —
                 // xem đơn người khác và duyệt đơn là việc của Quản lý Tổ.
                 Leaves.Perm(View)
