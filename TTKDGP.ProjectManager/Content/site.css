@@ -1427,6 +1427,9 @@ table.data .cell-sub.muted { font-size: 12.5px; line-height: 1.4; }
 .kpi-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .kpi-score { font-size: 30px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
 
+/* Thang điểm đi kèm số lớn — thiếu nó thì "20" đứng một mình không rõ là điểm hay số việc. */
+.kpi-score-unit { font-size: 13px; color: var(--text-muted); margin-left: -4px; }
+
 .kpi-lines { margin-top: 12px; }
 
 /* Nhãn bên trái, số bên phải. Nhãn dài thì xuống dòng chứ không đẩy số ra ngoài. */
@@ -1443,6 +1446,36 @@ table.data .cell-sub.muted { font-size: 12.5px; line-height: 1.4; }
 .kpi-line:last-child { border-bottom: none; }
 .kpi-line > span { color: var(--text-muted); }
 .kpi-line > strong { font-weight: 600; text-align: right; }
+
+/* Bảng diễn giải cách ra điểm KPI: cột dấu phép tính, cột tên, cột số.
+   Bày thành phép cộng rồi phép nhân để người xem lần được điểm của mình từ đâu ra. */
+.kpi-calc { width: 100%; margin-top: 14px; border-collapse: collapse; font-size: 13.5px; }
+.kpi-calc td { padding: 6px 0; vertical-align: baseline; }
+
+/* Cột dấu +, ×, = — hẹp và canh giữa để các dấu thẳng hàng nhau. */
+.kpi-calc td.op {
+    width: 18px;
+    color: var(--text-faint);
+    text-align: center;
+    font-weight: 600;
+}
+
+.kpi-calc td.val {
+    text-align: right;
+    font-weight: 600;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.kpi-calc .muted { font-size: 12.5px; }
+
+/* Hai dòng kết quả có kẻ trên để tách khỏi phần cộng bên trên. */
+.kpi-calc tr.sum td, .kpi-calc tr.total td { border-top: 1px solid var(--border-soft); }
+.kpi-calc tr.total td { border-top-color: var(--border); padding-top: 8px; }
+.kpi-calc tr.total td.val { font-size: 15px; }
+
+/* Dòng tỷ lệ giờ công khi chưa đủ giờ — đây là chỗ điểm bị hạ. */
+.kpi-calc tr.warn-row td, .kpi-calc tr.warn-row td.val { color: var(--warn); }
 
 /* Khối giờ công: tách khỏi phần điểm bằng một đường kẻ, vì đây là thước đo khác. */
 .kpi-hours { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-soft); }

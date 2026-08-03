@@ -1,5 +1,6 @@
 ﻿@model TTKDGP.ProjectManager.Controllers.DashboardViewModel
 @using TTKDGP.ProjectManager.Models
+@using TTKDGP.ProjectManager.Services
 @{
     ViewBag.Title = "Tổng quan";
     var t = Model.MyTasks;
@@ -29,6 +30,7 @@
             {
                 <div class="kpi-head">
                     <div class="kpi-score">@Model.MyKpi.FinalPoint.ToString("0.##")</div>
+                    <span class="kpi-score-unit">/ 100 điểm</span>
                     <span class="@KpiRanks.BadgeClass(Model.MyKpi.Rank)">@Model.MyKpi.Rank</span>
                 </div>
 
@@ -36,20 +38,45 @@
                     <div class="progress-fill" style="width:@(Math.Min(100, (int)Model.MyKpi.FinalPoint))%"></div>
                 </div>
 
-                <div class="kpi-lines">
-                    <div class="kpi-line">
-                        <span>Hỗ trợ</span>
-                        <strong>@Model.MyKpi.SupportDone/@Model.MyKpi.SupportTotal việc · @Model.MyKpi.SupportPoint.ToString("0.##") điểm</strong>
-                    </div>
-                    <div class="kpi-line">
-                        <span>Triển khai</span>
-                        <strong>@Model.MyKpi.ExecuteDone/@Model.MyKpi.ExecuteTotal việc · @Model.MyKpi.ExecutePoint.ToString("0.##") điểm</strong>
-                    </div>
-                    <div class="kpi-line">
-                        <span>Giao việc riêng</span>
-                        <strong>@Model.MyKpi.AssignedDone/@Model.MyKpi.AssignedTotal việc · @Model.MyKpi.AssignedPoint.ToString("0.##") điểm</strong>
-                    </div>
-                </div>
+                @* Bày ra từng bước tính: cộng ba nhóm ra điểm chất lượng, rồi nhân tỷ lệ giờ công
+                   ra điểm cuối. Chỉ đưa con số rời rạc thì không ai lần ra điểm của mình ở đâu. *@
+                <table class="kpi-calc">
+                    <tbody>
+                        <tr>
+                            <td class="op"></td>
+                            <td>Hỗ trợ <span class="muted">(@Model.MyKpi.SupportDone/@Model.MyKpi.SupportTotal việc, tối đa @KpiService.SupportMaxPoint.ToString("0.##"))</span></td>
+                            <td class="val">@Model.MyKpi.SupportPoint.ToString("0.##")</td>
+                        </tr>
+                        <tr>
+                            <td class="op">+</td>
+                            <td>Triển khai <span class="muted">(@Model.MyKpi.ExecuteDone/@Model.MyKpi.ExecuteTotal việc, tối đa @KpiService.ExecuteMaxPoint.ToString("0.##"))</span></td>
+                            <td class="val">@Model.MyKpi.ExecutePoint.ToString("0.##")</td>
+                        </tr>
+                        <tr>
+                            <td class="op">+</td>
+                            <td>Giao việc riêng <span class="muted">(@Model.MyKpi.AssignedDone/@Model.MyKpi.AssignedTotal việc)</span></td>
+                            <td class="val">@Model.MyKpi.AssignedPoint.ToString("0.##")</td>
+                        </tr>
+                        <tr class="sum">
+                            <td class="op">=</td>
+                            <td>Điểm chất lượng</td>
+                            <td class="val">@Model.MyKpi.QualityPoint.ToString("0.##")</td>
+                        </tr>
+                        <tr class="@(Model.HoursShort > 0 ? "warn-row" : "")">
+                            <td class="op">×</td>
+                            <td>
+                                Tỷ lệ giờ công
+                                <span class="muted">(@Model.MyKpi.WorkedHours.ToString("0.#")/@Model.MyKpi.RequiredHours.ToString("0.#") giờ)</span>
+                            </td>
+                            <td class="val">@Model.MyKpi.AttendanceRate.ToString("0.##")%</td>
+                        </tr>
+                        <tr class="total">
+                            <td class="op">=</td>
+                            <td>Điểm KPI tháng này</td>
+                            <td class="val">@Model.MyKpi.FinalPoint.ToString("0.##")</td>
+                        </tr>
+                    </tbody>
+                </table>
 
                 @* Giờ công: thiếu giờ thì KPI bị nhân theo tỷ lệ, nên phải nói rõ còn thiếu bao nhiêu. *@
                 <div class="kpi-hours">
@@ -67,19 +94,14 @@
                         @if (Model.HoursShort > 0)
                         {
                             <span class="danger-text">Còn thiếu @Model.HoursShort.ToString("0.#") giờ</span>
-                            <text> — tương đương @Model.DaysShort.ToString("0.#") ngày công.</text>
-                            <div style="margin-top:4px">
-                                Chưa đủ giờ nên điểm chất lượng
-                                <strong>@Model.MyKpi.QualityPoint.ToString("0.##")</strong> chỉ được hưởng
-                                <strong>@Model.MyKpi.AttendanceRate.ToString("0.##")%</strong>, còn
-                                <strong>@Model.MyKpi.FinalPoint.ToString("0.##")</strong>. Làm đủ giờ thì
-                                giữ nguyên @Model.MyKpi.QualityPoint.ToString("0.##").
-                            </div>
+                            <text> — tương đương @Model.DaysShort.ToString("0.#") ngày công. Làm đủ giờ thì
+                            được trọn @Model.MyKpi.QualityPoint.ToString("0.##") điểm thay vì
+                            @Model.MyKpi.FinalPoint.ToString("0.##").</text>
                         }
                         else
                         {
                             <span class="ok-text">Đã đủ giờ công</span>
-                            <text> — điểm chất lượng được giữ nguyên, không bị trừ theo ngày công.</text>
+                            <text> — được trọn điểm chất lượng, không bị trừ theo ngày công.</text>
                         }
                     </div>
 
