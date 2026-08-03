@@ -60,13 +60,16 @@
                 <tbody>
                     @foreach (var row in Model.Members)
                     {
-                        <tr class="@(row.Today.Count == 0 ? "row-due-danger" : "")">
+                        @* Chưa có việc là điều CẦN HỎI LẠI, không phải lỗi — dùng dải vàng chứ
+                           không phải đỏ. Đỏ để dành cho việc quá hạn; nếu cả hai cùng đỏ thì
+                           lúc quét bảng không phân biệt được cái nào gấp hơn. *@
+                        <tr class="@(row.Today.Count == 0 ? "row-due-warn" : "")">
                             <td class="col-name">
                                 @row.FullName
                                 <div class="cell-recap">
                                     @if (row.Today.Count == 0)
                                     {
-                                        <span class="danger-text">Chưa có việc hôm nay</span>
+                                        <span class="muted">Chưa có việc hôm nay</span>
                                     }
                                     else
                                     {
@@ -82,21 +85,21 @@
                             <td class="center col-hide-sm">
                                 @if (row.Today.Count == 0)
                                 {
-                                    <span class="badge badge-danger">0</span>
+                                    <span class="badge badge-waiting">0</span>
                                 }
                                 else
                                 {
                                     <strong>@row.Today.Count</strong>
                                     if (row.OverdueToday > 0)
                                     {
-                                        <div class="cell-sub muted">@row.OverdueToday quá hạn</div>
+                                        <div class="cell-sub danger-text">@row.OverdueToday quá hạn</div>
                                     }
                                 }
                             </td>
                             <td class="col-hide-sm">
                                 @if (row.Today.Count == 0)
                                 {
-                                    <span class="muted">Không có việc nào đang phải làm — nên hỏi lại PM hoặc thành viên.</span>
+                                    <span class="muted">Không có việc nào đang chạy — nên hỏi lại PM hoặc thành viên. Việc tạm dừng không tính vào đây.</span>
                                 }
                                 else
                                 {

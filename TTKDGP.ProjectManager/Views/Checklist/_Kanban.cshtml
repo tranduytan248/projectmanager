@@ -21,8 +21,26 @@
                 @foreach (var card in column.Cards)
                 {
                     var t = card.Task;
-                    @* Quá hạn tô đỏ, còn tối đa 1 ngày tô cam — nhìn lướt cả bảng là thấy ngay việc gấp. *@
-                    var alert = t.IsOverdue ? " card-danger" : (t.IsDueSoon ? " card-warn" : "");
+
+                    @* Mức gấp nói bằng dải màu bên trái thẻ, KHÔNG tô nền cả thẻ nữa.
+                       Nền vàng/đỏ cả thẻ làm chữ khó đọc và khiến bảng trông loang lổ,
+                       trong khi dải màu vẫn thấy rõ khi lướt mà thẻ vẫn sạch. *@
+                    var alert = t.IsOverdue ? " card-late" : (t.IsDueSoon ? " card-soon" : "");
+
+                    var priKey = t.Priority == TaskPriorities.High ? "cao"
+                               : t.Priority == TaskPriorities.Low ? "thap"
+                               : "vua";
+
+                    var who = string.IsNullOrWhiteSpace(t.AssigneeName) ? null : t.AssigneeName.Trim();
+                    var initials = "—";
+                    if (who != null)
+                    {
+                        var parts = who.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                        initials = parts.Length == 1
+                            ? parts[0].Substring(0, 1).ToUpper()
+                            : (parts[parts.Length - 2].Substring(0, 1) + parts[parts.Length - 1].Substring(0, 1)).ToUpper();
+                    }
+
                     <div class="kanban-card@(card.CanEdit ? "" : " is-locked")@alert"
                          data-card
                          data-id="@t.Id"
@@ -30,35 +48,43 @@
                          data-modal-url="@Url.Action("Detail", "Checklist", new { id = t.Id })"
                          data-modal-title="Chi tiết công việc"
                          data-modal-size="lg">
-                        <span class="kanban-title">
+                        <div class="kanban-head">
                             @if (!string.IsNullOrWhiteSpace(t.Code))
                             {
-                                <span class="muted">@t.Code</span> <text>·</text>
+                                <span class="lead-code">@t.Code</span>
                             }
-                            @t.Title
-                        </span>
+                            <span class="lead-kind">@TaskKinds.Display(t.Kind)</span>
+                            <span class="pri pri-@priKey" title="Ưu tiên @TaskPriorities.Display(t.Priority)"><i></i></span>
+                        </div>
 
-                        <div class="kanban-meta">
-                            <span class="badge">@TaskKinds.Display(t.Kind)</span>
-                            <span class="chip chip-@(t.Priority == TaskPriorities.High ? "high" : t.Priority == TaskPriorities.Low ? "low" : "normal")">
-                                @TaskPriorities.Display(t.Priority)
-                            </span>
-                            @if (t.IsOverdue)
-                            {
-                                <span class="badge badge-danger js-due-badge">Quá hạn @(-t.DaysLeft) ngày</span>
-                            }
-                            else if (t.IsDueSoon)
-                            {
-                                <span class="badge badge-waiting js-due-badge">@(t.DaysLeft == 0 ? "Hết hạn hôm nay" : "Còn 1 ngày")</span>
-                            }
+                        <span class="kanban-title">@t.Title</span>
+
+                        @if (t.IsOverdue || t.IsDueSoon)
+                        {
+                            <div class="kanban-meta">
+                                @if (t.IsOverdue)
+                                {
+                                    <span class="pill pill-late js-due-badge"><i></i>Quá hạn @(-t.DaysLeft) ngày</span>
+                                }
+                                else
+                                {
+                                    <span class="pill pill-warn js-due-badge"><i></i>@(t.DaysLeft == 0 ? "Hết hạn hôm nay" : "Còn 1 ngày")</span>
+                                }
+                            </div>
+                        }
+
+                        @* Thanh tiến độ mảnh: so sánh các thẻ bằng mắt khi lướt cả cột. *@
+                        <div class="prog @(t.Progress >= 100 ? "prog-full" : "")">
+                            <div class="prog-track"><i style="width:@t.Progress%"></i></div>
+                            <span>@t.Progress%</span>
                         </div>
 
                         <div class="kanban-foot">
-                            <span>@(string.IsNullOrWhiteSpace(t.AssigneeName) ? "(chưa giao)" : t.AssigneeName)</span>
-                            <span class="muted">
-                                @(t.DueDate.HasValue ? t.DueDate.Value.ToString("dd/MM") : "—")
-                                · @t.Progress%
-                            </span>
+                            <div class="person" title="@(who ?? "(chưa giao)")">
+                                <span class="person-ava">@initials</span>
+                                <span>@(who ?? "(chưa giao)")</span>
+                            </div>
+                            <span class="muted">@(t.DueDate.HasValue ? t.DueDate.Value.ToString("dd/MM") : "—")</span>
                         </div>
                     </div>
                 }
@@ -71,15 +97,16 @@
     var cardCount = ViewBag.KanbanCardCount == null ? Model.TotalCount : (int)ViewBag.KanbanCardCount;
     var hiddenCount = ViewBag.KanbanHiddenCount == null ? 0 : (int)ViewBag.KanbanHiddenCount;
 }
-<div class="card">
-    <div class="card-body">
-        <span class="hint">
+<div class="panel">
+    <div class="panel-foot">
+        <span>
             Bấm vào thẻ để xem chi tiết. Kéo thẻ sang cột khác để đổi trạng thái — chỉ kéo được
-            thẻ bạn có quyền sửa: PM dự án và Quản lý Tổ kéo được mọi thẻ, người còn lại chỉ kéo được
-            việc giao cho mình. Bảng hiển thị <strong>@cardCount việc có hạn hoàn thành</strong>@(
+            thẻ bạn có quyền sửa: PM dự án và Quản lý Tổ kéo được mọi thẻ, người còn lại chỉ kéo
+            được việc giao cho mình.
+        </span>
+        <span>
+            Hiển thị <b>@cardCount</b> việc có hạn hoàn thành@(
                 hiddenCount > 0 ? "; " + hiddenCount + " mục cha gom nhóm/việc chưa đặt hạn chỉ xem ở dạng lưới" : "").
-            Thẻ <span class="badge badge-waiting">cam</span> là việc còn tối đa 1 ngày,
-            thẻ <span class="badge badge-danger">đỏ</span> là việc đã quá hạn.
         </span>
     </div>
 </div>

@@ -14,161 +14,180 @@
     };
 }
 
-<div class="page-head">
-    <div>
-        <h1>Checklist công việc</h1>
-        <p>
-            Dự án <strong>@Model.Project.Name</strong>
-            @if (!string.IsNullOrWhiteSpace(Model.Project.PmName))
-            {
-                <text>· PM @Model.Project.PmName</text>
-            }
-            · @Model.DoneCount/@Model.TotalCount mục hoàn thành (@Model.DonePercent%)
-            @if (Model.OverdueCount > 0)
-            {
-                <strong style="color:var(--danger)">· @Model.OverdueCount mục quá hạn</strong>
-            }
-        </p>
-    </div>
-    <div class="btn-row">
-        <a class="btn @(Model.View == TaskViews.Grid ? "btn-primary" : "btn-default")"
-           href="@Url.Action("Index", "Checklist", new { projectId = Model.Project.Id, view = TaskViews.Grid })">
-            <svg class="btn-icon" width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                <rect x="1" y="2" width="14" height="3" rx="1"/>
-                <rect x="1" y="6.5" width="14" height="3" rx="1"/>
-                <rect x="1" y="11" width="14" height="3" rx="1"/>
-            </svg>
-            Dạng lưới</a>
-        <a class="btn @(Model.View == TaskViews.Kanban ? "btn-primary" : "btn-default")"
-           href="@Url.Action("Index", "Checklist", new { projectId = Model.Project.Id, view = TaskViews.Kanban })">
-            <svg class="btn-icon" width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                <rect x="1" y="1" width="4" height="14" rx="1"/>
-                <rect x="6" y="1" width="4" height="9" rx="1"/>
-                <rect x="11" y="1" width="4" height="12" rx="1"/>
-            </svg>
-            Kanban</a>
-        <a class="btn btn-default" href="@Url.Action("Projects", "MyWork")">&larr; Dự án của tôi</a>
-    </div>
-</div>
+@{
+    @* Chu vi vòng tiến độ, bán kính 25 — dùng để cắt vạch theo đúng tỷ lệ hoàn thành. *@
+    const double RingLength = 157.1;
+    var ringOffset = RingLength - (RingLength * Model.DonePercent / 100.0);
+}
 
-@if (Model.CanEdit)
-{
-    var canImport = ViewBag.Can is Func<string, bool> && ((Func<string, bool>)ViewBag.Can)("wtasks.import");
-    <div class="card">
-        <div class="card-body">
-            <div class="btn-row">
+<div class="pagehead">
+    <div class="pagehead-top">
+        <div>
+            <h1>Checklist công việc</h1>
+            <p class="pagehead-sub">
+                <b>@Model.Project.Name</b>
+                @if (!string.IsNullOrWhiteSpace(Model.Project.PmName))
+                {
+                    <span class="sep"></span>
+                    <span>PM @Model.Project.PmName</span>
+                }
+                @if (Model.OverdueCount > 0)
+                {
+                    <span class="sep"></span>
+                    <span class="pill pill-late"><i></i>@Model.OverdueCount mục quá hạn</span>
+                }
+            </p>
+        </div>
+
+        @* Vòng tiến độ thay cho dòng chữ "x/y mục hoàn thành (z%)": cùng thông tin
+           nhưng nắm được trong một phần giây thay vì phải đọc hết câu. *@
+        <div class="ringstat">
+            <div class="ringstat-ring">
+                <svg width="58" height="58" viewBox="0 0 58 58" aria-hidden="true">
+                    <circle class="ringstat-track" cx="29" cy="29" r="25" fill="none" stroke-width="5"></circle>
+                    <circle class="ringstat-fill" cx="29" cy="29" r="25" fill="none" stroke-width="5"
+                            stroke-dasharray="@RingLength.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                            stroke-dashoffset="@ringOffset.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)"></circle>
+                </svg>
+                <div class="ringstat-num">@Model.DonePercent%</div>
+            </div>
+            <div class="ringstat-label">
+                <b>@Model.DoneCount / @Model.TotalCount mục</b>
+                đã hoàn thành
+            </div>
+        </div>
+    </div>
+
+    <div class="pagehead-bar">
+        <div class="segbtn">
+            <a class="@(Model.View == TaskViews.Grid ? "on" : "")"
+               href="@Url.Action("Index", "Checklist", new { projectId = Model.Project.Id, view = TaskViews.Grid })">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                    <path d="M2 4h12M2 8h12M2 12h12" stroke-linecap="round"/>
+                </svg>
+                Dạng lưới</a>
+            <a class="@(Model.View == TaskViews.Kanban ? "on" : "")"
+               href="@Url.Action("Index", "Checklist", new { projectId = Model.Project.Id, view = TaskViews.Kanban })">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                    <rect x="2" y="3" width="3.6" height="10" rx="1"/>
+                    <rect x="6.9" y="3" width="3.6" height="7" rx="1"/>
+                    <rect x="11.8" y="3" width="2.4" height="9" rx="1"/>
+                </svg>
+                Kanban</a>
+        </div>
+
+        <div class="pagehead-acts">
+            @if (Model.CanEdit)
+            {
+                var canImport = ViewBag.Can is Func<string, bool> && ((Func<string, bool>)ViewBag.Can)("wtasks.import");
                 <a class="btn btn-primary" href="@Url.Action("Edit", "Checklist", new { projectId = Model.Project.Id })"
                    data-modal-url="@Url.Action("Edit", "Checklist", new { projectId = Model.Project.Id })"
-                   data-modal-title="Thêm mục checklist">+ Thêm mục</a>
-                @if (canImport)
+                   data-modal-title="Thêm mục checklist">
+                    <svg class="btn-icon" width="15" height="15" viewBox="0 0 16 16" fill="none"
+                         stroke="currentColor" stroke-width="1.9" aria-hidden="true">
+                        <path d="M8 3v10M3 8h10" stroke-linecap="round"/>
+                    </svg>
+                    Thêm mục</a>
+                if (canImport)
                 {
                     <a class="btn btn-default" href="#"
                        data-modal-url="@Url.Action("ImportForm", "Checklist", new { projectId = Model.Project.Id })"
                        data-modal-title="Import checklist từ file"
                        data-modal-size="sm">
-                        <svg class="btn-icon" width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                            <path d="M8 1l4 4.5H9.5V10h-3V5.5H4L8 1z"/>
-                            <path d="M2 12h12v2.5H2z"/>
+                        <svg class="btn-icon" width="15" height="15" viewBox="0 0 16 16" fill="none"
+                             stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                            <path d="M8 11V3M5 6l3-3 3 3M3 12.5h10" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
-                        Import từ file</a>
+                        Import</a>
                 }
                 <a class="btn btn-default" href="@Url.Action("Template", "Checklist", new { projectId = Model.Project.Id })">
-                    <svg class="btn-icon" width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                        <path d="M8 10.5L4 6h2.5V1.5h3V6H12l-4 4.5z"/>
-                        <path d="M2 12h12v2.5H2z"/>
+                    <svg class="btn-icon" width="15" height="15" viewBox="0 0 16 16" fill="none"
+                         stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                        <path d="M8 3v8M5 8l3 3 3-3M3 13.5h10" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
-                    Tải file mẫu</a>
-            </div>
+                    File mẫu</a>
+            }
+            <a class="btn btn-ghost" href="@Url.Action("Projects", "MyWork")">&larr; Dự án của tôi</a>
         </div>
     </div>
-}
+</div>
 
 @if (Model.ShowWorkload)
 {
     @Html.Partial("_Workload", Model)
 }
 
-@* ----- Bộ lọc ----- *@
-<div class="card">
-    <div class="card-body">
-        @using (Html.BeginForm("Index", "Checklist", FormMethod.Get))
+@* ----- Bộ lọc -----
+   Một hàng ngang thay cho khối năm ô xếp chồng. Các ô chọn tự gửi form ngay khi đổi
+   giá trị nên không cần nút "Lọc" riêng; ô tìm kiếm vẫn gửi bằng phím Enter. Nút Lọc
+   vẫn giữ lại cho trường hợp trình duyệt tắt JavaScript. *@
+<div class="filterbar">
+    @using (Html.BeginForm("Index", "Checklist", FormMethod.Get, new { @class = "filterbar-form" }))
+    {
+        @* Giữ dự án và kiểu hiển thị khi lọc, nếu không bấm Lọc là nhảy về dạng lưới. *@
+        <input type="hidden" name="projectId" value="@Model.Project.Id" />
+        <input type="hidden" name="view" value="@Model.View" />
+
+        <div class="filter-search">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                <circle cx="7" cy="7" r="4.3"/>
+                <path d="M10.2 10.2L14 14" stroke-linecap="round"/>
+            </svg>
+            <input type="search" id="q" name="q" value="@Model.Query"
+                   placeholder="Tìm mã hoặc tên công việc…" aria-label="Tìm công việc" />
+        </div>
+
+        <select id="assigneeUserId" name="assigneeUserId" class="filter-pick" aria-label="Người thực hiện">
+            <option value="0">Người thực hiện</option>
+            <option value="-1" selected="@(Model.AssigneeUserId < 0)">(chưa giao)</option>
+            @foreach (var u in Model.Users)
+            {
+                <option value="@u.Id" selected="@(Model.AssigneeUserId == u.Id)">@u.FullName</option>
+            }
+        </select>
+
+        <select id="state" name="state" class="filter-pick" aria-label="Trạng thái">
+            <option value="">Trạng thái</option>
+            @foreach (var s in TaskStates.All)
+            {
+                <option value="@s" selected="@(Model.State == s)">@TaskStates.Display(s)</option>
+            }
+        </select>
+
+        <select id="kind" name="kind" class="filter-pick" aria-label="Loại việc">
+            <option value="">Loại việc</option>
+            @foreach (var k in TaskKinds.InProject)
+            {
+                <option value="@k" selected="@(Model.Kind == k)">@TaskKinds.Display(k)</option>
+            }
+        </select>
+
+        <select id="due" name="due" class="filter-pick" aria-label="Hạn">
+            <option value="">Hạn</option>
+            <option value="@ChecklistDueFilters.Overdue" selected="@(Model.Due == ChecklistDueFilters.Overdue)">@ChecklistDueFilters.Display(ChecklistDueFilters.Overdue)</option>
+            <option value="@ChecklistDueFilters.Soon" selected="@(Model.Due == ChecklistDueFilters.Soon)">@ChecklistDueFilters.Display(ChecklistDueFilters.Soon)</option>
+            <option value="@ChecklistDueFilters.NoDue" selected="@(Model.Due == ChecklistDueFilters.NoDue)">@ChecklistDueFilters.Display(ChecklistDueFilters.NoDue)</option>
+        </select>
+
+        <button type="submit" class="btn btn-default btn-sm filter-go">Lọc</button>
+
+        if (Model.HasFilter)
         {
-            @* Giữ dự án và kiểu hiển thị khi lọc, nếu không bấm Lọc là nhảy về dạng lưới. *@
-            <input type="hidden" name="projectId" value="@Model.Project.Id" />
-            <input type="hidden" name="view" value="@Model.View" />
-
-            <div class="filters">
-                <div class="filter-field grow">
-                    <label for="q">Tìm kiếm</label>
-                    <input type="search" id="q" name="q" value="@Model.Query"
-                           placeholder="Mã hoặc tên công việc..." />
-                </div>
-
-                <div class="filter-field">
-                    <label for="assigneeUserId">Người thực hiện</label>
-                    <select id="assigneeUserId" name="assigneeUserId">
-                        <option value="0">— Tất cả —</option>
-                        <option value="-1" selected="@(Model.AssigneeUserId < 0)">(chưa giao)</option>
-                        @foreach (var u in Model.Users)
-                        {
-                            <option value="@u.Id" selected="@(Model.AssigneeUserId == u.Id)">@u.FullName</option>
-                        }
-                    </select>
-                </div>
-
-                <div class="filter-field">
-                    <label for="state">Trạng thái</label>
-                    <select id="state" name="state">
-                        <option value="">— Tất cả —</option>
-                        @foreach (var s in TaskStates.All)
-                        {
-                            <option value="@s" selected="@(Model.State == s)">@TaskStates.Display(s)</option>
-                        }
-                    </select>
-                </div>
-
-                <div class="filter-field">
-                    <label for="kind">Loại việc</label>
-                    <select id="kind" name="kind">
-                        <option value="">— Tất cả —</option>
-                        @foreach (var k in TaskKinds.InProject)
-                        {
-                            <option value="@k" selected="@(Model.Kind == k)">@TaskKinds.Display(k)</option>
-                        }
-                    </select>
-                </div>
-
-                <div class="filter-field">
-                    <label for="due">Hạn</label>
-                    <select id="due" name="due">
-                        <option value="">— Tất cả —</option>
-                        <option value="@ChecklistDueFilters.Overdue" selected="@(Model.Due == ChecklistDueFilters.Overdue)">@ChecklistDueFilters.Display(ChecklistDueFilters.Overdue)</option>
-                        <option value="@ChecklistDueFilters.Soon" selected="@(Model.Due == ChecklistDueFilters.Soon)">@ChecklistDueFilters.Display(ChecklistDueFilters.Soon)</option>
-                        <option value="@ChecklistDueFilters.NoDue" selected="@(Model.Due == ChecklistDueFilters.NoDue)">@ChecklistDueFilters.Display(ChecklistDueFilters.NoDue)</option>
-                    </select>
-                </div>
-
-                <div class="filter-field">
-                    <label>&nbsp;</label>
-                    <div class="btn-row">
-                        <button type="submit" class="btn btn-primary">Lọc</button>
-                        @if (Model.HasFilter)
-                        {
-                            <a class="btn btn-default"
-                               href="@Url.Action("Index", "Checklist", new { projectId = Model.Project.Id, view = Model.View })">Bỏ lọc</a>
-                        }
-                    </div>
-                </div>
-            </div>
+            <a class="btn btn-ghost btn-sm"
+               href="@Url.Action("Index", "Checklist", new { projectId = Model.Project.Id, view = Model.View })">Bỏ lọc</a>
         }
+    }
 
+    <span class="filter-count">
         @if (Model.HasFilter)
         {
-            <div class="muted" style="font-size:12.5px;margin-top:10px">
-                Đang lọc: <strong>@Model.MatchCount</strong> mục khớp trên tổng số @Model.TotalCount mục.
-            </div>
+            <text><b>@Model.MatchCount</b> / @Model.TotalCount mục</text>
         }
-    </div>
+        else
+        {
+            <text><b>@Model.TotalCount</b> mục</text>
+        }
+    </span>
 </div>
 
 @if (Model.View == TaskViews.Kanban)
@@ -177,7 +196,7 @@
 }
 else
 {
-<div class="card">
+<div class="panel">
     @if (Model.Rows.Items.Count == 0)
     {
         <div class="empty-state">
@@ -201,16 +220,15 @@ else
         @* Bảng gộp cột ở màn hẹp: các cột phụ (loại, ưu tiên, người, hạn, tiến độ, trao đổi) ẩn đi,
            nội dung của chúng hiện lại thành một dòng tóm tắt ngay dưới tên việc. Nhờ vậy không phải
            dựng hai khối HTML song song cho cùng một dữ liệu. *@
-        <div class="table-wrap with-menu">
-            <table class="data table-collapse">
+        <div class="panel-scroll with-menu">
+            <table class="list table-collapse">
                 <thead>
                     <tr>
                         <th>Công việc</th>
-                        <th class="col-hide-sm">Loại</th>
-                        <th class="col-hide-sm">Ưu tiên</th>
                         <th class="col-hide-sm">Người thực hiện</th>
+                        <th class="col-hide-sm">Ưu tiên</th>
                         <th class="col-hide-sm">Hạn</th>
-                        <th class="num col-hide-sm">Tiến độ</th>
+                        <th class="col-hide-sm">Tiến độ</th>
                         <th>Trạng thái</th>
                         <th class="num col-hide-sm">Trao đổi</th>
                         @if (Model.CanEditAny)
@@ -223,24 +241,42 @@ else
                     @foreach (var row in Model.Rows.Items)
                     {
                         var t = row.Task;
-                        @* Quá hạn tô đỏ, còn tối đa 1 ngày tô cam — khớp với màu thẻ bên bảng Kanban. *@
-                        var alert = t.IsOverdue ? " row-due-danger" : (t.IsDueSoon ? " row-due-warn" : "");
-                        <tr class="row-clickable@alert"
+
+                        @* Mức ưu tiên nói bằng dải màu bên trái dòng thay vì bằng chữ.
+                           So theo hằng số chứ không theo chữ hiển thị — đổi chữ tiếng Việt
+                           sau này thì màu vẫn đúng. *@
+                        var pri = TaskPriorities.Display(t.Priority);
+                        var priKey = t.Priority == TaskPriorities.High ? "cao"
+                                   : t.Priority == TaskPriorities.Low ? "thap"
+                                   : "vua";
+
+                        @* Chữ cái đầu của họ và tên để làm huy hiệu người thực hiện. *@
+                        var who = string.IsNullOrWhiteSpace(t.AssigneeName) ? null : t.AssigneeName.Trim();
+                        var initials = "—";
+                        if (who != null)
+                        {
+                            var parts = who.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                            initials = parts.Length == 1
+                                ? parts[0].Substring(0, 1).ToUpper()
+                                : (parts[parts.Length - 2].Substring(0, 1) + parts[parts.Length - 1].Substring(0, 1)).ToUpper();
+                        }
+
+                        <tr class="rowlink" data-pri="@priKey"
                             data-modal-url="@Url.Action("Detail", "Checklist", new { id = t.Id })"
                             data-modal-title="Chi tiết công việc"
                             data-modal-size="lg">
-                            <td style="padding-left:@(12 + row.Depth * 22)px">
+                            <td class="lead@(row.Depth > 0 ? " child" : "")"
+                                style="padding-left:@(20 + row.Depth * 22)px">
                                 @if (!string.IsNullOrWhiteSpace(t.Code))
                                 {
-                                    <span class="muted">@t.Code</span> <text>·</text>
+                                    <span class="lead-code">@t.Code</span>
                                 }
-                                @t.Title
+                                <span class="lead-kind">@(string.IsNullOrWhiteSpace(t.Code) ? "" : " · ")@TaskKinds.Display(t.Kind)</span>
+                                <span class="lead-name">@t.Title</span>
 
                                 @* Bản tóm tắt cho màn hẹp — gom nội dung các cột bị ẩn. *@
                                 <div class="cell-recap">
-                                    <span>@TaskKinds.Display(t.Kind)</span>
-                                    <span>·</span>
-                                    <span>@(string.IsNullOrWhiteSpace(t.AssigneeName) ? "(chưa giao)" : t.AssigneeName)</span>
+                                    <span>@(who ?? "(chưa giao)")</span>
                                     @if (t.DueDate.HasValue)
                                     {
                                         <span>·</span>
@@ -255,46 +291,122 @@ else
                                     }
                                 </div>
                             </td>
-                            <td class="nowrap col-hide-sm"><span class="badge">@TaskKinds.Display(t.Kind)</span></td>
-                            <td class="nowrap muted col-hide-sm">@TaskPriorities.Display(t.Priority)</td>
-                            <td class="col-hide-sm">@(string.IsNullOrWhiteSpace(t.AssigneeName) ? "(chưa giao)" : t.AssigneeName)</td>
+
+                            <td class="col-hide-sm">
+                                <div class="person">
+                                    <span class="person-ava">@initials</span>
+                                    <span>@(who ?? "(chưa giao)")</span>
+                                </div>
+                            </td>
+
+                            <td class="nowrap col-hide-sm">
+                                <span class="pri pri-@priKey"><i></i>@pri</span>
+                            </td>
+
                             <td class="nowrap col-hide-sm">
                                 @if (t.DueDate.HasValue)
                                 {
-                                    @t.DueDate.Value.ToString("dd/MM/yyyy")
-                                    if (t.IsOverdue)
-                                    {
-                                        <span class="badge badge-danger">Quá hạn @(-t.DaysLeft) ngày</span>
-                                    }
-                                    else if (t.IsDueSoon)
-                                    {
-                                        <span class="badge badge-waiting">@(t.DaysLeft == 0 ? "Hết hạn hôm nay" : "Còn 1 ngày")</span>
-                                    }
+                                    @* Việc đã đóng (xong hoặc huỷ) thì thôi không cảnh báo hạn nữa. *@
+                                    var closed = TaskStates.IsClosed(t.State);
+                                    var dueClass = closed ? "due-done"
+                                                 : t.IsOverdue ? "due-late"
+                                                 : t.IsDueSoon ? "due-soon" : "";
+                                    <div class="due @dueClass">
+                                        <b>@t.DueDate.Value.ToString("dd/MM/yyyy")</b>
+                                        @if (t.State == TaskStates.Done)
+                                        {
+                                            <small>@(t.IsOnTime ? "xong đúng hạn" : "xong trễ hạn")</small>
+                                        }
+                                        else if (t.State == TaskStates.Cancelled)
+                                        {
+                                            <small>đã huỷ</small>
+                                        }
+                                        else if (t.IsOverdue)
+                                        {
+                                            <small>quá hạn @(-t.DaysLeft) ngày</small>
+                                        }
+                                        else if (t.IsDueSoon)
+                                        {
+                                            <small>@(t.DaysLeft == 0 ? "hết hạn hôm nay" : "còn 1 ngày")</small>
+                                        }
+                                    </div>
                                 }
                                 else
                                 {
                                     <span class="muted">—</span>
                                 }
                             </td>
-                            <td class="num col-hide-sm">@t.Progress%</td>
+
+                            <td class="col-hide-sm">
+                                <div class="prog @(t.Progress >= 100 ? "prog-full" : "")">
+                                    <div class="prog-track"><i style="width:@t.Progress%"></i></div>
+                                    <span>@t.Progress%</span>
+                                </div>
+                            </td>
+
                             <td>
+                                @*
+                                    Màu nói đúng tình trạng, xét theo thứ tự:
+                                      xong        → xanh lá, kèm chú thích đúng/trễ hạn khi rê chuột
+                                      huỷ         → xám, việc đã đóng nên không còn phải theo dõi
+                                      quá hạn     → đỏ, cần xử lý ngay
+                                      tạm dừng    → vàng, đang vướng gì đó
+                                      đang làm    → xanh thương hiệu (việc đang diễn ra, không tốt
+                                                    cũng không xấu, nên không thuộc thang xanh/vàng/đỏ)
+                                      chưa bắt đầu→ xám
+                                *@
                                 @if (t.State == TaskStates.Done)
                                 {
-                                    <span class="badge badge-active">Hoàn thành @(t.IsOnTime ? "đúng hạn" : "trễ hạn")</span>
+                                    <span class="pill pill-ok" title="Hoàn thành @(t.IsOnTime ? "đúng hạn" : "trễ hạn")">
+                                        <i></i>Hoàn thành
+                                    </span>
+                                }
+                                else if (t.State == TaskStates.Cancelled)
+                                {
+                                    <span class="pill pill-idle"><i></i>@TaskStates.Display(t.State)</span>
+                                }
+                                else if (t.IsOverdue)
+                                {
+                                    <span class="pill pill-late"><i></i>@TaskStates.Display(t.State)</span>
+                                }
+                                else if (t.State == TaskStates.Paused)
+                                {
+                                    <span class="pill pill-warn"><i></i>@TaskStates.Display(t.State)</span>
+                                }
+                                else if (t.State == TaskStates.InProgress)
+                                {
+                                    <span class="pill pill-run"><i></i>@TaskStates.Display(t.State)</span>
                                 }
                                 else
                                 {
-                                    <span class="badge">@TaskStates.Display(t.State)</span>
+                                    <span class="pill pill-idle"><i></i>@TaskStates.Display(t.State)</span>
                                 }
                             </td>
+
                             <td class="num col-hide-sm">
-                                <a href="@Url.Action("Detail", "MyWork", new { id = t.Id })">@row.CommentCount</a>
+                                <a class="talk @(row.CommentCount > 0 ? "talk-has" : "")"
+                                   href="@Url.Action("Detail", "MyWork", new { id = t.Id })">
+                                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                                         stroke-width="1.5" aria-hidden="true">
+                                        <path d="M14 7.5c0 2.8-2.7 5-6 5-.8 0-1.5-.1-2.2-.3L2.5 13.5l1-2.8C2.5 9.8 2 8.7 2 7.5c0-2.8 2.7-5 6-5s6 2.2 6 5z"
+                                              stroke-linejoin="round"/>
+                                    </svg>
+                                    @row.CommentCount
+                                </a>
                             </td>
                             @if (Model.CanEditAny)
                             {
-                                <td class="actions">
+                                <td class="actions rowact">
                                     <details class="row-menu">
-                                        <summary>Thao tác ▾</summary>
+                                        @* Nút ba chấm chỉ hiện khi rê chuột vào dòng, nhờ vậy bảng bớt
+                                           nhiễu. Vẫn hiện đầy đủ khi đi bằng bàn phím. *@
+                                        <summary class="rowbtn" aria-label="Thao tác" title="Thao tác">
+                                            <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                                                <circle cx="8" cy="3.2" r="1.4"/>
+                                                <circle cx="8" cy="8" r="1.4"/>
+                                                <circle cx="8" cy="12.8" r="1.4"/>
+                                            </svg>
+                                        </summary>
                                         <div class="row-menu-items">
                                             @* href giữ trang đầy đủ làm dự phòng khi không có JS; bình thường mở hộp thoại. *@
                                             <a href="@Url.Action("Detail", "MyWork", new { id = t.Id })"
@@ -330,11 +442,12 @@ else
         </div>
 
         @Html.Partial("_Pager", Model.Rows.Pager)
-        <div class="card-body">
-            <span class="hint">
-                Bấm vào một dòng để xem chi tiết công việc. Phân trang theo <strong>mục gốc</strong> —
-                mỗi trang @Model.Rows.Pager.PageSize mục gốc kèm toàn bộ mục con, để cây không bị cắt
-                rời giữa hai trang.
+
+        <div class="panel-foot">
+            <span>Bấm vào một dòng để xem chi tiết công việc</span>
+            <span>
+                Phân trang theo <b>mục gốc</b> — mỗi trang @Model.Rows.Pager.PageSize mục gốc kèm
+                toàn bộ mục con, để cây không bị cắt rời giữa hai trang.
             </span>
         </div>
     }

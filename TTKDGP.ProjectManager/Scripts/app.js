@@ -548,9 +548,9 @@
 
                         // Cập nhật màu cảnh báo hạn ngay theo trạng thái mới: kéo sang Hoàn thành
                         // thì thẻ hết đỏ/cam liền, không bắt người dùng tải lại trang mới thấy.
-                        $card.removeClass('card-danger card-warn');
-                        if (res.overdue) $card.addClass('card-danger');
-                        else if (res.dueSoon) $card.addClass('card-warn');
+                        $card.removeClass('card-late card-soon');
+                        if (res.overdue) $card.addClass('card-late');
+                        else if (res.dueSoon) $card.addClass('card-soon');
                         else $card.find('.js-due-badge').remove();
 
                         return;
@@ -591,4 +591,41 @@
     $(function () { init(document); });
 
     window.AppRequiredNote = { init: init };
+})(jQuery);
+
+/*
+  Thanh lọc một hàng trên các màn danh sách.
+
+  Hai việc:
+    1. Đổi ô chọn là lọc luôn, khỏi phải bấm nút. Nút "Lọc" được ẩn bằng CSS khi có
+       JavaScript (lớp .js trên thẻ html) và hiện lại khi không có, nên tắt JavaScript
+       thì bộ lọc vẫn dùng được y như cũ.
+    2. Ô đang lọc theo một giá trị thì sáng lên, để nhìn thanh là biết đang lọc theo gì
+       mà không phải mở từng ô ra xem.
+
+  Giá trị rỗng, "0" và "-1" đều là "chưa lọc" — khớp với các option đầu danh sách bên
+  view; riêng "-1" là mục "(chưa giao)" nên vẫn tính là ĐANG lọc.
+*/
+(function ($) {
+    'use strict';
+
+    document.documentElement.className += ' js';
+
+    function mark($pick) {
+        var v = $pick.val();
+        $pick.toggleClass('on', v !== '' && v !== '0');
+    }
+
+    $(function () {
+        var $picks = $('.filterbar .filter-pick');
+        if (!$picks.length) return;
+
+        $picks.each(function () { mark($(this)); });
+
+        $picks.on('change', function () {
+            var $pick = $(this);
+            mark($pick);
+            $pick.closest('form').submit();
+        });
+    });
 })(jQuery);
