@@ -30,27 +30,40 @@ namespace TTKDGP.ProjectManager.Controllers
         private const int TrendMonths = 6;
 
         [AppAuthorize(Permission = "wtasks.view")]
-        public ActionResult Index()
+        public ActionResult Index(int? year, int? month)
         {
             var userId = CurrentUserId;
             var today = DateTime.Today;
+
+            // Tháng đang xem; mặc định là tháng hiện tại. Tháng lạ (0, 13...) lùi về tháng này chứ
+            // không báo lỗi — người dùng sửa tay trên URL không đáng bị chặn màn hình.
+            var y = year.HasValue && year.Value >= 2000 && year.Value <= 2100 ? year.Value : today.Year;
+            var m = month.HasValue && month.Value >= 1 && month.Value <= 12 ? month.Value : today.Month;
+            var viewMonth = new DateTime(y, m, 1);
 
             // Nạp một lần rồi ghép trong bộ nhớ — mọi phần bên dưới đều dùng chung danh sách này.
             var allTasks = WorkService.AllTasks();
             var mine = WorkService.TasksOfUser(userId, allTasks);
 
+            // Việc của tháng đang xem. Dùng chung phép xét tháng với bộ chấm KPI để hai nơi không
+            // ra hai danh sách khác nhau cho cùng một tháng.
+            var mineInMonth = mine.Where(t => KpiService.TaskInMonth(t, y, m)).ToList();
+
             var model = new DashboardViewModel
             {
                 UserFullName = CurrentUser == null ? "" : CurrentUser.FullName,
                 Today = today,
-                Year = today.Year,
-                Month = today.Month,
+                Year = y,
+                Month = m,
+                IsCurrentMonth = y == today.Year && m == today.Month,
 
+                // Việc cần làm gấp lấy trên TOÀN BỘ việc chưa xong, không bó theo tháng đang xem:
+                // việc quá hạn từ tháng trước vẫn là việc phải xử lý ngay, giấu đi thì hỏng mục đích.
                 MyTasks = BuildMyTasks(mine, today),
-                MyKpi = BuildMyKpi(userId, today),
-                MyLeave = BuildMyLeave(userId, today),
-                StateChart = BuildStateChart(mine),
-                TrendChart = BuildTrendChart(mine, today),
+                MyKpi = BuildMyKpi(userId, viewMonth),
+                MyLeave = BuildMyLeave(userId, viewMonth),
+                StateChart = BuildStateChart(mineInMonth),
+                TrendChart = BuildTrendChart(mine, viewMonth),
 
                 CanSeeTeam = IsTeamManager,
                 CanApproveLeave = Can(Permissions.Leaves.Perm("approve"))
@@ -126,14 +139,14 @@ namespace TTKDGP.ProjectManager.Controllers
         /// Số việc hoàn thành theo từng tháng trong nửa năm gần đây, cho biểu đồ đường.
         /// Mốc tính là <see cref="WorkTask.CompletedAt"/> — thời điểm việc thật sự xong.
         /// </summary>
-        private static DashboardChart BuildTrendChart(List<WorkTask> mine, DateTime today)
+        private static DashboardChart BuildTrendChart(List<WorkTask> mine, DateTime until)
         {
             var chart = new DashboardChart();
             var done = mine.Where(t => t.CompletedAt.HasValue).ToList();
 
             for (var back = TrendMonths - 1; back >= 0; back--)
             {
-                var month = today.AddMonths(-back);
+                var month = until.AddMonths(-back);
 
                 chart.Labels.Add(month.ToString("MM/yyyy"));
                 chart.Values.Add(done.Count(t => t.CompletedAt.Value.Year == month.Year
@@ -147,40 +160,41 @@ namespace TTKDGP.ProjectManager.Controllers
         /// Điểm KPI tháng đang diễn ra, tính tại chỗ để không phải chờ tới lúc chốt tháng mới thấy.
         /// Dùng bản đã chốt trong bảng nếu có, chưa có thì dựng tạm trong bộ nhớ.
         /// </summary>
-        private static KpiMonth BuildMyKpi(int userId, DateTime today)
+        private static KpiMonth BuildMyKpi(int userId, DateTime month)
         {
             if (userId <= 0) return null;
 
             var saved = Repository.KpiMonths.FirstOrDefault(
-                k => k.Year == today.Year && k.Month == today.Month && k.UserId == userId);
+                k => k.Year == month.Year && k.Month == month.Month && k.UserId == userId);
             if (saved != null) return saved;
 
             var preview = new KpiMonth
             {
-                Year = today.Year,
-                Month = today.Month,
+                Year = month.Year,
+                Month = month.Month,
                 UserId = userId,
                 UserFullName = WorkService.UserFullName(userId)
             };
 
-            KpiService.Fill(preview, KpiService.TasksOfUserInMonth(userId, today.Year, today.Month));
+            KpiService.Fill(preview, KpiService.TasksOfUserInMonth(userId, month.Year, month.Month));
             return preview;
         }
 
         /// <summary>Nghỉ phép của cá nhân trong tháng: đã nghỉ bao nhiêu và còn đơn nào chờ duyệt.</summary>
-        private static DashboardMyLeave BuildMyLeave(int userId, DateTime today)
+        private static DashboardMyLeave BuildMyLeave(int userId, DateTime month)
         {
             var result = new DashboardMyLeave
             {
-                ApprovedDays = LeaveService.ApprovedDays(userId, today.Year, today.Month)
+                ApprovedDays = LeaveService.ApprovedDays(userId, month.Year, month.Month)
             };
 
             var ofUser = LeaveService.OfUser(userId);
             result.PendingCount = ofUser.Count(l => l.State == LeaveStates.Pending);
 
-            // Đơn đã duyệt cho những ngày sắp tới — để người dùng nhớ mình sắp nghỉ.
+            // Đơn đã duyệt rơi vào tháng đang xem — xem tháng cũ thì thấy đúng lịch nghỉ tháng đó.
+            var to = month.AddMonths(1).AddDays(-1);
             result.Upcoming = ofUser
-                .Where(l => l.IsApproved && l.FromDate.Date >= today)
+                .Where(l => l.IsApproved && l.OverlapsRange(month, to))
                 .OrderBy(l => l.FromDate)
                 .Take(ListLimit)
                 .ToList();
@@ -236,8 +250,13 @@ namespace TTKDGP.ProjectManager.Controllers
     {
         public string UserFullName { get; set; }
         public DateTime Today { get; set; }
+
+        /// <summary>Tháng đang xem.</summary>
         public int Year { get; set; }
         public int Month { get; set; }
+
+        /// <summary>Đang xem tháng hiện tại hay tháng cũ — để nói rõ số liệu là tạm tính hay đã qua.</summary>
+        public bool IsCurrentMonth { get; set; }
 
         public DashboardMyTasks MyTasks { get; set; }
 

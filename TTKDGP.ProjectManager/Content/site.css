@@ -333,6 +333,11 @@ body.has-sidebar .main, body.has-sidebar .topbar-inner, body.has-sidebar .footer
 .link-quiet { color: var(--text-muted); font-size: 13px; }
 .inline-form { display: inline; margin: 0; }
 
+/* Ô chọn nằm thẳng trên thanh tiêu đề (chọn tháng ở màn Tổng quan) — không có nhãn riêng nên
+   phải tự co lại cho vừa, khác với ô chọn trong khối bộ lọc. */
+.inline-filter { display: flex; gap: 6px; margin: 0; }
+.inline-filter select { min-width: 0; width: auto; }
+
 .footer {
     border-top: 1px solid var(--border);
     background: var(--surface);
@@ -1446,6 +1451,29 @@ table.data .cell-sub.muted { font-size: 12.5px; line-height: 1.4; }
 .kpi-line:last-child { border-bottom: none; }
 .kpi-line > span { color: var(--text-muted); }
 .kpi-line > strong { font-weight: 600; text-align: right; }
+
+/* ===== Bảng tự gộp cột khi hẹp =====
+   Bảng nhiều cột trên máy nhỏ thì mỗi cột bị bóp còn một hai từ. Thay vì dựng hai khối HTML song
+   song, các cột phụ (.col-hide-sm) ẩn đi và nội dung của chúng hiện lại thành dòng tóm tắt
+   (.cell-recap) ngay dưới tên việc — cùng một dữ liệu, hai cách bày. */
+.cell-recap { display: none; }
+
+@media (max-width: 900px) {
+    table.data.table-collapse .col-hide-sm { display: none; }
+
+    table.data.table-collapse .cell-recap {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 4px;
+        font-size: 12px;
+        color: var(--text-muted);
+        line-height: 1.5;
+    }
+
+    /* Cột tên việc lấy lại toàn bộ chỗ vừa giải phóng. */
+    table.data.table-collapse tbody td:first-child { min-width: 0; }
+}
 
 /* ===== Danh sách công việc dạng dòng =====
    Thay cho bảng khi chỗ hẹp (cột nửa màn, hoặc điện thoại): bảng nhiều cột thì mỗi cột bị bóp

@@ -11,7 +11,24 @@
         <h1>Tổng quan</h1>
         <p>@Model.UserFullName · @Model.Today.ToString("dd/MM/yyyy")</p>
     </div>
-    <a class="btn btn-default" href="@Url.Action("Tasks", "MyWork")">Công việc của tôi &rarr;</a>
+    <div class="btn-row">
+        @using (Html.BeginForm("Index", "Dashboard", FormMethod.Get, new { @class = "inline-filter" }))
+        {
+            <select name="month" onchange="this.form.submit()">
+                @for (var m = 1; m <= 12; m++)
+                {
+                    <option value="@m" selected="@(Model.Month == m)">Tháng @m</option>
+                }
+            </select>
+            <select name="year" onchange="this.form.submit()">
+                @for (var y = Model.Today.Year - 2; y <= Model.Today.Year + 1; y++)
+                {
+                    <option value="@y" selected="@(Model.Year == y)">@y</option>
+                }
+            </select>
+        }
+        <a class="btn btn-default" href="@Url.Action("Tasks", "MyWork")">Công việc của tôi &rarr;</a>
+    </div>
 </div>
 
 <div class="two-col">
@@ -19,7 +36,9 @@
     <div class="card">
         <div class="card-head">
             <span>KPI tháng @Model.Month/@Model.Year</span>
-            <span class="muted" style="font-weight:400">Tạm tính theo dữ liệu hiện có</span>
+            <span class="muted" style="font-weight:400">
+                @(Model.IsCurrentMonth ? "Tạm tính theo dữ liệu hiện có" : "Tháng đã qua")
+            </span>
         </div>
         <div class="card-body">
             @if (Model.MyKpi == null)
@@ -218,7 +237,9 @@
                         <div class="task-feed-side">
                             @if (task.IsOverdue)
                             {
-                                <span class="badge badge-inactive">Trễ @task.LateDays ngày</span>
+                                @* Việc còn đang treo nên đếm từ hạn tới hôm nay; LateDays chỉ có
+                                   nghĩa khi đã hoàn thành, dùng ở đây sẽ luôn ra 0. *@
+                                <span class="badge badge-danger">Quá hạn @(-task.DaysLeft) ngày</span>
                             }
                             else
                             {

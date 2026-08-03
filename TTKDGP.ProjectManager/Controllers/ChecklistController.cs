@@ -38,7 +38,9 @@ namespace TTKDGP.ProjectManager.Controllers
 
         [AppAuthorize(Permission = "wtasks.view")]
         public ActionResult Index(int projectId, int page = 1, string view = null,
-            int wlYear = 0, int wlMonth = 0)
+            int wlYear = 0, int wlMonth = 0,
+            string q = null, int assigneeUserId = 0, string state = null, string kind = null,
+            string due = null)
         {
             var project = Repository.WorkProjects.Find(projectId);
             if (project == null || !CanViewProject(projectId)) return HttpNotFound();
@@ -63,8 +65,19 @@ namespace TTKDGP.ProjectManager.Controllers
                 CanEdit = canEditAll,
                 View = TaskViews.Parse(view),
                 AllRows = allRows,
-                Users = WorkService.ActiveUsers()
+                Users = WorkService.ActiveUsers(),
+
+                Query = q,
+                AssigneeUserId = assigneeUserId,
+                State = state,
+                Kind = kind,
+                Due = ChecklistDueFilters.Parse(due)
             };
+
+            // Các con số tổng ở đầu trang vẫn tính trên TOÀN BỘ checklist (AllRows), còn danh sách
+            // bên dưới thì theo bộ lọc — lọc mà tổng cũng đổi theo thì không còn mốc để đối chiếu.
+            var shownRows = ApplyFilter(allRows, model);
+            model.MatchCount = shownRows.Count;
 
             // Thống kê khối lượng là số liệu quản lý — chỉ dựng khi tài khoản có quyền, để nó
             // không lộ ra ở HTML của người thường dù khối có đang gập lại.
@@ -89,20 +102,87 @@ namespace TTKDGP.ProjectManager.Controllers
                 // khác không có nghĩa) và bỏ việc chưa đặt hạn hoàn thành — thẻ trên bảng là để
                 // canh hạn, việc không hạn nằm ở dạng lưới.
                 var parentIds = new HashSet<int>(tasks.Where(t => t.ParentId > 0).Select(t => t.ParentId));
-                var cardRows = allRows
+                var cardRows = shownRows
                     .Where(r => !parentIds.Contains(r.Task.Id) && r.Task.DueDate.HasValue)
                     .ToList();
 
                 model.Columns = BuildColumns(cardRows);
                 ViewBag.KanbanCardCount = cardRows.Count;
-                ViewBag.KanbanHiddenCount = allRows.Count - cardRows.Count;
+                ViewBag.KanbanHiddenCount = shownRows.Count - cardRows.Count;
             }
             else
             {
-                model.Rows = PageByRoot(allRows, page);
+                model.Rows = PageByRoot(shownRows, page);
             }
 
             return View(model);
+        }
+
+        /// <summary>
+        /// Lọc cây checklist theo điều kiện đang chọn.
+        ///
+        /// Giữ nguyên cấu trúc cây: một mục con khớp thì các mục cha của nó cũng được giữ lại, dù
+        /// bản thân chúng không khớp. Thiếu bước này thì mục con hiện ra mà không biết thuộc nhóm
+        /// nào, và phần thụt lề trông như lỗi hiển thị. Mục cha giữ theo diện này KHÔNG tính vào
+        /// số dòng khớp — nó chỉ ở đó làm ngữ cảnh.
+        /// </summary>
+        private static List<ChecklistRow> ApplyFilter(List<ChecklistRow> rows, ChecklistViewModel filter)
+        {
+            if (!filter.HasFilter) return rows;
+
+            var matched = rows.Where(r => Matches(r.Task, filter)).ToList();
+            if (matched.Count == 0) return new List<ChecklistRow>();
+
+            // Đi ngược từ dưới lên: gặp dòng cần giữ thì đánh dấu luôn mục cha của nó. Nhờ duyệt
+            // ngược, đến lượt mục cha thì nó đã được đánh dấu sẵn.
+            var keep = new HashSet<int>(matched.Select(r => r.Task.Id));
+            for (var i = rows.Count - 1; i >= 0; i--)
+            {
+                var task = rows[i].Task;
+                if (task.ParentId > 0 && keep.Contains(task.Id)) keep.Add(task.ParentId);
+            }
+
+            return rows.Where(r => keep.Contains(r.Task.Id)).ToList();
+        }
+
+        /// <summary>Một đầu việc có khớp toàn bộ điều kiện lọc đang bật không.</summary>
+        private static bool Matches(WorkTask task, ChecklistViewModel filter)
+        {
+            if (!string.IsNullOrWhiteSpace(filter.Query))
+            {
+                var needle = filter.Query.Trim();
+                var inTitle = (task.Title ?? string.Empty).IndexOf(needle, StringComparison.CurrentCultureIgnoreCase) >= 0;
+                var inCode = (task.Code ?? string.Empty).IndexOf(needle, StringComparison.CurrentCultureIgnoreCase) >= 0;
+                if (!inTitle && !inCode) return false;
+            }
+
+            // Số âm nghĩa là lọc riêng nhóm việc chưa giao cho ai.
+            if (filter.AssigneeUserId > 0 && task.AssigneeUserId != filter.AssigneeUserId) return false;
+            if (filter.AssigneeUserId < 0 && task.AssigneeUserId > 0) return false;
+
+            if (!string.IsNullOrWhiteSpace(filter.State) && task.State != filter.State) return false;
+            if (!string.IsNullOrWhiteSpace(filter.Kind) && task.Kind != filter.Kind) return false;
+
+            return MatchesDue(task, filter.Due);
+        }
+
+        /// <summary>Khớp bộ lọc nhanh theo hạn hoàn thành.</summary>
+        private static bool MatchesDue(WorkTask task, string due)
+        {
+            if (string.IsNullOrWhiteSpace(due)) return true;
+
+            if (due == ChecklistDueFilters.NoDue) return !task.DueDate.HasValue;
+            if (due == ChecklistDueFilters.Overdue) return task.IsOverdue;
+
+            if (due == ChecklistDueFilters.Soon)
+            {
+                if (TaskStates.IsClosed(task.State) || !task.DueDate.HasValue) return false;
+
+                var limit = DateTime.Today.AddDays(ChecklistDueFilters.SoonDays);
+                return !task.IsOverdue && task.DueDate.Value.Date <= limit;
+            }
+
+            return true;
         }
 
         /// <summary>

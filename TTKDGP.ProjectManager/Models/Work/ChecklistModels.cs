@@ -15,6 +15,38 @@ namespace TTKDGP.ProjectManager.Models
         }
     }
 
+    /// <summary>Các mức lọc nhanh theo hạn hoàn thành trên màn checklist.</summary>
+    public static class ChecklistDueFilters
+    {
+        /// <summary>Đã quá hạn mà chưa đóng.</summary>
+        public const string Overdue = "quahan";
+
+        /// <summary>Còn hạn nhưng tới hạn trong vòng một tuần.</summary>
+        public const string Soon = "saptoihan";
+
+        /// <summary>Chưa đặt hạn hoàn thành.</summary>
+        public const string NoDue = "chuadathan";
+
+        /// <summary>Số ngày tính là "sắp tới hạn".</summary>
+        public const int SoonDays = 7;
+
+        public static string Parse(string raw)
+        {
+            if (string.Equals(raw, Overdue, System.StringComparison.OrdinalIgnoreCase)) return Overdue;
+            if (string.Equals(raw, Soon, System.StringComparison.OrdinalIgnoreCase)) return Soon;
+            if (string.Equals(raw, NoDue, System.StringComparison.OrdinalIgnoreCase)) return NoDue;
+            return null;
+        }
+
+        public static string Display(string value)
+        {
+            if (value == Overdue) return "Quá hạn";
+            if (value == Soon) return "Sắp tới hạn";
+            if (value == NoDue) return "Chưa đặt hạn";
+            return "";
+        }
+    }
+
     /// <summary>Một dòng trên màn checklist, đã dàn phẳng từ cây.</summary>
     public class ChecklistRow
     {
@@ -72,6 +104,39 @@ namespace TTKDGP.ProjectManager.Models
 
         /// <summary>Người dùng đang hoạt động — nguồn của ô chọn người thực hiện.</summary>
         public List<User> Users { get; set; }
+
+        // ---------- Bộ lọc ----------
+
+        /// <summary>Từ khoá tìm theo mã hoặc tên công việc.</summary>
+        public string Query { get; set; }
+
+        /// <summary>Lọc theo người thực hiện; -1 nghĩa là "chưa giao cho ai".</summary>
+        public int AssigneeUserId { get; set; }
+
+        public string State { get; set; }
+        public string Kind { get; set; }
+
+        /// <summary>Lọc nhanh theo hạn, xem <see cref="ChecklistDueFilters"/>.</summary>
+        public string Due { get; set; }
+
+        /// <summary>
+        /// Số dòng khớp bộ lọc trên toàn cây (không chỉ trang đang xem) — để nói rõ đang xem
+        /// một phần chứ không phải toàn bộ checklist.
+        /// </summary>
+        public int MatchCount { get; set; }
+
+        /// <summary>Có điều kiện lọc nào đang bật không — để hiện nút bỏ lọc.</summary>
+        public bool HasFilter
+        {
+            get
+            {
+                return AssigneeUserId != 0
+                       || !string.IsNullOrWhiteSpace(Query)
+                       || !string.IsNullOrWhiteSpace(State)
+                       || !string.IsNullOrWhiteSpace(Kind)
+                       || !string.IsNullOrWhiteSpace(Due);
+            }
+        }
 
         public int TotalCount { get { return AllRows.Count; } }
         public int DoneCount { get { return AllRows.Count(r => r.Task.State == TaskStates.Done); } }

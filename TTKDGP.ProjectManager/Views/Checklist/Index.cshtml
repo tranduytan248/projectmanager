@@ -88,6 +88,89 @@
     @Html.Partial("_Workload", Model)
 }
 
+@* ----- Bộ lọc ----- *@
+<div class="card">
+    <div class="card-body">
+        @using (Html.BeginForm("Index", "Checklist", FormMethod.Get))
+        {
+            @* Giữ dự án và kiểu hiển thị khi lọc, nếu không bấm Lọc là nhảy về dạng lưới. *@
+            <input type="hidden" name="projectId" value="@Model.Project.Id" />
+            <input type="hidden" name="view" value="@Model.View" />
+
+            <div class="filters">
+                <div class="filter-field grow">
+                    <label for="q">Tìm kiếm</label>
+                    <input type="search" id="q" name="q" value="@Model.Query"
+                           placeholder="Mã hoặc tên công việc..." />
+                </div>
+
+                <div class="filter-field">
+                    <label for="assigneeUserId">Người thực hiện</label>
+                    <select id="assigneeUserId" name="assigneeUserId">
+                        <option value="0">— Tất cả —</option>
+                        <option value="-1" selected="@(Model.AssigneeUserId < 0)">(chưa giao)</option>
+                        @foreach (var u in Model.Users)
+                        {
+                            <option value="@u.Id" selected="@(Model.AssigneeUserId == u.Id)">@u.FullName</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label for="state">Trạng thái</label>
+                    <select id="state" name="state">
+                        <option value="">— Tất cả —</option>
+                        @foreach (var s in TaskStates.All)
+                        {
+                            <option value="@s" selected="@(Model.State == s)">@TaskStates.Display(s)</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label for="kind">Loại việc</label>
+                    <select id="kind" name="kind">
+                        <option value="">— Tất cả —</option>
+                        @foreach (var k in TaskKinds.InProject)
+                        {
+                            <option value="@k" selected="@(Model.Kind == k)">@TaskKinds.Display(k)</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label for="due">Hạn</label>
+                    <select id="due" name="due">
+                        <option value="">— Tất cả —</option>
+                        <option value="@ChecklistDueFilters.Overdue" selected="@(Model.Due == ChecklistDueFilters.Overdue)">@ChecklistDueFilters.Display(ChecklistDueFilters.Overdue)</option>
+                        <option value="@ChecklistDueFilters.Soon" selected="@(Model.Due == ChecklistDueFilters.Soon)">@ChecklistDueFilters.Display(ChecklistDueFilters.Soon)</option>
+                        <option value="@ChecklistDueFilters.NoDue" selected="@(Model.Due == ChecklistDueFilters.NoDue)">@ChecklistDueFilters.Display(ChecklistDueFilters.NoDue)</option>
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label>&nbsp;</label>
+                    <div class="btn-row">
+                        <button type="submit" class="btn btn-primary">Lọc</button>
+                        @if (Model.HasFilter)
+                        {
+                            <a class="btn btn-default"
+                               href="@Url.Action("Index", "Checklist", new { projectId = Model.Project.Id, view = Model.View })">Bỏ lọc</a>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (Model.HasFilter)
+        {
+            <div class="muted" style="font-size:12.5px;margin-top:10px">
+                Đang lọc: <strong>@Model.MatchCount</strong> mục khớp trên tổng số @Model.TotalCount mục.
+            </div>
+        }
+    </div>
+</div>
+
 @if (Model.View == TaskViews.Kanban)
 {
     @Html.Partial("_Kanban", Model)
@@ -98,27 +181,38 @@ else
     @if (Model.Rows.Items.Count == 0)
     {
         <div class="empty-state">
-            Checklist chưa có mục nào.
-            @if (Model.CanEdit)
+            @if (Model.HasFilter)
             {
-                <span class="hint">Thêm từng mục hoặc import từ file mẫu.</span>
+                <text>Không có mục nào khớp bộ lọc.</text>
+                <span class="hint">Thử bỏ bớt điều kiện lọc.</span>
+            }
+            else
+            {
+                <text>Checklist chưa có mục nào.</text>
+                if (Model.CanEdit)
+                {
+                    <span class="hint">Thêm từng mục hoặc import từ file mẫu.</span>
+                }
             }
         </div>
     }
     else
     {
+        @* Bảng gộp cột ở màn hẹp: các cột phụ (loại, ưu tiên, người, hạn, tiến độ, trao đổi) ẩn đi,
+           nội dung của chúng hiện lại thành một dòng tóm tắt ngay dưới tên việc. Nhờ vậy không phải
+           dựng hai khối HTML song song cho cùng một dữ liệu. *@
         <div class="table-wrap with-menu">
-            <table class="data">
+            <table class="data table-collapse">
                 <thead>
                     <tr>
                         <th>Công việc</th>
-                        <th>Loại</th>
-                        <th>Ưu tiên</th>
-                        <th>Người thực hiện</th>
-                        <th>Hạn</th>
-                        <th class="num">Tiến độ</th>
+                        <th class="col-hide-sm">Loại</th>
+                        <th class="col-hide-sm">Ưu tiên</th>
+                        <th class="col-hide-sm">Người thực hiện</th>
+                        <th class="col-hide-sm">Hạn</th>
+                        <th class="num col-hide-sm">Tiến độ</th>
                         <th>Trạng thái</th>
-                        <th class="num">Trao đổi</th>
+                        <th class="num col-hide-sm">Trao đổi</th>
                         @if (Model.CanEditAny)
                         {
                             <th></th>
@@ -141,11 +235,30 @@ else
                                     <span class="muted">@t.Code</span> <text>·</text>
                                 }
                                 @t.Title
+
+                                @* Bản tóm tắt cho màn hẹp — gom nội dung các cột bị ẩn. *@
+                                <div class="cell-recap">
+                                    <span>@TaskKinds.Display(t.Kind)</span>
+                                    <span>·</span>
+                                    <span>@(string.IsNullOrWhiteSpace(t.AssigneeName) ? "(chưa giao)" : t.AssigneeName)</span>
+                                    @if (t.DueDate.HasValue)
+                                    {
+                                        <span>·</span>
+                                        <span class="@(t.IsOverdue ? "danger-text" : "")">Hạn @t.DueDate.Value.ToString("dd/MM")</span>
+                                    }
+                                    <span>·</span>
+                                    <span>@t.Progress%</span>
+                                    @if (row.CommentCount > 0)
+                                    {
+                                        <span>·</span>
+                                        <span>@row.CommentCount trao đổi</span>
+                                    }
+                                </div>
                             </td>
-                            <td class="nowrap"><span class="badge">@TaskKinds.Display(t.Kind)</span></td>
-                            <td class="nowrap muted">@TaskPriorities.Display(t.Priority)</td>
-                            <td>@(string.IsNullOrWhiteSpace(t.AssigneeName) ? "(chưa giao)" : t.AssigneeName)</td>
-                            <td class="nowrap">
+                            <td class="nowrap col-hide-sm"><span class="badge">@TaskKinds.Display(t.Kind)</span></td>
+                            <td class="nowrap muted col-hide-sm">@TaskPriorities.Display(t.Priority)</td>
+                            <td class="col-hide-sm">@(string.IsNullOrWhiteSpace(t.AssigneeName) ? "(chưa giao)" : t.AssigneeName)</td>
+                            <td class="nowrap col-hide-sm">
                                 @if (t.DueDate.HasValue)
                                 {
                                     @t.DueDate.Value.ToString("dd/MM/yyyy")
@@ -163,7 +276,7 @@ else
                                     <span class="muted">—</span>
                                 }
                             </td>
-                            <td class="num">@t.Progress%</td>
+                            <td class="num col-hide-sm">@t.Progress%</td>
                             <td>
                                 @if (t.State == TaskStates.Done)
                                 {
@@ -174,7 +287,7 @@ else
                                     <span class="badge">@TaskStates.Display(t.State)</span>
                                 }
                             </td>
-                            <td class="num">
+                            <td class="num col-hide-sm">
                                 <a href="@Url.Action("Detail", "MyWork", new { id = t.Id })">@row.CommentCount</a>
                             </td>
                             @if (Model.CanEditAny)
