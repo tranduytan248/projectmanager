@@ -1447,6 +1447,47 @@ table.data .cell-sub.muted { font-size: 12.5px; line-height: 1.4; }
 .kpi-line > span { color: var(--text-muted); }
 .kpi-line > strong { font-weight: 600; text-align: right; }
 
+/* ===== Danh sách công việc dạng dòng =====
+   Thay cho bảng khi chỗ hẹp (cột nửa màn, hoặc điện thoại): bảng nhiều cột thì mỗi cột bị bóp
+   còn một hai từ, còn dạng này dồn thông tin phụ xuống tầng dưới nên tên việc luôn đủ chỗ. */
+.task-feed-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border-soft);
+}
+.task-feed-item:last-child { border-bottom: none; }
+.task-feed-item:hover { background: var(--state-hover); }
+
+.task-feed-main { flex: 1; min-width: 0; }
+
+.task-feed-title {
+    font-size: 13.5px;
+    line-height: 1.45;
+    /* Tên việc dài thì cắt ở dòng thứ hai, không để một mục chiếm hết danh sách. */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Tầng dưới gom dự án, hạn và tiến độ — mỗi thứ trước đây chiếm trọn một cột bảng. */
+.task-feed-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 4px;
+    font-size: 12.5px;
+    color: var(--text-muted);
+}
+
+.task-feed-side { flex: 0 0 auto; }
+
+@media (max-width: 640px) {
+    .task-feed-item { padding: 12px; }
+}
+
 /* Bảng diễn giải cách ra điểm KPI: cột dấu phép tính, cột tên, cột số.
    Bày thành phép cộng rồi phép nhân để người xem lần được điểm của mình từ đâu ra. */
 .kpi-calc { width: 100%; margin-top: 14px; border-collapse: collapse; font-size: 13.5px; }
@@ -1827,14 +1868,15 @@ label.is-required { color: var(--danger); }
 }
 
 /* Dòng bấm được để mở hộp thoại chi tiết. Con trỏ phải đổi, nếu không người dùng không đoán
-   ra là bấm được — trong lưới không có gì gợi ý điều đó. */
-tr.row-clickable { cursor: pointer; }
+   ra là bấm được — trong lưới không có gì gợi ý điều đó.
+   Không giới hạn ở thẻ tr: cùng cách bấm này còn dùng cho dòng danh sách (.task-feed-item). */
+.row-clickable { cursor: pointer; }
 tr.row-clickable:hover { background: var(--state-hover); }
 
 /* Các phần tử bên trong vẫn giữ con trỏ riêng của chúng. */
-tr.row-clickable a,
-tr.row-clickable button,
-tr.row-clickable summary { cursor: pointer; }
+.row-clickable a,
+.row-clickable button,
+.row-clickable summary { cursor: pointer; }
 
 /* Tiêu đề thẻ Kanban không còn là liên kết (cả thẻ mới là chỗ bấm), nên tự lo màu chữ. */
 .kanban-title { color: var(--text); }

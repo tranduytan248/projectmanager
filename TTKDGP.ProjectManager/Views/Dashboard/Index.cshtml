@@ -120,131 +120,117 @@
                     </div>
                 </div>
             }
-        </div>
-    </div>
 
-    @* ----- Nghỉ phép ----- *@
-    <div class="card">
-        <div class="card-head">
-            <span>Nghỉ phép</span>
-            <a class="muted" style="font-weight:400" href="@Url.Action("My", "Leaves")">Xem tất cả</a>
-        </div>
-        <div class="card-body">
-            <div class="kpi-lines">
-                <div class="kpi-line">
-                    <span>Đã nghỉ tháng @Model.Month</span>
-                    <strong>@Model.MyLeave.ApprovedDays.ToString("0.##") ngày</strong>
+            @* Nghỉ phép gộp vào đây thay vì đứng riêng một thẻ: cùng nói về ngày công của tháng,
+               mà để riêng thì nửa màn hình bên phải gần như trống. *@
+            <div class="kpi-hours">
+                <div class="kpi-hours-head">
+                    <span>Nghỉ phép</span>
+                    <a href="@Url.Action("My", "Leaves")">Xem tất cả</a>
                 </div>
-                <div class="kpi-line">
-                    <span>Đơn của tôi đang chờ duyệt</span>
-                    <strong>@Model.MyLeave.PendingCount</strong>
-                </div>
-                @if (Model.CanApproveLeave)
-                {
-                    <div class="kpi-line">
-                        <span>Chờ tôi duyệt</span>
-                        <strong>
-                            @if (Model.PendingLeaveCount > 0)
-                            {
-                                <a href="@Url.Action("Approve", "Leaves")">@Model.PendingLeaveCount đơn</a>
-                            }
-                            else
-                            {
-                                <text>0</text>
-                            }
-                        </strong>
-                    </div>
-                }
-            </div>
 
-            @if (Model.MyLeave.Upcoming.Count > 0)
-            {
-                <div class="muted" style="font-size:12.5px;margin-top:14px">Lịch nghỉ sắp tới</div>
                 <div class="kpi-lines">
+                    <div class="kpi-line">
+                        <span>Đã nghỉ tháng @Model.Month</span>
+                        <strong>@Model.MyLeave.ApprovedDays.ToString("0.##") ngày</strong>
+                    </div>
+                    <div class="kpi-line">
+                        <span>Đơn của tôi đang chờ duyệt</span>
+                        <strong>@Model.MyLeave.PendingCount</strong>
+                    </div>
+                    @if (Model.CanApproveLeave)
+                    {
+                        <div class="kpi-line">
+                            <span>Chờ tôi duyệt</span>
+                            <strong>
+                                @if (Model.PendingLeaveCount > 0)
+                                {
+                                    <a href="@Url.Action("Approve", "Leaves")">@Model.PendingLeaveCount đơn</a>
+                                }
+                                else
+                                {
+                                    <text>0</text>
+                                }
+                            </strong>
+                        </div>
+                    }
                     @foreach (var leave in Model.MyLeave.Upcoming)
                     {
                         <div class="kpi-line">
-                            <span>@LeaveKinds.Display(leave.Kind)</span>
+                            <span>Sắp nghỉ · @LeaveKinds.Display(leave.Kind)</span>
                             <strong>@leave.FromDate.ToString("dd/MM") – @leave.ToDate.ToString("dd/MM") · @leave.Days.ToString("0.##") ngày</strong>
                         </div>
                     }
                 </div>
-            }
+            </div>
         </div>
     </div>
-</div>
 
-@* ----- Việc cần làm trước ----- *@
-<div class="card">
-    <div class="card-head">
-        <span>Cần làm trước</span>
-        <span class="muted" style="font-weight:400">Quá hạn và sắp tới hạn</span>
-    </div>
-    @if (t.Focus.Count == 0)
-    {
-        <div class="empty-state">
-            @if (t.OpenCount == 0)
-            {
-                <text>Bạn không còn việc nào đang mở.</text>
-            }
-            else
-            {
-                <text>Không có việc nào quá hạn hay sắp tới hạn. Còn @t.OpenCount việc đang mở.</text>
-            }
+    @* ----- Việc cần làm trước: đặt cạnh thẻ KPI để hai khối chính cùng nằm trong một màn ----- *@
+    <div class="card">
+        <div class="card-head">
+            <span>Cần làm trước</span>
+            <span class="muted" style="font-weight:400">Quá hạn và sắp tới hạn</span>
         </div>
-    }
-    else
-    {
-        <div class="table-wrap">
-            <table class="data">
-                <thead>
-                    <tr>
-                        <th>Công việc</th>
-                        <th>Dự án</th>
-                        <th>Hạn</th>
-                        <th class="num">Tiến độ</th>
-                        <th>Trạng thái</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var task in t.Focus)
-                    {
-                        <tr class="row-clickable"
-                            data-modal-url="@Url.Action("Detail", "Checklist", new { id = task.Id })"
-                            data-modal-title="Chi tiết công việc"
-                            data-modal-size="lg">
-                            <td class="wrap-text">
+        @if (t.Focus.Count == 0)
+        {
+            <div class="empty-state">
+                @if (t.OpenCount == 0)
+                {
+                    <text>Bạn không còn việc nào đang mở.</text>
+                }
+                else
+                {
+                    <text>Không có việc nào quá hạn hay sắp tới hạn. Còn @t.OpenCount việc đang mở.</text>
+                }
+            </div>
+        }
+        else
+        {
+            @* Dạng danh sách chứ không phải bảng: cột này chỉ rộng nửa màn, mà bảng năm cột thì
+               mỗi cột bị bóp còn một hai từ. Gom mỗi việc thành một dòng hai tầng. *@
+            <div class="task-feed">
+                @foreach (var task in t.Focus)
+                {
+                    <div class="task-feed-item row-clickable"
+                         data-modal-url="@Url.Action("Detail", "Checklist", new { id = task.Id })"
+                         data-modal-title="Chi tiết công việc"
+                         data-modal-size="lg">
+                        <div class="task-feed-main">
+                            <div class="task-feed-title">
                                 @if (!string.IsNullOrWhiteSpace(task.Code))
                                 {
                                     <span class="muted">@task.Code</span> <text>·</text>
                                 }
                                 @task.Title
-                            </td>
-                            <td class="col-project">@(string.IsNullOrWhiteSpace(task.ProjectName) ? "—" : task.ProjectName)</td>
-                            <td class="nowrap">
+                            </div>
+                            <div class="task-feed-meta">
+                                <span>@(string.IsNullOrWhiteSpace(task.ProjectName) ? "Việc riêng" : task.ProjectName)</span>
                                 @if (task.DueDate.HasValue)
                                 {
-                                    @task.DueDate.Value.ToString("dd/MM/yyyy")
-                                    if (task.IsOverdue)
-                                    {
-                                        <span class="badge badge-inactive">Trễ @task.LateDays ngày</span>
-                                    }
+                                    <span>·</span>
+                                    <span>Hạn @task.DueDate.Value.ToString("dd/MM")</span>
                                 }
-                                else
-                                {
-                                    <span class="muted">—</span>
-                                }
-                            </td>
-                            <td class="num">@task.Progress%</td>
-                            <td><span class="badge">@TaskStates.Display(task.State)</span></td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    }
+                                <span>·</span>
+                                <span>@task.Progress%</span>
+                            </div>
+                        </div>
+                        <div class="task-feed-side">
+                            @if (task.IsOverdue)
+                            {
+                                <span class="badge badge-inactive">Trễ @task.LateDays ngày</span>
+                            }
+                            else
+                            {
+                                <span class="badge">@TaskStates.Display(task.State)</span>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
 </div>
-
 
 @* ----- Biểu đồ ----- *@
 <div class="two-col">
