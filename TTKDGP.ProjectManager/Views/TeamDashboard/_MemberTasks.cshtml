@@ -1,0 +1,81 @@
+﻿@model List<TTKDGP.ProjectManager.Models.WorkTask>
+@using TTKDGP.ProjectManager.Models
+@{
+    var kind = ViewBag.Kind as string;
+    var byProject = Model.GroupBy(t => t.ProjectName ?? "(ngoài dự án)")
+        .OrderBy(g => g.Key, StringComparer.CurrentCulture)
+        .ToList();
+}
+
+<p class="muted" style="margin-top:0">
+    @ViewBag.MemberName · @TaskKinds.Display(kind) · tháng @ViewBag.Month/@ViewBag.Year ·
+    <strong>@Model.Count</strong> công việc trong <strong>@byProject.Count</strong> dự án
+</p>
+
+@if (Model.Count == 0)
+{
+    <div class="empty-state">Không có công việc nào trong tháng này.</div>
+}
+else
+{
+    foreach (var group in byProject)
+    {
+        <div class="card" style="margin-bottom:14px">
+            <div class="card-head">
+                <span>@group.Key</span>
+                <span class="muted" style="font-weight:400">@group.Count() việc</span>
+            </div>
+            <div class="table-wrap">
+                <table class="data">
+                    <thead>
+                        <tr>
+                            <th>Công việc</th>
+                            <th>Hạn</th>
+                            <th class="num">Tiến độ</th>
+                            <th>Trạng thái</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var t in group)
+                        {
+                            <tr>
+                                <td class="wrap-text">
+                                    @if (!string.IsNullOrWhiteSpace(t.Code))
+                                    {
+                                        <span class="muted">@t.Code</span> <text>·</text>
+                                    }
+                                    @t.Title
+                                </td>
+                                <td class="nowrap">
+                                    @if (t.DueDate.HasValue)
+                                    {
+                                        @t.DueDate.Value.ToString("dd/MM/yyyy")
+                                        if (t.IsOverdue)
+                                        {
+                                            <span class="badge badge-danger">Quá hạn @(-t.DaysLeft) ngày</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="muted">—</span>
+                                    }
+                                </td>
+                                <td class="num">@t.Progress%</td>
+                                <td>
+                                    @if (t.State == TaskStates.Done)
+                                    {
+                                        <span class="badge badge-active">Hoàn thành @(t.IsOnTime ? "đúng hạn" : "trễ hạn")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge">@TaskStates.Display(t.State)</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+}

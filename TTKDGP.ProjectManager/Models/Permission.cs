@@ -308,6 +308,7 @@ namespace TTKDGP.ProjectManager.Models
                 Title = "Quản lý Tổ",
                 Nodes = new List<MenuNode>
                 {
+                    L("Bảng điều khiển Tổ", "TeamDashboard", Team.Perm(View)),
                     L("Dự án", "WorkProjects", WorkProjects.Perm(View)),
                     L("Giao việc riêng", "PrivateTasks", WorkTasks.Perm(Create)),
                     L("Duyệt nghỉ phép", "Leaves", Leaves.Perm("approve"), "Approve"),

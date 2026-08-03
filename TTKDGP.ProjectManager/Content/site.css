@@ -1452,6 +1452,14 @@ table.data .cell-sub.muted { font-size: 12.5px; line-height: 1.4; }
 .kpi-line > span { color: var(--text-muted); }
 .kpi-line > strong { font-weight: 600; text-align: right; }
 
+/* ===== Danh sách việc hôm nay trên bảng điều khiển Tổ =====
+   Nằm gọn trong một ô bảng nên phải tự xuống dòng, không dùng nowrap. */
+.today-list { display: flex; flex-direction: column; gap: 6px; }
+
+.today-item { font-size: 13px; line-height: 1.45; }
+.today-item > span { display: block; font-size: 12px; }
+.today-item.overdue > a { color: var(--danger); }
+
 /* ===== Bảng tự gộp cột khi hẹp =====
    Bảng nhiều cột trên máy nhỏ thì mỗi cột bị bóp còn một hai từ. Thay vì dựng hai khối HTML song
    song, các cột phụ (.col-hide-sm) ẩn đi và nội dung của chúng hiện lại thành dòng tóm tắt

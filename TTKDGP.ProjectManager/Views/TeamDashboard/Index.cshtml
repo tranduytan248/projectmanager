@@ -1,0 +1,244 @@
+﻿@model TTKDGP.ProjectManager.Controllers.TeamDashboardViewModel
+@using TTKDGP.ProjectManager.Models
+@{
+    ViewBag.Title = "Bảng điều khiển Tổ";
+}
+
+<div class="page-head">
+    <div>
+        <h1>Bảng điều khiển Tổ</h1>
+        <p>
+            @Model.Members.Count thành viên · @Model.Today.ToString("dd/MM/yyyy")
+            @if (Model.IdleCount > 0)
+            {
+                <strong style="color:var(--danger)">· @Model.IdleCount người chưa có việc hôm nay</strong>
+            }
+        </p>
+    </div>
+    <div class="btn-row">
+        @using (Html.BeginForm("Index", "TeamDashboard", FormMethod.Get, new { @class = "inline-filter" }))
+        {
+            <select name="month" onchange="this.form.submit()">
+                @for (var m = 1; m <= 12; m++)
+                {
+                    <option value="@m" selected="@(Model.Month == m)">Tháng @m</option>
+                }
+            </select>
+            <select name="year" onchange="this.form.submit()">
+                @for (var y = Model.Today.Year - 2; y <= Model.Today.Year + 1; y++)
+                {
+                    <option value="@y" selected="@(Model.Year == y)">@y</option>
+                }
+            </select>
+        }
+    </div>
+</div>
+
+@* ----- 1. Hôm nay ai đang làm gì ----- *@
+<div class="card">
+    <div class="card-head">
+        <span>Công việc hôm nay</span>
+        <span class="muted" style="font-weight:400">
+            @Model.Today.ToString("dd/MM/yyyy") · việc chưa xong có khoảng thời gian phủ hôm nay
+        </span>
+    </div>
+    @if (Model.Members.Count == 0)
+    {
+        <div class="empty-state">Chưa có tài khoản nào đang hoạt động.</div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="data table-collapse">
+                <thead>
+                    <tr>
+                        <th>Thành viên</th>
+                        <th class="num">Việc hôm nay</th>
+                        <th>Đang làm gì</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.Members)
+                    {
+                        <tr class="@(row.Today.Count == 0 ? "row-due-danger" : "")">
+                            <td class="col-name">
+                                @row.FullName
+                                <div class="cell-recap">
+                                    @if (row.Today.Count == 0)
+                                    {
+                                        <span class="danger-text">Chưa có việc hôm nay</span>
+                                    }
+                                    else
+                                    {
+                                        <span>@row.Today.Count việc</span>
+                                        foreach (var task in row.Today.Take(3))
+                                        {
+                                            <span>·</span>
+                                            <span>@task.Title</span>
+                                        }
+                                    }
+                                </div>
+                            </td>
+                            <td class="num col-hide-sm">
+                                @if (row.Today.Count == 0)
+                                {
+                                    <span class="badge badge-danger">0</span>
+                                }
+                                else
+                                {
+                                    <strong>@row.Today.Count</strong>
+                                    if (row.OverdueToday > 0)
+                                    {
+                                        <div class="cell-sub muted">@row.OverdueToday quá hạn</div>
+                                    }
+                                }
+                            </td>
+                            <td class="col-hide-sm">
+                                @if (row.Today.Count == 0)
+                                {
+                                    <span class="muted">Không có việc nào đang phải làm — nên hỏi lại PM hoặc thành viên.</span>
+                                }
+                                else
+                                {
+                                    <div class="today-list">
+                                        @foreach (var task in row.Today)
+                                        {
+                                            <div class="today-item @(task.IsOverdue ? "overdue" : "")">
+                                                <a href="@Url.Action("Detail", "MyWork", new { id = task.TaskId })"
+                                                   data-modal-url="@Url.Action("Detail", "Checklist", new { id = task.TaskId })"
+                                                   data-modal-title="Chi tiết công việc"
+                                                   data-modal-size="lg">@task.Title</a>
+                                                <span class="muted">
+                                                    @(string.IsNullOrWhiteSpace(task.ProjectName) ? "Việc riêng" : task.ProjectName)
+                                                    · @task.Progress% · @TaskStates.Display(task.State)
+                                                    @if (task.IsOverdue)
+                                                    {
+                                                        <text>· </text><span class="danger-text">quá hạn</span>
+                                                    }
+                                                </span>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@* ----- 2. KPI tạm tính từng người ----- *@
+<div class="card">
+    <div class="card-head">
+        <span>KPI tháng @Model.Month/@Model.Year</span>
+        <span class="muted" style="font-weight:400">
+            @(Model.IsCurrentMonth ? "Tạm tính theo dữ liệu hiện có" : "Tháng đã qua")
+        </span>
+    </div>
+    <div class="table-wrap">
+        <table class="data table-collapse">
+            <thead>
+                <tr>
+                    <th class="num">STT</th>
+                    <th>Tên</th>
+                    <th class="num">KPI tạm tính</th>
+                    <th class="col-hide-sm">Xếp loại</th>
+                    <th class="num col-hide-sm">Giờ công</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{ var stt = 0; }
+                @foreach (var row in Model.Members.OrderByDescending(r => r.Kpi.FinalPoint))
+                {
+                    stt++;
+                    <tr>
+                        <td class="num">@stt</td>
+                        <td class="col-name">
+                            <a href="@Url.Action("Detail", "Kpi", new { year = Model.Year, month = Model.Month, userId = row.UserId })">@row.FullName</a>
+                            <div class="cell-recap">
+                                <span>@row.Kpi.FinalPoint.ToString("0.##") điểm</span>
+                                <span>·</span>
+                                <span>@row.Kpi.Rank</span>
+                                <span>·</span>
+                                <span>@row.Kpi.WorkedHours.ToString("0.#")/@row.Kpi.RequiredHours.ToString("0.#") giờ</span>
+                            </div>
+                        </td>
+                        <td class="num"><strong>@row.Kpi.FinalPoint.ToString("0.##")</strong></td>
+                        <td class="col-hide-sm">
+                            <span class="@KpiRanks.BadgeClass(row.Kpi.Rank)">@row.Kpi.Rank</span>
+                        </td>
+                        <td class="num col-hide-sm">
+                            @row.Kpi.WorkedHours.ToString("0.#")/@row.Kpi.RequiredHours.ToString("0.#")
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@* ----- 3. Số dự án mỗi người đang gánh ----- *@
+<div class="card">
+    <div class="card-head">
+        <span>Dự án theo thành viên</span>
+        <span class="muted" style="font-weight:400">Bấm vào số để xem danh sách công việc</span>
+    </div>
+    <div class="table-wrap">
+        <table class="data table-collapse">
+            <thead>
+                <tr>
+                    <th class="num">STT</th>
+                    <th>Tên</th>
+                    <th class="num">Triển khai</th>
+                    <th class="num">Hỗ trợ</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{ var no = 0; }
+                @foreach (var row in Model.Members.OrderByDescending(r => r.ImplementProjects + r.SupportProjects))
+                {
+                    no++;
+                    <tr>
+                        <td class="num">@no</td>
+                        <td class="col-name">
+                            @row.FullName
+                            <div class="cell-recap">
+                                <span>Triển khai @row.ImplementProjects dự án</span>
+                                <span>·</span>
+                                <span>Hỗ trợ @row.SupportProjects dự án</span>
+                            </div>
+                        </td>
+                        <td class="num">
+                            @if (row.ImplementProjects > 0)
+                            {
+                                <a href="#"
+                                   data-modal-url="@Url.Action("MemberTasks", "TeamDashboard", new { userId = row.UserId, year = Model.Year, month = Model.Month, kind = TaskKinds.Checklist })"
+                                   data-modal-title="Công việc triển khai — @row.FullName"
+                                   data-modal-size="lg">@row.ImplementProjects</a>
+                            }
+                            else
+                            {
+                                <span class="muted">0</span>
+                            }
+                        </td>
+                        <td class="num">
+                            @if (row.SupportProjects > 0)
+                            {
+                                <a href="#"
+                                   data-modal-url="@Url.Action("MemberTasks", "TeamDashboard", new { userId = row.UserId, year = Model.Year, month = Model.Month, kind = TaskKinds.Support })"
+                                   data-modal-title="Công việc hỗ trợ — @row.FullName"
+                                   data-modal-size="lg">@row.SupportProjects</a>
+                            }
+                            else
+                            {
+                                <span class="muted">0</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
