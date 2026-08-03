@@ -49,9 +49,45 @@
                         <span>Giao việc riêng</span>
                         <strong>@Model.MyKpi.AssignedDone/@Model.MyKpi.AssignedTotal việc · @Model.MyKpi.AssignedPoint.ToString("0.##") điểm</strong>
                     </div>
-                    <div class="kpi-line">
-                        <span>Ngày công chuẩn</span>
-                        <strong>@Model.MyKpi.StandardDays ngày</strong>
+                </div>
+
+                @* Giờ công: thiếu giờ thì KPI bị nhân theo tỷ lệ, nên phải nói rõ còn thiếu bao nhiêu. *@
+                <div class="kpi-hours">
+                    <div class="kpi-hours-head">
+                        <span>Giờ làm việc tháng @Model.Month</span>
+                        <strong>@Model.MyKpi.WorkedHours.ToString("0.#")/@Model.MyKpi.RequiredHours.ToString("0.#") giờ</strong>
+                    </div>
+
+                    <div class="progress-track">
+                        <div class="progress-fill @(Model.HoursShort > 0 ? "warn" : "")"
+                             style="width:@Model.HoursPercent%"></div>
+                    </div>
+
+                    <div class="kpi-hours-note">
+                        @if (Model.HoursShort > 0)
+                        {
+                            <span class="danger-text">Còn thiếu @Model.HoursShort.ToString("0.#") giờ</span>
+                            <text> — tương đương @Model.DaysShort.ToString("0.#") ngày công. KPI đang bị nhân theo tỷ lệ @Model.MyKpi.AttendanceRate.ToString("0.##")%.</text>
+                        }
+                        else
+                        {
+                            <span class="ok-text">Đã đủ giờ công</span>
+                            <text> — KPI không bị trừ theo ngày công.</text>
+                        }
+                    </div>
+
+                    <div class="kpi-lines">
+                        <div class="kpi-line">
+                            <span>Ngày công chuẩn</span>
+                            <strong>@Model.MyKpi.StandardDays ngày</strong>
+                        </div>
+                        @if (Model.MyKpi.LeaveDays > 0)
+                        {
+                            <div class="kpi-line">
+                                <span>Trừ nghỉ phép</span>
+                                <strong>@Model.MyKpi.LeaveDays.ToString("0.##") ngày</strong>
+                            </div>
+                        }
                     </div>
                 </div>
             }

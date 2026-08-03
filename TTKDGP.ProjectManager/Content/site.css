@@ -1444,6 +1444,28 @@ table.data .cell-sub.muted { font-size: 12.5px; line-height: 1.4; }
 .kpi-line > span { color: var(--text-muted); }
 .kpi-line > strong { font-weight: 600; text-align: right; }
 
+/* Khối giờ công: tách khỏi phần điểm bằng một đường kẻ, vì đây là thước đo khác. */
+.kpi-hours { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-soft); }
+
+.kpi-hours-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+    font-size: 13.5px;
+}
+.kpi-hours-head > span { color: var(--text-muted); }
+
+.kpi-hours-note { margin-top: 8px; font-size: 12.5px; color: var(--text-muted); line-height: 1.5; }
+
+.danger-text { color: var(--danger); font-weight: 600; }
+.ok-text { color: var(--success); font-weight: 600; }
+
+/* Chưa đủ giờ thì thanh chuyển màu cảnh báo — xanh lá dễ bị hiểu là đã xong. */
+.progress-fill.warn { background: var(--warn); }
+
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
 
 /* Thẻ trong lưới đã có khoảng cách của lưới; giữ thêm margin của .card thì hai cột cao lệch

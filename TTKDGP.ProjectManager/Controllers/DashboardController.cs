@@ -261,6 +261,39 @@ namespace TTKDGP.ProjectManager.Controllers
         /// <summary>Số đơn nghỉ phép toàn hệ thống đang chờ duyệt; chỉ có nghĩa khi được duyệt phép.</summary>
         public int PendingLeaveCount { get; set; }
 
+        /// <summary>
+        /// Số giờ còn thiếu so với yêu cầu của tháng; 0 khi đã đủ. Thiếu giờ thì KPI bị nhân theo
+        /// tỷ lệ ngày công, nên đây là con số người dùng cần biết để còn kịp bù.
+        /// </summary>
+        public decimal HoursShort
+        {
+            get
+            {
+                if (MyKpi == null) return 0;
+
+                var missing = MyKpi.RequiredHours - MyKpi.WorkedHours;
+                return missing > 0 ? Math.Round(missing, 1) : 0;
+            }
+        }
+
+        /// <summary>Số giờ còn thiếu quy ra ngày công, cho dễ hình dung.</summary>
+        public decimal DaysShort
+        {
+            get { return Math.Round(HoursShort / KpiService.HoursPerDay, 1); }
+        }
+
+        /// <summary>Phần trăm giờ đã làm so với yêu cầu, chặn trên 100 để thanh không tràn.</summary>
+        public int HoursPercent
+        {
+            get
+            {
+                if (MyKpi == null || MyKpi.RequiredHours <= 0) return 100;
+
+                var percent = (int)Math.Round(MyKpi.WorkedHours * 100 / MyKpi.RequiredHours);
+                return percent > 100 ? 100 : percent;
+            }
+        }
+
         public DashboardViewModel()
         {
             MyTasks = new DashboardMyTasks();
