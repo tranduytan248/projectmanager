@@ -30,7 +30,10 @@ namespace TTKDGP.ProjectManager.Controllers
             var m = month.HasValue && month.Value >= 1 && month.Value <= 12 ? month.Value : today.Month;
 
             // Nạp một lần rồi ghép trong bộ nhớ — ba khối bên dưới đều dùng chung các danh sách này.
-            var users = WorkService.ActiveUsers();
+            //
+            // Bỏ lãnh đạo Tổ khỏi bảng: họ không nhận đầu việc như nhân sự thực thi nên dòng của
+            // họ luôn rỗng, vừa làm loãng danh sách vừa kéo lệch các con số trung bình.
+            var users = WorkService.TrackedUsers();
             var allTasks = WorkService.AllTasks();
             var projects = Repository.WorkProjects.All();
 
@@ -86,6 +89,12 @@ namespace TTKDGP.ProjectManager.Controllers
             foreach (var task in mine)
             {
                 if (TaskStates.IsClosed(task.State)) continue;
+
+                // Việc tạm dừng không phải "việc hôm nay": nó đang vướng ở đâu đó chờ gỡ chứ
+                // không ai làm. Để lẫn vào đây thì con số bên cột đếm nói người này đang bận,
+                // trong khi thực tế họ đang rảnh — đúng chỗ Quản lý Tổ cần nhìn ra để hỏi lại.
+                if (task.State == TaskStates.Paused) continue;
+
                 if (!task.DueDate.HasValue) continue;
                 if (!KpiService.TaskInMonth(task, year, month)) continue;
 

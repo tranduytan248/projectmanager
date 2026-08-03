@@ -230,10 +230,7 @@ namespace TTKDGP.ProjectManager.Controllers
 
             ViewBag.States = TaskStates.All;
             ViewBag.CanReport = CanEditTask(task);
-            ViewBag.Comments = Repository.WorkComments.All()
-                .Where(c => c.TaskId == id)
-                .OrderBy(c => c.CreatedAt)
-                .ToList();
+            ViewBag.Comments = WorkService.CommentsOfTask(id);
 
             return View(task);
         }

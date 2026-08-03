@@ -42,6 +42,7 @@ namespace TTKDGP.ProjectManager.Services
         static WorkService()
         {
             Repository.WorkTasks.Changed += ClearTaskIndex;
+            Repository.WorkComments.Changed += ClearCommentIndex;
         }
 
         // ---------- Người dùng ----------
@@ -56,6 +57,33 @@ namespace TTKDGP.ProjectManager.Services
                 .Where(u => u.IsActive)
                 .OrderBy(u => u.FullName, StringComparer.CurrentCulture)
                 .ToList();
+        }
+
+        /// <summary>
+        /// Tài khoản này có phải lãnh đạo Tổ không — xét theo quyền xem Bảng điều khiển Tổ.
+        ///
+        /// Nhận theo QUYỀN chứ không theo tên hay Id: đổi người phụ trách hay thêm phó Tổ thì chỉ
+        /// việc gán nhóm quyền, không phải sửa lại mã nguồn. Đây cũng đúng định nghĩa — ai được
+        /// xem bảng theo dõi của cả Tổ thì chính là người quản lý Tổ.
+        /// </summary>
+        public static bool IsTeamLead(User user)
+        {
+            return user != null
+                && Permissions.UserHas(user.Role, Permissions.Team.Perm(Permissions.View));
+        }
+
+        /// <summary>
+        /// Nhân sự để theo dõi khối lượng và KPI — là <see cref="ActiveUsers"/> trừ đi lãnh đạo Tổ.
+        ///
+        /// Lãnh đạo Tổ không nhận đầu việc như nhân sự thực thi nên để tên họ trong các bảng theo
+        /// dõi chỉ tạo ra một dòng rỗng, làm loãng danh sách và kéo lệch các con số trung bình.
+        ///
+        /// KHÔNG dùng cho ô chọn "giao việc cho ai" hay "PM của dự án" — mấy chỗ đó vẫn phải có
+        /// đủ mọi người, nên chúng tiếp tục gọi <see cref="ActiveUsers"/>.
+        /// </summary>
+        public static List<User> TrackedUsers()
+        {
+            return ActiveUsers().Where(u => !IsTeamLead(u)).ToList();
         }
 
         public static string UserFullName(int userId)
@@ -418,19 +446,72 @@ namespace TTKDGP.ProjectManager.Services
 
         // ---------- Trao đổi ----------
 
+        /// <summary>Tên nhóm bộ đệm của chỉ mục trao đổi theo đầu việc.</summary>
+        private const string CommentIndexGroup = "wcomments";
+
+        /// <summary>
+        /// Trao đổi của từng đầu việc, gom sẵn theo Id đầu việc và sắp theo thứ tự gửi.
+        ///
+        /// Mở hộp thoại chi tiết trước đây phải duyệt TOÀN BỘ bảng trao đổi chỉ để nhặt ra vài lượt
+        /// của một đầu việc — bảng này phình nhanh nhất theo thời gian nên càng dùng càng chậm.
+        /// Gom một lượt rồi tra theo khoá, và bỏ chỉ mục mỗi khi có lượt trao đổi mới.
+        /// </summary>
+        private static Dictionary<int, List<WorkComment>> CommentIndex()
+        {
+            return AppCache.GetOrAdd(AppCache.Key(CommentIndexGroup), () =>
+            {
+                var index = new Dictionary<int, List<WorkComment>>();
+
+                foreach (var comment in Repository.WorkComments.All().OrderBy(c => c.CreatedAt))
+                {
+                    List<WorkComment> list;
+                    if (!index.TryGetValue(comment.TaskId, out list))
+                    {
+                        list = new List<WorkComment>();
+                        index[comment.TaskId] = list;
+                    }
+                    list.Add(comment);
+                }
+
+                return index;
+            });
+        }
+
+        /// <summary>
+        /// Bỏ chỉ mục trao đổi đang giữ trong bộ đệm. Gọi sau mỗi lần thêm/sửa/xoá lượt trao đổi.
+        /// </summary>
+        public static void ClearCommentIndex()
+        {
+            AppCache.RemoveGroup(CommentIndexGroup);
+        }
+
+        /// <summary>Các lượt trao đổi của một đầu việc, cũ trước mới sau.</summary>
+        public static List<WorkComment> CommentsOfTask(int taskId)
+        {
+            var index = CommentIndex();
+            if (index == null) return new List<WorkComment>();
+
+            List<WorkComment> found;
+            return index.TryGetValue(taskId, out found)
+                ? found.ToList()
+                : new List<WorkComment>();
+        }
+
         /// <summary>Số lượt trao đổi của từng đầu việc, khoá theo Id đầu việc.</summary>
         public static Dictionary<int, int> CommentCounts(IEnumerable<int> taskIds)
         {
-            var ids = new HashSet<int>(taskIds);
             var result = new Dictionary<int, int>();
 
-            foreach (var comment in Repository.WorkComments.All())
-            {
-                if (comment.IsDeleted || !ids.Contains(comment.TaskId)) continue;
+            var index = CommentIndex();
+            if (index == null) return result;
 
-                int count;
-                result.TryGetValue(comment.TaskId, out count);
-                result[comment.TaskId] = count + 1;
+            foreach (var taskId in new HashSet<int>(taskIds))
+            {
+                List<WorkComment> list;
+                if (!index.TryGetValue(taskId, out list)) continue;
+
+                var count = list.Count(c => !c.IsDeleted);
+                if (count > 0) result[taskId] = count;
             }
 
             return result;

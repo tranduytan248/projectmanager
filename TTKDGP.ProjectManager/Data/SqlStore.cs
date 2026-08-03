@@ -29,6 +29,21 @@ namespace TTKDGP.ProjectManager.Data
         private List<T> _items;
         private bool _schemaReady;
 
+        /// <summary>
+        /// Chỉ mục tra nhanh theo Id cho <see cref="Find"/>. Dựng lười ở lần tra đầu tiên và bị bỏ
+        /// đi ngay khi danh sách thay đổi — xem <see cref="InvalidateIndex"/>.
+        /// </summary>
+        private Dictionary<int, T> _byId;
+
+        /// <summary>
+        /// Bỏ chỉ mục Id đang giữ. Phải gọi trong lúc còn giữ khoá ghi, ở MỌI chỗ có đụng vào
+        /// <c>_items</c>: sót một chỗ là Find còn trả về bản ghi đã xoá hoặc bỏ sót bản ghi vừa thêm.
+        /// </summary>
+        private void InvalidateIndex()
+        {
+            _byId = null;
+        }
+
         /// <summary>Các thuộc tính được ánh xạ thành cột, kể cả Id. Tính một lần cho mỗi kiểu T.</summary>
         private static readonly PropertyInfo[] MappedProps = BuildMappedProps();
 
@@ -174,16 +189,34 @@ namespace TTKDGP.ProjectManager.Data
             // cột còn thiếu — CHỈ thêm, không bao giờ sửa hay xoá — để model tiến hoá được mà
             // không phải chuyển đổi CSDL bằng tay. Thiếu bước này thì ReadRow sẽ ném lỗi
             // "không tìm thấy cột" ngay khi nạp bảng cũ.
-            foreach (var p in WritableProps)
+            //
+            // Hỏi MỘT lượt xem bảng đang có cột nào, rồi mới thêm phần còn thiếu. Trước đây mỗi
+            // cột là một lượt hỏi riêng xuống máy chủ: nhân với mấy chục cột và gần ba chục bảng
+            // thành hàng trăm lượt đi về nối đuôi nhau ngay lần đầu chạm tới dữ liệu sau khi khởi
+            // động lại — trên đường truyền chập chờn thì đó là cả một khoảng chờ dài.
+            var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            using (var cmd = new SqlCommand(
+                "SELECT c.name FROM sys.columns c " +
+                "JOIN sys.tables t ON t.object_id = c.object_id WHERE t.name = @t", connection))
             {
-                var alter = string.Format(
-                    "IF COL_LENGTH(@t, @c) IS NULL EXEC('ALTER TABLE [' + @t + '] ADD [' + @c + '] {0} NULL')",
-                    SqlColumnType(p.PropertyType));
-
-                using (var cmd = new SqlCommand(alter, connection))
+                cmd.Parameters.AddWithValue("@t", _table);
+                using (var reader = cmd.ExecuteReader())
                 {
-                    cmd.Parameters.AddWithValue("@t", _table);
-                    cmd.Parameters.AddWithValue("@c", p.Name);
+                    while (reader.Read()) existing.Add(reader.GetString(0));
+                }
+            }
+
+            var missing = WritableProps.Where(p => !existing.Contains(p.Name)).ToList();
+            if (missing.Count > 0)
+            {
+                // Gộp các cột thiếu vào một câu ALTER duy nhất. Tên cột do model sinh ra chứ không
+                // phải dữ liệu người dùng nhập, nhưng vẫn nhân đôi dấu ngoặc vuông cho chắc.
+                var adds = string.Join(", ", missing.Select(p => string.Format(
+                    "[{0}] {1} NULL", p.Name.Replace("]", "]]"), SqlColumnType(p.PropertyType))));
+
+                using (var cmd = new SqlCommand(
+                    string.Format("ALTER TABLE [{0}] ADD {1}", _table.Replace("]", "]]"), adds), connection))
+                {
                     cmd.ExecuteNonQuery();
                 }
             }
@@ -216,6 +249,7 @@ namespace TTKDGP.ProjectManager.Data
                 }
 
                 _items = loaded;
+                InvalidateIndex();
             }
             finally
             {
@@ -298,13 +332,41 @@ namespace TTKDGP.ProjectManager.Data
             }
         }
 
+        /// <summary>
+        /// Tra bản ghi theo Id qua chỉ mục thay vì dò từ đầu danh sách. Find là phép hay dùng nhất
+        /// trong toàn ứng dụng — một lượt mở trang gọi hàng chục lần — nên dò tuyến tính ở đây làm
+        /// chậm đều khắp nơi khi dữ liệu nhiều dần.
+        ///
+        /// Chỉ mục dựng theo kiểu lười và bị bỏ đi mỗi khi danh sách đổi, nên không bao giờ lệch
+        /// với dữ liệu thật.
+        /// </summary>
         public T Find(int id)
         {
             EnsureLoaded();
             _lock.EnterReadLock();
             try
             {
-                return _items.FirstOrDefault(x => x.Id == id);
+                // Đọc _byId ra biến cục bộ RỒI mới dùng, và chỉ dựng trên biến cục bộ. Nhiều luồng
+                // cùng đọc có thể cùng lúc thấy chỉ mục trống và cùng dựng — chấp nhận được: mỗi
+                // luồng tra trên bản của chính mình nên kết quả luôn đúng, chỉ phí công dựng thêm
+                // một lần. Đổi sang khoá ghi để tránh phí công đó thì mọi lượt đọc phải xếp hàng,
+                // lợi bất cập hại. Tuyệt đối không đọc thẳng _byId hai lần trong hàm này: giữa hai
+                // lần đọc, một luồng ghi có thể xoá chỉ mục và biến nó thành null.
+                var index = _byId;
+                if (index == null)
+                {
+                    // Trùng Id về nguyên tắc không xảy ra (khoá chính tự tăng), nhưng dữ liệu nạp
+                    // tay từ thời JSON có thể còn sót; giữ bản ghi đầu để khớp với cách dò cũ.
+                    index = new Dictionary<int, T>();
+                    foreach (var item in _items)
+                    {
+                        if (!index.ContainsKey(item.Id)) index[item.Id] = item;
+                    }
+                    _byId = index;
+                }
+
+                T found;
+                return index.TryGetValue(id, out found) ? found : null;
             }
             finally
             {
@@ -337,6 +399,7 @@ namespace TTKDGP.ProjectManager.Data
                     InsertRow(connection, item);
                 }
                 _items.Add(item);
+                InvalidateIndex();
             }
             finally
             {
@@ -363,6 +426,7 @@ namespace TTKDGP.ProjectManager.Data
                     UpdateRow(connection, item);
                 }
                 _items[index] = item;
+                InvalidateIndex();
                 updated = true;
             }
             finally
@@ -389,6 +453,7 @@ namespace TTKDGP.ProjectManager.Data
                     DeleteRow(connection, id);
                 }
                 _items.RemoveAt(index);
+                InvalidateIndex();
                 deleted = true;
             }
             finally
@@ -417,6 +482,7 @@ namespace TTKDGP.ProjectManager.Data
                 }
 
                 _items.RemoveAll(predicate);
+                InvalidateIndex();
                 removed = toRemove.Count;
             }
             finally
@@ -498,6 +564,7 @@ namespace TTKDGP.ProjectManager.Data
                 }
 
                 _items.Add(item);
+                InvalidateIndex();
             }
             finally
             {

@@ -209,7 +209,10 @@ namespace TTKDGP.ProjectManager.Controllers
 
             var savedUserIds = new HashSet<int>(rows.Select(r => r.UserId));
 
-            foreach (var user in WorkService.ActiveUsers())
+            // Không dựng dòng tạm tính cho lãnh đạo Tổ: họ không nhận đầu việc nên dòng đó luôn
+            // 0 điểm, nhìn như người làm việc kém. Phiếu nào ĐÃ chốt sẵn thì vẫn giữ nguyên —
+            // đã có người cố ý chấm thì không tự ý giấu đi.
+            foreach (var user in WorkService.TrackedUsers())
             {
                 if (userId.HasValue && userId.Value > 0 && user.Id != userId.Value) continue;
                 if (savedUserIds.Contains(user.Id)) continue;

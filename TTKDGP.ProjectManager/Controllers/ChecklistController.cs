@@ -326,10 +326,7 @@ namespace TTKDGP.ProjectManager.Controllers
                 TaskId = task.Id,
                 CurrentUserId = CurrentUserId,
                 CanModerate = CanEditProject(task.ProjectId),
-                Comments = Repository.WorkComments.All()
-                    .Where(c => c.TaskId == task.Id)
-                    .OrderBy(c => c.CreatedAt)
-                    .ToList(),
+                Comments = WorkService.CommentsOfTask(task.Id),
                 Participants = participants
             };
         }

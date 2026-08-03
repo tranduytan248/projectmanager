@@ -355,8 +355,37 @@ namespace TTKDGP.ProjectManager.Models
         /// <summary>
         /// Hợp tất cả mã chức năng mà một tài khoản (có thể mang nhiều nhóm) được cấp.
         /// Nhóm mang "*" nghĩa là toàn quyền — trả về tập chứa đúng "*".
+        ///
+        /// Kết quả được nhớ trong phạm vi MỘT request: một lượt mở trang hỏi quyền rất nhiều lần
+        /// (bộ lọc AppAuthorize, ViewBag.Can trong view, rồi từng hàm CanXem/CanSua trên controller),
+        /// mà mỗi lượt hỏi đều quét lại bảng nhóm quyền. Gặp lúc SQL chập chờn thì mỗi lượt còn kéo
+        /// theo bốn lần thử mở kết nối kèm khoảng nghỉ, cộng lại thành vài giây cho một trang.
+        ///
+        /// Nhớ theo request là đủ và cũng là mức an toàn nhất: đổi quyền có hiệu lực ngay ở lượt
+        /// xem kế tiếp, không phải chờ hết hạn bộ đệm hay đăng nhập lại.
+        ///
+        /// KHÔNG bao giờ nhận tập quyền do trình duyệt gửi lên: chỉ cần sửa một dòng trong
+        /// localStorage là tự cấp được "*" — toàn quyền. Quyền phải do máy chủ tự xác định.
         /// </summary>
         public static HashSet<string> ResolvePermissions(string userRole)
+        {
+            var context = System.Web.HttpContext.Current;
+            var cacheKey = "TTKDGP:Perms:" + (userRole ?? string.Empty);
+
+            if (context != null)
+            {
+                var cached = context.Items[cacheKey] as HashSet<string>;
+                if (cached != null) return cached;
+            }
+
+            var set = Build(userRole);
+
+            if (context != null) context.Items[cacheKey] = set;
+            return set;
+        }
+
+        /// <summary>Dựng tập quyền từ dữ liệu. Tách riêng để phần nhớ tạm ở trên gọn một mạch.</summary>
+        private static HashSet<string> Build(string userRole)
         {
             var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var code in Models.Roles.Split(userRole))
@@ -367,9 +396,15 @@ namespace TTKDGP.ProjectManager.Models
                     group = Data.Repository.RoleGroups.FirstOrDefault(
                         g => g.IsActive && string.Equals(g.Code, code, StringComparison.OrdinalIgnoreCase));
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
                     // SQL chập chờn: dùng phương án dự phòng cho mã nhóm gốc.
+                    //
+                    // Có ghi lại: nuốt lỗi hoàn toàn thì lúc máy chủ SQL không tới được, mỗi lượt
+                    // hỏi quyền vẫn âm thầm chờ hết bốn lần thử mở kết nối rồi rơi về dự phòng —
+                    // người dùng chỉ thấy trang chậm, còn nhật ký thì sạch trơn, không lần ra được.
+                    System.Diagnostics.Debug.WriteLine(string.Format(
+                        "Đọc nhóm quyền '{0}' trượt, dùng quyền dự phòng: {1}", code, ex.Message));
                 }
 
                 if (group == null)

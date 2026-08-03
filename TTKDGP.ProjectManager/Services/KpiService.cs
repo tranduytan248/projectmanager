@@ -211,10 +211,16 @@ namespace TTKDGP.ProjectManager.Services
             return row;
         }
 
-        /// <summary>Tính KPI cho toàn bộ tài khoản đang kích hoạt trong một tháng.</summary>
+        /// <summary>
+        /// Tính KPI cho toàn bộ nhân sự được theo dõi trong một tháng.
+        ///
+        /// Bỏ qua lãnh đạo Tổ: hàm này GHI xuống bảng KpiMonths, nên nếu tính cả họ thì mỗi lần
+        /// bấm "Tính KPI" lại sinh ra một phiếu 0 điểm mang tên người quản lý — vừa sai nghiệp vụ
+        /// vừa kéo tụt điểm trung bình của cả Tổ.
+        /// </summary>
         public static List<KpiMonth> CalculateAll(int year, int month)
         {
-            return WorkService.ActiveUsers()
+            return WorkService.TrackedUsers()
                 .Select(u => CalculateUser(year, month, u))
                 .ToList();
         }
