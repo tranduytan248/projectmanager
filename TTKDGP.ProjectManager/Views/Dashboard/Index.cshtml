@@ -1,4 +1,5 @@
 ﻿@model TTKDGP.ProjectManager.Controllers.DashboardViewModel
+@using TTKDGP.ProjectManager.Infrastructure
 @using TTKDGP.ProjectManager.Models
 @using TTKDGP.ProjectManager.Services
 @{
@@ -97,6 +98,73 @@
                     </tbody>
                 </table>
 
+                @* Quy tắc chấm để gập lại: người xem thường chỉ cần con số, nhưng khi thắc mắc
+                   "sao lại ra điểm này" thì phải có chỗ tra ngay tại chỗ. *@
+                <details class="kpi-rules">
+                    <summary>Cách chấm điểm KPI</summary>
+                    <div class="kpi-rules-body">
+                        <p>
+                            Điểm chất lượng cộng từ ba nhóm việc, sau đó nhân với tỷ lệ giờ công của
+                            tháng. Điểm cuối làm tròn về số nguyên (từ 0,5 trở lên làm tròn lên).
+                        </p>
+
+                        <div class="kpi-rules-item">
+                            <strong>Hỗ trợ — tối đa @KpiService.SupportMaxPoint.ToString("0.##") điểm</strong>
+                            <div>
+                                Điểm = @KpiService.SupportMaxPoint.ToString("0.##") ×
+                                (số việc hoàn thành ÷ tổng số việc), rồi trừ phần báo cáo trễ.
+                                Không có việc nào thì hưởng trọn điểm — không có gì để trừ.
+                            </div>
+                            <div class="muted">
+                                Trễ: 0–1 lần không trừ · đúng 2 lần trừ @AppSettings.Kpi.SupportLate2Penalty.ToString("0.##") ·
+                                hơn 2 lần trừ @AppSettings.Kpi.SupportLateMorePenalty.ToString("0.##")
+                            </div>
+                        </div>
+
+                        <div class="kpi-rules-item">
+                            <strong>Triển khai — tối đa @KpiService.ExecuteMaxPoint.ToString("0.##") điểm</strong>
+                            <div>
+                                Cách tính giống nhóm hỗ trợ, nhưng mỗi lần báo cáo trễ trừ
+                                @AppSettings.Kpi.ExecuteLatePenalty.ToString("0.##") điểm.
+                            </div>
+                        </div>
+
+                        <div class="kpi-rules-item">
+                            <strong>Giao việc riêng — điểm cộng</strong>
+                            <div>
+                                Mỗi việc mang sẵn mức điểm cộng ấn định lúc giao, chỉ tính khi hoàn
+                                thành <strong>đúng hạn</strong>.
+                            </div>
+                        </div>
+
+                        <div class="kpi-rules-item">
+                            <strong>Tỷ lệ giờ công</strong>
+                            <div>
+                                Giờ yêu cầu = (ngày công chuẩn − ngày nghỉ phép đã duyệt) × @KpiService.HoursPerDay giờ.
+                                Giờ đã làm đếm theo <strong>ngày làm việc riêng biệt</strong> của các việc đang làm
+                                hoặc đã xong — nhiều việc cùng một khoảng chỉ tính một lần, không nhân lên
+                                theo số đầu việc.
+                            </div>
+                            <div class="muted">
+                                Đủ giờ thì giữ nguyên điểm chất lượng; thiếu giờ thì nhân theo tỷ lệ (chặn trên 100%).
+                            </div>
+                        </div>
+
+                        <div class="kpi-rules-item">
+                            <strong>Xếp loại</strong>
+                            <div>
+                                Từ 100 điểm: Xuất sắc · từ 95: Tốt · từ 90: Khá · từ 80: Đạt ·
+                                dưới 80: Chưa đạt.
+                            </div>
+                        </div>
+
+                        <div class="muted">
+                            "Báo cáo trễ" là việc hoàn thành sau hạn. Việc quá hạn còn treo không tính
+                            vào đây — nó đã bị trừ qua tỷ lệ hoàn thành. Việc đã huỷ không được chấm.
+                        </div>
+                    </div>
+                </details>
+
                 @* Giờ công: thiếu giờ thì KPI bị nhân theo tỷ lệ, nên phải nói rõ còn thiếu bao nhiêu. *@
                 <div class="kpi-hours">
                     <div class="kpi-hours-head">
@@ -189,18 +257,18 @@
     <div class="card">
         <div class="card-head">
             <span>Cần làm trước</span>
-            <span class="muted" style="font-weight:400">Quá hạn và sắp tới hạn</span>
+            <span class="muted" style="font-weight:400">Tháng @Model.Month · quá hạn và sắp tới hạn</span>
         </div>
         @if (t.Focus.Count == 0)
         {
             <div class="empty-state">
                 @if (t.OpenCount == 0)
                 {
-                    <text>Bạn không còn việc nào đang mở.</text>
+                    <text>Không có việc nào đang mở trong tháng @Model.Month.</text>
                 }
                 else
                 {
-                    <text>Không có việc nào quá hạn hay sắp tới hạn. Còn @t.OpenCount việc đang mở.</text>
+                    <text>Không có việc nào quá hạn hay sắp tới hạn trong tháng @Model.Month. Còn @t.OpenCount việc đang mở.</text>
                 }
             </div>
         }

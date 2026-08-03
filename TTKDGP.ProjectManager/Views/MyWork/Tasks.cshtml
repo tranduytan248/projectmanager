@@ -69,6 +69,29 @@
                     </select>
                 </div>
 
+                @* Tháng và năm đi thành cặp: chọn một mình thì chưa xác định được kỳ nào. *@
+                <div class="filter-field">
+                    <label for="month">Tháng</label>
+                    <select id="month" name="month">
+                        <option value="0">— Tất cả —</option>
+                        @for (var m = 1; m <= 12; m++)
+                        {
+                            <option value="@m" selected="@(Model.Month == m)">Tháng @m</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label for="year">Năm</label>
+                    <select id="year" name="year">
+                        <option value="0">—</option>
+                        @for (var y = DateTime.Today.Year - 2; y <= DateTime.Today.Year + 1; y++)
+                        {
+                            <option value="@y" selected="@(Model.Year == y)">@y</option>
+                        }
+                    </select>
+                </div>
+
                 <div class="btn-row" style="padding-bottom:1px">
                     <button type="submit" class="btn btn-primary">Lọc</button>
                     @if (Model.HasFilter)

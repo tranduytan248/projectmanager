@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Web;
@@ -263,12 +264,28 @@ namespace TTKDGP.ProjectManager.Services
 
                 ThreadPool.QueueUserWorkItem(_ =>
                 {
-                    try { EmailClient.Send(to, subject, body); }
-                    catch (Exception) { /* mail là kênh phụ — lỗi thì thôi */ }
+                    // Mail là kênh phụ nên lỗi KHÔNG được làm hỏng thao tác đang chạy, nhưng phải
+                    // để lại dấu vết: nuốt trọn thì máy chủ ngừng gửi mail cả tháng cũng không ai
+                    // hay. Trace ghi được cả ở bản Release, khác với Debug.
+                    try
+                    {
+                        var result = EmailClient.Send(to, subject, body);
+                        if (result != null && !result.Ok)
+                        {
+                            Trace.WriteLine(string.Format(
+                                "[Email] Gui that bai toi {0} (mau {1}): {2}", to, code, result.Error));
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Trace.WriteLine(string.Format(
+                            "[Email] Loi gui toi {0} (mau {1}): {2}", to, code, ex.Message));
+                    }
                 });
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Trace.WriteLine(string.Format("[Email] Loi dung noi dung (mau {0}): {1}", code, ex.Message));
             }
         }
 

@@ -123,8 +123,11 @@ namespace TTKDGP.ProjectManager.Services
         }
 
         /// <summary>
-        /// Báo cho người vừa được giao một việc riêng (web + email). Mail kèm liên kết file đính
-        /// kèm của việc nếu có — liên kết đi qua action có kiểm quyền nên phải đăng nhập mới tải.
+        /// Báo cho người vừa được giao một đầu việc (web + email). Dùng cho CẢ việc riêng lẫn việc
+        /// trong dự án — chữ trong thông báo tự đổi theo loại, còn mẫu mail thì dùng chung.
+        ///
+        /// Mail kèm liên kết file đính kèm của việc nếu có — liên kết đi qua action có kiểm quyền
+        /// nên phải đăng nhập mới tải.
         /// </summary>
         public static void TaskAssigned(WorkTask task, string assignerName)
         {
@@ -133,8 +136,13 @@ namespace TTKDGP.ProjectManager.Services
             var assigner = string.IsNullOrWhiteSpace(assignerName) ? "Quản lý Tổ" : assignerName;
             var due = task.DueDate.HasValue ? task.DueDate.Value.ToString("dd/MM/yyyy") : "—";
 
+            // Việc trong dự án thì nói rõ dự án nào; việc riêng thì gọi đúng tên "việc riêng".
+            var what = string.IsNullOrWhiteSpace(task.ProjectName)
+                ? "việc riêng"
+                : string.Format("việc thuộc dự án {0}", task.ProjectName);
+
             var n = Add(task.AssigneeUserId, NotificationTypes.TaskAssigned,
-                string.Format("{0} giao cho bạn việc riêng \"{1}\" — hạn {2}.", assigner, task.Title, due),
+                string.Format("{0} giao cho bạn {1} \"{2}\" — hạn {3}.", assigner, what, task.Title, due),
                 task.ProjectId, task.Id);
 
             var attachmentHtml = task.HasAttachment
@@ -151,7 +159,8 @@ namespace TTKDGP.ProjectManager.Services
                     { "TenCongViec", task.Title },
                     { "NoiDung", task.Description ?? string.Empty },
                     { "HanHoanThanh", due },
-                    { "DiemCong", task.BonusPercent.ToString("0.#") + "%" },
+                    // Điểm cộng chỉ có ở việc riêng; việc trong dự án chấm theo bộ 30/70 nên để "—".
+                    { "DiemCong", task.BonusPercent > 0 ? task.BonusPercent.ToString("0.#") + "%" : "—" },
                     { "LienKet", OpenLink(n) }
                 },
                 new Dictionary<string, string> { { "TepDinhKem", attachmentHtml } });

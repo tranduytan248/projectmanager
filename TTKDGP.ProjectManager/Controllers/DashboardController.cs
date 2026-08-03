@@ -57,9 +57,7 @@ namespace TTKDGP.ProjectManager.Controllers
                 Month = m,
                 IsCurrentMonth = y == today.Year && m == today.Month,
 
-                // Việc cần làm gấp lấy trên TOÀN BỘ việc chưa xong, không bó theo tháng đang xem:
-                // việc quá hạn từ tháng trước vẫn là việc phải xử lý ngay, giấu đi thì hỏng mục đích.
-                MyTasks = BuildMyTasks(mine, today),
+                MyTasks = BuildMyTasks(mineInMonth, today),
                 MyKpi = BuildMyKpi(userId, viewMonth),
                 MyLeave = BuildMyLeave(userId, viewMonth),
                 StateChart = BuildStateChart(mineInMonth),
@@ -83,10 +81,13 @@ namespace TTKDGP.ProjectManager.Controllers
         }
 
         /// <summary>
-        /// Việc của cá nhân: đếm theo trạng thái và lấy vài việc đáng làm trước.
+        /// Việc của cá nhân trong THÁNG ĐANG XEM: đếm theo trạng thái và lấy vài việc đáng làm trước.
         ///
         /// "Đáng làm trước" xếp theo: quá hạn lâu nhất, rồi đến hạn gần nhất. Việc không có hạn
         /// xuống cuối — không có hạn thì không thể nói là gấp.
+        ///
+        /// Bó theo tháng nên việc quá hạn từ tháng trước không hiện ở đây; muốn thấy thì chuyển ô
+        /// chọn về tháng đó, hoặc xem màn "Công việc của tôi" vốn liệt kê mọi tháng.
         /// </summary>
         private static DashboardMyTasks BuildMyTasks(List<WorkTask> mine, DateTime today)
         {

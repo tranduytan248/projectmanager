@@ -24,7 +24,7 @@ namespace TTKDGP.ProjectManager.Controllers
         /// </summary>
         [AppAuthorize(Permission = "wtasks.view")]
         public ActionResult Tasks(int projectId = 0, string state = null, string kind = null,
-            string q = null, bool showClosed = false, int page = 1)
+            string q = null, bool showClosed = false, int page = 1, int year = 0, int month = 0)
         {
             var mine = WorkService.TasksOfUser(CurrentUserId);
 
@@ -56,6 +56,11 @@ namespace TTKDGP.ProjectManager.Controllers
             if (!string.IsNullOrWhiteSpace(state)) items = items.Where(t => t.State == state);
             if (!string.IsNullOrWhiteSpace(kind)) items = items.Where(t => t.Kind == kind);
 
+            // Lọc theo tháng: cả hai ô đều phải chọn thì mới lọc — chọn mỗi năm hay mỗi tháng thì
+            // chưa xác định được kỳ nào. Dùng chung phép xét tháng với bộ chấm KPI và màn Tổng quan.
+            var byMonth = year > 0 && month >= 1 && month <= 12;
+            if (byMonth) items = items.Where(t => KpiService.TaskInMonth(t, year, month));
+
             if (!string.IsNullOrWhiteSpace(q))
             {
                 var needle = q.Trim();
@@ -74,6 +79,8 @@ namespace TTKDGP.ProjectManager.Controllers
                 Kind = kind,
                 Query = q,
                 ShowClosed = showClosed,
+                Year = year,
+                Month = month,
                 Projects = projectOptions,
                 StandaloneCount = standaloneCount,
                 OverdueCount = list.Count(t => t.IsOverdue),
@@ -392,6 +399,10 @@ namespace TTKDGP.ProjectManager.Controllers
         public string Query { get; set; }
         public bool ShowClosed { get; set; }
 
+        /// <summary>Kỳ đang lọc; 0 nghĩa là không lọc theo tháng.</summary>
+        public int Year { get; set; }
+        public int Month { get; set; }
+
         public List<ProjectOption> Projects { get; set; }
 
         /// <summary>Số việc ngoài dự án — quyết định có hiện mục lọc riêng cho nó không.</summary>
@@ -408,6 +419,7 @@ namespace TTKDGP.ProjectManager.Controllers
             get
             {
                 return ProjectId != 0 || ShowClosed
+                       || (Year > 0 && Month > 0)
                        || !string.IsNullOrWhiteSpace(State)
                        || !string.IsNullOrWhiteSpace(Kind)
                        || !string.IsNullOrWhiteSpace(Query);

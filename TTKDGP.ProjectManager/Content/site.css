@@ -1546,6 +1546,37 @@ table.data .cell-sub.muted { font-size: 12.5px; line-height: 1.4; }
 /* Dòng tỷ lệ giờ công khi chưa đủ giờ — đây là chỗ điểm bị hạ. */
 .kpi-calc tr.warn-row td, .kpi-calc tr.warn-row td.val { color: var(--warn); }
 
+/* Quy tắc chấm KPI — gập lại mặc định, chỉ mở khi người xem thắc mắc về con số. */
+.kpi-rules { margin-top: 10px; }
+
+.kpi-rules > summary {
+    list-style: none;
+    cursor: pointer;
+    display: inline-block;
+    font-size: 12.5px;
+    color: var(--primary);
+}
+.kpi-rules > summary::-webkit-details-marker { display: none; }
+.kpi-rules > summary::marker { content: ""; }
+.kpi-rules > summary:hover { text-decoration: underline; }
+.kpi-rules > summary::before { content: "▸ "; }
+.kpi-rules[open] > summary::before { content: "▾ "; }
+
+.kpi-rules-body {
+    margin-top: 10px;
+    padding: 12px 14px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    font-size: 12.5px;
+    line-height: 1.6;
+    color: var(--text-muted);
+}
+.kpi-rules-body p { margin: 0 0 10px; }
+.kpi-rules-body strong { color: var(--text); }
+
+.kpi-rules-item { margin-bottom: 10px; }
+.kpi-rules-item:last-of-type { margin-bottom: 10px; }
+
 /* Khối giờ công: tách khỏi phần điểm bằng một đường kẻ, vì đây là thước đo khác. */
 .kpi-hours { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-soft); }
 

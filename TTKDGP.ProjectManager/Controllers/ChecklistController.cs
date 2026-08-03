@@ -565,6 +565,13 @@ namespace TTKDGP.ProjectManager.Controllers
                 model.AssignedByUserId = CurrentUserId;
                 model.SortOrder = NextSortOrder(model.ProjectId, model.ParentId);
                 Repository.WorkTasks.Insert(model);
+
+                // Báo web + email cho người được giao (trừ khi tự giao cho chính mình).
+                if (model.AssigneeUserId > 0 && model.AssigneeUserId != CurrentUserId)
+                {
+                    NotificationService.TaskAssigned(model, actor);
+                }
+
                 Notify(string.Format("Đã thêm mục \"{0}\".", model.Title));
             }
             else
@@ -580,6 +587,15 @@ namespace TTKDGP.ProjectManager.Controllers
 
                 WorkService.ApplyState(model, model.State, model.Progress);
                 Repository.WorkTasks.Update(model);
+
+                // Chuyển việc sang người khác thì báo cho người MỚI như một lần giao việc.
+                if (model.AssigneeUserId > 0
+                    && model.AssigneeUserId != current.AssigneeUserId
+                    && model.AssigneeUserId != CurrentUserId)
+                {
+                    NotificationService.TaskAssigned(model, actor);
+                }
+
                 Notify(string.Format("Đã cập nhật mục \"{0}\".", model.Title));
             }
 
