@@ -67,12 +67,19 @@
                         @if (Model.HoursShort > 0)
                         {
                             <span class="danger-text">Còn thiếu @Model.HoursShort.ToString("0.#") giờ</span>
-                            <text> — tương đương @Model.DaysShort.ToString("0.#") ngày công. KPI đang bị nhân theo tỷ lệ @Model.MyKpi.AttendanceRate.ToString("0.##")%.</text>
+                            <text> — tương đương @Model.DaysShort.ToString("0.#") ngày công.</text>
+                            <div style="margin-top:4px">
+                                Chưa đủ giờ nên điểm chất lượng
+                                <strong>@Model.MyKpi.QualityPoint.ToString("0.##")</strong> chỉ được hưởng
+                                <strong>@Model.MyKpi.AttendanceRate.ToString("0.##")%</strong>, còn
+                                <strong>@Model.MyKpi.FinalPoint.ToString("0.##")</strong>. Làm đủ giờ thì
+                                giữ nguyên @Model.MyKpi.QualityPoint.ToString("0.##").
+                            </div>
                         }
                         else
                         {
                             <span class="ok-text">Đã đủ giờ công</span>
-                            <text> — KPI không bị trừ theo ngày công.</text>
+                            <text> — điểm chất lượng được giữ nguyên, không bị trừ theo ngày công.</text>
                         }
                     </div>
 
@@ -142,26 +149,6 @@
                 </div>
             }
         </div>
-    </div>
-</div>
-
-@* ----- Ô số liệu cá nhân ----- *@
-<div class="tile-grid">
-    <div class="tile">
-        <div class="tile-num">@t.OpenCount</div>
-        <div class="tile-label">Việc chưa xong</div>
-    </div>
-    <div class="tile">
-        <div class="tile-num @(t.OverdueCount > 0 ? "danger" : "")">@t.OverdueCount</div>
-        <div class="tile-label">Quá hạn</div>
-    </div>
-    <div class="tile">
-        <div class="tile-num">@t.DueSoonCount</div>
-        <div class="tile-label">Sắp tới hạn (7 ngày)</div>
-    </div>
-    <div class="tile">
-        <div class="tile-num">@t.DoneCount</div>
-        <div class="tile-label">Đã hoàn thành</div>
     </div>
 </div>
 
