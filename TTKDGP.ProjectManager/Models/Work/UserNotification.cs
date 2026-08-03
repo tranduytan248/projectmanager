@@ -19,6 +19,15 @@ namespace TTKDGP.ProjectManager.Models
 
         /// <summary>Được Quản lý Tổ giao việc riêng — bấm vào mở chi tiết công việc.</summary>
         public const string TaskAssigned = "GiaoViecRieng";
+
+        /// <summary>
+        /// Được giao một đầu việc THUỘC DỰ ÁN — bấm vào mở chi tiết công việc.
+        ///
+        /// Tách khỏi <see cref="TaskAssigned"/> vì hai loại nói hai chuyện khác nhau: việc riêng có
+        /// điểm cộng ấn định lúc giao, còn việc dự án chấm theo bộ 30/70 và cần nêu tên dự án.
+        /// Dùng chung một mẫu thì người nhận việc dự án đọc thấy "được giao việc riêng".
+        /// </summary>
+        public const string ProjectTaskAssigned = "GiaoViecDuAn";
     }
 
     /// <summary>

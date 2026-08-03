@@ -123,26 +123,18 @@ namespace TTKDGP.ProjectManager.Services
         }
 
         /// <summary>
-        /// Báo cho người vừa được giao một đầu việc (web + email). Dùng cho CẢ việc riêng lẫn việc
-        /// trong dự án — chữ trong thông báo tự đổi theo loại, còn mẫu mail thì dùng chung.
-        ///
-        /// Mail kèm liên kết file đính kèm của việc nếu có — liên kết đi qua action có kiểm quyền
-        /// nên phải đăng nhập mới tải.
+        /// Báo cho người vừa được giao một việc riêng (web + email). Mail kèm liên kết file đính
+        /// kèm của việc nếu có — liên kết đi qua action có kiểm quyền nên phải đăng nhập mới tải.
         /// </summary>
         public static void TaskAssigned(WorkTask task, string assignerName)
         {
             if (task == null || task.AssigneeUserId <= 0) return;
 
-            var assigner = string.IsNullOrWhiteSpace(assignerName) ? "Quản lý Tổ" : assignerName;
-            var due = task.DueDate.HasValue ? task.DueDate.Value.ToString("dd/MM/yyyy") : "—";
-
-            // Việc trong dự án thì nói rõ dự án nào; việc riêng thì gọi đúng tên "việc riêng".
-            var what = string.IsNullOrWhiteSpace(task.ProjectName)
-                ? "việc riêng"
-                : string.Format("việc thuộc dự án {0}", task.ProjectName);
+            var assigner = Assigner(assignerName);
+            var due = DueText(task);
 
             var n = Add(task.AssigneeUserId, NotificationTypes.TaskAssigned,
-                string.Format("{0} giao cho bạn {1} \"{2}\" — hạn {3}.", assigner, what, task.Title, due),
+                string.Format("{0} giao cho bạn việc riêng \"{1}\" — hạn {2}.", assigner, task.Title, due),
                 task.ProjectId, task.Id);
 
             var attachmentHtml = task.HasAttachment
@@ -159,11 +151,54 @@ namespace TTKDGP.ProjectManager.Services
                     { "TenCongViec", task.Title },
                     { "NoiDung", task.Description ?? string.Empty },
                     { "HanHoanThanh", due },
-                    // Điểm cộng chỉ có ở việc riêng; việc trong dự án chấm theo bộ 30/70 nên để "—".
-                    { "DiemCong", task.BonusPercent > 0 ? task.BonusPercent.ToString("0.#") + "%" : "—" },
+                    { "DiemCong", task.BonusPercent.ToString("0.#") + "%" },
                     { "LienKet", OpenLink(n) }
                 },
                 new Dictionary<string, string> { { "TepDinhKem", attachmentHtml } });
+        }
+
+        /// <summary>
+        /// Báo cho người vừa được giao một việc THUỘC DỰ ÁN, hoặc việc vừa chuyển sang cho họ.
+        ///
+        /// Tách khỏi <see cref="TaskAssigned"/> vì nội dung khác hẳn: việc dự án cần nêu tên dự án
+        /// và loại việc, còn điểm cộng thì không có — việc dự án chấm theo bộ 30/70.
+        /// </summary>
+        public static void ProjectTaskAssigned(WorkTask task, string assignerName)
+        {
+            if (task == null || task.AssigneeUserId <= 0) return;
+
+            var assigner = Assigner(assignerName);
+            var due = DueText(task);
+            var project = string.IsNullOrWhiteSpace(task.ProjectName) ? "—" : task.ProjectName;
+
+            var n = Add(task.AssigneeUserId, NotificationTypes.ProjectTaskAssigned,
+                string.Format("{0} giao cho bạn công việc \"{1}\" (dự án {2}) — hạn {3}.",
+                    assigner, task.Title, project, due),
+                task.ProjectId, task.Id);
+
+            EmailTemplateService.Send(task.AssigneeUserId, NotificationTypes.ProjectTaskAssigned,
+                new Dictionary<string, string>
+                {
+                    { "NguoiGiao", assigner },
+                    { "TenCongViec", task.Title },
+                    { "TenDuAn", project },
+                    { "LoaiViec", TaskKinds.Display(task.Kind) },
+                    { "NoiDung", task.Description ?? string.Empty },
+                    { "HanHoanThanh", due },
+                    { "LienKet", OpenLink(n) }
+                });
+        }
+
+        /// <summary>Tên người giao; trống thì gọi chung là Quản lý Tổ.</summary>
+        private static string Assigner(string assignerName)
+        {
+            return string.IsNullOrWhiteSpace(assignerName) ? "Quản lý Tổ" : assignerName;
+        }
+
+        /// <summary>Hạn hoàn thành dạng chữ; việc chưa đặt hạn thì để dấu gạch.</summary>
+        private static string DueText(WorkTask task)
+        {
+            return task.DueDate.HasValue ? task.DueDate.Value.ToString("dd/MM/yyyy") : "—";
         }
 
         // ---------- Việc sắp đến hạn ----------

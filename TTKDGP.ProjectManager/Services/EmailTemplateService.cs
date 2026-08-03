@@ -109,6 +109,31 @@ namespace TTKDGP.ProjectManager.Services
             },
             new EmailTemplateDefinition
             {
+                Code = NotificationTypes.ProjectTaskAssigned,
+                Name = "Được giao việc trong dự án",
+                Description = "Gửi khi bạn được giao một đầu việc thuộc dự án, hoặc việc được "
+                    + "chuyển sang cho bạn.",
+                Params =
+                {
+                    new EmailTemplateParam("HoTen", "Họ tên người nhận"),
+                    new EmailTemplateParam("NguoiGiao", "Người giao việc"),
+                    new EmailTemplateParam("TenCongViec", "Tên công việc"),
+                    new EmailTemplateParam("TenDuAn", "Tên dự án"),
+                    new EmailTemplateParam("LoaiViec", "Loại việc: Triển khai hoặc Hỗ trợ"),
+                    new EmailTemplateParam("NoiDung", "Nội dung công việc"),
+                    new EmailTemplateParam("HanHoanThanh", "Hạn hoàn thành (dd/MM/yyyy)"),
+                    new EmailTemplateParam("LienKet", "Liên kết mở công việc (cần đăng nhập)")
+                },
+                DefaultSubject = "[NCPT] Bạn được giao việc: {{TenCongViec}}",
+                DefaultBody = "<p>Chào {{HoTen}},</p>"
+                    + "<p><strong>{{NguoiGiao}}</strong> vừa giao cho bạn công việc "
+                    + "<strong>{{TenCongViec}}</strong> thuộc dự án <strong>{{TenDuAn}}</strong> "
+                    + "({{LoaiViec}}) — hạn hoàn thành <strong>{{HanHoanThanh}}</strong>.</p>"
+                    + "<blockquote style=\"margin:8px 0;padding:8px 14px;border-left:3px solid #1a56a8;background:#f4f7fb\">{{NoiDung}}</blockquote>"
+                    + "<p><a href=\"{{LienKet}}\">Mở công việc trong hệ thống</a> (cần đăng nhập).</p>"
+            },
+            new EmailTemplateDefinition
+            {
                 Code = NotificationTypes.DueSoon,
                 Name = "Công việc gần tới hạn",
                 Description = "Gửi khi công việc của bạn còn tối đa 1 ngày hoặc đã quá hạn.",

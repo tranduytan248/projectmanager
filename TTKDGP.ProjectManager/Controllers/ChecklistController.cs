@@ -569,7 +569,7 @@ namespace TTKDGP.ProjectManager.Controllers
                 // Báo web + email cho người được giao (trừ khi tự giao cho chính mình).
                 if (model.AssigneeUserId > 0 && model.AssigneeUserId != CurrentUserId)
                 {
-                    NotificationService.TaskAssigned(model, actor);
+                    NotificationService.ProjectTaskAssigned(model, actor);
                 }
 
                 Notify(string.Format("Đã thêm mục \"{0}\".", model.Title));
@@ -593,7 +593,7 @@ namespace TTKDGP.ProjectManager.Controllers
                     && model.AssigneeUserId != current.AssigneeUserId
                     && model.AssigneeUserId != CurrentUserId)
                 {
-                    NotificationService.TaskAssigned(model, actor);
+                    NotificationService.ProjectTaskAssigned(model, actor);
                 }
 
                 Notify(string.Format("Đã cập nhật mục \"{0}\".", model.Title));
