@@ -33,7 +33,6 @@ namespace TTKDGP.ProjectManager.Controllers
             var users = WorkService.ActiveUsers();
             var allTasks = WorkService.AllTasks();
             var projects = Repository.WorkProjects.All();
-            var assignments = Repository.WorkAssignments.All();
 
             var model = new TeamDashboardViewModel
             {
@@ -53,10 +52,10 @@ namespace TTKDGP.ProjectManager.Controllers
                 {
                     UserId = user.Id,
                     FullName = user.FullName,
-                    Today = BuildToday(mine, today, byProject),
+                    Today = BuildToday(mine, today, y, m, byProject),
                     Kpi = BuildKpi(user, y, m),
-                    ImplementProjects = CountProjects(mine, assignments, user.Id, y, m, TaskKinds.Checklist),
-                    SupportProjects = CountProjects(mine, assignments, user.Id, y, m, TaskKinds.Support)
+                    Implement = CountProjects(mine, y, m, TaskKinds.Checklist),
+                    Support = CountProjects(mine, y, m, TaskKinds.Support)
                 });
             }
 
@@ -70,14 +69,17 @@ namespace TTKDGP.ProjectManager.Controllers
         }
 
         /// <summary>
-        /// Việc mà hôm nay người này đang phải làm: chưa đóng và hôm nay nằm trong khoảng
-        /// [ngày bắt đầu … hạn hoàn thành].
+        /// Việc mà hôm nay người này đang phải làm: chưa đóng, THUỘC THÁNG ĐANG XEM, và hôm nay
+        /// nằm trong khoảng [ngày bắt đầu … hạn hoàn thành].
         ///
-        /// Thiếu ngày bắt đầu thì lấy ngày tạo — cùng quy ước với bộ tính giờ công. Việc quá hạn
-        /// chưa xong vẫn tính là việc của hôm nay: nó vẫn đang phải làm.
+        /// Thiếu ngày bắt đầu thì lấy ngày tạo — cùng quy ước với bộ tính giờ công.
+        ///
+        /// Việc quá hạn từ tháng trước KHÔNG hiện ở đây: cả màn đang xem theo một tháng, để lẫn
+        /// việc tháng khác vào thì con số không còn khớp với tháng ghi trên đầu trang. Muốn xem
+        /// thì chuyển ô chọn về tháng đó.
         /// </summary>
         private static List<TeamTodayTask> BuildToday(List<WorkTask> mine, DateTime today,
-            Dictionary<int, WorkProject> byProject)
+            int year, int month, Dictionary<int, WorkProject> byProject)
         {
             var result = new List<TeamTodayTask>();
 
@@ -85,12 +87,14 @@ namespace TTKDGP.ProjectManager.Controllers
             {
                 if (TaskStates.IsClosed(task.State)) continue;
                 if (!task.DueDate.HasValue) continue;
+                if (!KpiService.TaskInMonth(task, year, month)) continue;
 
                 var from = task.StartDate.HasValue ? task.StartDate.Value.Date : task.CreatedAt.Date;
                 var to = task.DueDate.Value.Date;
                 if (from > to) from = to;
 
-                // Quá hạn thì kéo dài tới hôm nay; còn hạn thì hôm nay phải nằm trong khoảng.
+                // Việc đã bắt đầu và chưa xong tính là việc của hôm nay — kể cả khi đã quá hạn,
+                // vì nó vẫn đang phải làm. Việc chưa tới ngày bắt đầu thì chưa tính.
                 var covers = from <= today && (today <= to || task.IsOverdue);
                 if (!covers) continue;
 
@@ -137,35 +141,27 @@ namespace TTKDGP.ProjectManager.Controllers
         }
 
         /// <summary>
-        /// Số dự án mà người này có việc thuộc loại đã cho trong tháng, cộng thêm những dự án họ
-        /// đang được phân công mà chưa có việc nào — người mới vào dự án cũng phải đếm là đang tham gia.
+        /// Số dự án và số đầu việc thuộc loại đã cho mà người này có trong tháng.
+        ///
+        /// CHỈ đếm theo đầu việc thật, không đếm theo dòng phân công dự án: bấm vào con số là mở
+        /// danh sách công việc, nên con số phải đúng bằng số việc có trong danh sách đó. Trước đây
+        /// đếm cả phân công nên người được phân vào dự án ở giai đoạn "cả hai" ra con số bằng nhau
+        /// ở cả hai cột, bấm vào lại rỗng vì họ chưa có đầu việc nào.
         /// </summary>
-        private static int CountProjects(List<WorkTask> mine, List<WorkAssignment> assignments,
-            int userId, int year, int month, string kind)
+        private static TeamProjectCount CountProjects(List<WorkTask> mine, int year, int month, string kind)
         {
-            var from = new DateTime(year, month, 1);
-            var to = from.AddMonths(1).AddDays(-1);
-
-            var ids = new HashSet<int>(mine
+            var tasks = mine
                 .Where(t => t.ProjectId > 0
                             && t.Kind == kind
                             && t.State != TaskStates.Cancelled
                             && KpiService.TaskInMonth(t, year, month))
-                .Select(t => t.ProjectId));
+                .ToList();
 
-            // Giai đoạn tham gia khớp loại việc: "cả hai" thì tính cho cả triển khai lẫn hỗ trợ.
-            var phase = kind == TaskKinds.Support ? AssignmentPhases.Support : AssignmentPhases.Implement;
-
-            foreach (var a in assignments)
+            return new TeamProjectCount
             {
-                if (a.UserId != userId || a.ProjectId <= 0) continue;
-                if (!a.OverlapsRange(from, to)) continue;
-                if (a.Phase != phase && a.Phase != AssignmentPhases.Both) continue;
-
-                ids.Add(a.ProjectId);
-            }
-
-            return ids.Count;
+                Projects = tasks.Select(t => t.ProjectId).Distinct().Count(),
+                Tasks = tasks.Count
+            };
         }
 
         /// <summary>
@@ -227,8 +223,11 @@ namespace TTKDGP.ProjectManager.Controllers
 
         public KpiMonth Kpi { get; set; }
 
-        public int ImplementProjects { get; set; }
-        public int SupportProjects { get; set; }
+        /// <summary>Việc triển khai trong tháng: bao nhiêu dự án, bao nhiêu đầu việc.</summary>
+        public TeamProjectCount Implement { get; set; }
+
+        /// <summary>Việc hỗ trợ trong tháng.</summary>
+        public TeamProjectCount Support { get; set; }
 
         public int OverdueToday
         {
@@ -238,7 +237,16 @@ namespace TTKDGP.ProjectManager.Controllers
         public TeamMemberRow()
         {
             Today = new List<TeamTodayTask>();
+            Implement = new TeamProjectCount();
+            Support = new TeamProjectCount();
         }
+    }
+
+    /// <summary>Số dự án và số đầu việc của một người theo một loại việc.</summary>
+    public class TeamProjectCount
+    {
+        public int Projects { get; set; }
+        public int Tasks { get; set; }
     }
 
     /// <summary>Một việc trong danh sách "hôm nay đang làm".</summary>

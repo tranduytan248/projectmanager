@@ -1011,6 +1011,10 @@ table.data tbody tr { transition: background-color .1s ease; }
 table.data tbody tr:hover { background: var(--state-hover); }
 table.data tbody tr:last-child td { border-bottom: none; }
 table.data td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Cột đếm ngắn (số thứ tự, số lượng): canh giữa cho thẳng với tiêu đề cột. Canh phải chỉ hợp
+   với số cần so sánh theo hàng đơn vị — số thứ tự và số đếm nhỏ thì canh phải trông rời rạc. */
+table.data th.center, table.data td.center { text-align: center; }
 table.data td.actions { white-space: nowrap; text-align: right; }
 table.data .muted { color: var(--text-muted); }
 table.data .nowrap { white-space: nowrap; }

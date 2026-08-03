@@ -9,7 +9,7 @@
         <h1>Bảng điều khiển Tổ</h1>
         <p>
             @Model.Members.Count thành viên · @Model.Today.ToString("dd/MM/yyyy")
-            @if (Model.IdleCount > 0)
+            @if (Model.IsCurrentMonth && Model.IdleCount > 0)
             {
                 <strong style="color:var(--danger)">· @Model.IdleCount người chưa có việc hôm nay</strong>
             }
@@ -39,7 +39,7 @@
     <div class="card-head">
         <span>Công việc hôm nay</span>
         <span class="muted" style="font-weight:400">
-            @Model.Today.ToString("dd/MM/yyyy") · việc chưa xong có khoảng thời gian phủ hôm nay
+            @Model.Today.ToString("dd/MM/yyyy") · việc tháng @Model.Month chưa xong, đang trong hạn làm
         </span>
     </div>
     @if (Model.Members.Count == 0)
@@ -53,7 +53,7 @@
                 <thead>
                     <tr>
                         <th>Thành viên</th>
-                        <th class="num">Việc hôm nay</th>
+                        <th class="center">Việc hôm nay</th>
                         <th>Đang làm gì</th>
                     </tr>
                 </thead>
@@ -79,7 +79,7 @@
                                     }
                                 </div>
                             </td>
-                            <td class="num col-hide-sm">
+                            <td class="center col-hide-sm">
                                 @if (row.Today.Count == 0)
                                 {
                                     <span class="badge badge-danger">0</span>
@@ -141,11 +141,11 @@
         <table class="data table-collapse">
             <thead>
                 <tr>
-                    <th class="num">STT</th>
+                    <th class="center">STT</th>
                     <th>Tên</th>
-                    <th class="num">KPI tạm tính</th>
+                    <th class="center">KPI tạm tính</th>
                     <th class="col-hide-sm">Xếp loại</th>
-                    <th class="num col-hide-sm">Giờ công</th>
+                    <th class="center col-hide-sm">Giờ công</th>
                 </tr>
             </thead>
             <tbody>
@@ -154,7 +154,7 @@
                 {
                     stt++;
                     <tr>
-                        <td class="num">@stt</td>
+                        <td class="center">@stt</td>
                         <td class="col-name">
                             <a href="@Url.Action("Detail", "Kpi", new { year = Model.Year, month = Model.Month, userId = row.UserId })">@row.FullName</a>
                             <div class="cell-recap">
@@ -165,11 +165,11 @@
                                 <span>@row.Kpi.WorkedHours.ToString("0.#")/@row.Kpi.RequiredHours.ToString("0.#") giờ</span>
                             </div>
                         </td>
-                        <td class="num"><strong>@row.Kpi.FinalPoint.ToString("0.##")</strong></td>
+                        <td class="center"><strong>@row.Kpi.FinalPoint.ToString("0.##")</strong></td>
                         <td class="col-hide-sm">
                             <span class="@KpiRanks.BadgeClass(row.Kpi.Rank)">@row.Kpi.Rank</span>
                         </td>
-                        <td class="num col-hide-sm">
+                        <td class="center col-hide-sm">
                             @row.Kpi.WorkedHours.ToString("0.#")/@row.Kpi.RequiredHours.ToString("0.#")
                         </td>
                     </tr>
@@ -189,47 +189,49 @@
         <table class="data table-collapse">
             <thead>
                 <tr>
-                    <th class="num">STT</th>
+                    <th class="center">STT</th>
                     <th>Tên</th>
-                    <th class="num">Triển khai</th>
-                    <th class="num">Hỗ trợ</th>
+                    <th class="center">Triển khai</th>
+                    <th class="center">Hỗ trợ</th>
                 </tr>
             </thead>
             <tbody>
                 @{ var no = 0; }
-                @foreach (var row in Model.Members.OrderByDescending(r => r.ImplementProjects + r.SupportProjects))
+                @foreach (var row in Model.Members.OrderByDescending(r => r.Implement.Tasks + r.Support.Tasks))
                 {
                     no++;
                     <tr>
-                        <td class="num">@no</td>
+                        <td class="center">@no</td>
                         <td class="col-name">
                             @row.FullName
                             <div class="cell-recap">
-                                <span>Triển khai @row.ImplementProjects dự án</span>
+                                <span>Triển khai @row.Implement.Projects dự án (@row.Implement.Tasks việc)</span>
                                 <span>·</span>
-                                <span>Hỗ trợ @row.SupportProjects dự án</span>
+                                <span>Hỗ trợ @row.Support.Projects dự án (@row.Support.Tasks việc)</span>
                             </div>
                         </td>
-                        <td class="num">
-                            @if (row.ImplementProjects > 0)
+                        <td class="center">
+                            @if (row.Implement.Tasks > 0)
                             {
                                 <a href="#"
                                    data-modal-url="@Url.Action("MemberTasks", "TeamDashboard", new { userId = row.UserId, year = Model.Year, month = Model.Month, kind = TaskKinds.Checklist })"
                                    data-modal-title="Công việc triển khai — @row.FullName"
-                                   data-modal-size="lg">@row.ImplementProjects</a>
+                                   data-modal-size="lg">@row.Implement.Projects</a>
+                                <div class="cell-sub muted">@row.Implement.Tasks việc</div>
                             }
                             else
                             {
                                 <span class="muted">0</span>
                             }
                         </td>
-                        <td class="num">
-                            @if (row.SupportProjects > 0)
+                        <td class="center">
+                            @if (row.Support.Tasks > 0)
                             {
                                 <a href="#"
                                    data-modal-url="@Url.Action("MemberTasks", "TeamDashboard", new { userId = row.UserId, year = Model.Year, month = Model.Month, kind = TaskKinds.Support })"
                                    data-modal-title="Công việc hỗ trợ — @row.FullName"
-                                   data-modal-size="lg">@row.SupportProjects</a>
+                                   data-modal-size="lg">@row.Support.Projects</a>
+                                <div class="cell-sub muted">@row.Support.Tasks việc</div>
                             }
                             else
                             {
