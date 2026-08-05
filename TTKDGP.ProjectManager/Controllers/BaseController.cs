@@ -34,22 +34,26 @@ namespace TTKDGP.ProjectManager.Controllers
         }
 
         /// <summary>
-        /// Là Quản lý Tổ — vai được xem và sửa MỌI dự án, MỌI đầu việc của tổ.
+        /// Là QUẢN LÝ TỔ — vai được xem và sửa MỌI dự án, MỌI đầu việc của tổ.
         ///
-        /// Nay là một quyền riêng (<c>wteam.manage</c>), tích được trên màn Nhóm quyền. Trước đây
-        /// vai này suy ra từ quyền sửa dự án: cấp <c>wprojects.edit</c> cho ai là vô tình cho họ
-        /// thấy việc của cả tổ, mà nhìn màn Nhóm quyền không đoán ra — chính chỗ này gây rối.
+        /// Cấp bằng HAI lối, có một là đủ:
+        ///   • Ô "Là Quản lý Tổ" trên màn Người dùng (<see cref="User.IsTeamManager"/>) — theo
+        ///     từng tài khoản, là cách chính.
+        ///   • Quyền <c>wteam.manage</c> trong nhóm quyền — cấp theo nhóm.
         ///
-        /// Vẫn chấp nhận <c>wprojects.edit</c> làm lối cũ để bản đang vận hành không ai mất quyền
-        /// giữa chừng. Seeder cấp <c>wteam.manage</c> cho nhóm Quản lý ngay lần khởi động đầu;
-        /// khi các nhóm đã có quyền mới thì bỏ vế thứ hai đi.
+        /// KHÔNG lẫn với QUẢN LÝ DỰ ÁN (PM): PM là vai theo TỪNG dự án, xét qua
+        /// <see cref="IsPmOf"/>, và họ vẫn tham gia làm việc như mọi thành viên. Trước đây vai
+        /// Quản lý Tổ từng suy ra từ quyền sửa dự án (<c>wprojects.edit</c>), nên cấp quyền sửa
+        /// dự án cho PM là vô tình cho họ thấy việc của cả tổ — lối đó đã gỡ.
         /// </summary>
         protected bool IsTeamManager
         {
             get
             {
-                return Can(Permissions.Team.Perm("manage"))
-                    || Can(Permissions.WorkProjects.Perm(Permissions.Edit));
+                if (Can(Permissions.Team.Perm("manage"))) return true;
+
+                var user = CurrentUserId > 0 ? Repository.Users.Find(CurrentUserId) : null;
+                return user != null && user.IsTeamManager;
             }
         }
 

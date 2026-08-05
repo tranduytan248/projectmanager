@@ -60,23 +60,37 @@ namespace TTKDGP.ProjectManager.Services
         }
 
         /// <summary>
-        /// Tài khoản này có phải lãnh đạo Tổ không — xét theo quyền xem Bảng điều khiển Tổ.
+        /// Tài khoản này có phải lãnh đạo Tổ không — xét theo quyền QUẢN LÝ Tổ
+        /// (<c>wteam.manage</c>), không phải quyền XEM bảng điều khiển (<c>wteam.view</c>).
+        ///
+        /// Hai quyền đó khác nhau và lẫn lộn chúng gây hậu quả thấy được: PM cần xem bảng điều
+        /// khiển Tổ để theo dõi người trong dự án mình, nên họ có <c>wteam.view</c> — nhưng họ vẫn
+        /// nhận đầu việc như mọi nhân sự khác. Lấy <c>wteam.view</c> làm dấu hiệu lãnh đạo thì mọi
+        /// PM biến mất khỏi Bảng điều khiển Tổ, bảng KPI và thống kê khối lượng, trong khi việc
+        /// của họ vẫn nằm đó không ai theo dõi.
         ///
         /// Nhận theo QUYỀN chứ không theo tên hay Id: đổi người phụ trách hay thêm phó Tổ thì chỉ
-        /// việc gán nhóm quyền, không phải sửa lại mã nguồn. Đây cũng đúng định nghĩa — ai được
-        /// xem bảng theo dõi của cả Tổ thì chính là người quản lý Tổ.
+        /// việc gán nhóm quyền, không phải sửa lại mã nguồn.
         /// </summary>
         public static bool IsTeamLead(User user)
         {
-            return user != null
-                && Permissions.UserHas(user.Role, Permissions.Team.Perm(Permissions.View));
+            if (user == null) return false;
+
+            // Ô tích trên tài khoản, HOẶC quyền wteam.manage trong nhóm — có một là đủ.
+            return user.IsTeamManager
+                || Permissions.UserHas(user.Role, Permissions.Team.Perm("manage"));
         }
 
         /// <summary>
-        /// Nhân sự để theo dõi khối lượng và KPI — là <see cref="ActiveUsers"/> trừ đi lãnh đạo Tổ.
+        /// Nhân sự để theo dõi khối lượng và KPI — là <see cref="ActiveUsers"/> trừ đi Quản lý Tổ.
         ///
-        /// Lãnh đạo Tổ không nhận đầu việc như nhân sự thực thi nên để tên họ trong các bảng theo
+        /// Quản lý Tổ không nhận đầu việc như nhân sự thực thi nên để tên họ trong các bảng theo
         /// dõi chỉ tạo ra một dòng rỗng, làm loãng danh sách và kéo lệch các con số trung bình.
+        ///
+        /// QUẢN LÝ DỰ ÁN (PM) VẪN CÓ TRONG DANH SÁCH NÀY: họ quản lý dự án của mình nhưng vẫn
+        /// tham gia làm việc như mọi thành viên khác, nên khối lượng và KPI của họ vẫn phải được
+        /// theo dõi. PM nhận diện theo từng dự án (WorkProject.PmUserId), không phải theo quyền —
+        /// cùng một người là PM ở dự án này nhưng chỉ là thành viên ở dự án khác.
         ///
         /// KHÔNG dùng cho ô chọn "giao việc cho ai" hay "PM của dự án" — mấy chỗ đó vẫn phải có
         /// đủ mọi người, nên chúng tiếp tục gọi <see cref="ActiveUsers"/>.

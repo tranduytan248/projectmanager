@@ -65,6 +65,22 @@
                 </span>
             </div>
 
+            @* Vai Quản lý Tổ đặt ngay dưới nhóm quyền vì cùng nói về "người này làm được gì".
+               Phải nói rõ nó KHÁC Quản lý dự án — đây là chỗ hay nhầm nhất. *@
+            <div class="check-inline">
+                @Html.CheckBoxFor(m => m.IsTeamManager)
+                @Html.LabelReq(m => m.IsTeamManager)
+            </div>
+            @Html.ValidationMessageFor(m => m.IsTeamManager, "", new { @class = "field-error" })
+            <span class="hint">
+                Quản lý Tổ <strong>xem và sửa được mọi dự án, mọi công việc của cả tổ</strong>, và
+                không xuất hiện trong bảng theo dõi khối lượng / KPI vì họ quản lý chứ không nhận việc.
+                <br />
+                Khác với <strong>Quản lý dự án</strong>: người phụ trách một dự án cụ thể được chọn ở
+                màn Dự án (ô "PM"), không phải ở đây. Họ chỉ quản dự án của mình, vẫn tham gia làm
+                việc và vẫn được theo dõi khối lượng như mọi thành viên — nên đừng tích ô này cho họ.
+            </span>
+
             @* Mật khẩu chỉ bắt buộc lúc tạo tài khoản; sửa mà để trống là giữ mật khẩu cũ,
                nên dấu bắt buộc cũng phải theo đúng như vậy. *@
             <div class="form-field">

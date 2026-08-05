@@ -135,6 +135,24 @@ namespace TTKDGP.ProjectManager.Models
         [Display(Name = "Nhân sự tương ứng")]
         public int MemberId { get; set; }
 
+        /// <summary>
+        /// Là QUẢN LÝ TỔ — người xem và sửa được mọi dự án, mọi đầu việc của cả tổ.
+        ///
+        /// Ba vai của hệ thống, phân biệt rõ:
+        ///   • Quản lý Tổ    — ô này. Xem tất cả mọi người. KHÔNG xuất hiện trong các bảng theo
+        ///                     dõi khối lượng/KPI vì họ quản lý chứ không nhận việc.
+        ///   • Quản lý dự án — không phải một ô hay một quyền, mà là PM của từng dự án cụ thể
+        ///                     (<see cref="Work.WorkProject.PmUserId"/>). Họ vẫn tham gia dự án
+        ///                     như mọi người nên VẪN được liệt kê trong các bảng theo dõi.
+        ///   • Thành viên    — người tham gia dự án, chỉ thấy việc của mình.
+        ///
+        /// Cấp được bằng HAI lối và chỉ cần MỘT: ô tích này (theo từng tài khoản) hoặc quyền
+        /// "wteam.manage" trong nhóm quyền. Giữ cả hai để bản đang vận hành không ai mất vai khi
+        /// chuyển sang dùng ô tích.
+        /// </summary>
+        [Display(Name = "Là Quản lý Tổ")]
+        public bool IsTeamManager { get; set; }
+
         /// <summary>Định dạng: iterations.salt_base64.key_base64 (PBKDF2-SHA256).</summary>
         public string PasswordHash { get; set; }
 

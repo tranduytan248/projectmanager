@@ -61,6 +61,12 @@
                                     .FirstOrDefault(g => string.Equals(g.Code, r, StringComparison.OrdinalIgnoreCase));
                                 <span class="badge badge-role">@(grp != null ? grp.Name : r)</span>
                             }
+                            @* Vai Quản lý Tổ nằm ngoài nhóm quyền nên phải hiện riêng, không thì
+                               nhìn bảng không biết ai đang xem được việc của cả tổ. *@
+                            @if (u.IsTeamManager)
+                            {
+                                <span class="badge badge-active" title="Xem và sửa được mọi dự án, mọi việc của cả tổ">Quản lý Tổ</span>
+                            }
                         </td>
                         <td>
                             @if (u.IsActive)

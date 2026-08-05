@@ -129,6 +129,13 @@ namespace TTKDGP.ProjectManager.Models
         [Display(Name = "Xác nhận mật khẩu")]
         public string ConfirmPassword { get; set; }
 
+        /// <summary>
+        /// Là Quản lý Tổ — xem và sửa được mọi dự án, mọi việc của cả tổ. Khác Quản lý dự án
+        /// (PM): PM chỉ quản dự án của mình và vẫn được theo dõi khối lượng như thành viên.
+        /// </summary>
+        [Display(Name = "Là Quản lý Tổ")]
+        public bool IsTeamManager { get; set; }
+
         [Display(Name = "Kích hoạt")]
         public bool IsActive { get; set; }
 

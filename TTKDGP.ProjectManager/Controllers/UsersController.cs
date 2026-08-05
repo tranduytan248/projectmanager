@@ -49,6 +49,7 @@ namespace TTKDGP.ProjectManager.Controllers
                 FullName = user.FullName,
                 Email = user.Email,
                 SelectedRoles = Roles.Split(user.Role),
+                IsTeamManager = user.IsTeamManager,
                 IsActive = user.IsActive
             });
         }
@@ -113,6 +114,7 @@ namespace TTKDGP.ProjectManager.Controllers
                     Email = email,
                     Role = roleValue,
                     PasswordHash = PasswordHasher.Hash(model.Password),
+                    IsTeamManager = model.IsTeamManager,
                     IsActive = model.IsActive,
                     CreatedAt = DateTime.Now
                 });
@@ -146,6 +148,7 @@ namespace TTKDGP.ProjectManager.Controllers
             user.FullName = model.FullName.Trim();
             user.Email = email;
             user.Role = roleValue;
+            user.IsTeamManager = model.IsTeamManager;
             user.IsActive = model.IsActive;
             if (!string.IsNullOrEmpty(model.Password))
             {
