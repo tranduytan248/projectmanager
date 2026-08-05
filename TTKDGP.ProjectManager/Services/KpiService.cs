@@ -217,18 +217,34 @@ namespace TTKDGP.ProjectManager.Services
         // ---------- Tính điểm ----------
 
         /// <summary>
-        /// Điểm một nhóm việc: điểm tối đa nhân tỷ lệ hoàn thành, rồi trừ phần phạt báo cáo trễ.
+        /// Điểm nhóm HỖ TRỢ, tính theo GIỜ đã bỏ ra — CÓ chặn trần.
         ///
-        /// KHÔNG có việc nào trong nhóm thì được 0 — điểm phản ánh việc đã làm. Trước đây nhóm
-        /// rỗng được hưởng trọn điểm tối đa, và điều đó cho ra kết quả ngược đời: người duy nhất
-        /// có việc hỗ trợ nhưng chưa xong bị 0 điểm, trong khi cả tổ không ai được giao việc hỗ
-        /// trợ lại đều được đủ 30. Người làm thua người không làm gì.
+        /// Mốc: dành đúng <see cref="KpiConfig.SupportHoursShare"/> phần giờ yêu cầu của tháng cho
+        /// việc hỗ trợ thì được trọn điểm nhóm (mặc định 30% giờ → 30 điểm). Khác nhóm thực hiện ở
+        /// chỗ CÓ TRẦN: hỗ trợ là việc phụ, làm quá mức không nên được thưởng thêm điểm — phần giờ
+        /// vượt cũng đã không được tính vào giờ công (xem <see cref="CappedSupportHours"/>).
+        ///
+        /// Không đếm theo số việc xong/tổng: một việc hỗ trợ có thể là nửa buổi hoặc cả tuần, đếm
+        /// đầu việc thì ai bị giao nhiều việc vụn lại thiệt.
+        ///
+        /// KHÔNG có việc hỗ trợ nào thì được 0 — điểm phản ánh việc đã làm. Trước đây nhóm rỗng
+        /// hưởng trọn điểm tối đa, cho ra kết quả ngược đời: người duy nhất có việc hỗ trợ nhưng
+        /// chưa xong bị 0 điểm, trong khi cả tổ không ai được giao việc lại đều đủ 30.
         /// </summary>
-        private static decimal GroupPoint(decimal maxPoint, int total, int done, decimal latePenalty)
+        private static decimal SupportPoint(decimal maxPoint, decimal supportHours,
+            decimal requiredHours, int total, decimal latePenalty)
         {
             if (total == 0) return 0;
 
-            var point = maxPoint * done / total - latePenalty;
+            // Chưa xác định được giờ yêu cầu (nghỉ trọn tháng, hoặc dữ liệu thiếu) thì không có
+            // mẫu số để so — lùi về 0 thay vì chia cho 0.
+            var target = requiredHours * Config.SupportHoursShare;
+            if (target <= 0) return 0;
+
+            var earned = maxPoint * supportHours / target;
+            if (earned > maxPoint) earned = maxPoint;
+
+            var point = earned - latePenalty;
             return point < 0 ? 0 : Math.Round(point, 2);
         }
 
@@ -353,14 +369,17 @@ namespace TTKDGP.ProjectManager.Services
             row.SupportTotal = support.Count;
             row.SupportDone = support.Count(t => t.State == TaskStates.Done);
             row.SupportLateCount = support.Count(t => t.State == TaskStates.Done && !t.IsOnTime);
-            row.SupportPoint = GroupPoint(SupportMaxPoint, row.SupportTotal, row.SupportDone,
-                SupportLatePenalty(row.SupportLateCount));
 
             // Giờ hỗ trợ bị CHẶN TRẦN ở phần cấu hình (mặc định 30% quỹ giờ tháng). Hỗ trợ phát
             // sinh theo tuần và một người có thể bị kéo vào rất nhiều đầu việc rải khắp tháng —
             // để nguyên thì nó nuốt trọn quỹ giờ, người đó "đủ giờ công" mà chẳng triển khai gì.
+            //
+            // Phải tính TRƯỚC phần điểm: nhóm này chấm theo giờ nên giờ chính là đầu vào của điểm.
             row.SupportHoursRaw = Math.Round(WorkedHours(support, row.Year, row.Month), 2);
             row.SupportHours = CappedSupportHours(row.SupportHoursRaw, row.RequiredHours);
+
+            row.SupportPoint = SupportPoint(SupportMaxPoint, row.SupportHours, row.RequiredHours,
+                row.SupportTotal, SupportLatePenalty(row.SupportLateCount));
 
             // Nhóm thực hiện chấm theo GIỜ đã bỏ ra, không theo số đầu việc — và không chặn trần.
             // Giờ đếm trên việc đã xong hoặc đang làm, theo ngày làm việc riêng biệt.

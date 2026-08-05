@@ -114,28 +114,30 @@
         <div class="card-body">
             <div class="form-grid">
                 <div class="form-field">
-                    <label for="SupportMaxPoint">Điểm tối đa nhóm Hỗ trợ</label>
+                    <label for="SupportMaxPoint">Điểm nhóm Hỗ trợ khi đủ mốc giờ</label>
                     <input type="number" step="0.01" min="0" max="1000" required
                            id="SupportMaxPoint" name="SupportMaxPoint"
                            data-default="@nv(d.SupportMaxPoint)"
                            value="@nv(Model.SupportMaxPoint)" />
                     <span class="hint">
-                        Điểm trọn vẹn khi hoàn thành hết việc hỗ trợ trong tháng.
+                        Điểm trọn vẹn khi dành đủ mốc giờ cho việc hỗ trợ.
+                        <strong>Có trần</strong> — làm quá mốc không được thêm điểm.
                         Mặc định @n(d.SupportMaxPoint).
                     </span>
                 </div>
                 <div class="form-field">
-                    <label for="SupportHoursShare">Trần giờ hỗ trợ</label>
+                    <label for="SupportHoursShare">Mốc giờ nhóm Hỗ trợ (cũng là trần)</label>
                     <input type="number" step="0.05" min="0.05" max="1" required
                            id="SupportHoursShare" name="SupportHoursShare"
                            data-default="@nv(d.SupportHoursShare)"
                            value="@nv(Model.SupportHoursShare)" />
                     <span class="hint">
-                        Giờ hỗ trợ chỉ được tính tối đa bấy nhiêu phần quỹ giờ tháng
-                        (@n(d.SupportHoursShare) = @((d.SupportHoursShare * 100).ToString("0.#"))%).
-                        Vượt thì phần dư không vào giờ công — hỗ trợ là việc phụ, để nó nuốt trọn
-                        quỹ giờ thì người bị kéo vào nhiều việc hỗ trợ sẽ "đủ giờ công" mà không
-                        triển khai gì.
+                        Dành đủ bấy nhiêu phần quỹ giờ tháng cho hỗ trợ
+                        (@n(d.SupportHoursShare) = @((d.SupportHoursShare * 100).ToString("0.#"))%)
+                        thì được trọn điểm nhóm. Đây cũng là <strong>trần</strong>: vượt thì không
+                        thêm điểm và phần giờ dư không vào giờ công — hỗ trợ là việc phụ, để nó
+                        nuốt trọn quỹ giờ thì người bị kéo vào nhiều việc hỗ trợ sẽ "đủ giờ công"
+                        mà không triển khai gì.
                     </span>
                 </div>
                 <div class="form-field">
@@ -164,14 +166,16 @@
             </div>
 
             <span class="hint">
-                <strong>Hỗ trợ</strong> chấm theo <strong>số việc</strong>: điểm tối đa &times;
-                (việc hoàn thành &divide; tổng việc), trừ phần báo cáo trễ — có trần.
-                <strong>Thực hiện</strong> chấm theo <strong>giờ</strong>: điểm chuẩn &times;
-                (giờ triển khai &divide; định mức giờ), <strong>không có trần</strong> — dành hơn định
-                mức cho triển khai là bình thường, chặn lại thì người gánh nhiều dự án và người vừa
-                đủ nhận cùng một điểm.
+                Cả hai nhóm đều chấm theo <strong>giờ</strong> so với mốc của mình, không theo số
+                đầu việc — một đầu việc có thể là nửa buổi hoặc cả tháng, đếm đầu việc thì ai chẻ
+                nhỏ công việc sẽ có lợi.
+                <strong>Hỗ trợ</strong> <em>có trần</em>: quá mốc không được thêm điểm, vì nó là
+                việc phụ.
+                <strong>Thực hiện</strong> <em>không có trần</em>: dành hơn định mức cho triển khai
+                là bình thường, chặn lại thì người gánh nhiều dự án và người vừa đủ nhận cùng một
+                điểm.
                 Nhóm <strong>không có việc nào</strong> trong tháng thì được <strong>0 điểm</strong>.
-                Cộng cả việc riêng, tổng có thể vượt xa
+                Cộng cả việc riêng, tổng có thể vượt
                 <strong data-preview="maxquality">@n(maxQuality)</strong>.
             </span>
         </div>

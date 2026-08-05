@@ -42,10 +42,12 @@
     <div>
         <h1>KPI theo tháng</h1>
         <p>
-            Đánh giá chất lượng làm việc hàng tháng: hỗ trợ tối đa @KpiService.SupportMaxPoint.ToString("0.##")
-            (theo số việc hoàn thành), thực hiện @KpiService.ExecuteMaxPoint.ToString("0.##")
-            khi đủ định mức giờ và không chặn trên, việc riêng cộng theo % từng việc;
-            thiếu giờ công thì nhân tỷ lệ ngày công.
+            Đánh giá chất lượng làm việc hàng tháng: cả hỗ trợ và thực hiện đều chấm theo
+            <strong>giờ</strong> — hỗ trợ tối đa @KpiService.SupportMaxPoint.ToString("0.##")
+            khi đủ mốc @KpiConfigService.Current.SupportHoursShare.ToString("0.##") giờ tháng
+            (có trần), thực hiện @KpiService.ExecuteMaxPoint.ToString("0.##") khi đủ mốc
+            @KpiConfigService.Current.ExecuteHoursShare.ToString("0.##") giờ tháng (không chặn trên);
+            việc riêng cộng theo % từng việc; thiếu giờ công thì nhân tỷ lệ ngày công.
         </p>
     </div>
     <div class="btn-row">
@@ -218,7 +220,7 @@
                                 <div class="cell-recap">
                                     <span>@r.Rank</span>
                                     <span>·</span>
-                                    <span>Hỗ trợ @r.SupportPoint.ToString("0.##")</span>
+                                    <span>Hỗ trợ @r.SupportPoint.ToString("0.##") (@r.SupportHours.ToString("0.#")/@r.SupportCapHours.ToString("0.#")h)</span>
                                     <span>·</span>
                                     <span>Thực hiện @r.ExecutePoint.ToString("0.##")</span>
                                     @if (r.AssignedPoint > 0)
@@ -253,6 +255,8 @@
                             @* Hai loại số 0 rất khác nhau: "không được giao việc nào" và "có việc
                                nhưng chưa xong". Cùng hiện 0 thì người quản lý không phân biệt được
                                ai cần nhắc làm việc, ai cần được giao việc. *@
+                            @* Nhóm hỗ trợ chấm theo GIỜ so với mốc 30% (có trần), nên dòng phụ hiện
+                               giờ chứ không hiện "x/y việc" — cùng lối với cột Thực hiện. *@
                             <td class="center col-hide-sm">
                                 @r.SupportPoint.ToString("0.##")
                                 <div class="cell-sub muted">
@@ -264,13 +268,13 @@
                                     {
                                         @* Giờ hỗ trợ bị cắt vì vượt trần — phải thấy được ngay
                                            trên bảng, không thì con số giờ công trông như sai. *@
-                                        <span class="danger-text" title="Giờ hỗ trợ vượt trần, phần dư không tính vào giờ công">
-                                            @r.SupportDone/@r.SupportTotal việc · vượt trần
+                                        <span class="danger-text" title="Giờ hỗ trợ vượt trần: phần dư không tính vào điểm lẫn giờ công">
+                                            @r.SupportHoursRaw.ToString("0.#")h · vượt trần @r.SupportCapHours.ToString("0.#")h
                                         </span>
                                     }
                                     else
                                     {
-                                        <text>@r.SupportDone/@r.SupportTotal việc</text>
+                                        <text>@r.SupportHours.ToString("0.#")/@r.SupportCapHours.ToString("0.#")h</text>
                                     }
                                 </div>
                             </td>
@@ -347,10 +351,14 @@
                 Bấm vào tên nhân sự để xem chi tiết công việc và cách tính điểm.
                 Nhóm <strong>chưa giao việc</strong> được 0 điểm — điểm chấm trên việc đã làm, nên
                 người không được phân việc của một nhóm sẽ mất trọn điểm nhóm đó.
-                Cột <strong>Thực hiện</strong> chấm theo <strong>giờ</strong> so với định mức
-                (@KpiConfigService.Current.ExecuteHoursShare.ToString("0.##") &times; giờ yêu cầu tháng),
-                không theo số đầu việc, và <strong>không chặn trên</strong> — làm nhiều giờ hơn
-                định mức thì điểm vượt @KpiService.ExecuteMaxPoint.ToString("0.##").
+                Cả hai cột <strong>Hỗ trợ</strong> và <strong>Thực hiện</strong> chấm theo
+                <strong>giờ</strong> so với mốc của mình, không theo số đầu việc.
+                Hỗ trợ: mốc @KpiConfigService.Current.SupportHoursShare.ToString("0.##") &times; giờ
+                yêu cầu tháng, <strong>có trần</strong> @KpiService.SupportMaxPoint.ToString("0.##")
+                — làm quá mốc không được thêm điểm và phần giờ dư cũng không vào giờ công.
+                Thực hiện: mốc @KpiConfigService.Current.ExecuteHoursShare.ToString("0.##") &times; giờ
+                yêu cầu tháng, <strong>không chặn trên</strong> — làm nhiều giờ hơn thì điểm vượt
+                @KpiService.ExecuteMaxPoint.ToString("0.##").
                 <strong>Nghỉ phép</strong> là tổng ngày nghỉ <strong>đã duyệt</strong> trong tháng,
                 lấy từ màn <a href="@Url.Action("Approve", "Leaves")">Duyệt nghỉ phép</a> — không sửa
                 trực tiếp ở đây. Duyệt thêm đơn xong thì bấm <strong>Tính lại</strong> ở cuối dòng.

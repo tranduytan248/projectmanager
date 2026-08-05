@@ -92,7 +92,7 @@
                                     }
                                     else
                                     {
-                                        <text>(@Model.MyKpi.SupportDone/@Model.MyKpi.SupportTotal việc, tối đa @KpiService.SupportMaxPoint.ToString("0.##"))</text>
+                                        <text>(@Model.MyKpi.SupportHours.ToString("0.#")/@Model.MyKpi.SupportCapHours.ToString("0.#") giờ mốc)</text>
                                     }
                                 </span>
                             </td>
@@ -159,12 +159,14 @@
                         </p>
 
                         <div class="kpi-rules-item">
-                            <strong>Hỗ trợ — tối đa @KpiService.SupportMaxPoint.ToString("0.##") điểm</strong>
+                            <strong>Hỗ trợ — @KpiService.SupportMaxPoint.ToString("0.##") điểm khi đủ mốc giờ, CÓ trần</strong>
                             <div>
-                                Điểm = @KpiService.SupportMaxPoint.ToString("0.##") ×
-                                (số việc hoàn thành ÷ tổng số việc), rồi trừ phần báo cáo trễ.
-                                Không được giao việc nào trong nhóm thì nhóm đó 0 điểm — điểm chấm
-                                trên việc đã làm.
+                                Chấm theo <strong>số giờ</strong> bỏ ra cho việc hỗ trợ, không theo
+                                số đầu việc. Mốc =
+                                @KpiConfigService.Current.SupportHoursShare.ToString("0.##") ×
+                                giờ yêu cầu của tháng. Làm quá mốc không được thêm điểm, và phần
+                                giờ vượt cũng không tính vào giờ công.
+                                Không được giao việc nào trong nhóm thì nhóm đó 0 điểm.
                             </div>
                             <div class="muted">
                                 Trễ: 0–@KpiConfigService.Current.SupportLateFreeCount lần không trừ ·

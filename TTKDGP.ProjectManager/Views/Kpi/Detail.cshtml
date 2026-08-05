@@ -15,9 +15,8 @@
 
     // Điểm từng dòng = phần chia đều của điểm tối đa cho số việc trong nhóm; việc chưa xong
     // không được phần của mình. Mức trừ báo cáo trễ trừ vào TỔNG nhóm, hiển thị ở dòng cộng.
-    // Chỉ nhóm HỖ TRỢ mới chia điểm đều theo đầu việc. Nhóm thực hiện chấm theo giờ nên không
-    // có khái niệm "điểm mỗi việc" — bảng của nó hiện số giờ thay cho điểm.
-    var supportUnit = Model.SupportTotal > 0 ? KpiService.SupportMaxPoint / Model.SupportTotal : 0;
+    // Cả hai nhóm hỗ trợ và thực hiện đều chấm theo GIỜ, nên không nhóm nào còn khái niệm
+    // "điểm mỗi việc" — bảng chi tiết của chúng hiện số giờ thay cho điểm.
 
     var supportPenalty = KpiService.SupportLatePenalty(Model.SupportLateCount);
     var executePenalty = KpiService.ExecuteLatePenalty(Model.ExecuteLateCount);
@@ -26,6 +25,12 @@
     // giờ và không chặn trên, nên con số này có thể vượt 100.
     var executeHoursPct = Model.ExecuteTargetHours > 0
         ? (int)Math.Round(Model.ExecuteHours * 100 / Model.ExecuteTargetHours)
+        : 0;
+
+    // Tỷ lệ giờ hỗ trợ so với mốc. Dùng giờ ĐÃ CHẶN TRẦN nên không bao giờ vượt 100 — muốn biết
+    // thực tế vượt bao nhiêu thì xem SupportHoursRaw ở phần cảnh báo bên dưới.
+    var supportHoursPct = Model.SupportCapHours > 0
+        ? (int)Math.Round(Model.SupportHours * 100 / Model.SupportCapHours)
         : 0;
 
     var isShort = Model.AttendanceRate < 100;
@@ -143,7 +148,7 @@
                         <td class="op"></td>
                         <td>
                             Hỗ trợ
-                            <span class="muted">(@Model.SupportDone/@Model.SupportTotal việc, tối đa @KpiService.SupportMaxPoint.ToString("0.##"))</span>
+                            <span class="muted">(@Model.SupportHours.ToString("0.#")/@Model.SupportCapHours.ToString("0.#") giờ mốc)</span>
                         </td>
                         <td class="val">@Model.SupportPoint.ToString("0.##")</td>
                     </tr>
@@ -282,9 +287,13 @@
 
 @* ---------- I. Công việc hỗ trợ ---------- *@
 <div class="card">
+    @* Nhóm này chấm theo GIỜ và CÓ trần: đủ mốc giờ thì được trọn điểm, làm quá mốc không được
+       thêm — khác nhóm thực hiện ở chỗ đó. *@
     <div class="card-head">
         <span>I. Công việc hỗ trợ</span>
-        <span class="muted" style="font-weight:400">tối đa @KpiService.SupportMaxPoint.ToString("0.##") điểm</span>
+        <span class="muted" style="font-weight:400">
+            @KpiService.SupportMaxPoint.ToString("0.##") điểm khi đủ mốc giờ · có trần
+        </span>
     </div>
     <div class="card-body">
         <div class="group-summary">
@@ -293,15 +302,19 @@
                 <em>/ @KpiService.SupportMaxPoint.ToString("0.##")</em>
             </div>
             <div class="group-bars">
+                @* Thanh đo theo GIỜ so với mốc, không theo điểm. *@
                 <div class="progress-track">
-                    <div class="progress-fill bar-ok" style="width:@share(Model.SupportPoint, KpiService.SupportMaxPoint)%"></div>
+                    <div class="progress-fill @(supportHoursPct >= 100 ? "bar-ok" : "bar-warn")"
+                         style="width:@(supportHoursPct > 100 ? 100 : supportHoursPct)%"></div>
                 </div>
                 <div class="group-meta">
-                    <span>Hoàn thành <strong>@Model.SupportDone/@Model.SupportTotal</strong> việc</span>
-                    <span>·</span>
                     <span>
-                        Giờ hỗ trợ <strong>@Model.SupportHours.ToString("0.#")/@Model.SupportCapHours.ToString("0.#") giờ</strong>
+                        Giờ hỗ trợ
+                        <strong>@Model.SupportHours.ToString("0.#")/@Model.SupportCapHours.ToString("0.#") giờ</strong>
+                        (@supportHoursPct%)
                     </span>
+                    <span>·</span>
+                    <span>Hoàn thành <strong>@Model.SupportDone/@Model.SupportTotal</strong> việc</span>
                     <span>·</span>
                     <span class="@(Model.SupportLateCount > 0 ? "danger-text" : "")">
                         Báo cáo trễ <strong>@Model.SupportLateCount</strong> lần
@@ -314,6 +327,16 @@
                 </div>
             </div>
         </div>
+
+        <span class="hint">
+            Điểm nhóm này tính theo <strong>số giờ</strong> bỏ ra cho việc hỗ trợ, không theo số
+            đầu việc. Đủ mốc
+            (@KpiConfigService.Current.SupportHoursShare.ToString("0.##") &times; giờ yêu cầu của tháng
+            = @Model.SupportCapHours.ToString("0.#") giờ) thì được
+            @KpiService.SupportMaxPoint.ToString("0.##") điểm.
+            <strong>Có trần</strong>: làm quá mốc không được thêm điểm, và phần giờ vượt cũng không
+            tính vào giờ công — hỗ trợ là việc phụ, không nên chiếm trọn quỹ giờ của tháng.
+        </span>
 
         @* Giờ hỗ trợ vượt trần là chuyện phải nói rõ: người xem thấy con số nhỏ hơn thực tế mà
            không hiểu vì sao thì sẽ tưởng hệ thống đếm sót. *@
@@ -347,13 +370,17 @@
                         <th>Công việc</th>
                         <th class="nowrap col-hide-sm">Thời gian</th>
                         <th class="col-hide-sm">Báo cáo đúng hạn</th>
-                        <th class="center">Điểm</th>
+                        <th class="center">Giờ tính</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var t in supportTasks)
                     {
                         var done = t.State == TaskStates.Done;
+
+                        @* Việc đã xong hoặc đang làm mới sinh ra giờ. Cột này là giờ RIÊNG của
+                           từng việc; tổng nhóm nhỏ hơn tổng cột khi nhiều việc chạy trùng ngày. *@
+                        var counts = done || t.State == TaskStates.InProgress;
                         <tr class="@(done && !t.IsOnTime ? "row-due-warn" : "")">
                             <td class="col-name">
                                 @(string.IsNullOrWhiteSpace(t.Code) ? t.Title : t.Code + " · " + t.Title)
@@ -376,19 +403,28 @@
                                 { <span class="badge">@TaskStates.Display(t.State)</span> }
                             </td>
                             <td class="center">
-                                @if (done)
+                                @if (counts)
                                 {
-                                    <strong>@supportUnit.ToString("0.##")</strong>
+                                    <strong>@KpiService.HoursOf(new[] { t }, Model.Year, Model.Month).ToString("0.#")h</strong>
                                 }
                                 else
                                 {
-                                    <span class="muted">0</span>
+                                    <span class="muted">—</span>
                                 }
                             </td>
                         </tr>
                     }
                 </tbody>
             </table>
+        </div>
+        <div class="card-body">
+            <span class="hint">
+                Cộng cột <strong>Giờ tính</strong> thường ra số lớn hơn
+                @Model.SupportHoursRaw.ToString("0.#") giờ của cả nhóm: nhiều việc chạy trùng ngày
+                thì ngày đó chỉ được tính <strong>một lần</strong>.
+                Chỉ đếm ngày <strong>nằm trong tháng</strong> @Model.Month/@Model.Year.
+                Việc <strong>chưa bắt đầu</strong> và <strong>tạm dừng</strong> chưa sinh giờ nào.
+            </span>
         </div>
     }
 </div>
@@ -502,7 +538,7 @@
                             <td class="center">
                                 @if (counts)
                                 {
-                                    <strong>@KpiService.HoursOf(new[] { t }).ToString("0.#")h</strong>
+                                    <strong>@KpiService.HoursOf(new[] { t }, Model.Year, Model.Month).ToString("0.#")h</strong>
                                 }
                                 else
                                 {
@@ -619,12 +655,15 @@
                 </p>
 
                 <div class="kpi-rules-item">
-                    <strong>Hỗ trợ — tối đa @KpiService.SupportMaxPoint.ToString("0.##") điểm</strong>
+                    <strong>Hỗ trợ — @KpiService.SupportMaxPoint.ToString("0.##") điểm khi đủ mốc giờ, CÓ trần</strong>
                     <div>
-                        Điểm = @KpiService.SupportMaxPoint.ToString("0.##") &times;
-                        (số việc hoàn thành &divide; tổng số việc), rồi trừ phần báo cáo trễ.
-                        Không được giao việc hỗ trợ nào thì nhóm này <strong>0 điểm</strong> —
-                        điểm chấm trên việc đã làm.
+                        Chấm theo <strong>số giờ</strong> bỏ ra cho việc hỗ trợ, không theo số đầu
+                        việc. Mốc = @KpiConfigService.Current.SupportHoursShare.ToString("0.##") &times;
+                        giờ yêu cầu của tháng. Đủ mốc thì được
+                        @KpiService.SupportMaxPoint.ToString("0.##") điểm; làm quá mốc
+                        <strong>không được thêm điểm</strong>, và phần giờ vượt cũng không tính vào
+                        giờ công — hỗ trợ là việc phụ, không nên chiếm trọn quỹ giờ.
+                        Không được giao việc hỗ trợ nào thì nhóm này <strong>0 điểm</strong>.
                     </div>
                     <div class="muted">
                         Trễ: 0–@KpiConfigService.Current.SupportLateFreeCount lần không trừ ·
