@@ -281,6 +281,44 @@ namespace TTKDGP.ProjectManager.Controllers
         /// <summary>Số đơn nghỉ phép toàn hệ thống đang chờ duyệt; chỉ có nghĩa khi được duyệt phép.</summary>
         public int PendingLeaveCount { get; set; }
 
+        // ---------- Vòng điểm KPI (bày giống màn Chi tiết KPI) ----------
+
+        /// <summary>
+        /// Mốc chuẩn của điểm chất lượng — điểm khi cả hai nhóm đạt chuẩn. KHÔNG phải trần:
+        /// nhóm thực hiện chấm theo giờ và không chặn trên, nên vượt mốc này là bình thường.
+        /// </summary>
+        public decimal ScoreMax
+        {
+            get
+            {
+                var max = KpiService.MaxQualityPoint;
+                return max > 0 ? max : 100;
+            }
+        }
+
+        /// <summary>Phần trăm điểm so với mốc chuẩn, chặn ở 100 để vòng không vẽ quá một vòng.</summary>
+        public int ScorePercent
+        {
+            get
+            {
+                if (MyKpi == null) return 0;
+
+                var p = (int)Math.Round(MyKpi.FinalPoint * 100 / ScoreMax);
+                return p < 0 ? 0 : (p > 100 ? 100 : p);
+            }
+        }
+
+        /// <summary>Sắc của vòng điểm, đi theo xếp loại để cùng một màu luôn nói cùng một điều.</summary>
+        public string ScoreTone
+        {
+            get
+            {
+                if (MyKpi == null) return "tone-late";
+                if (MyKpi.Rank == KpiRanks.Fail) return "tone-late";
+                return MyKpi.Rank == KpiRanks.Pass ? "tone-warn" : "tone-ok";
+            }
+        }
+
         /// <summary>
         /// Số giờ còn thiếu so với yêu cầu của tháng; 0 khi đã đủ. Thiếu giờ thì KPI bị nhân theo
         /// tỷ lệ ngày công, nên đây là con số người dùng cần biết để còn kịp bù.

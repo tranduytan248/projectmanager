@@ -1,0 +1,62 @@
+﻿@model TTKDGP.ProjectManager.Controllers.FunctionRow
+@*
+    Hộp thoại sửa tên hiển thị / ghi chú của một chức năng. Phần bật/tắt cũng có ở đây cho trọn
+    một chỗ, nhưng cách nhanh hơn là tích thẳng cột "Bật" ngoài bảng rồi lưu một lần.
+*@
+@{
+    Layout = null;
+    var moduleName = ViewBag.ModuleName as string;
+}
+
+@using (Html.BeginForm("Save", "Functions", FormMethod.Post))
+{
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="code" value="@Model.Code" />
+
+    <div class="form-grid">
+        <div class="form-field full">
+            <span class="form-static-label">Chức năng</span>
+            <div class="form-static">
+                <strong>@Model.DefaultName</strong>
+                @if (!string.IsNullOrWhiteSpace(moduleName))
+                {
+                    <span class="muted">— @moduleName</span>
+                }
+                <div class="muted"><code>@Model.Code</code></div>
+            </div>
+        </div>
+
+        <div class="form-field full">
+            <label for="displayName">Tên hiển thị</label>
+            <input type="text" id="displayName" name="displayName" maxlength="150"
+                   value="@(Model.IsRenamed ? Model.DisplayName : "")"
+                   placeholder="@Model.DefaultName" />
+            <span class="hint">
+                Để trống thì dùng tên gốc "<strong>@Model.DefaultName</strong>". Tên này hiện ở màn
+                Nhóm quyền khi cấp quyền cho từng nhóm.
+            </span>
+        </div>
+
+        <div class="form-field full">
+            <label class="check-inline">
+                <input type="checkbox" name="isEnabled" value="true" @(Model.IsEnabled ? "checked" : "") />
+                <span>Đang bật</span>
+            </label>
+            <span class="hint">
+                Bỏ tích là <strong>đóng chức năng này với mọi tài khoản</strong>, kể cả tài khoản
+                toàn quyền — mục liên quan biến khỏi menu và gõ thẳng địa chỉ cũng bị chặn.
+            </span>
+        </div>
+
+        <div class="form-field full">
+            <label for="note">Ghi chú</label>
+            <input type="text" id="note" name="note" maxlength="300" value="@Model.Note"
+                   placeholder="Ví dụ: tắt cho tới khi triển khai xong giai đoạn 2" />
+            <span class="hint">Lý do tắt hoặc đổi tên, để lần sau còn nhớ.</span>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Lưu</button>
+    </div>
+}

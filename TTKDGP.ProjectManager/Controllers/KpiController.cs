@@ -9,6 +9,32 @@ using TTKDGP.ProjectManager.Services;
 
 namespace TTKDGP.ProjectManager.Controllers
 {
+    /// <summary>Số tổng quan của một tháng, bày thành hàng thẻ trên đầu màn KPI.</summary>
+    public class KpiSummary
+    {
+        /// <summary>Số nhân sự đang hiển thị (đã lọc).</summary>
+        public int Total { get; set; }
+
+        public decimal AveragePoint { get; set; }
+
+        /// <summary>Số người từ "Đạt" trở lên.</summary>
+        public int PassCount { get; set; }
+
+        public int FailCount { get; set; }
+
+        /// <summary>Số người chưa đủ giờ công — đây là chỗ điểm bị hạ nhiều nhất.</summary>
+        public int ShortHoursCount { get; set; }
+
+        public string TopName { get; set; }
+        public decimal TopPoint { get; set; }
+
+        /// <summary>Tỷ lệ đạt (%), làm tròn — dùng cho thanh tiến độ trên thẻ.</summary>
+        public int PassPercent
+        {
+            get { return Total <= 0 ? 0 : (int)Math.Round((decimal)PassCount * 100 / Total); }
+        }
+    }
+
     /// <summary>
     /// Chấm KPI theo tháng cho từng thành viên trong tổ — xem <see cref="KpiService"/> về công thức.
     /// Ngoài màn hình còn mở bộ API JSON (/api/kpi...) dùng chung phiên đăng nhập.
@@ -33,6 +59,11 @@ namespace TTKDGP.ProjectManager.Controllers
 
             // Còn dòng tạm tính (Id = 0) nghĩa là tháng này chưa bấm "Tính KPI" cho đủ mọi người.
             ViewBag.HasPreview = rows.Any(r => r.Id == 0);
+
+            // Số tổng quan cho hàng thẻ đầu màn: quét bảng một lượt ở đây thay vì để view tự
+            // duyệt lại danh sách bốn năm lần giữa lúc dựng HTML.
+            ViewBag.Summary = BuildSummary(rows);
+            ViewBag.CanConfig = Can(Permissions.Kpi.Perm("config"));
 
             return View(rows);
         }
@@ -132,13 +163,18 @@ namespace TTKDGP.ProjectManager.Controllers
             var rows = BuildRows(year, month, userId);
 
             var sheet = new SheetData(string.Format("KPI {0:00}-{1}", month, year),
-                "STT", "Nhân sự", "Hỗ trợ", "Thực hiện", "Được giao",
+                "STT", "Nhân sự", "Hỗ trợ", "Thực hiện",
+                "Giờ triển khai", "Định mức giờ", "Được giao",
                 "KPI chất lượng", "Tỷ lệ ngày công (%)", "KPI cuối cùng", "Xếp loại");
 
             for (var i = 0; i < rows.Count; i++)
             {
                 var r = rows[i];
-                sheet.Add(i + 1, r.UserFullName, r.SupportPoint, r.ExecutePoint, r.AssignedPoint,
+
+                // Kèm giờ triển khai và định mức: nhóm thực hiện chấm theo giờ, thiếu hai cột này
+                // thì người đọc bảng không lần ra điểm ở đâu ra.
+                sheet.Add(i + 1, r.UserFullName, r.SupportPoint, r.ExecutePoint,
+                    r.ExecuteHours, r.ExecuteTargetHours, r.AssignedPoint,
                     r.QualityPoint, r.AttendanceRate, r.FinalPoint, r.Rank);
             }
 
@@ -234,6 +270,24 @@ namespace TTKDGP.ProjectManager.Controllers
                 .ToList();
         }
 
+        /// <summary>Vài con số gói gọn cả tháng, bày thành hàng thẻ trên đầu màn danh sách.</summary>
+        private static KpiSummary BuildSummary(List<KpiMonth> rows)
+        {
+            var summary = new KpiSummary { Total = rows.Count };
+            if (rows.Count == 0) return summary;
+
+            summary.AveragePoint = Math.Round(rows.Average(r => r.FinalPoint), 1);
+            summary.PassCount = rows.Count(r => r.Rank != KpiRanks.Fail);
+            summary.FailCount = rows.Count - summary.PassCount;
+            summary.ShortHoursCount = rows.Count(r => r.AttendanceRate < 100);
+
+            var best = rows.OrderByDescending(r => r.FinalPoint).First();
+            summary.TopName = best.UserFullName;
+            summary.TopPoint = best.FinalPoint;
+
+            return summary;
+        }
+
         private static object ApiRow(KpiMonth r)
         {
             return new
@@ -244,6 +298,8 @@ namespace TTKDGP.ProjectManager.Controllers
                 month = r.Month,
                 supportPoint = r.SupportPoint,
                 executePoint = r.ExecutePoint,
+                executeHours = r.ExecuteHours,
+                executeTargetHours = r.ExecuteTargetHours,
                 assignedPoint = r.AssignedPoint,
                 qualityPoint = r.QualityPoint,
                 standardDays = r.StandardDays,

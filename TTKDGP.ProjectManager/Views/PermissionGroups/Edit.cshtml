@@ -83,11 +83,25 @@
                                 @foreach (var act in mod.Actions)
                                 {
                                     var code = mod.Perm(act.Code);
-                                    <label class="perm-chk">
+
+                                    @* Tên hiển thị lấy từ màn "Chức năng hệ thống" nếu đã sửa.
+                                       Chức năng ĐANG TẮT vẫn cho tích (để cấu hình sẵn cho lúc bật
+                                       lại) nhưng phải nói rõ là hiện chưa ai dùng được — không thì
+                                       quản trị viên cấp quyền xong lại thắc mắc sao vẫn không vào
+                                       được màn đó. *@
+                                    var isOff = !TTKDGP.ProjectManager.Services.PermissionSettingService.IsEnabled(code);
+                                    var label = TTKDGP.ProjectManager.Services.PermissionSettingService.DisplayName(code, act.Name);
+
+                                    <label class="perm-chk @(isOff ? "is-off" : "")"
+                                           title="@(isOff ? "Chức năng này đang TẮT toàn hệ thống — cấp quyền cũng chưa dùng được." : code)">
                                         <input type="checkbox" name="SelectedPermissions" value="@code"
                                                data-mod="@mod.Code"
                                                @(selected.Contains(code) ? "checked=checked" : "") />
-                                        <span>@act.Name</span>
+                                        <span>@label</span>
+                                        @if (isOff)
+                                        {
+                                            <em class="perm-off-tag">đã tắt</em>
+                                        }
                                     </label>
                                 }
                             </div>

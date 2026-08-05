@@ -20,6 +20,11 @@ namespace TTKDGP.ProjectManager
             // Ẩn header lộ phiên bản ASP.NET MVC.
             MvcHandler.DisableMvcResponseHeader = true;
 
+            // Đọc số thập phân nhận cả dấu chấm lẫn dấu phẩy. Ứng dụng chạy culture vi-VN nhưng
+            // ô <input type="number"> luôn gửi dấu chấm, nên thiếu bước này thì 0,25 lặng lẽ
+            // thành 0 — xem DecimalModelBinder.
+            DecimalModelBinder.Register(ModelBinders.Binders);
+
             // Tạo bảng SQL nếu chưa có và nạp dữ liệu từ JSON sang khi bảng còn trống.
             Data.JsonToSqlMigration.RunIfNeeded();
 
@@ -36,6 +41,13 @@ namespace TTKDGP.ProjectManager
 
             // Gỡ các chức năng từng cấp nhầm cho nhóm Báo cáo công việc — bước trên chỉ biết cấp thêm.
             Data.RoleGroupSeeder.RevokeMisgrantedPermissions();
+
+            // Cắm nguồn ngưỡng xếp loại KPI cho lớp Models (Models không gọi ngược lên Services).
+            Models.KpiRanks.ConfigProvider = () => Services.KpiConfigService.Current;
+
+            // Cắm nguồn trạng thái bật/tắt chức năng — màn "Chức năng" tắt mã nào thì mã đó
+            // không ai dùng được, kể cả tài khoản toàn quyền.
+            Models.Permissions.EnabledProvider = Services.PermissionSettingService.IsEnabled;
 
             // Bộ lịch nhắc báo cáo qua Telegram (sáng thứ Hai và chiều thứ Sáu).
             Infrastructure.ReminderScheduler.Start();

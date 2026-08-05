@@ -11,13 +11,50 @@ namespace TTKDGP.ProjectManager.Models
         public const string Pass = "Đạt";
         public const string Fail = "Chưa đạt";
 
+        /// <summary>
+        /// Nguồn ngưỡng xếp loại đang áp dụng. Lớp Models không được gọi ngược lên Services, nên
+        /// tầng trên (Global.asax lúc khởi động) cắm hàm đọc cấu hình vào đây. Chưa cắm thì dùng
+        /// ngưỡng gốc bên dưới — nhờ vậy Of() không bao giờ hỏng dù chạy ngoài ngữ cảnh web.
+        /// </summary>
+        public static Func<KpiConfig> ConfigProvider { get; set; }
+
+        /// <summary>Ngưỡng gốc của hệ thống, dùng khi chưa cắm nguồn cấu hình.</summary>
+        private static readonly KpiConfig Fallback = new KpiConfig
+        {
+            RankExcellent = 100,
+            RankGood = 95,
+            RankFair = 90,
+            RankPass = 80
+        };
+
+        private static KpiConfig Thresholds
+        {
+            get
+            {
+                var provider = ConfigProvider;
+                if (provider == null) return Fallback;
+
+                try
+                {
+                    return provider() ?? Fallback;
+                }
+                catch
+                {
+                    // Xếp loại không được phép làm sập màn hình vì một lỗi đọc cấu hình.
+                    return Fallback;
+                }
+            }
+        }
+
         public static string Of(decimal finalPoint)
         {
             // Ngưỡng xếp theo điểm nguyên: 99,5 đã được làm tròn thành 100 trước khi vào đây.
-            if (finalPoint >= 100) return Excellent;
-            if (finalPoint >= 95) return Good;
-            if (finalPoint >= 90) return Fair;
-            if (finalPoint >= 80) return Pass;
+            var t = Thresholds;
+
+            if (finalPoint >= t.RankExcellent) return Excellent;
+            if (finalPoint >= t.RankGood) return Good;
+            if (finalPoint >= t.RankFair) return Fair;
+            if (finalPoint >= t.RankPass) return Pass;
             return Fail;
         }
 
@@ -66,6 +103,13 @@ namespace TTKDGP.ProjectManager.Models
         public int ExecuteTotal { get; set; }
         public int ExecuteDone { get; set; }
         public int ExecuteLateCount { get; set; }
+
+        /// <summary>
+        /// Số giờ đã bỏ ra cho việc triển khai (việc đã xong hoặc đang làm, đếm theo ngày làm
+        /// việc riêng biệt). Đây là TỬ SỐ của điểm nhóm thực hiện — nhóm này chấm theo giờ.
+        /// </summary>
+        public decimal ExecuteHours { get; set; }
+
         public decimal ExecutePoint { get; set; }
 
         // ---------- III. Công việc được giao (việc riêng, cộng theo % từng việc) ----------
@@ -109,5 +153,28 @@ namespace TTKDGP.ProjectManager.Models
 
         /// <summary>Giờ thực hiện đã tính, đọc gọn cho view (dòng cũ chưa tính lại thì 0).</summary>
         public decimal WorkedHours { get { return WorkingHours ?? 0; } }
+
+        /// <summary>
+        /// Định mức giờ của nhóm thực hiện trong tháng này — làm đủ bấy nhiêu thì được trọn
+        /// điểm nhóm. Suy từ giờ yêu cầu và tỷ lệ trong cấu hình, không lưu xuống.
+        /// </summary>
+        public decimal ExecuteTargetHours
+        {
+            get
+            {
+                var provider = KpiRanks.ConfigProvider;
+                if (provider == null) return 0;
+
+                try
+                {
+                    var config = provider();
+                    return config == null ? 0 : Math.Round(RequiredHours * config.ExecuteHoursShare, 2);
+                }
+                catch
+                {
+                    return 0;
+                }
+            }
+        }
     }
 }

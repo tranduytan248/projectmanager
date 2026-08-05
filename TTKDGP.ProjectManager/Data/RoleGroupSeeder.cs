@@ -81,11 +81,46 @@ namespace TTKDGP.ProjectManager.Data
 
                 GrantMissingModules(Roles.Manager, newModules, Permissions.ManagerDefaults());
                 GrantMissingModules(Roles.Reporter, newModules, Permissions.ReporterDefaults());
+
+                // Quyền LẺ thêm vào một module ĐÃ CÓ. Bước trên bỏ qua trường hợp này: nó chỉ cấp
+                // khi nhóm chưa biết gì về module, mà nhóm Quản lý thì đã có sẵn cả bộ kpi.* —
+                // nên màn "Cấu hình KPI" sẽ không ai vào được trên bản đang vận hành.
+                GrantSingle(Roles.Manager, Models.Permissions.Kpi.Perm("config"));
+
+                // wteam.manage thay cho lối cũ "ai sửa được dự án thì là Quản lý Tổ". Nhóm Quản lý
+                // đã có sẵn wteam.view nên GrantMissingModules bỏ qua module này — phải cấp lẻ,
+                // không thì họ mất vai Quản lý Tổ khi ta bỏ lối cũ đi.
+                GrantSingle(Roles.Manager, Models.Permissions.Team.Perm("manage"));
             }
             catch (Exception)
             {
                 // Như trên: lỗi hạ tầng thì bỏ qua, lần khởi động sau làm lại.
             }
+        }
+
+        /// <summary>
+        /// Cấp MỘT mã chức năng cho một nhóm nếu chưa có.
+        ///
+        /// Chỉ dùng cho quyền mới thêm vào module sẵn có. Khác với <see cref="GrantMissingModules"/>,
+        /// hàm này cấp lại ở mỗi lần khởi động kể cả khi quản trị viên đã cố ý gỡ — nên chỉ đưa vào
+        /// đây những quyền thực sự phải có, và gỡ khỏi danh sách gọi sau vài phiên bản.
+        /// </summary>
+        private static void GrantSingle(string roleCode, string permCode)
+        {
+            var group = Repository.RoleGroups.FirstOrDefault(
+                g => string.Equals(g.Code, roleCode, StringComparison.OrdinalIgnoreCase));
+
+            if (group == null || group.Permissions == "*") return;
+
+            var current = new HashSet<string>(
+                (group.Permissions ?? string.Empty).Split(',')
+                    .Select(p => p.Trim()).Where(p => p.Length > 0),
+                StringComparer.OrdinalIgnoreCase);
+
+            if (!current.Add(permCode)) return;
+
+            group.Permissions = string.Join(",", current.OrderBy(c => c, StringComparer.OrdinalIgnoreCase));
+            Repository.RoleGroups.Update(group);
         }
 
         /// <summary>
@@ -103,10 +138,20 @@ namespace TTKDGP.ProjectManager.Data
             {
                 // kpi.view bày điểm của TOÀN BỘ nhân sự — số liệu quản lý, không dành cho nhân sự
                 // thường. kpi.pmapprove đi kèm nó nhưng chưa có màn nào dùng.
+                //
+                // wteam.view là "Bảng điều khiển Tổ": bày việc hôm nay, KPI tạm tính và số dự án
+                // của TỪNG người trong tổ. Cũng là số liệu quản lý — chỉ Quản lý Tổ được xem.
                 var revoke = new[]
                 {
                     Models.Permissions.Kpi.Perm(Models.Permissions.View),
-                    Models.Permissions.Kpi.Perm("pmapprove")
+                    Models.Permissions.Kpi.Perm("pmapprove"),
+                    Models.Permissions.Team.Perm(Models.Permissions.View),
+
+                    // Vai Quản lý Tổ và quyền sửa mọi dự án đều là quyền quản lý. PM sửa dự án
+                    // của chính mình đã được BaseController.CanEditProject lo theo ngữ cảnh, không
+                    // cần tới hai mã này.
+                    Models.Permissions.Team.Perm("manage"),
+                    Models.Permissions.WorkProjects.Perm(Models.Permissions.Edit)
                 };
 
                 RevokeFrom(Roles.Reporter, revoke);

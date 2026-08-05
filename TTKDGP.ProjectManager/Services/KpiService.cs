@@ -14,21 +14,31 @@ namespace TTKDGP.ProjectManager.Services
     ///                + điểm việc riêng (cộng % từng việc hoàn thành đúng hạn).
     /// KPI cuối cùng = KPI chất lượng, nhân tỷ lệ ngày công nếu thiếu giờ, làm tròn về số nguyên.
     ///
-    /// Trọng số và mức trừ đọc từ Web.config (khoá "Kpi:...") để đổi được mà không phải build lại.
+    /// Mọi trọng số, mức trừ, số giờ một ngày công và ngưỡng xếp loại đều lấy từ
+    /// <see cref="KpiConfigService"/> — sửa trên màn "Cấu hình KPI", không phải sửa mã nguồn.
     /// </summary>
     public static class KpiService
     {
-        /// <summary>Một ngày công bằng 8 giờ.</summary>
-        public const int HoursPerDay = 8;
+        /// <summary>Bộ tham số đang áp dụng. Gọi tắt cho gọn, KpiConfigService đã nhớ theo request.</summary>
+        private static KpiConfig Config { get { return KpiConfigService.Current; } }
+
+        /// <summary>Số giờ của một ngày công.</summary>
+        public static decimal HoursPerDay { get { return Config.HoursPerDay; } }
 
         // ---------- Cấu hình (KPI_Config) ----------
 
-        public static decimal SupportMaxPoint { get { return AppSettings.Kpi.SupportMaxPoint; } }
-        public static decimal ExecuteMaxPoint { get { return AppSettings.Kpi.ExecuteMaxPoint; } }
+        public static decimal SupportMaxPoint { get { return Config.SupportMaxPoint; } }
+        public static decimal ExecuteMaxPoint { get { return Config.ExecuteMaxPoint; } }
+
+        /// <summary>Điểm chất lượng tối đa khi chưa cộng việc riêng — thang của thanh tiến độ.</summary>
+        public static decimal MaxQualityPoint { get { return SupportMaxPoint + ExecuteMaxPoint; } }
 
         // ---------- Ngày công ----------
 
-        /// <summary>Số ngày làm việc chuẩn của tháng: tổng số ngày trừ Thứ 7 và Chủ nhật.</summary>
+        /// <summary>
+        /// Số ngày làm việc chuẩn của tháng: tổng số ngày trừ những ngày cuối tuần KHÔNG được
+        /// cấu hình tính vào ngày công (mặc định bỏ cả Thứ 7 lẫn Chủ nhật).
+        /// </summary>
         public static int StandardWorkingDays(int year, int month)
         {
             var days = DateTime.DaysInMonth(year, month);
@@ -36,11 +46,21 @@ namespace TTKDGP.ProjectManager.Services
 
             for (var d = 1; d <= days; d++)
             {
-                var dow = new DateTime(year, month, d).DayOfWeek;
-                if (dow != DayOfWeek.Saturday && dow != DayOfWeek.Sunday) count++;
+                if (IsWorkingDay(new DateTime(year, month, d))) count++;
             }
 
             return count;
+        }
+
+        /// <summary>Ngày này có được tính là ngày làm việc không, theo cấu hình cuối tuần.</summary>
+        public static bool IsWorkingDay(DateTime day)
+        {
+            var config = Config;
+
+            if (day.DayOfWeek == DayOfWeek.Saturday) return config.CountSaturday;
+            if (day.DayOfWeek == DayOfWeek.Sunday) return config.CountSunday;
+
+            return true;
         }
 
         // ---------- Chọn việc thuộc tháng ----------
@@ -88,7 +108,7 @@ namespace TTKDGP.ProjectManager.Services
         // ---------- Giờ thực hiện ----------
 
         /// <summary>
-        /// Các ngày làm việc (bỏ Thứ 7, Chủ nhật) mà một đầu việc chiếm chỗ. Khoảng lấy từ ngày bắt
+        /// Các ngày làm việc (bỏ cuối tuần theo cấu hình) mà một đầu việc chiếm chỗ. Khoảng lấy từ ngày bắt
         /// đầu đến hạn hoàn thành; thiếu ngày bắt đầu thì lấy ngày tạo; việc không có hạn nhưng gắn
         /// tuần thì lấy trọn tuần đó; không có cả hai thì không tính được — rỗng.
         /// </summary>
@@ -115,7 +135,7 @@ namespace TTKDGP.ProjectManager.Services
 
             for (var d = from; d <= to; d = d.AddDays(1))
             {
-                if (d.DayOfWeek != DayOfWeek.Saturday && d.DayOfWeek != DayOfWeek.Sunday) days.Add(d);
+                if (IsWorkingDay(d)) days.Add(d);
             }
 
             return days;
@@ -152,29 +172,65 @@ namespace TTKDGP.ProjectManager.Services
         // ---------- Tính điểm ----------
 
         /// <summary>
-        /// Điểm một nhóm việc theo kiểu trừ dần: đủ việc hoàn thành thì được điểm tối đa theo
-        /// tỷ lệ hoàn thành, rồi trừ tiếp phần phạt báo cáo trễ. Không có việc nào thì hưởng
-        /// nguyên điểm tối đa — không có gì để trừ.
+        /// Điểm một nhóm việc: điểm tối đa nhân tỷ lệ hoàn thành, rồi trừ phần phạt báo cáo trễ.
+        ///
+        /// KHÔNG có việc nào trong nhóm thì được 0 — điểm phản ánh việc đã làm. Trước đây nhóm
+        /// rỗng được hưởng trọn điểm tối đa, và điều đó cho ra kết quả ngược đời: người duy nhất
+        /// có việc hỗ trợ nhưng chưa xong bị 0 điểm, trong khi cả tổ không ai được giao việc hỗ
+        /// trợ lại đều được đủ 30. Người làm thua người không làm gì.
         /// </summary>
         private static decimal GroupPoint(decimal maxPoint, int total, int done, decimal latePenalty)
         {
-            var basePoint = total == 0 ? maxPoint : maxPoint * done / total;
-            var point = basePoint - latePenalty;
+            if (total == 0) return 0;
+
+            var point = maxPoint * done / total - latePenalty;
             return point < 0 ? 0 : Math.Round(point, 2);
         }
 
-        /// <summary>Mức trừ nhóm hỗ trợ theo số lần trễ: 0–1 lần không trừ, 2 lần trừ 1%, hơn nữa trừ 2%.</summary>
-        public static decimal SupportLatePenalty(int lateCount)
+        /// <summary>
+        /// Điểm nhóm THỰC HIỆN, tính theo GIỜ đã bỏ ra chứ không theo số đầu việc — và KHÔNG chặn
+        /// trần.
+        ///
+        /// Mốc: dành đúng <see cref="KpiConfig.ExecuteHoursShare"/> phần giờ yêu cầu của tháng cho
+        /// việc triển khai thì được trọn điểm tối đa (mặc định 70% giờ → 70 điểm). Dành nhiều hơn
+        /// thì điểm cao hơn 70 — làm hơn 70% thời gian trong tháng là chuyện bình thường, chặn ở
+        /// đó thì người gánh nhiều dự án và người vừa đủ định mức nhận cùng một điểm.
+        ///
+        /// Không đếm theo số việc xong/tổng như nhóm hỗ trợ: một đầu việc có thể là nửa ngày hoặc
+        /// cả tháng, đếm đầu việc thì ai chẻ nhỏ công việc ra sẽ có lợi.
+        /// </summary>
+        private static decimal ExecutePoint(decimal maxPoint, decimal executeHours,
+            decimal requiredHours, int total, decimal latePenalty)
         {
-            if (lateCount <= 1) return 0;
-            if (lateCount == 2) return AppSettings.Kpi.SupportLate2Penalty;
-            return AppSettings.Kpi.SupportLateMorePenalty;
+            if (total == 0) return 0;
+
+            // Chưa xác định được giờ yêu cầu (tháng nghỉ trọn, hoặc dữ liệu thiếu) thì không có
+            // mẫu số để so — lùi về 0 thay vì chia cho 0.
+            var target = requiredHours * Config.ExecuteHoursShare;
+            if (target <= 0) return 0;
+
+            var point = maxPoint * executeHours / target - latePenalty;
+            return point < 0 ? 0 : Math.Round(point, 2);
         }
 
-        /// <summary>Mức trừ nhóm thực hiện: mỗi lần trễ trừ 0,25%.</summary>
+        /// <summary>
+        /// Mức trừ nhóm hỗ trợ theo số lần trễ, ba bậc theo cấu hình: trong mức miễn thì không
+        /// trừ, vượt đúng một lần trừ mức thứ nhất, vượt nhiều hơn trừ mức thứ hai.
+        /// Mặc định: 0–1 lần không trừ, 2 lần trừ 1, hơn nữa trừ 2.
+        /// </summary>
+        public static decimal SupportLatePenalty(int lateCount)
+        {
+            var config = Config;
+
+            if (lateCount <= config.SupportLateFreeCount) return 0;
+            if (lateCount == config.SupportLateFreeCount + 1) return config.SupportLate2Penalty;
+            return config.SupportLateMorePenalty;
+        }
+
+        /// <summary>Mức trừ nhóm thực hiện: mỗi lần trễ trừ một mức cố định (mặc định 0,25).</summary>
         public static decimal ExecuteLatePenalty(int lateCount)
         {
-            return lateCount * AppSettings.Kpi.ExecuteLatePenalty;
+            return lateCount * Config.ExecuteLatePenalty;
         }
 
         /// <summary>Làm tròn về số nguyên, nửa điểm trở lên làm tròn lên (99,5 → 100).</summary>
@@ -235,6 +291,19 @@ namespace TTKDGP.ProjectManager.Services
             var execute = tasks.Where(t => t.Kind == TaskKinds.Checklist).ToList();
             var assigned = tasks.Where(t => t.Kind == TaskKinds.Standalone).ToList();
 
+            // Ngày công tính TRƯỚC phần điểm: nhóm thực hiện nay chấm theo giờ, mà giờ yêu cầu
+            // của tháng chính là mẫu số của nó. Đảo thứ tự là chia cho 0.
+            //
+            // LeaveDays lấy thẳng từ các ĐƠN NGHỈ PHÉP ĐÃ DUYỆT của tháng, không còn là ô nhập
+            // tay: hai nguồn số liệu song song thì sớm muộn cũng lệch nhau, và ô nhập tay sửa
+            // được nghĩa là ai có quyền chấm KPI cũng tự nâng điểm được cho mình. Muốn đổi số
+            // ngày nghỉ thì sửa ở màn Duyệt nghỉ phép.
+            row.StandardDays = StandardWorkingDays(row.Year, row.Month);
+            row.LeaveDays = LeaveService.ApprovedDays(row.UserId, row.Year, row.Month);
+            var requiredDays = row.StandardDays - row.LeaveDays;
+            row.RequiredHours = requiredDays > 0 ? requiredDays * HoursPerDay : 0;
+            row.WorkingHours = Math.Round(WorkedHours(tasks), 2);
+
             // "Báo cáo trễ" = việc hoàn thành sau hạn. Việc quá hạn còn treo không đếm vào đây —
             // nó đã bị phạt qua tỷ lệ hoàn thành (done/total) rồi.
             row.SupportTotal = support.Count;
@@ -243,11 +312,14 @@ namespace TTKDGP.ProjectManager.Services
             row.SupportPoint = GroupPoint(SupportMaxPoint, row.SupportTotal, row.SupportDone,
                 SupportLatePenalty(row.SupportLateCount));
 
+            // Nhóm thực hiện chấm theo GIỜ đã bỏ ra, không theo số đầu việc — và không chặn trần.
+            // Giờ đếm trên việc đã xong hoặc đang làm, theo ngày làm việc riêng biệt.
             row.ExecuteTotal = execute.Count;
             row.ExecuteDone = execute.Count(t => t.State == TaskStates.Done);
             row.ExecuteLateCount = execute.Count(t => t.State == TaskStates.Done && !t.IsOnTime);
-            row.ExecutePoint = GroupPoint(ExecuteMaxPoint, row.ExecuteTotal, row.ExecuteDone,
-                ExecuteLatePenalty(row.ExecuteLateCount));
+            row.ExecuteHours = Math.Round(WorkedHours(execute), 2);
+            row.ExecutePoint = ExecutePoint(ExecuteMaxPoint, row.ExecuteHours, row.RequiredHours,
+                row.ExecuteTotal, ExecuteLatePenalty(row.ExecuteLateCount));
 
             // Việc riêng: điểm cộng đã ấn định lúc giao (BonusPercent), chỉ tính khi hoàn thành
             // ĐÚNG HẠN — đúng định nghĩa "điểm cộng KPI khi hoàn thành đúng hạn" lúc giao việc.
@@ -257,16 +329,6 @@ namespace TTKDGP.ProjectManager.Services
                 assigned.Where(t => t.State == TaskStates.Done && t.IsOnTime).Sum(t => t.BonusPercent), 2);
 
             row.QualityPoint = Math.Round(row.SupportPoint + row.ExecutePoint + row.AssignedPoint, 2);
-
-            // Ngày công. LeaveDays nay lấy thẳng từ các ĐƠN NGHỈ PHÉP ĐÃ DUYỆT của tháng, không
-            // còn là ô nhập tay: hai nguồn số liệu song song thì sớm muộn cũng lệch nhau, và ô
-            // nhập tay sửa được nghĩa là ai có quyền chấm KPI cũng tự nâng điểm được cho mình.
-            // Muốn đổi số ngày nghỉ thì sửa ở màn Duyệt nghỉ phép.
-            row.StandardDays = StandardWorkingDays(row.Year, row.Month);
-            row.LeaveDays = LeaveService.ApprovedDays(row.UserId, row.Year, row.Month);
-            var requiredDays = row.StandardDays - row.LeaveDays;
-            row.RequiredHours = requiredDays > 0 ? requiredDays * HoursPerDay : 0;
-            row.WorkingHours = Math.Round(WorkedHours(tasks), 2);
 
             row.AttendanceRate = AttendanceRate(row);
             row.FinalPoint = RoundFinal(FinalBeforeRounding(row));

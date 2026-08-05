@@ -122,8 +122,17 @@ namespace TTKDGP.ProjectManager.Models
 
         // ---------- Bộ quản lý công việc & KPI (bảng riêng, chạy song song bộ cũ) ----------
 
+        /// <summary>
+        /// Bảng điều khiển Tổ, và quyền "Quản lý Tổ" nói chung.
+        ///
+        /// <c>wteam.manage</c> là vai QUẢN LÝ TỔ: xem/sửa mọi dự án và mọi đầu việc của tổ, xem
+        /// việc của người khác. Trước đây vai này được SUY RA từ quyền sửa dự án
+        /// (<c>wprojects.edit</c>) — cấp cho ai quyền sửa dự án là vô tình cho họ thấy việc của
+        /// cả tổ, mà nhìn màn Nhóm quyền không tài nào đoán ra. Nay nó là một ô tích riêng.
+        /// </summary>
         public static readonly PermModule Team =
-            new PermModule("wteam", "Bảng điều khiển Tổ", "Công việc", new[] { A(View, "Xem") });
+            new PermModule("wteam", "Bảng điều khiển Tổ", "Công việc",
+                new[] { A(View, "Xem bảng điều khiển"), A("manage", "Quản lý Tổ — xem và sửa mọi dự án, mọi việc") });
 
         public static readonly PermModule WorkProjects =
             new PermModule("wprojects", "Dự án", "Công việc", Crud());
@@ -146,7 +155,8 @@ namespace TTKDGP.ProjectManager.Models
             new PermModule("kpi", "Chấm KPI", "Công việc",
                 new[] { A(View, "Xem"), A("generate", "Sinh bảng chấm"),
                         A("pmapprove", "PM duyệt"), A("approve", "Duyệt lần cuối"),
-                        A("export", "Kết xuất"), A("send", "Gửi email") });
+                        A("export", "Kết xuất"), A("send", "Gửi email"),
+                        A("config", "Sửa công thức chấm") });
 
         /// <summary>
         /// Nghỉ phép. "Xem" là quyền nền AI CŨNG CÓ — đó là màn tự đăng ký và xem đơn của chính
@@ -189,12 +199,23 @@ namespace TTKDGP.ProjectManager.Models
         public static readonly PermModule Roles =
             new PermModule("roles", "Nhóm quyền", "Quản trị", Crud());
 
+        /// <summary>
+        /// Danh mục chức năng: đổi tên hiển thị và BẬT/TẮT từng chức năng của phần mềm.
+        ///
+        /// Tách khỏi "roles" vì mức ảnh hưởng khác hẳn: sửa nhóm quyền chỉ đổi quyền của một
+        /// nhóm, còn tắt một chức năng là đóng nó với TẤT CẢ mọi người, kể cả tài khoản toàn
+        /// quyền. Người được giao cấp quyền hàng ngày không nhất thiết được đụng tới cái sau.
+        /// </summary>
+        public static readonly PermModule Functions =
+            new PermModule("functions", "Chức năng hệ thống", "Quản trị",
+                new[] { A(View, "Xem"), A(Edit, "Đổi tên / Bật tắt") });
+
         /// <summary>Toàn bộ module, thứ tự dùng để hiển thị trên màn cấu hình.</summary>
         public static readonly List<PermModule> All = new List<PermModule>
         {
             Home, MyReports, Projects, Members, Assignments, TeamReports, WorkLogs, Catalog,
             Team, WorkProjects, WorkTasks, WorkReports, Kpi, Leaves, Workload,
-            Hrm, Notifications, GoConnect, Integrations, Users, Roles
+            Hrm, Notifications, GoConnect, Integrations, Users, Roles, Functions
         };
 
         /// <summary>Tất cả mã chức năng đầy đủ (module.action) — dùng để cấp toàn quyền.</summary>
@@ -206,7 +227,7 @@ namespace TTKDGP.ProjectManager.Models
         /// <summary>Bộ chức năng mặc định của nhóm "Quản lý" — dùng cho seed và làm phương án dự phòng.</summary>
         public static IEnumerable<string> ManagerDefaults()
         {
-            var codes = new List<string> { Home.Perm(View), Team.Perm(View) };
+            var codes = new List<string> { Home.Perm(View), Team.Perm(View), Team.Perm("manage") };
             codes.AddRange(new[] { MyReports, Projects, Members, Assignments, TeamReports,
                                    Catalog, WorkLogs,
                                    WorkProjects, WorkTasks, WorkReports, Kpi, Leaves, Workload }
@@ -339,13 +360,15 @@ namespace TTKDGP.ProjectManager.Models
                         Child("Trạng thái dự án", "ProjectStatuses", Catalog.Perm(View)),
                         Child("Trạng thái tham gia", "WorkStatuses", Catalog.Perm(View)),
                         Child("Vai trò", "MemberRoles", Catalog.Perm(View))),
+                    L("Cấu hình KPI", "KpiConfig", Kpi.Perm("config")),
                     L("Tình trạng hệ thống", "SystemStatus", Users.Perm(View)),
                     L("Thông báo", "Notifications", Notifications.Perm(View)),
                     L("Mẫu email", "EmailTemplates", Notifications.Perm(View)),
                     L("GoConnect", "GoConnect", GoConnect.Perm(View)),
                     L("Hệ thống tích hợp", "IntegrationSystems", Integrations.Perm(View)),
                     L("Người dùng", "Users", Users.Perm(View)),
-                    L("Nhóm quyền", "PermissionGroups", Roles.Perm(View))
+                    L("Nhóm quyền", "PermissionGroups", Roles.Perm(View)),
+                    L("Chức năng hệ thống", "Functions", Functions.Perm(View))
                 }
             }
         };
@@ -423,10 +446,45 @@ namespace TTKDGP.ProjectManager.Models
             return set;
         }
 
-        /// <summary>Tài khoản có mã chức năng này không. Mã rỗng = không yêu cầu (ai cũng qua).</summary>
+        /// <summary>
+        /// Nguồn trạng thái BẬT/TẮT của từng mã chức năng. Lớp Models không được gọi ngược lên
+        /// Services, nên tầng trên (Global.asax lúc khởi động) cắm hàm kiểm vào đây. Chưa cắm thì
+        /// coi mọi chức năng đều bật — nhờ vậy UserHas không bao giờ hỏng dù chạy ngoài web.
+        /// </summary>
+        public static Func<string, bool> EnabledProvider { get; set; }
+
+        /// <summary>
+        /// Chức năng có đang mở không, hỏi qua <see cref="EnabledProvider"/>.
+        /// Lỗi đọc cấu hình KHÔNG được phép khoá mọi người ra ngoài, nên trượt thì coi như mở.
+        /// </summary>
+        private static bool IsEnabled(string permCode)
+        {
+            var provider = EnabledProvider;
+            if (provider == null) return true;
+
+            try
+            {
+                return provider(permCode);
+            }
+            catch
+            {
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Tài khoản có mã chức năng này không. Mã rỗng = không yêu cầu (ai cũng qua).
+        ///
+        /// Chức năng bị TẮT trên màn "Chức năng" thì không ai qua được, KỂ CẢ tài khoản toàn
+        /// quyền ("*"). Đó là điểm khác giữa "tắt" và "gỡ khỏi nhóm quyền": tắt là đóng hẳn tính
+        /// năng khỏi phần mềm, còn gỡ khỏi nhóm chỉ là không cấp cho nhóm đó. Nếu "*" vẫn lọt qua
+        /// thì quản trị viên tắt một màn rồi vẫn thấy nó, và sẽ tưởng nút tắt bị hỏng.
+        /// </summary>
         public static bool UserHas(string userRole, string permCode)
         {
             if (string.IsNullOrEmpty(permCode)) return true;
+            if (!IsEnabled(permCode)) return false;
+
             var set = ResolvePermissions(userRole);
             return set.Contains("*") || set.Contains(permCode);
         }

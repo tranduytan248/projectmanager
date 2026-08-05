@@ -1310,6 +1310,23 @@ table.data .cell-sub.muted { font-size: 12.5px; line-height: 1.4; }
 }
 .perm-chk input { margin: 0; }
 
+/* Chức năng đang TẮT toàn hệ thống: vẫn tích được (cấu hình sẵn cho lúc bật lại) nhưng phải
+   nhìn ra ngay là chưa dùng được, không thì cấp quyền xong lại tưởng hệ thống hỏng. */
+.perm-chk.is-off > span { color: var(--text-faint); text-decoration: line-through; }
+
+.perm-off-tag {
+    font-style: normal;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: .3px;
+    text-transform: uppercase;
+    color: var(--st-late);
+    background: var(--st-late-soft);
+    border: 1px solid var(--st-late-line);
+    border-radius: var(--radius-pill);
+    padding: 1px 7px;
+}
+
 @media (max-width: 640px) {
     .perm-mod { flex-basis: 100%; }
 }
@@ -3264,4 +3281,256 @@ summary.rowbtn::marker { content: ""; }
 @media (prefers-reduced-motion: reduce) {
     .ringstat-fill,
     .prog-track i { transition: none; }
+}
+
+/* ===== Màn KPI: bảng xếp hạng, vòng điểm, diễn giải công thức =====
+
+   Toàn bộ khối này bám thang màu theo Ý NGHĨA (--st-*) chứ không dùng --primary: điểm số là
+   TÌNH TRẠNG của dữ liệu, không phải chỗ bấm được. Xem lại phần đầu tệp về quy ước đó. */
+
+/* Ba sắc của thanh tiến độ, đặt tên theo ý nghĩa chứ không theo màu — đổi sắc độ sau này
+   thì sửa ở đây, các view không phải biết. */
+.progress-fill.bar-ok   { background: var(--st-ok); }
+.progress-fill.bar-warn { background: var(--st-warn); }
+.progress-fill.bar-late { background: var(--st-late); }
+
+/* Thẻ tổng quan: tên người dài thì thu chữ lại, không để tràn ra khỏi thẻ. */
+.stat-value-sm {
+    font-size: 15px;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ----- Huy chương ba hạng đầu -----
+   Bảng đã sắp theo điểm nên thứ hạng vốn có sẵn; huy chương chỉ làm nó nhìn thấy được mà
+   không thêm cột nào. Từ hạng 4 trở đi vẫn là số thường, tránh biến cả bảng thành sắc màu. */
+.rank-medal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 700;
+    color: #6b4e00;
+    background: #f6e5b0;
+    border: 1px solid #e3cd8c;
+}
+.rank-medal.rank-2 { color: #4b5462; background: #e6eaf0; border-color: #cbd3de; }
+.rank-medal.rank-3 { color: #7a4a25; background: #f2e0d2; border-color: #dcc3ad; }
+
+/* ----- Ô điểm trong bảng xếp hạng -----
+   Số và thanh nằm chung một ô: thanh không kèm số thì không đọc chính xác được, còn số không
+   kèm thanh thì mắt không so sánh nhanh giữa các dòng. */
+.kpi-col-score { min-width: 160px; }
+
+.kpi-cell { display: flex; align-items: center; gap: 10px; }
+
+.kpi-cell-num {
+    font-size: 17px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    min-width: 34px;
+    text-align: right;
+    flex: none;
+}
+
+.kpi-cell-bar { flex: 1; min-width: 60px; }
+
+/* ----- Vòng điểm trên màn chi tiết -----
+   Vẽ bằng conic-gradient thay vì SVG: chỉ cần một biến --dial là đủ, không phải tính chu vi
+   đường tròn rồi đặt stroke-dasharray. Phần lõi trắng đè lên giữa tạo thành vành. */
+.score-block {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    flex-wrap: wrap;
+}
+
+.score-dial {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    flex: none;
+    border-radius: 50%;
+    background: conic-gradient(var(--dial-color) 0 var(--dial, 0%), var(--border) var(--dial, 0%) 100%);
+}
+
+.score-dial { --dial-color: var(--st-ok); }
+.score-dial.tone-warn { --dial-color: var(--st-warn); }
+.score-dial.tone-late { --dial-color: var(--st-late); }
+
+.score-dial-inner {
+    position: absolute;
+    inset: 11px;
+    border-radius: 50%;
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.1;
+}
+
+.score-dial-inner strong {
+    font-size: 30px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.score-dial-inner em {
+    font-style: normal;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.score-side { flex: 1; min-width: 190px; }
+
+.score-side-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    padding: 7px 0;
+    font-size: 13.5px;
+    border-bottom: 1px solid var(--border-soft);
+}
+.score-side-line:last-child { border-bottom: none; }
+.score-side-line > span { color: var(--text-muted); }
+.score-side-line > strong { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* Huy hiệu xếp loại phóng to cho khối điểm chính — cùng màu, chỉ khác cỡ. */
+.badge-lg {
+    font-size: 13px;
+    padding: 5px 13px;
+    margin-bottom: 10px;
+}
+
+/* ----- Tóm tắt từng nhóm việc trên màn chi tiết -----
+   Đặt ngay trên bảng chi tiết: người xem thấy kết quả nhóm trước, rồi mới soi từng dòng nếu
+   thắc mắc — ngược lại thì phải đọc hết bảng mới biết nhóm này được bao nhiêu. */
+.group-summary { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+
+.group-score {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+    flex: none;
+    min-width: 96px;
+}
+.group-score > strong { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.group-score > em { font-style: normal; font-size: 12.5px; color: var(--text-muted); }
+
+.group-bars { flex: 1; min-width: 220px; }
+
+.group-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+    font-size: 12.5px;
+    color: var(--text-muted);
+}
+.group-meta strong { color: var(--text); font-weight: 600; }
+
+/* ----- Màn Cấu hình KPI: bản xem trước công thức -----
+   Bày công thức thành chuỗi chip có màu thay vì một dòng chữ: mỗi thành phần một khối riêng
+   thì nhìn ra ngay cái nào cộng, cái nào nhân, cái nào là kết quả. */
+.formula-preview { display: flex; flex-direction: column; gap: 12px; }
+
+.formula-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.formula-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 13px;
+    border-radius: var(--radius-pill);
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid transparent;
+    font-variant-numeric: tabular-nums;
+}
+
+.formula-op { color: var(--text-faint); font-weight: 700; font-size: 15px; }
+
+.chip-support { background: var(--st-ok-soft);   color: var(--st-ok);   border-color: var(--st-ok-line); }
+.chip-execute { background: var(--primary-soft); color: var(--primary); border-color: #bcd5f2; }
+.chip-bonus   { background: #f0eefb;             color: #4b3f9e;        border-color: #d5cef2; }
+.chip-penalty { background: var(--st-late-soft); color: var(--st-late); border-color: var(--st-late-line); }
+.chip-rate    { background: var(--st-warn-soft); color: var(--st-warn); border-color: var(--st-warn-line); }
+.chip-quality { background: var(--st-idle-soft); color: var(--st-idle); border-color: var(--st-idle-line); }
+
+.chip-final {
+    background: var(--st-ok);
+    color: #fff;
+    border-color: var(--st-ok);
+}
+
+.formula-note { margin: 4px 0 0; font-size: 12.5px; color: var(--text-muted); }
+
+/* ----- Dải xếp loại -----
+   Năm ô liền nhau theo đúng thứ tự điểm tăng dần. Bốn ô nhập số rời rạc thì phải tự nhẩm mới
+   biết khoảng "Khá" rộng hay hẹp; nhìn dải là thấy ngay. */
+.rank-scale {
+    display: flex;
+    margin-top: 16px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 1px solid var(--border);
+}
+
+.rank-seg {
+    flex: 1;
+    padding: 10px 12px;
+    font-size: 12.5px;
+    font-weight: 600;
+    text-align: center;
+    border-right: 1px solid var(--border);
+}
+.rank-seg:last-child { border-right: none; }
+
+.rank-seg em {
+    display: block;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 11.5px;
+    margin-top: 3px;
+    opacity: .85;
+    font-variant-numeric: tabular-nums;
+}
+
+.seg-fail { background: var(--st-late-soft); color: var(--st-late); }
+.seg-pass { background: var(--st-warn-soft); color: var(--st-warn); }
+.seg-fair { background: var(--st-idle-soft); color: var(--st-idle); }
+.seg-good { background: var(--st-ok-soft);   color: var(--st-ok); }
+.seg-exc  { background: var(--st-ok);        color: #fff; }
+
+/* Ngưỡng nhập sai thứ tự: làm mờ cả dải và viền đỏ, khỏi phải bấm lưu mới biết. */
+.rank-scale.is-invalid {
+    border-color: var(--st-late);
+    opacity: .5;
+}
+
+/* Hai ô chọn ngày cuối tuần nằm cạnh nhau trong một ô của form-grid. */
+.check-row { display: flex; gap: 18px; flex-wrap: wrap; }
+.check-row .check-inline { padding-bottom: 0; }
+
+@media (max-width: 640px) {
+    .score-dial { width: 96px; height: 96px; }
+    .score-dial-inner strong { font-size: 24px; }
+
+    /* Dải xếp loại năm ô trên điện thoại thì mỗi ô còn một hai chữ — xếp dọc lại. */
+    .rank-scale { flex-direction: column; }
+    .rank-seg { border-right: none; border-bottom: 1px solid var(--border); text-align: left; }
+    .rank-seg:last-child { border-bottom: none; }
+    .rank-seg em { display: inline; margin-left: 6px; }
 }

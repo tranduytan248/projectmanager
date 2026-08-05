@@ -17,8 +17,33 @@
         <h1>Nhóm quyền</h1>
         <p>Mỗi nhóm nắm một tập chức năng. Menu và quyền truy cập của tài khoản hiện theo nhóm được gán.</p>
     </div>
-    <a class="btn btn-primary" href="@Url.Action("Edit", "PermissionGroups")">+ Tạo nhóm quyền</a>
+    <div class="btn-row">
+        <a class="btn btn-primary" href="@Url.Action("Edit", "PermissionGroups")">+ Tạo nhóm quyền</a>
+        @{
+            var canSeeFunctions = ViewBag.Can as Func<string, bool>;
+            if (canSeeFunctions != null && canSeeFunctions("functions.view"))
+            {
+                <a class="btn btn-default" href="@Url.Action("Index", "Functions")">Chức năng hệ thống &rarr;</a>
+            }
+        }
+    </div>
 </div>
+
+@{
+    var disabledCount = TTKDGP.ProjectManager.Services.PermissionSettingService.DisabledCodes().Count;
+}
+@if (disabledCount > 0)
+{
+    <div class="card">
+        <div class="card-body">
+            <span class="hint">
+                <span class="danger-text">Đang có @disabledCount chức năng bị tắt</span>
+                ở màn <a href="@Url.Action("Index", "Functions")">Chức năng hệ thống</a> — cấp cho
+                nhóm cũng chưa ai dùng được cho tới khi bật lại.
+            </span>
+        </div>
+    </div>
+}
 
 <div class="card">
     <div class="table-wrap">

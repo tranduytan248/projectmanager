@@ -93,6 +93,12 @@ namespace TTKDGP.ProjectManager.Data
         private static readonly Lazy<SqlStore<LeaveRequest>> _leaveRequests =
             new Lazy<SqlStore<LeaveRequest>>(() => new SqlStore<LeaveRequest>("LeaveRequests"));
 
+        private static readonly Lazy<SqlStore<KpiConfig>> _kpiConfigs =
+            new Lazy<SqlStore<KpiConfig>>(() => new SqlStore<KpiConfig>("KpiConfigs"));
+
+        private static readonly Lazy<SqlStore<PermissionSetting>> _permissionSettings =
+            new Lazy<SqlStore<PermissionSetting>>(() => new SqlStore<PermissionSetting>("PermissionSettings"));
+
         /// <summary>Dự án trong bộ quản lý công việc.</summary>
         public static SqlStore<WorkProject> WorkProjects { get { return _workProjects.Value; } }
 
@@ -125,6 +131,12 @@ namespace TTKDGP.ProjectManager.Data
 
         /// <summary>Đơn đăng ký nghỉ phép của cá nhân, chờ Quản lý Tổ duyệt.</summary>
         public static SqlStore<LeaveRequest> LeaveRequests { get { return _leaveRequests.Value; } }
+
+        /// <summary>Bộ tham số công thức KPI đang áp dụng — luôn đúng một dòng, xem KpiConfigService.</summary>
+        public static SqlStore<KpiConfig> KpiConfigs { get { return _kpiConfigs.Value; } }
+
+        /// <summary>Tên hiển thị và trạng thái bật/tắt của từng mã chức năng.</summary>
+        public static SqlStore<PermissionSetting> PermissionSettings { get { return _permissionSettings.Value; } }
 
         /// <summary>Thông báo cá nhân hiện ở chuông trên thanh đầu trang.</summary>
         public static SqlStore<UserNotification> UserNotifications { get { return _userNotifications.Value; } }

@@ -32,11 +32,14 @@
     </div>
 </div>
 
+@* Khối KPI cá nhân bày đúng như màn Chi tiết KPI của Quản lý Tổ: vòng điểm bên trái, ngày công
+   bên phải. Hai màn nói về cùng một con số nên phải nhìn giống nhau — người xem điểm của mình
+   rồi được quản lý mở màn kia ra trao đổi thì không phải học lại cách đọc. *@
 <div class="two-col">
     @* ----- KPI tháng ----- *@
     <div class="card">
         <div class="card-head">
-            <span>KPI tháng @Model.Month/@Model.Year</span>
+            <span>Kết quả tháng @Model.Month/@Model.Year</span>
             <span class="muted" style="font-weight:400">
                 @(Model.IsCurrentMonth ? "Tạm tính theo dữ liệu hiện có" : "Tháng đã qua")
             </span>
@@ -48,14 +51,30 @@
             }
             else
             {
-                <div class="kpi-head">
-                    <div class="kpi-score">@Model.MyKpi.FinalPoint.ToString("0.##")</div>
-                    <span class="kpi-score-unit">/ 100 điểm</span>
-                    <span class="@KpiRanks.BadgeClass(Model.MyKpi.Rank)">@Model.MyKpi.Rank</span>
-                </div>
-
-                <div class="progress-track" style="margin-top:12px">
-                    <div class="progress-fill" style="width:@(Math.Min(100, (int)Model.MyKpi.FinalPoint))%"></div>
+                @* Vòng điểm vẽ bằng conic-gradient, thang theo trần cấu hình chứ không cố định 100:
+                   đổi trọng số thành 40/80 thì vòng phải theo, không thì ai cũng trông như vượt trần. *@
+                <div class="score-block">
+                    <div class="score-dial @Model.ScoreTone" style="--dial: @Model.ScorePercent%">
+                        <div class="score-dial-inner">
+                            <strong>@Model.MyKpi.FinalPoint.ToString("0")</strong>
+                            <em>/ @Model.ScoreMax.ToString("0.##")</em>
+                        </div>
+                    </div>
+                    <div class="score-side">
+                        <span class="@KpiRanks.BadgeClass(Model.MyKpi.Rank) badge-lg">@Model.MyKpi.Rank</span>
+                        <div class="score-side-line">
+                            <span>Điểm chất lượng</span>
+                            <strong>@Model.MyKpi.QualityPoint.ToString("0.##")</strong>
+                        </div>
+                        <div class="score-side-line">
+                            <span>Tỷ lệ giờ công</span>
+                            <strong class="@(Model.HoursShort > 0 ? "danger-text" : "ok-text")">@Model.MyKpi.AttendanceRate.ToString("0.##")%</strong>
+                        </div>
+                        <div class="score-side-line">
+                            <span>Tổng số việc</span>
+                            <strong>@(Model.MyKpi.SupportTotal + Model.MyKpi.ExecuteTotal + Model.MyKpi.AssignedTotal)</strong>
+                        </div>
+                    </div>
                 </div>
 
                 @* Bày ra từng bước tính: cộng ba nhóm ra điểm chất lượng, rồi nhân tỷ lệ giờ công
@@ -64,17 +83,41 @@
                     <tbody>
                         <tr>
                             <td class="op"></td>
-                            <td>Hỗ trợ <span class="muted">(@Model.MyKpi.SupportDone/@Model.MyKpi.SupportTotal việc, tối đa @KpiService.SupportMaxPoint.ToString("0.##"))</span></td>
+                            <td>
+                                Hỗ trợ
+                                <span class="muted">
+                                    @if (Model.MyKpi.SupportTotal == 0)
+                                    {
+                                        <text>(chưa được giao việc nào)</text>
+                                    }
+                                    else
+                                    {
+                                        <text>(@Model.MyKpi.SupportDone/@Model.MyKpi.SupportTotal việc, tối đa @KpiService.SupportMaxPoint.ToString("0.##"))</text>
+                                    }
+                                </span>
+                            </td>
                             <td class="val">@Model.MyKpi.SupportPoint.ToString("0.##")</td>
                         </tr>
                         <tr>
                             <td class="op">+</td>
-                            <td>Triển khai <span class="muted">(@Model.MyKpi.ExecuteDone/@Model.MyKpi.ExecuteTotal việc, tối đa @KpiService.ExecuteMaxPoint.ToString("0.##"))</span></td>
+                            <td>
+                                Triển khai
+                                <span class="muted">
+                                    @if (Model.MyKpi.ExecuteTotal == 0)
+                                    {
+                                        <text>(chưa được giao việc nào)</text>
+                                    }
+                                    else
+                                    {
+                                        <text>(@Model.MyKpi.ExecuteHours.ToString("0.#")/@Model.MyKpi.ExecuteTargetHours.ToString("0.#") giờ định mức)</text>
+                                    }
+                                </span>
+                            </td>
                             <td class="val">@Model.MyKpi.ExecutePoint.ToString("0.##")</td>
                         </tr>
                         <tr>
                             <td class="op">+</td>
-                            <td>Giao việc riêng <span class="muted">(@Model.MyKpi.AssignedDone/@Model.MyKpi.AssignedTotal việc)</span></td>
+                            <td>Việc riêng <span class="muted">(@Model.MyKpi.AssignedDone/@Model.MyKpi.AssignedTotal việc đúng hạn)</span></td>
                             <td class="val">@Model.MyKpi.AssignedPoint.ToString("0.##")</td>
                         </tr>
                         <tr class="sum">
@@ -92,11 +135,18 @@
                         </tr>
                         <tr class="total">
                             <td class="op">=</td>
-                            <td>Điểm KPI tháng này</td>
-                            <td class="val">@Model.MyKpi.FinalPoint.ToString("0.##")</td>
+                            <td>KPI tháng @Model.Month/@Model.Year <span class="muted">(đã làm tròn)</span></td>
+                            <td class="val">@Model.MyKpi.FinalPoint.ToString("0")</td>
                         </tr>
                     </tbody>
                 </table>
+
+                <span class="hint">
+                    Xếp loại hiện hành: &ge;@KpiConfigService.Current.RankExcellent.ToString("0.##") Xuất sắc ·
+                    @KpiConfigService.Current.RankGood.ToString("0.##") Tốt ·
+                    @KpiConfigService.Current.RankFair.ToString("0.##") Khá ·
+                    @KpiConfigService.Current.RankPass.ToString("0.##") Đạt · thấp hơn là Chưa đạt.
+                </span>
 
                 @* Quy tắc chấm để gập lại: người xem thường chỉ cần con số, nhưng khi thắc mắc
                    "sao lại ra điểm này" thì phải có chỗ tra ngay tại chỗ. *@
@@ -113,34 +163,45 @@
                             <div>
                                 Điểm = @KpiService.SupportMaxPoint.ToString("0.##") ×
                                 (số việc hoàn thành ÷ tổng số việc), rồi trừ phần báo cáo trễ.
-                                Không có việc nào thì hưởng trọn điểm — không có gì để trừ.
+                                Không được giao việc nào trong nhóm thì nhóm đó 0 điểm — điểm chấm
+                                trên việc đã làm.
                             </div>
                             <div class="muted">
-                                Trễ: 0–1 lần không trừ · đúng 2 lần trừ @AppSettings.Kpi.SupportLate2Penalty.ToString("0.##") ·
-                                hơn 2 lần trừ @AppSettings.Kpi.SupportLateMorePenalty.ToString("0.##")
+                                Trễ: 0–@KpiConfigService.Current.SupportLateFreeCount lần không trừ ·
+                                @(KpiConfigService.Current.SupportLateFreeCount + 1) lần trừ
+                                @KpiConfigService.Current.SupportLate2Penalty.ToString("0.##") ·
+                                nhiều hơn trừ @KpiConfigService.Current.SupportLateMorePenalty.ToString("0.##")
                             </div>
                         </div>
 
                         <div class="kpi-rules-item">
-                            <strong>Triển khai — tối đa @KpiService.ExecuteMaxPoint.ToString("0.##") điểm</strong>
+                            <strong>Triển khai — @KpiService.ExecuteMaxPoint.ToString("0.##") điểm khi đủ định mức, KHÔNG chặn trên</strong>
                             <div>
-                                Cách tính giống nhóm hỗ trợ, nhưng mỗi lần báo cáo trễ trừ
-                                @AppSettings.Kpi.ExecuteLatePenalty.ToString("0.##") điểm.
+                                Chấm theo <strong>số giờ</strong> bỏ ra cho việc triển khai, không
+                                theo số đầu việc. Định mức =
+                                @KpiConfigService.Current.ExecuteHoursShare.ToString("0.##") ×
+                                giờ yêu cầu của tháng. Làm nhiều giờ hơn định mức thì điểm vượt lên,
+                                không bị chặn.
+                            </div>
+                            <div class="muted">
+                                Mỗi lần báo cáo trễ trừ
+                                @KpiConfigService.Current.ExecuteLatePenalty.ToString("0.##") điểm.
                             </div>
                         </div>
 
                         <div class="kpi-rules-item">
-                            <strong>Giao việc riêng — điểm cộng</strong>
+                            <strong>Việc riêng — điểm cộng</strong>
                             <div>
                                 Mỗi việc mang sẵn mức điểm cộng ấn định lúc giao, chỉ tính khi hoàn
-                                thành <strong>đúng hạn</strong>.
+                                thành <strong>đúng hạn</strong>. Cộng thêm ngoài trần
+                                @Model.ScoreMax.ToString("0.##") điểm của hai nhóm trên.
                             </div>
                         </div>
 
                         <div class="kpi-rules-item">
                             <strong>Tỷ lệ giờ công</strong>
                             <div>
-                                Giờ yêu cầu = (ngày công chuẩn − ngày nghỉ phép đã duyệt) × @KpiService.HoursPerDay giờ.
+                                Giờ yêu cầu = (ngày công chuẩn − ngày nghỉ phép đã duyệt) × @KpiService.HoursPerDay.ToString("0.##") giờ.
                                 Giờ đã làm đếm theo <strong>ngày làm việc riêng biệt</strong> của các việc đang làm
                                 hoặc đã xong — nhiều việc cùng một khoảng chỉ tính một lần, không nhân lên
                                 theo số đầu việc.
@@ -153,8 +214,11 @@
                         <div class="kpi-rules-item">
                             <strong>Xếp loại</strong>
                             <div>
-                                Từ 100 điểm: Xuất sắc · từ 95: Tốt · từ 90: Khá · từ 80: Đạt ·
-                                dưới 80: Chưa đạt.
+                                Từ @KpiConfigService.Current.RankExcellent.ToString("0.##") điểm: Xuất sắc ·
+                                từ @KpiConfigService.Current.RankGood.ToString("0.##"): Tốt ·
+                                từ @KpiConfigService.Current.RankFair.ToString("0.##"): Khá ·
+                                từ @KpiConfigService.Current.RankPass.ToString("0.##"): Đạt ·
+                                thấp hơn: Chưa đạt.
                             </div>
                         </div>
 

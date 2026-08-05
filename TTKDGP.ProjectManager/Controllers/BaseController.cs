@@ -34,12 +34,23 @@ namespace TTKDGP.ProjectManager.Controllers
         }
 
         /// <summary>
-        /// Là Quản lý Tổ — xét theo quyền quản trị dự án của tài khoản. Không còn hồ sơ nhân sự
-        /// riêng; ai được cấp quyền sửa dự án (wprojects.edit) thì chính là Quản lý Tổ.
+        /// Là Quản lý Tổ — vai được xem và sửa MỌI dự án, MỌI đầu việc của tổ.
+        ///
+        /// Nay là một quyền riêng (<c>wteam.manage</c>), tích được trên màn Nhóm quyền. Trước đây
+        /// vai này suy ra từ quyền sửa dự án: cấp <c>wprojects.edit</c> cho ai là vô tình cho họ
+        /// thấy việc của cả tổ, mà nhìn màn Nhóm quyền không đoán ra — chính chỗ này gây rối.
+        ///
+        /// Vẫn chấp nhận <c>wprojects.edit</c> làm lối cũ để bản đang vận hành không ai mất quyền
+        /// giữa chừng. Seeder cấp <c>wteam.manage</c> cho nhóm Quản lý ngay lần khởi động đầu;
+        /// khi các nhóm đã có quyền mới thì bỏ vế thứ hai đi.
         /// </summary>
         protected bool IsTeamManager
         {
-            get { return Can(Permissions.WorkProjects.Perm(Permissions.Edit)); }
+            get
+            {
+                return Can(Permissions.Team.Perm("manage"))
+                    || Can(Permissions.WorkProjects.Perm(Permissions.Edit));
+            }
         }
 
         /// <summary>

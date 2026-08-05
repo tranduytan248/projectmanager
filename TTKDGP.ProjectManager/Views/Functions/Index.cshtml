@@ -1,0 +1,318 @@
+﻿@model List<TTKDGP.ProjectManager.Controllers.FunctionModuleRow>
+@using TTKDGP.ProjectManager.Models
+@{
+    ViewBag.Title = "Chức năng hệ thống";
+
+    var canEdit = ViewBag.CanEdit != null && (bool)ViewBag.CanEdit;
+    var categories = ViewBag.Categories as List<string> ?? new List<string>();
+
+    string q = ViewBag.Query;
+    string category = ViewBag.Category;
+    string state = ViewBag.State;
+
+    int totalCount = ViewBag.TotalCount;
+    int disabledCount = ViewBag.DisabledCount;
+
+    var shownCount = Model.Sum(m => m.Functions.Count);
+}
+
+<div class="page-head">
+    <div>
+        <h1>Chức năng hệ thống</h1>
+        <p>
+            Toàn bộ chức năng của phần mềm. Đổi tên hiển thị cho dễ hiểu, hoặc <strong>tắt</strong>
+            những chức năng chưa dùng tới để chúng biến khỏi menu và không ai vào được.
+        </p>
+    </div>
+    <div class="btn-row">
+        <a class="btn btn-default" href="@Url.Action("Index", "PermissionGroups")">Nhóm quyền &rarr;</a>
+    </div>
+</div>
+
+@* Ba điều dễ hiểu nhầm nhất ở màn này, nói ngay đầu trang chứ không giấu dưới chân. *@
+<div class="card">
+    <div class="card-body">
+        <span class="hint">
+            <strong>Chức năng</strong> là một việc làm được trên một màn hình (xem, thêm, sửa, xoá…).
+            <strong>Nhóm quyền</strong> là một tập chức năng gán cho tài khoản — cấu hình ở màn
+            <a href="@Url.Action("Index", "PermissionGroups")">Nhóm quyền</a>.
+        </span>
+        <span class="hint" style="margin-top:8px; display:block">
+            <strong>Tắt</strong> khác <strong>gỡ khỏi nhóm quyền</strong>: tắt là đóng chức năng
+            với <strong>tất cả mọi người, kể cả tài khoản toàn quyền</strong> — dùng khi muốn cất
+            hẳn một tính năng chưa tới lúc dùng. Gỡ khỏi nhóm chỉ là không cấp cho nhóm đó.
+        </span>
+        <span class="hint" style="margin-top:8px; display:block">
+            Danh sách này <strong>không thêm/xoá được</strong>: mỗi chức năng gắn với một màn hình
+            có thật trong phần mềm. Muốn có chức năng mới thì phải dựng màn hình mới.
+        </span>
+    </div>
+</div>
+
+@* ---------- Hàng thẻ tổng quan ---------- *@
+<div class="stats">
+    <div class="stat stat-primary">
+        <div class="stat-value">@totalCount</div>
+        <div class="stat-label">Tổng số chức năng</div>
+    </div>
+    <div class="stat stat-ok">
+        <div class="stat-value">@(totalCount - disabledCount)</div>
+        <div class="stat-label">Đang bật</div>
+    </div>
+    <div class="stat @(disabledCount > 0 ? "stat-late" : "")">
+        <div class="stat-value">@disabledCount</div>
+        <div class="stat-label">Đã tắt toàn hệ thống</div>
+    </div>
+</div>
+
+@if (disabledCount > 0)
+{
+    <div class="card">
+        <div class="card-body">
+            <span class="hint">
+                <span class="danger-text">Đang có @disabledCount chức năng bị tắt.</span>
+                Không tài khoản nào dùng được chúng, kể cả quản trị viên — nếu ai đó báo "không
+                thấy màn hình X nữa" thì hãy tìm X trong danh sách dưới đây trước.
+            </span>
+        </div>
+    </div>
+}
+
+@* ---------- Bộ lọc ---------- *@
+<div class="card">
+    <div class="card-body">
+        @using (Html.BeginForm("Index", "Functions", FormMethod.Get))
+        {
+            <div class="filters">
+                <div class="filter-field grow">
+                    <label for="q">Tìm kiếm</label>
+                    <input type="search" id="q" name="q" value="@q"
+                           placeholder="Tên chức năng, tên màn hình hoặc mã (ví dụ: kpi.view)" />
+                </div>
+                <div class="filter-field">
+                    <label for="category">Nhóm màn hình</label>
+                    <select id="category" name="category">
+                        <option value="">— Tất cả —</option>
+                        @foreach (var c in categories)
+                        {
+                            <option value="@c" selected="@(category == c)">@c</option>
+                        }
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label for="state">Trạng thái</label>
+                    <select id="state" name="state">
+                        <option value="" selected="@(string.IsNullOrEmpty(state))">— Tất cả —</option>
+                        <option value="on" selected="@(state == "on")">Đang bật</option>
+                        <option value="off" selected="@(state == "off")">Đã tắt</option>
+                    </select>
+                </div>
+                <div class="btn-row" style="padding-bottom:1px">
+                    <button type="submit" class="btn btn-primary">Tìm kiếm</button>
+                    @if (!string.IsNullOrWhiteSpace(q) || !string.IsNullOrWhiteSpace(category) || !string.IsNullOrWhiteSpace(state))
+                    {
+                        <a class="btn btn-default" href="@Url.Action("Index", "Functions")">Bỏ lọc</a>
+                    }
+                </div>
+            </div>
+        }
+        <span class="hint">Đang hiện <strong>@shownCount</strong>/@totalCount chức năng.</span>
+    </div>
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="card">
+        <div class="empty-state">
+            Không có chức năng nào khớp bộ lọc.
+            <div class="hint">Thử bỏ bớt từ khoá hoặc chọn lại nhóm màn hình.</div>
+        </div>
+    </div>
+}
+else
+{
+    @* Bật/tắt hàng loạt gói trong MỘT biểu mẫu bao cả trang: đổi vài chỗ rồi lưu một lần, thay vì
+       mỗi dòng một lượt tải lại trang. Phần đổi tên vẫn theo từng dòng vì ít khi dùng tới. *@
+    using (Html.BeginForm("SaveAll", "Functions", FormMethod.Post, new { id = "fn-form" }))
+    {
+        @Html.AntiForgeryToken()
+
+        foreach (var module in Model)
+        {
+            <div class="card">
+                <div class="card-head">
+                    <span>@module.Name</span>
+                    <span class="muted" style="font-weight:400">
+                        @module.Category · mã <code>@module.Code</code>
+                        @if (module.DisabledCount > 0)
+                        {
+                            <text> · <span class="danger-text">@module.DisabledCount chức năng đang tắt</span></text>
+                        }
+                    </span>
+                </div>
+                <div class="table-wrap">
+                    <table class="data table-collapse">
+                        <thead>
+                            <tr>
+                                @if (canEdit)
+                                {
+                                    <th class="center" style="width:70px">Bật</th>
+                                }
+                                <th>Chức năng</th>
+                                <th class="col-hide-sm">Mã</th>
+                                <th class="col-hide-sm">Nhóm quyền đang có</th>
+                                <th class="center col-hide-sm nowrap">Tài khoản</th>
+                                @if (canEdit)
+                                {
+                                    <th></th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var fn in module.Functions)
+                            {
+                                <tr class="@(fn.IsEnabled ? "" : "row-due-warn")">
+                                    @if (canEdit)
+                                    {
+                                        <td class="center">
+                                            <input type="checkbox" name="enabledCodes" value="@fn.Code"
+                                                   @(fn.IsEnabled ? "checked" : "") />
+                                        </td>
+                                    }
+                                    <td class="col-name">
+                                        <strong>@fn.DisplayName</strong>
+                                        @if (!fn.IsEnabled)
+                                        {
+                                            <span class="badge badge-danger">đã tắt</span>
+                                        }
+                                        @if (fn.IsRenamed)
+                                        {
+                                            <div class="cell-meta">Tên gốc: @fn.DefaultName</div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(fn.Note))
+                                        {
+                                            <div class="cell-meta">Ghi chú: @fn.Note</div>
+                                        }
+                                        <div class="cell-recap">
+                                            <span><code>@fn.Code</code></span>
+                                            <span>·</span>
+                                            <span>
+                                                @(fn.Groups.Count == 0 ? "chưa nhóm nào có" : string.Join(", ", fn.Groups))
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td class="col-hide-sm"><code>@fn.Code</code></td>
+                                    <td class="col-hide-sm">
+                                        @if (fn.Groups.Count == 0)
+                                        {
+                                            <span class="muted">chưa nhóm nào có</span>
+                                        }
+                                        else
+                                        {
+                                            foreach (var g in fn.Groups)
+                                            {
+                                                <span class="badge badge-role">@g</span>
+                                            }
+                                        }
+                                    </td>
+                                    <td class="center col-hide-sm">
+                                        @if (fn.UserCount > 0)
+                                        {
+                                            @fn.UserCount
+                                        }
+                                        else
+                                        {
+                                            <span class="muted">—</span>
+                                        }
+                                    </td>
+                                    @if (canEdit)
+                                    {
+                                        <td class="nowrap">
+                                            @* Mở hộp thoại sửa tên/ghi chú của riêng dòng này. *@
+                                            <a href="#" class="btn btn-default btn-sm"
+                                               data-modal-url="@Url.Action("Edit", "Functions", new { code = fn.Code })"
+                                               data-modal-title="Sửa chức năng"
+                                               data-modal-size="sm">Sửa tên</a>
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+
+        if (canEdit)
+        {
+            <div class="card">
+                <div class="card-body">
+                    <div class="btn-row">
+                        <button type="submit" class="btn btn-primary">Lưu trạng thái bật/tắt</button>
+                    </div>
+                    <span class="hint">
+                        Chỉ lưu các ô <strong>Bật</strong>. Ô bỏ tích nghĩa là chức năng đó bị đóng
+                        với mọi tài khoản. Hai chức năng của chính màn này không tắt được — tắt
+                        xong sẽ không còn đường vào để bật lại.
+                        @if (!string.IsNullOrWhiteSpace(q) || !string.IsNullOrWhiteSpace(category) || !string.IsNullOrWhiteSpace(state))
+                        {
+                            <text>
+                                <br /><span class="danger-text">Đang lọc danh sách:</span>
+                                chức năng bị bộ lọc ẩn đi cũng được lưu theo trạng thái hiện có của
+                                chúng, không bị tắt oan.
+                            </text>
+                        }
+                    </span>
+                </div>
+            </div>
+        }
+    }
+
+    @* Đưa danh mục về nguyên trạng: form riêng để không nằm lồng trong form trên. *@
+    if (canEdit)
+    {
+        using (Html.BeginForm("Reset", "Functions", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            <div class="card">
+                <div class="card-body">
+                    <div class="btn-row">
+                        <button type="submit" class="btn btn-danger"
+                                onclick="return confirm('Bỏ toàn bộ tuỳ chỉnh? Mọi chức năng sẽ bật lại và trở về tên gốc.');">
+                            Khôi phục nguyên trạng
+                        </button>
+                    </div>
+                    <span class="hint">
+                        Bật lại tất cả và bỏ mọi tên đã sửa. Nhóm quyền và tài khoản không bị đụng tới.
+                    </span>
+                </div>
+            </div>
+        }
+    }
+}
+
+@section Scripts {
+<script>
+// Danh sách này rất dài. Giữ nguyên hành vi gửi form của trình duyệt, chỉ thêm một việc:
+// bỏ tích một chức năng là thao tác đóng tính năng với cả hệ thống, nên tô ngay dòng đó cho
+// người sửa thấy hệ quả trước khi bấm lưu.
+(function () {
+    var form = document.getElementById("fn-form");
+    if (!form) return;
+
+    form.addEventListener("change", function (e) {
+        var box = e.target;
+        if (!box || box.name !== "enabledCodes") return;
+
+        var row = box.closest ? box.closest("tr") : null;
+        if (!row) return;
+
+        if (box.checked) {
+            row.classList.remove("row-due-warn");
+        } else {
+            row.classList.add("row-due-warn");
+        }
+    });
+})();
+</script>
+}

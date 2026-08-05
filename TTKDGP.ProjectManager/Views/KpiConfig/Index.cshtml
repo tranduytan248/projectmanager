@@ -1,0 +1,437 @@
+﻿@model TTKDGP.ProjectManager.Models.KpiConfig
+@using TTKDGP.ProjectManager.Models
+@using TTKDGP.ProjectManager.Services
+@{
+    ViewBag.Title = "Cấu hình KPI";
+
+    var d = ViewBag.Defaults as KpiConfig ?? KpiConfigService.Defaults();
+    var isCustomized = ViewBag.IsCustomized != null && (bool)ViewBag.IsCustomized;
+
+    int year = ViewBag.Year;
+    int month = ViewBag.Month;
+
+    // Tổng trần điểm chất lượng — con số người dùng cần thấy ngay khi kéo trọng số hai nhóm.
+    var maxQuality = Model.SupportMaxPoint + Model.ExecuteMaxPoint;
+
+    // Hai cách in số, KHÔNG dùng lẫn nhau:
+    //   n  — cho chữ đọc trên màn hình, theo vi-VN nên ra dấu phẩy (0,25) đúng thói quen.
+    //   nv — cho thuộc tính value= của ô <input type="number">, luôn dấu chấm.
+    //
+    // Ô number của trình duyệt chỉ hiểu dạng bất biến: in "0,25" vào value thì trình duyệt coi
+    // là không hợp lệ và bỏ trắng ô — người dùng mở màn ra thấy ô rỗng, lưu lại là mất số.
+    Func<decimal, string> n = v => v.ToString("0.##");
+    Func<decimal, string> nv = v => v.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+}
+
+<div class="page-head">
+    <div>
+        <h1>Cấu hình KPI</h1>
+        <p>
+            Toàn bộ tham số của công thức chấm KPI tháng. Sửa ở đây có hiệu lực ngay cho các lần
+            tính tiếp theo — không cần sửa tệp cấu hình hay khởi động lại hệ thống.
+        </p>
+    </div>
+    <div class="btn-row">
+        <a class="btn btn-default"
+           href="@Url.Action("Index", "Kpi", new { year = year, month = month })">KPI theo tháng &rarr;</a>
+    </div>
+</div>
+
+@* Sửa công thức KHÔNG tự chấm lại điểm đã lưu — đây là điều dễ hiểu nhầm nhất ở màn này,
+   nên nói ngay đầu trang chứ không giấu dưới chân biểu mẫu. *@
+<div class="card">
+    <div class="card-body">
+        <span class="hint">
+            <strong>Lưu ý:</strong> đổi tham số ở đây không tự sửa những tháng đã chốt điểm —
+            dòng KPI là ảnh chụp tại lần tính gần nhất. Muốn áp dụng cho một tháng cụ thể thì vào
+            <a href="@Url.Action("Index", "Kpi", new { year = year, month = month })">KPI theo tháng</a>,
+            chọn tháng đó rồi bấm <strong>Tính &amp; lưu</strong>.
+            @if (isCustomized)
+            {
+                <text> Hiện đang dùng bộ tham số <strong>đã tuỳ chỉnh</strong>, khác mặc định của hệ thống.</text>
+            }
+            else
+            {
+                <text> Hiện đang dùng <strong>bộ tham số mặc định</strong>.</text>
+            }
+            @if (Model.UpdatedAt > DateTime.MinValue)
+            {
+                <text>
+                    Sửa gần nhất: @Model.UpdatedAt.ToString("dd/MM/yyyy HH:mm")
+                    @if (!string.IsNullOrWhiteSpace(Model.UpdatedBy))
+                    {
+                        <text>bởi <strong>@Model.UpdatedBy</strong></text>
+                    }.
+                </text>
+            }
+        </span>
+    </div>
+</div>
+
+@* ---------- Bản xem trước công thức, cập nhật ngay khi gõ ---------- *@
+<div class="card">
+    <div class="card-head">
+        <span>Công thức đang áp dụng</span>
+        <span class="muted" style="font-weight:400">Xem trước theo số đang nhập bên dưới</span>
+    </div>
+    <div class="card-body">
+        <div class="formula-preview">
+            <div class="formula-line">
+                <span class="formula-chip chip-support" data-preview="support">@n(Model.SupportMaxPoint)</span>
+                <span class="formula-op">+</span>
+                <span class="formula-chip chip-execute" data-preview="execute">@n(Model.ExecuteMaxPoint)</span>
+                <span class="formula-op">+</span>
+                <span class="formula-chip chip-bonus">việc riêng</span>
+                <span class="formula-op">&minus;</span>
+                <span class="formula-chip chip-penalty">trễ hạn</span>
+                <span class="formula-op">=</span>
+                <span class="formula-chip chip-quality">điểm chất lượng</span>
+            </div>
+            <div class="formula-line">
+                <span class="formula-chip chip-quality">điểm chất lượng</span>
+                <span class="formula-op">&times;</span>
+                <span class="formula-chip chip-rate">tỷ lệ giờ công</span>
+                <span class="formula-op">=</span>
+                <span class="formula-chip chip-final">KPI tháng</span>
+            </div>
+            <p class="formula-note">
+                Mốc chuẩn của điểm chất lượng (chưa cộng việc riêng):
+                <strong data-preview="maxquality">@n(maxQuality)</strong> điểm — không phải trần,
+                nhóm thực hiện vượt lên được khi làm nhiều giờ hơn định mức ·
+                một ngày công <strong data-preview="hours">@n(Model.HoursPerDay)</strong> giờ.
+            </p>
+        </div>
+    </div>
+</div>
+
+@using (Html.BeginForm("Index", "KpiConfig", FormMethod.Post, new { id = "kpi-config-form" }))
+{
+    @Html.AntiForgeryToken()
+
+    @* ---------- 1. Trọng số các nhóm việc ---------- *@
+    <div class="card">
+        <div class="card-head"><span>1. Trọng số các nhóm việc</span></div>
+        <div class="card-body">
+            <div class="form-grid">
+                <div class="form-field">
+                    <label for="SupportMaxPoint">Điểm tối đa nhóm Hỗ trợ</label>
+                    <input type="number" step="0.01" min="0" max="1000" required
+                           id="SupportMaxPoint" name="SupportMaxPoint"
+                           data-default="@nv(d.SupportMaxPoint)"
+                           value="@nv(Model.SupportMaxPoint)" />
+                    <span class="hint">
+                        Điểm trọn vẹn khi hoàn thành hết việc hỗ trợ trong tháng.
+                        Mặc định @n(d.SupportMaxPoint).
+                    </span>
+                </div>
+                <div class="form-field">
+                    <label for="ExecuteMaxPoint">Điểm nhóm Thực hiện khi đủ định mức</label>
+                    <input type="number" step="0.01" min="0" max="1000" required
+                           id="ExecuteMaxPoint" name="ExecuteMaxPoint"
+                           data-default="@nv(d.ExecuteMaxPoint)"
+                           value="@nv(Model.ExecuteMaxPoint)" />
+                    <span class="hint">
+                        <strong>Không phải trần</strong> — làm nhiều giờ hơn định mức thì điểm vượt
+                        lên. Mặc định @n(d.ExecuteMaxPoint).
+                    </span>
+                </div>
+                <div class="form-field">
+                    <label for="ExecuteHoursShare">Định mức giờ nhóm Thực hiện</label>
+                    <input type="number" step="0.05" min="0.05" max="1" required
+                           id="ExecuteHoursShare" name="ExecuteHoursShare"
+                           data-default="@nv(d.ExecuteHoursShare)"
+                           value="@nv(Model.ExecuteHoursShare)" />
+                    <span class="hint">
+                        Phần giờ tháng dành cho việc triển khai để được trọn điểm nhóm
+                        (@n(d.ExecuteHoursShare) = @((d.ExecuteHoursShare * 100).ToString("0.#"))% giờ yêu cầu).
+                        Đặt thấp thì dễ vượt điểm chuẩn hơn.
+                    </span>
+                </div>
+            </div>
+
+            <span class="hint">
+                <strong>Hỗ trợ</strong> chấm theo <strong>số việc</strong>: điểm tối đa &times;
+                (việc hoàn thành &divide; tổng việc), trừ phần báo cáo trễ — có trần.
+                <strong>Thực hiện</strong> chấm theo <strong>giờ</strong>: điểm chuẩn &times;
+                (giờ triển khai &divide; định mức giờ), <strong>không có trần</strong> — dành hơn định
+                mức cho triển khai là bình thường, chặn lại thì người gánh nhiều dự án và người vừa
+                đủ nhận cùng một điểm.
+                Nhóm <strong>không có việc nào</strong> trong tháng thì được <strong>0 điểm</strong>.
+                Cộng cả việc riêng, tổng có thể vượt xa
+                <strong data-preview="maxquality">@n(maxQuality)</strong>.
+            </span>
+        </div>
+    </div>
+
+    @* ---------- 2. Mức trừ khi báo cáo trễ ---------- *@
+    <div class="card">
+        <div class="card-head"><span>2. Mức trừ khi báo cáo trễ</span></div>
+        <div class="card-body">
+            <div class="form-section-title">Nhóm hỗ trợ — trừ theo bậc</div>
+            <div class="form-grid-3">
+                <div class="form-field">
+                    <label for="SupportLateFreeCount">Số lần trễ được bỏ qua</label>
+                    <input type="number" step="1" min="0" max="99" required
+                           id="SupportLateFreeCount" name="SupportLateFreeCount"
+                           data-default="@d.SupportLateFreeCount"
+                           value="@Model.SupportLateFreeCount" />
+                    <span class="hint">Trễ trong mức này không bị trừ. Mặc định @d.SupportLateFreeCount.</span>
+                </div>
+                <div class="form-field">
+                    <label for="SupportLate2Penalty">Trừ khi vượt 1 lần</label>
+                    <input type="number" step="0.01" min="0" max="1000" required
+                           id="SupportLate2Penalty" name="SupportLate2Penalty"
+                           data-default="@nv(d.SupportLate2Penalty)"
+                           value="@nv(Model.SupportLate2Penalty)" />
+                    <span class="hint">Mặc định @n(d.SupportLate2Penalty).</span>
+                </div>
+                <div class="form-field">
+                    <label for="SupportLateMorePenalty">Trừ khi vượt nhiều hơn</label>
+                    <input type="number" step="0.01" min="0" max="1000" required
+                           id="SupportLateMorePenalty" name="SupportLateMorePenalty"
+                           data-default="@nv(d.SupportLateMorePenalty)"
+                           value="@nv(Model.SupportLateMorePenalty)" />
+                    <span class="hint">Mặc định @n(d.SupportLateMorePenalty).</span>
+                </div>
+            </div>
+
+            <span class="hint" data-preview="supportrule">
+                Đang áp dụng: trễ 0–@Model.SupportLateFreeCount lần không trừ ·
+                @(Model.SupportLateFreeCount + 1) lần trừ @n(Model.SupportLate2Penalty) ·
+                nhiều hơn trừ @n(Model.SupportLateMorePenalty).
+            </span>
+
+            <div class="form-section">
+                <div class="form-section-title">Nhóm thực hiện — trừ theo từng lần</div>
+                <div class="form-grid">
+                    <div class="form-field">
+                        <label for="ExecuteLatePenalty">Trừ cho mỗi lần trễ</label>
+                        <input type="number" step="0.01" min="0" max="1000" required
+                               id="ExecuteLatePenalty" name="ExecuteLatePenalty"
+                               data-default="@nv(d.ExecuteLatePenalty)"
+                               value="@nv(Model.ExecuteLatePenalty)" />
+                        <span class="hint">Mặc định @n(d.ExecuteLatePenalty) cho mỗi việc hoàn thành sau hạn.</span>
+                    </div>
+                </div>
+            </div>
+
+            <span class="hint">
+                "Báo cáo trễ" là việc <strong>hoàn thành sau hạn</strong>. Việc quá hạn còn treo
+                không tính vào đây — nó đã bị trừ qua tỷ lệ hoàn thành. Điểm mỗi nhóm không bao giờ
+                xuống dưới 0 dù trừ bao nhiêu.
+            </span>
+        </div>
+    </div>
+
+    @* ---------- 3. Ngày công ---------- *@
+    <div class="card">
+        <div class="card-head"><span>3. Ngày công và giờ làm việc</span></div>
+        <div class="card-body">
+            <div class="form-grid">
+                <div class="form-field">
+                    <label for="HoursPerDay">Số giờ của một ngày công</label>
+                    <input type="number" step="0.5" min="0.5" max="24" required
+                           id="HoursPerDay" name="HoursPerDay"
+                           data-default="@nv(d.HoursPerDay)"
+                           value="@nv(Model.HoursPerDay)" />
+                    <span class="hint">Mặc định @n(d.HoursPerDay) giờ. Dùng để quy đổi ngày công ra giờ yêu cầu.</span>
+                </div>
+                <div class="form-field">
+                    <label>Ngày cuối tuần tính vào ngày công</label>
+                    <div class="check-row">
+                        <label class="check-inline">
+                            <input type="checkbox" name="CountSaturday" value="true" @(Model.CountSaturday ? "checked" : "") />
+                            <span>Thứ 7</span>
+                        </label>
+                        <label class="check-inline">
+                            <input type="checkbox" name="CountSunday" value="true" @(Model.CountSunday ? "checked" : "") />
+                            <span>Chủ nhật</span>
+                        </label>
+                    </div>
+                    <span class="hint">
+                        Mặc định bỏ cả hai. Bật lên thì ngày công chuẩn của tháng tăng, kéo theo
+                        giờ yêu cầu tăng — điểm của người thiếu giờ sẽ giảm.
+                    </span>
+                </div>
+            </div>
+
+            <span class="hint">
+                Giờ yêu cầu = (ngày công chuẩn của tháng &minus; ngày nghỉ phép đã duyệt) &times; số giờ một
+                ngày công. Giờ đã làm đếm theo <strong>ngày làm việc riêng biệt</strong> của các
+                việc đang làm hoặc đã xong — nhiều việc trong cùng một khoảng chỉ tính một lần.
+                Đủ giờ thì giữ nguyên điểm chất lượng; thiếu giờ thì nhân theo tỷ lệ (chặn trên 100%).
+            </span>
+        </div>
+    </div>
+
+    @* ---------- 4. Ngưỡng xếp loại ---------- *@
+    <div class="card">
+        <div class="card-head"><span>4. Ngưỡng xếp loại</span></div>
+        <div class="card-body">
+            <div class="form-grid">
+                <div class="form-field">
+                    <label for="RankExcellent">Xuất sắc — từ</label>
+                    <input type="number" step="0.01" min="0" max="1000" required
+                           id="RankExcellent" name="RankExcellent"
+                           data-default="@nv(d.RankExcellent)"
+                           value="@nv(Model.RankExcellent)" />
+                </div>
+                <div class="form-field">
+                    <label for="RankGood">Tốt — từ</label>
+                    <input type="number" step="0.01" min="0" max="1000" required
+                           id="RankGood" name="RankGood"
+                           data-default="@nv(d.RankGood)"
+                           value="@nv(Model.RankGood)" />
+                </div>
+                <div class="form-field">
+                    <label for="RankFair">Khá — từ</label>
+                    <input type="number" step="0.01" min="0" max="1000" required
+                           id="RankFair" name="RankFair"
+                           data-default="@nv(d.RankFair)"
+                           value="@nv(Model.RankFair)" />
+                </div>
+                <div class="form-field">
+                    <label for="RankPass">Đạt — từ</label>
+                    <input type="number" step="0.01" min="0" max="1000" required
+                           id="RankPass" name="RankPass"
+                           data-default="@nv(d.RankPass)"
+                           value="@nv(Model.RankPass)" />
+                </div>
+            </div>
+
+            @* Dải xếp loại vẽ ngay tại chỗ để thấy bốn mốc có hợp lý không —
+               bốn ô số rời rạc thì phải tự nhẩm mới biết khoảng "Khá" rộng hay hẹp. *@
+            <div class="rank-scale" id="rank-scale">
+                <span class="rank-seg seg-fail">Chưa đạt<em data-scale="fail">&lt; @n(Model.RankPass)</em></span>
+                <span class="rank-seg seg-pass">Đạt<em data-scale="pass">@n(Model.RankPass)–@n(Model.RankFair - 1)</em></span>
+                <span class="rank-seg seg-fair">Khá<em data-scale="fair">@n(Model.RankFair)–@n(Model.RankGood - 1)</em></span>
+                <span class="rank-seg seg-good">Tốt<em data-scale="good">@n(Model.RankGood)–@n(Model.RankExcellent - 1)</em></span>
+                <span class="rank-seg seg-exc">Xuất sắc<em data-scale="exc">&ge; @n(Model.RankExcellent)</em></span>
+            </div>
+
+            <span class="hint">
+                Ngưỡng phải giảm dần: Xuất sắc &gt; Tốt &gt; Khá &gt; Đạt. Xếp theo điểm đã làm
+                tròn về số nguyên (từ 0,5 trở lên làm tròn lên).
+                Mặc định: @n(d.RankExcellent) · @n(d.RankGood) · @n(d.RankFair) · @n(d.RankPass).
+            </span>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="btn-row">
+                <button type="submit" class="btn btn-primary">Lưu công thức</button>
+                <button type="button" class="btn btn-default" id="btn-restore-defaults">Điền lại số mặc định</button>
+                <a class="btn btn-default" href="@Url.Action("Index", "KpiConfig")">Huỷ thay đổi</a>
+            </div>
+            <span class="hint">
+                "Điền lại số mặc định" chỉ đổ số vào biểu mẫu — chưa lưu gì cả, bấm
+                <strong>Lưu công thức</strong> mới có hiệu lực.
+            </span>
+        </div>
+    </div>
+}
+
+@* Khôi phục hẳn về mặc định: form riêng để không nằm lồng trong form chính. *@
+@using (Html.BeginForm("Reset", "KpiConfig", FormMethod.Post))
+{
+    @Html.AntiForgeryToken()
+    <div class="card">
+        <div class="card-body">
+            <div class="btn-row">
+                <button type="submit" class="btn btn-danger"
+                        onclick="return confirm('Khôi phục toàn bộ công thức KPI về mặc định của hệ thống? Các tham số đang tuỳ chỉnh sẽ mất.');">
+                    Khôi phục mặc định
+                </button>
+            </div>
+            <span class="hint">
+                Ghi đè bộ tham số hiện tại bằng mặc định của hệ thống và lưu ngay. Điểm KPI đã chốt
+                của các tháng trước không bị đụng tới.
+            </span>
+        </div>
+    </div>
+}
+
+@section Scripts {
+<script>
+// Xem trước công thức ngay khi gõ. Toàn bộ phần kiểm và tính điểm thật nằm ở máy chủ —
+// đoạn này chỉ để người sửa thấy hệ quả trước khi bấm lưu, không quyết định gì.
+(function () {
+    var form = document.getElementById("kpi-config-form");
+    if (!form) return;
+
+    function num(id) {
+        var el = document.getElementById(id);
+        if (!el) return 0;
+
+        // Ô type="number" trả về chuỗi RỖNG khi nội dung không hợp lệ với trình duyệt — gõ dấu
+        // phẩy vào là rơi vào trường hợp này. Đọc thêm el.value (thô) rồi tự đổi phẩy thành chấm
+        // thì bản xem trước không nhảy về 0 giữa lúc người dùng đang gõ.
+        var raw = el.value;
+        if (raw === "" && typeof el.validity !== "undefined" && el.validity.badInput) return 0;
+
+        var v = parseFloat(String(raw).replace(",", "."));
+        return isNaN(v) ? 0 : v;
+    }
+
+    // Bỏ số 0 thừa sau dấu thập phân, rồi in theo lối Việt (dấu phẩy) cho khớp với chữ quanh nó.
+    function fmt(v) {
+        return (Math.round(v * 100) / 100).toString().replace(".", ",");
+    }
+
+    function setText(selector, text) {
+        var nodes = document.querySelectorAll(selector);
+        for (var i = 0; i < nodes.length; i++) nodes[i].textContent = text;
+    }
+
+    function refresh() {
+        var support = num("SupportMaxPoint");
+        var execute = num("ExecuteMaxPoint");
+        var free = num("SupportLateFreeCount");
+
+        setText("[data-preview='support']", fmt(support));
+        setText("[data-preview='execute']", fmt(execute));
+        setText("[data-preview='maxquality']", fmt(support + execute));
+        setText("[data-preview='hours']", fmt(num("HoursPerDay")));
+
+        setText("[data-preview='supportrule']",
+            "Đang áp dụng: trễ 0–" + fmt(free) + " lần không trừ · " +
+            fmt(free + 1) + " lần trừ " + fmt(num("SupportLate2Penalty")) + " · " +
+            "nhiều hơn trừ " + fmt(num("SupportLateMorePenalty")) + ".");
+
+        var pass = num("RankPass"), fair = num("RankFair");
+        var good = num("RankGood"), exc = num("RankExcellent");
+
+        setText("[data-scale='fail']", "< " + fmt(pass));
+        setText("[data-scale='pass']", fmt(pass) + "–" + fmt(fair - 1));
+        setText("[data-scale='fair']", fmt(fair) + "–" + fmt(good - 1));
+        setText("[data-scale='good']", fmt(good) + "–" + fmt(exc - 1));
+        setText("[data-scale='exc']", "≥ " + fmt(exc));
+
+        // Ngưỡng lộn xộn thì báo ngay tại dải màu, khỏi phải bấm lưu mới biết.
+        var scale = document.getElementById("rank-scale");
+        if (scale) {
+            var ok = exc > good && good > fair && fair > pass;
+            scale.className = ok ? "rank-scale" : "rank-scale is-invalid";
+        }
+    }
+
+    form.addEventListener("input", refresh);
+    refresh();
+
+    var restore = document.getElementById("btn-restore-defaults");
+    if (restore) {
+        restore.addEventListener("click", function () {
+            var inputs = form.querySelectorAll("input[data-default]");
+            for (var i = 0; i < inputs.length; i++) {
+                inputs[i].value = inputs[i].getAttribute("data-default");
+            }
+            // Hai ô cuối tuần không có data-default vì là checkbox — mặc định bỏ cả hai.
+            form.querySelector("input[name='CountSaturday']").checked = false;
+            form.querySelector("input[name='CountSunday']").checked = false;
+            refresh();
+        });
+    }
+})();
+</script>
+}
