@@ -147,6 +147,33 @@ namespace TTKDGP.ProjectManager.Services
         /// Không cộng giờ của từng việc: một người làm nhiều việc song song trong cùng khoảng thì
         /// vẫn chỉ là bấy nhiêu ngày công. Cộng dồn từng việc sẽ thổi phồng số giờ theo số đầu việc
         /// — 5 việc cùng khoảng 1/8–5/8 thành 25 ngày thay vì 5.
+        ///
+        /// <paramref name="year"/>/<paramref name="month"/> giới hạn phạm vi đếm về đúng tháng
+        /// đang chấm. Việc trải qua nhiều tháng (bắt đầu 20/7, hạn 05/8) chỉ được tính phần ngày
+        /// NẰM TRONG tháng — thiếu chặn này thì giờ của tháng 8 mang theo cả tháng 7 và vượt quá
+        /// số ngày công của chính tháng đó.
+        /// </summary>
+        public static decimal HoursOf(IEnumerable<WorkTask> tasks, int year, int month)
+        {
+            var from = new DateTime(year, month, 1);
+            var to = from.AddMonths(1).AddDays(-1);
+
+            var days = new HashSet<DateTime>();
+
+            foreach (var task in tasks)
+            {
+                foreach (var day in WorkingDaysOf(task))
+                {
+                    if (day >= from && day <= to) days.Add(day);
+                }
+            }
+
+            return days.Count * HoursPerDay;
+        }
+
+        /// <summary>
+        /// Giờ của một nhóm việc, KHÔNG giới hạn tháng. Giữ cho những nơi tự cắt phạm vi từ trước
+        /// (bảng khối lượng theo dự án). Bộ chấm KPI luôn dùng bản có tháng ở trên.
         /// </summary>
         public static decimal HoursOf(IEnumerable<WorkTask> tasks)
         {
@@ -161,12 +188,30 @@ namespace TTKDGP.ProjectManager.Services
         }
 
         /// <summary>
-        /// Tổng giờ thực hiện trong tháng, tính trên những việc ĐÃ HOÀN THÀNH hoặc ĐANG LÀM.
+        /// Tổng giờ đã bỏ ra trong tháng, tính trên những việc ĐÃ HOÀN THÀNH hoặc ĐANG LÀM.
         /// Việc chưa bắt đầu hay tạm dừng chưa phải là giờ đã bỏ ra nên không đếm.
         /// </summary>
-        public static decimal WorkedHours(IEnumerable<WorkTask> tasks)
+        public static decimal WorkedHours(IEnumerable<WorkTask> tasks, int year, int month)
         {
-            return HoursOf(tasks.Where(t => t.State == TaskStates.Done || t.State == TaskStates.InProgress));
+            return HoursOf(
+                tasks.Where(t => t.State == TaskStates.Done || t.State == TaskStates.InProgress),
+                year, month);
+        }
+
+        /// <summary>
+        /// Giờ hỗ trợ được TÍNH của một người: giờ thực tế, nhưng chặn trên ở
+        /// <see cref="KpiConfig.SupportHoursShare"/> phần quỹ giờ tháng (mặc định 30%).
+        ///
+        /// Hỗ trợ là việc phát sinh theo tuần, một người có thể bị kéo vào rất nhiều đầu việc hỗ
+        /// trợ rải khắp tháng — để nguyên thì giờ hỗ trợ nuốt trọn quỹ giờ và người đó "đủ giờ
+        /// công" mà chẳng triển khai được gì. Trần này giữ hỗ trợ đúng vai phụ của nó.
+        /// </summary>
+        public static decimal CappedSupportHours(decimal rawSupportHours, decimal requiredHours)
+        {
+            if (requiredHours <= 0) return rawSupportHours;
+
+            var cap = requiredHours * Config.SupportHoursShare;
+            return rawSupportHours > cap ? Math.Round(cap, 2) : rawSupportHours;
         }
 
         // ---------- Tính điểm ----------
@@ -302,7 +347,6 @@ namespace TTKDGP.ProjectManager.Services
             row.LeaveDays = LeaveService.ApprovedDays(row.UserId, row.Year, row.Month);
             var requiredDays = row.StandardDays - row.LeaveDays;
             row.RequiredHours = requiredDays > 0 ? requiredDays * HoursPerDay : 0;
-            row.WorkingHours = Math.Round(WorkedHours(tasks), 2);
 
             // "Báo cáo trễ" = việc hoàn thành sau hạn. Việc quá hạn còn treo không đếm vào đây —
             // nó đã bị phạt qua tỷ lệ hoàn thành (done/total) rồi.
@@ -312,14 +356,34 @@ namespace TTKDGP.ProjectManager.Services
             row.SupportPoint = GroupPoint(SupportMaxPoint, row.SupportTotal, row.SupportDone,
                 SupportLatePenalty(row.SupportLateCount));
 
+            // Giờ hỗ trợ bị CHẶN TRẦN ở phần cấu hình (mặc định 30% quỹ giờ tháng). Hỗ trợ phát
+            // sinh theo tuần và một người có thể bị kéo vào rất nhiều đầu việc rải khắp tháng —
+            // để nguyên thì nó nuốt trọn quỹ giờ, người đó "đủ giờ công" mà chẳng triển khai gì.
+            row.SupportHoursRaw = Math.Round(WorkedHours(support, row.Year, row.Month), 2);
+            row.SupportHours = CappedSupportHours(row.SupportHoursRaw, row.RequiredHours);
+
             // Nhóm thực hiện chấm theo GIỜ đã bỏ ra, không theo số đầu việc — và không chặn trần.
             // Giờ đếm trên việc đã xong hoặc đang làm, theo ngày làm việc riêng biệt.
             row.ExecuteTotal = execute.Count;
             row.ExecuteDone = execute.Count(t => t.State == TaskStates.Done);
             row.ExecuteLateCount = execute.Count(t => t.State == TaskStates.Done && !t.IsOnTime);
-            row.ExecuteHours = Math.Round(WorkedHours(execute), 2);
+            row.ExecuteHours = Math.Round(WorkedHours(execute, row.Year, row.Month), 2);
             row.ExecutePoint = ExecutePoint(ExecuteMaxPoint, row.ExecuteHours, row.RequiredHours,
                 row.ExecuteTotal, ExecuteLatePenalty(row.ExecuteLateCount));
+
+            // Tổng giờ công.
+            //
+            // Nền là giờ đếm GỘP cả ba nhóm theo ngày làm việc riêng biệt — ngày mà hỗ trợ và
+            // triển khai cùng chạy chỉ tính một lần, đúng như một ngày công thật. Cộng ba nhóm
+            // rời rạc sẽ nhân đôi những ngày trùng đó.
+            //
+            // Rồi trừ đi phần hỗ trợ VƯỢT TRẦN: giờ hỗ trợ quá mức cấu hình không được tính vào
+            // quỹ giờ công. Trừ trên tổng gộp thay vì chặn từng nhóm để không đụng tới ngày trùng.
+            var totalHours = WorkedHours(tasks, row.Year, row.Month);
+            var supportOver = row.SupportHoursRaw - row.SupportHours;
+
+            var working = totalHours - supportOver;
+            row.WorkingHours = Math.Round(working > 0 ? working : 0, 2);
 
             // Việc riêng: điểm cộng đã ấn định lúc giao (BonusPercent), chỉ tính khi hoàn thành
             // ĐÚNG HẠN — đúng định nghĩa "điểm cộng KPI khi hoàn thành đúng hạn" lúc giao việc.

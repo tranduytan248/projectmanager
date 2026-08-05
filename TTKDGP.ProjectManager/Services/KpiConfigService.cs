@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Web;
 using TTKDGP.ProjectManager.Data;
 using TTKDGP.ProjectManager.Infrastructure;
@@ -71,6 +71,7 @@ namespace TTKDGP.ProjectManager.Services
             {
                 Id = c.Id,
                 SupportMaxPoint = c.SupportMaxPoint,
+                SupportHoursShare = c.SupportHoursShare,
                 ExecuteMaxPoint = c.ExecuteMaxPoint,
                 ExecuteHoursShare = c.ExecuteHoursShare,
                 SupportLateFreeCount = c.SupportLateFreeCount,
@@ -95,6 +96,10 @@ namespace TTKDGP.ProjectManager.Services
             return new KpiConfig
             {
                 SupportMaxPoint = AppSettings.Kpi.SupportMaxPoint,
+
+                // Hỗ trợ được tính tối đa 30% quỹ giờ tháng — nó là việc phụ, quá mức này thì
+                // phần vượt không còn phản ánh công triển khai nữa.
+                SupportHoursShare = 0.3m,
                 ExecuteMaxPoint = AppSettings.Kpi.ExecuteMaxPoint,
 
                 // 70% giờ tháng dành cho triển khai là mức được trọn điểm; phần còn lại là hỗ trợ,
@@ -139,6 +144,7 @@ namespace TTKDGP.ProjectManager.Services
             // Định mức giờ nhóm thực hiện phải là một phần dương của tháng. Bằng 0 thì mẫu số
             // bằng 0 và không ai có điểm; lớn hơn 1 nghĩa là đòi làm nhiều giờ hơn cả tháng.
             if (c.ExecuteHoursShare <= 0 || c.ExecuteHoursShare > 1) c.ExecuteHoursShare = d.ExecuteHoursShare;
+            if (c.SupportHoursShare <= 0 || c.SupportHoursShare > 1) c.SupportHoursShare = d.SupportHoursShare;
 
             if (c.SupportLateFreeCount < 0) c.SupportLateFreeCount = 0;
             if (c.SupportLate2Penalty < 0) c.SupportLate2Penalty = 0;
@@ -215,6 +221,7 @@ namespace TTKDGP.ProjectManager.Services
                 return c.SupportMaxPoint != d.SupportMaxPoint
                     || c.ExecuteMaxPoint != d.ExecuteMaxPoint
                     || c.ExecuteHoursShare != d.ExecuteHoursShare
+                    || c.SupportHoursShare != d.SupportHoursShare
                     || c.SupportLateFreeCount != d.SupportLateFreeCount
                     || c.SupportLate2Penalty != d.SupportLate2Penalty
                     || c.SupportLateMorePenalty != d.SupportLateMorePenalty

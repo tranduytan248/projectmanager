@@ -24,6 +24,13 @@ namespace TTKDGP.ProjectManager.Models
         public decimal SupportMaxPoint { get; set; }
 
         /// <summary>
+        /// TRẦN giờ hỗ trợ, tính theo PHẦN của giờ yêu cầu trong tháng (0,3 = 30%). Giờ hỗ trợ
+        /// vượt mức này chỉ được tính tới đúng mức — hỗ trợ là việc phụ, để nó nuốt trọn quỹ giờ
+        /// thì một người bị kéo vào nhiều việc hỗ trợ sẽ "đủ giờ công" mà không triển khai gì.
+        /// </summary>
+        public decimal SupportHoursShare { get; set; }
+
+        /// <summary>
         /// Điểm nhóm công việc thực hiện khi dành đúng định mức giờ cho nó — xem
         /// <see cref="ExecuteHoursShare"/>. KHÔNG phải trần: làm nhiều giờ hơn thì điểm vượt lên.
         /// </summary>

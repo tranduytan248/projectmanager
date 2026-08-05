@@ -84,6 +84,12 @@ namespace TTKDGP.ProjectManager.Controllers
                        "(0,7 nghĩa là 70% giờ yêu cầu của tháng).";
             }
 
+            if (f.SupportHoursShare <= 0 || f.SupportHoursShare > 1)
+            {
+                return "Trần giờ hỗ trợ phải nằm trong khoảng 0 đến 1 " +
+                       "(0,3 nghĩa là 30% giờ yêu cầu của tháng).";
+            }
+
             if (f.SupportLateFreeCount < 0)
             {
                 return "Số lần trễ được bỏ qua không được là số âm.";

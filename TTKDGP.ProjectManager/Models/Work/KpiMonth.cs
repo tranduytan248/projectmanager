@@ -96,6 +96,15 @@ namespace TTKDGP.ProjectManager.Models
         /// <summary>Số việc hỗ trợ hoàn thành trễ hạn trong tháng.</summary>
         public int SupportLateCount { get; set; }
 
+        /// <summary>Giờ hỗ trợ THỰC TẾ, trước khi chặn trần.</summary>
+        public decimal SupportHoursRaw { get; set; }
+
+        /// <summary>
+        /// Giờ hỗ trợ ĐƯỢC TÍNH vào quỹ giờ công — bằng giờ thực tế, nhưng không quá phần trần
+        /// cấu hình (mặc định 30% giờ yêu cầu của tháng).
+        /// </summary>
+        public decimal SupportHours { get; set; }
+
         public decimal SupportPoint { get; set; }
 
         // ---------- II. Công việc thực hiện (tối đa 70%) ----------
@@ -160,20 +169,42 @@ namespace TTKDGP.ProjectManager.Models
         /// </summary>
         public decimal ExecuteTargetHours
         {
+            get { return ShareOfRequired(c => c.ExecuteHoursShare); }
+        }
+
+        /// <summary>TRẦN giờ hỗ trợ của tháng này — giờ hỗ trợ vượt mức này không được tính.</summary>
+        public decimal SupportCapHours
+        {
+            get { return ShareOfRequired(c => c.SupportHoursShare); }
+        }
+
+        /// <summary>Giờ hỗ trợ có bị cắt bớt vì vượt trần không.</summary>
+        public bool IsSupportCapped { get { return SupportHoursRaw > SupportHours; } }
+
+        /// <summary>Số giờ hỗ trợ bị cắt bỏ do vượt trần.</summary>
+        public decimal SupportHoursCut
+        {
             get
             {
-                var provider = KpiRanks.ConfigProvider;
-                if (provider == null) return 0;
+                var cut = SupportHoursRaw - SupportHours;
+                return cut > 0 ? cut : 0;
+            }
+        }
 
-                try
-                {
-                    var config = provider();
-                    return config == null ? 0 : Math.Round(RequiredHours * config.ExecuteHoursShare, 2);
-                }
-                catch
-                {
-                    return 0;
-                }
+        /// <summary>Một phần của giờ yêu cầu theo cấu hình; 0 khi chưa cắm được nguồn cấu hình.</summary>
+        private decimal ShareOfRequired(Func<KpiConfig, decimal> share)
+        {
+            var provider = KpiRanks.ConfigProvider;
+            if (provider == null) return 0;
+
+            try
+            {
+                var config = provider();
+                return config == null ? 0 : Math.Round(RequiredHours * share(config), 2);
+            }
+            catch
+            {
+                return 0;
             }
         }
     }

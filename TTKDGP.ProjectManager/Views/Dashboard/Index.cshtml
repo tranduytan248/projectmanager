@@ -203,10 +203,13 @@
                             <div>
                                 Giờ yêu cầu = (ngày công chuẩn − ngày nghỉ phép đã duyệt) × @KpiService.HoursPerDay.ToString("0.##") giờ.
                                 Giờ đã làm đếm theo <strong>ngày làm việc riêng biệt</strong> của các việc đang làm
-                                hoặc đã xong — nhiều việc cùng một khoảng chỉ tính một lần, không nhân lên
-                                theo số đầu việc.
+                                hoặc đã xong — nhiều việc cùng một khoảng chỉ tính một lần, và chỉ đếm
+                                ngày <strong>nằm trong tháng</strong> đang chấm.
                             </div>
                             <div class="muted">
+                                Giờ <strong>hỗ trợ</strong> chỉ được tính tối đa
+                                @KpiConfigService.Current.SupportHoursShare.ToString("0.##") × giờ yêu cầu
+                                tháng; phần vượt trần không vào giờ công.
                                 Đủ giờ thì giữ nguyên điểm chất lượng; thiếu giờ thì nhân theo tỷ lệ (chặn trên 100%).
                             </div>
                         </div>

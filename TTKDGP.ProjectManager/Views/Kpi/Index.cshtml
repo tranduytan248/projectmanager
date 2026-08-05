@@ -260,6 +260,14 @@
                                     {
                                         <text>chưa giao việc</text>
                                     }
+                                    else if (r.IsSupportCapped)
+                                    {
+                                        @* Giờ hỗ trợ bị cắt vì vượt trần — phải thấy được ngay
+                                           trên bảng, không thì con số giờ công trông như sai. *@
+                                        <span class="danger-text" title="Giờ hỗ trợ vượt trần, phần dư không tính vào giờ công">
+                                            @r.SupportDone/@r.SupportTotal việc · vượt trần
+                                        </span>
+                                    }
                                     else
                                     {
                                         <text>@r.SupportDone/@r.SupportTotal việc</text>
@@ -348,7 +356,10 @@
                 trực tiếp ở đây. Duyệt thêm đơn xong thì bấm <strong>Tính lại</strong> ở cuối dòng.
                 <strong>Giờ công</strong> do hệ thống tự tính: số ngày làm việc từ ngày bắt đầu đến
                 hạn hoàn thành của các việc <strong>đã hoàn thành</strong> hoặc <strong>đang làm</strong>,
-                nhân @KpiService.HoursPerDay.ToString("0.##") giờ.
+                nhân @KpiService.HoursPerDay.ToString("0.##") giờ — chỉ đếm ngày <strong>nằm trong
+                tháng</strong> đang chấm. Giờ <strong>hỗ trợ</strong> bị chặn trần ở
+                @KpiConfigService.Current.SupportHoursShare.ToString("0.##") &times; giờ yêu cầu tháng;
+                phần vượt không được tính vào giờ công.
                 @if (canConfig)
                 {
                     <text>

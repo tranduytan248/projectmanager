@@ -66,8 +66,15 @@ namespace TTKDGP.ProjectManager.Services
     /// </summary>
     public static class WorkloadService
     {
-        /// <summary>Phần quỹ giờ tháng tối đa mà công việc hỗ trợ được tính (30%).</summary>
-        public const decimal SupportCapRate = 0.30m;
+        /// <summary>
+        /// Phần quỹ giờ tháng tối đa mà công việc hỗ trợ được tính (mặc định 30%).
+        /// Đọc từ cấu hình KPI để bảng này và bộ chấm KPI không bao giờ dùng hai mức trần khác
+        /// nhau — sửa ở màn "Cấu hình KPI" thì cả hai đi theo.
+        /// </summary>
+        public static decimal SupportCapRate
+        {
+            get { return KpiConfigService.Current.SupportHoursShare; }
+        }
 
         /// <summary>
         /// Dựng bảng khối lượng của một dự án trong một tháng.
@@ -127,7 +134,10 @@ namespace TTKDGP.ProjectManager.Services
                 var monthHours = workingDays * KpiService.HoursPerDay;
                 var cap = Math.Round(monthHours * SupportCapRate, 2);
 
-                var supportRaw = Math.Round(KpiService.HoursOf(support), 2);
+                // Giới hạn về đúng tháng đang xem: việc trải qua nhiều tháng (bắt đầu 20/7, hạn
+                // 05/8) chỉ được tính phần ngày NẰM TRONG tháng, không thì giờ của một tháng vượt
+                // quá số ngày công của chính tháng đó.
+                var supportRaw = Math.Round(KpiService.HoursOf(support, year, month), 2);
 
                 string name;
                 if (!users.TryGetValue(userId, out name) || string.IsNullOrWhiteSpace(name))
@@ -146,7 +156,7 @@ namespace TTKDGP.ProjectManager.Services
                     SupportHoursRaw = supportRaw,
                     SupportHours = supportRaw > cap ? cap : supportRaw,
                     ImplementTaskCount = implement.Count,
-                    ImplementHours = Math.Round(KpiService.HoursOf(implement), 2),
+                    ImplementHours = Math.Round(KpiService.HoursOf(implement, year, month), 2),
                     StandardDays = standardDays,
                     LeaveDays = leaveDays,
                     MonthHours = monthHours,

@@ -243,6 +243,13 @@
                     <span>Giờ đã làm <span class="muted">(việc đã xong / đang làm)</span></span>
                     <strong>@Model.WorkedHours.ToString("0.##") giờ</strong>
                 </div>
+                @if (Model.IsSupportCapped)
+                {
+                    <div class="kpi-line">
+                        <span>Trong đó hỗ trợ vượt trần <span class="muted">(không được tính)</span></span>
+                        <strong class="danger-text">−@Model.SupportHoursCut.ToString("0.##") giờ</strong>
+                    </div>
+                }
             </div>
 
             @if (canGenerate)
@@ -292,6 +299,10 @@
                 <div class="group-meta">
                     <span>Hoàn thành <strong>@Model.SupportDone/@Model.SupportTotal</strong> việc</span>
                     <span>·</span>
+                    <span>
+                        Giờ hỗ trợ <strong>@Model.SupportHours.ToString("0.#")/@Model.SupportCapHours.ToString("0.#") giờ</strong>
+                    </span>
+                    <span>·</span>
                     <span class="@(Model.SupportLateCount > 0 ? "danger-text" : "")">
                         Báo cáo trễ <strong>@Model.SupportLateCount</strong> lần
                     </span>
@@ -303,6 +314,22 @@
                 </div>
             </div>
         </div>
+
+        @* Giờ hỗ trợ vượt trần là chuyện phải nói rõ: người xem thấy con số nhỏ hơn thực tế mà
+           không hiểu vì sao thì sẽ tưởng hệ thống đếm sót. *@
+        @if (Model.IsSupportCapped)
+        {
+            <span class="hint">
+                <span class="danger-text">
+                    Giờ hỗ trợ thực tế @Model.SupportHoursRaw.ToString("0.#") giờ, vượt trần
+                    @Model.SupportCapHours.ToString("0.#") giờ
+                </span>
+                — chỉ @Model.SupportHours.ToString("0.#") giờ được tính vào giờ công,
+                @Model.SupportHoursCut.ToString("0.#") giờ không được tính.
+                Trần = @KpiConfigService.Current.SupportHoursShare.ToString("0.##") &times; giờ yêu
+                cầu của tháng; hỗ trợ là việc phụ nên không được chiếm trọn quỹ giờ.
+            </span>
+        }
     </div>
     @if (supportTasks.Count == 0)
     {
@@ -640,9 +667,13 @@
                         Giờ yêu cầu = (ngày công chuẩn &minus; ngày nghỉ phép đã duyệt) &times;
                         @KpiService.HoursPerDay.ToString("0.##") giờ.
                         Giờ đã làm đếm theo <strong>ngày làm việc riêng biệt</strong> của các việc đang
-                        làm hoặc đã xong — nhiều việc cùng một khoảng chỉ tính một lần.
+                        làm hoặc đã xong — nhiều việc cùng một khoảng chỉ tính một lần, và chỉ đếm
+                        ngày <strong>nằm trong tháng</strong> đang chấm.
                     </div>
                     <div class="muted">
+                        Giờ <strong>hỗ trợ</strong> chỉ được tính tối đa
+                        @KpiConfigService.Current.SupportHoursShare.ToString("0.##") &times; giờ yêu cầu
+                        tháng; phần vượt trần không vào giờ công.
                         Đủ giờ thì giữ nguyên điểm chất lượng; thiếu giờ thì nhân theo tỷ lệ (chặn trên 100%).
                     </div>
                 </div>

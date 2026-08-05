@@ -164,6 +164,7 @@ namespace TTKDGP.ProjectManager.Controllers
 
             var sheet = new SheetData(string.Format("KPI {0:00}-{1}", month, year),
                 "STT", "Nhân sự", "Hỗ trợ", "Thực hiện",
+                "Giờ hỗ trợ (tính)", "Giờ hỗ trợ (thực tế)", "Trần giờ hỗ trợ",
                 "Giờ triển khai", "Định mức giờ", "Được giao",
                 "KPI chất lượng", "Tỷ lệ ngày công (%)", "KPI cuối cùng", "Xếp loại");
 
@@ -171,9 +172,11 @@ namespace TTKDGP.ProjectManager.Controllers
             {
                 var r = rows[i];
 
-                // Kèm giờ triển khai và định mức: nhóm thực hiện chấm theo giờ, thiếu hai cột này
-                // thì người đọc bảng không lần ra điểm ở đâu ra.
+                // Kèm cả giờ thực tế lẫn giờ được tính của nhóm hỗ trợ: hai số này lệch nhau khi
+                // vượt trần, thiếu một trong hai thì người đọc bảng không lần ra vì sao giờ công
+                // thấp hơn số giờ họ nhớ là đã làm.
                 sheet.Add(i + 1, r.UserFullName, r.SupportPoint, r.ExecutePoint,
+                    r.SupportHours, r.SupportHoursRaw, r.SupportCapHours,
                     r.ExecuteHours, r.ExecuteTargetHours, r.AssignedPoint,
                     r.QualityPoint, r.AttendanceRate, r.FinalPoint, r.Rank);
             }
@@ -297,6 +300,9 @@ namespace TTKDGP.ProjectManager.Controllers
                 year = r.Year,
                 month = r.Month,
                 supportPoint = r.SupportPoint,
+                supportHours = r.SupportHours,
+                supportHoursRaw = r.SupportHoursRaw,
+                supportCapHours = r.SupportCapHours,
                 executePoint = r.ExecutePoint,
                 executeHours = r.ExecuteHours,
                 executeTargetHours = r.ExecuteTargetHours,
