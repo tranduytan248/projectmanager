@@ -368,9 +368,10 @@
                 lấy từ màn <a href="@Url.Action("Approve", "Leaves")">Duyệt nghỉ phép</a> — không sửa
                 trực tiếp ở đây. Duyệt thêm đơn xong thì bấm <strong>Tính lại</strong> ở cuối dòng.
                 <strong>Giờ công</strong> do hệ thống tự tính: số ngày làm việc từ ngày bắt đầu đến
-                hạn hoàn thành của các việc <strong>đã hoàn thành</strong> hoặc <strong>đang làm</strong>,
-                nhân @KpiService.HoursPerDay.ToString("0.##") giờ — chỉ đếm ngày <strong>nằm trong
-                tháng</strong> đang chấm. Giờ <strong>hỗ trợ</strong> bị chặn trần ở
+                hạn hoàn thành của các việc <strong>đã hoàn thành</strong>, nhân
+                @KpiService.HoursPerDay.ToString("0.##") giờ — chỉ đếm ngày <strong>nằm trong
+                tháng</strong> đang chấm. Việc <strong>đang làm chưa sinh giờ nào</strong> cho tới
+                khi xong. Giờ <strong>hỗ trợ</strong> bị chặn trần ở
                 @KpiConfigService.Current.SupportHoursShare.ToString("0.##") &times; giờ yêu cầu tháng;
                 phần vượt không được tính vào giờ công.
                 @if (canConfig)

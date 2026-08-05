@@ -188,14 +188,18 @@ namespace TTKDGP.ProjectManager.Services
         }
 
         /// <summary>
-        /// Tổng giờ đã bỏ ra trong tháng, tính trên những việc ĐÃ HOÀN THÀNH hoặc ĐANG LÀM.
-        /// Việc chưa bắt đầu hay tạm dừng chưa phải là giờ đã bỏ ra nên không đếm.
+        /// Tổng giờ được công nhận trong tháng — CHỈ tính việc ĐÃ HOÀN THÀNH.
+        ///
+        /// Việc đang làm không sinh giờ nào cho tới khi xong. Trước đây có tính, và điều đó cho ra
+        /// kết quả sai hẳn: một đầu việc hỗ trợ đặt hạn 03/08–31/08, trạng thái "đang làm", tiến
+        /// độ 0% vẫn ăn trọn 168 giờ và đủ điểm nhóm — tức là nhận việc xong để đó cũng được chấm
+        /// như đã làm cả tháng. Giờ công phải phản ánh công ĐÃ bỏ ra, không phải công sẽ bỏ ra.
+        ///
+        /// Việc chưa bắt đầu và tạm dừng cũng không đếm, như trước.
         /// </summary>
         public static decimal WorkedHours(IEnumerable<WorkTask> tasks, int year, int month)
         {
-            return HoursOf(
-                tasks.Where(t => t.State == TaskStates.Done || t.State == TaskStates.InProgress),
-                year, month);
+            return HoursOf(tasks.Where(t => t.State == TaskStates.Done), year, month);
         }
 
         /// <summary>

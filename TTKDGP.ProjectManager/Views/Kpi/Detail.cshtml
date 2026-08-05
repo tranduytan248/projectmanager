@@ -245,7 +245,7 @@
                     <strong>@Model.RequiredHours.ToString("0.##") giờ</strong>
                 </div>
                 <div class="kpi-line">
-                    <span>Giờ đã làm <span class="muted">(việc đã xong / đang làm)</span></span>
+                    <span>Giờ đã làm <span class="muted">(chỉ việc đã hoàn thành)</span></span>
                     <strong>@Model.WorkedHours.ToString("0.##") giờ</strong>
                 </div>
                 @if (Model.IsSupportCapped)
@@ -389,9 +389,9 @@
                     {
                         var done = t.State == TaskStates.Done;
 
-                        @* Việc đã xong hoặc đang làm mới sinh ra giờ. Cột này là giờ RIÊNG của
+                        @* CHỈ việc đã hoàn thành mới sinh ra giờ. Cột này là giờ RIÊNG của
                            từng việc; tổng nhóm nhỏ hơn tổng cột khi nhiều việc chạy trùng ngày. *@
-                        var counts = done || t.State == TaskStates.InProgress;
+                        var counts = done;
                         <tr class="@(done && !t.IsOnTime ? "row-due-warn" : "")">
                             <td class="col-name">
                                 @(string.IsNullOrWhiteSpace(t.Code) ? t.Title : t.Code + " · " + t.Title)
@@ -434,7 +434,7 @@
                 @Model.SupportHoursRaw.ToString("0.#") giờ của cả nhóm: nhiều việc chạy trùng ngày
                 thì ngày đó chỉ được tính <strong>một lần</strong>.
                 Chỉ đếm ngày <strong>nằm trong tháng</strong> @Model.Month/@Model.Year.
-                Việc <strong>chưa bắt đầu</strong> và <strong>tạm dừng</strong> chưa sinh giờ nào.
+                Việc <strong>chưa hoàn thành</strong> (chưa bắt đầu, đang làm, tạm dừng) chưa sinh giờ nào.
             </span>
         </div>
     }
@@ -517,10 +517,10 @@
                     {
                         var done = t.State == TaskStates.Done;
 
-                        @* Việc đã xong hoặc đang làm mới sinh ra giờ. Cột này là giờ RIÊNG của
+                        @* CHỈ việc đã hoàn thành mới sinh ra giờ. Cột này là giờ RIÊNG của
                            từng việc; tổng nhóm nhỏ hơn tổng cột khi nhiều việc chạy trùng ngày —
                            ngày trùng chỉ được tính một lần, xem chú thích dưới bảng. *@
-                        var counts = done || t.State == TaskStates.InProgress;
+                        var counts = done;
                         <tr class="@(done && !t.IsOnTime ? "row-due-warn" : "")">
                             <td class="col-name">
                                 @(string.IsNullOrWhiteSpace(t.Code) ? t.Title : t.Code + " · " + t.Title)
@@ -567,7 +567,7 @@
                 @Model.ExecuteHours.ToString("0.#") giờ của cả nhóm: nhiều việc chạy trùng ngày thì
                 ngày đó chỉ được tính <strong>một lần</strong> — một người làm ba việc song song
                 trong tuần vẫn chỉ là một tuần công, không phải ba.
-                Việc <strong>chưa bắt đầu</strong> và <strong>tạm dừng</strong> chưa sinh giờ nào.
+                Việc <strong>chưa hoàn thành</strong> (chưa bắt đầu, đang làm, tạm dừng) chưa sinh giờ nào.
             </span>
         </div>
     }
@@ -716,9 +716,10 @@
                     <div>
                         Giờ yêu cầu = (ngày công chuẩn &minus; ngày nghỉ phép đã duyệt) &times;
                         @KpiService.HoursPerDay.ToString("0.##") giờ.
-                        Giờ đã làm đếm theo <strong>ngày làm việc riêng biệt</strong> của các việc đang
-                        làm hoặc đã xong — nhiều việc cùng một khoảng chỉ tính một lần, và chỉ đếm
-                        ngày <strong>nằm trong tháng</strong> đang chấm.
+                        Giờ đã làm chỉ tính việc <strong>đã hoàn thành</strong>, đếm theo
+                        <strong>ngày làm việc riêng biệt</strong> — nhiều việc cùng một khoảng chỉ
+                        tính một lần, và chỉ đếm ngày <strong>nằm trong tháng</strong> đang chấm.
+                        Việc đang làm chưa sinh giờ nào cho tới khi xong.
                     </div>
                     <div class="muted">
                         Giờ <strong>hỗ trợ</strong> chỉ được tính tối đa

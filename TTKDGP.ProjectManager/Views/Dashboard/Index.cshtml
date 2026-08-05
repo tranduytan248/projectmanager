@@ -204,9 +204,10 @@
                             <strong>Tỷ lệ giờ công</strong>
                             <div>
                                 Giờ yêu cầu = (ngày công chuẩn − ngày nghỉ phép đã duyệt) × @KpiService.HoursPerDay.ToString("0.##") giờ.
-                                Giờ đã làm đếm theo <strong>ngày làm việc riêng biệt</strong> của các việc đang làm
-                                hoặc đã xong — nhiều việc cùng một khoảng chỉ tính một lần, và chỉ đếm
-                                ngày <strong>nằm trong tháng</strong> đang chấm.
+                                Giờ đã làm chỉ tính việc <strong>đã hoàn thành</strong>, đếm theo
+                                <strong>ngày làm việc riêng biệt</strong> — nhiều việc cùng một khoảng
+                                chỉ tính một lần, và chỉ đếm ngày <strong>nằm trong tháng</strong>
+                                đang chấm. Việc đang làm chưa sinh giờ nào cho tới khi xong.
                             </div>
                             <div class="muted">
                                 Giờ <strong>hỗ trợ</strong> chỉ được tính tối đa
