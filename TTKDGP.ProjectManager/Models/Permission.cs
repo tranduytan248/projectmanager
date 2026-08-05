@@ -227,7 +227,10 @@ namespace TTKDGP.ProjectManager.Models
         /// <summary>Bộ chức năng mặc định của nhóm "Quản lý" — dùng cho seed và làm phương án dự phòng.</summary>
         public static IEnumerable<string> ManagerDefaults()
         {
-            var codes = new List<string> { Home.Perm(View), Team.Perm(View), Team.Perm("manage") };
+            // KHÔNG có Team.Perm("manage"): vai Quản lý Tổ đặt theo TỪNG TÀI KHOẢN qua ô tích
+            // trên màn Người dùng, không theo nhóm. Cấp theo nhóm thì mọi PM mang nhóm "Quản lý"
+            // đều thành Quản lý Tổ và biến mất khỏi các bảng theo dõi.
+            var codes = new List<string> { Home.Perm(View), Team.Perm(View) };
             codes.AddRange(new[] { MyReports, Projects, Members, Assignments, TeamReports,
                                    Catalog, WorkLogs,
                                    WorkProjects, WorkTasks, WorkReports, Kpi, Leaves, Workload }

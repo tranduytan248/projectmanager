@@ -87,10 +87,15 @@ namespace TTKDGP.ProjectManager.Data
                 // nên màn "Cấu hình KPI" sẽ không ai vào được trên bản đang vận hành.
                 GrantSingle(Roles.Manager, Models.Permissions.Kpi.Perm("config"));
 
-                // wteam.manage thay cho lối cũ "ai sửa được dự án thì là Quản lý Tổ". Nhóm Quản lý
-                // đã có sẵn wteam.view nên GrantMissingModules bỏ qua module này — phải cấp lẻ,
-                // không thì họ mất vai Quản lý Tổ khi ta bỏ lối cũ đi.
-                GrantSingle(Roles.Manager, Models.Permissions.Team.Perm("manage"));
+                // KHÔNG cấp wteam.manage cho nhóm nào ở đây.
+                //
+                // Vai Quản lý Tổ nay đặt theo TỪNG TÀI KHOẢN qua ô tích trên màn Người dùng
+                // (User.IsTeamManager), không phải theo nhóm. Cấp theo nhóm thì mọi PM mang nhóm
+                // "Quản lý" đều thành Quản lý Tổ và biến mất khỏi Bảng điều khiển Tổ, bảng KPI,
+                // thống kê khối lượng — trong khi họ vẫn làm việc trong dự án như mọi người.
+                //
+                // Bước cấp cũ đã bị gỡ khỏi đây; RevokeMisgrantedPermissions bên dưới lo thu hồi
+                // phần đã lỡ cấp trên bản đang vận hành.
             }
             catch (Exception)
             {
@@ -147,18 +152,72 @@ namespace TTKDGP.ProjectManager.Data
                     Models.Permissions.Kpi.Perm("pmapprove"),
                     Models.Permissions.Team.Perm(Models.Permissions.View),
 
-                    // Vai Quản lý Tổ và quyền sửa mọi dự án đều là quyền quản lý. PM sửa dự án
-                    // của chính mình đã được BaseController.CanEditProject lo theo ngữ cảnh, không
-                    // cần tới hai mã này.
-                    Models.Permissions.Team.Perm("manage"),
+                    // Quyền sửa MỌI dự án là quyền quản lý. PM sửa dự án của chính mình đã được
+                    // BaseController.CanEditProject lo theo ngữ cảnh, không cần mã này.
+                    //
+                    // wteam.manage không liệt kê ở đây: MigrateTeamManagerFlag gỡ nó khỏi MỌI
+                    // nhóm, không riêng nhóm Báo cáo.
                     Models.Permissions.WorkProjects.Perm(Models.Permissions.Edit)
                 };
 
                 RevokeFrom(Roles.Reporter, revoke);
+
+                // Chuyển vai Quản lý Tổ từ nhóm quyền sang ô tích trên từng tài khoản.
+                MigrateTeamManagerFlag();
             }
             catch (Exception)
             {
                 // Như trên: lỗi hạ tầng thì bỏ qua, lần khởi động sau làm lại.
+            }
+        }
+
+        /// <summary>
+        /// Chuyển vai Quản lý Tổ từ quyền nhóm (<c>wteam.manage</c>) sang ô tích trên từng tài
+        /// khoản (<see cref="User.IsTeamManager"/>), rồi gỡ quyền đó khỏi MỌI nhóm.
+        ///
+        /// Vì sao phải chuyển: cấp theo nhóm thì mọi PM mang nhóm "Quản lý" đều thành Quản lý Tổ
+        /// và biến mất khỏi Bảng điều khiển Tổ, bảng KPI, thống kê khối lượng — trong khi họ vẫn
+        /// làm việc trong dự án như mọi người. Vai này phải đặt theo từng người.
+        ///
+        /// Thứ tự bắt buộc: TÍCH Ô TRƯỚC rồi mới thu hồi quyền. Làm ngược lại thì giữa hai bước
+        /// không còn ai là Quản lý Tổ, và nếu bước sau trượt (SQL chập chờn) thì cả tổ mất người
+        /// quản lý cho tới lần khởi động sau.
+        ///
+        /// Chạy MỘT LẦN là xong: sau khi không nhóm nào còn wteam.manage thì vòng lặp không tìm
+        /// thấy ai để tích nữa, nên các lần khởi động sau không ghi đè lựa chọn của quản trị viên.
+        /// </summary>
+        private static void MigrateTeamManagerFlag()
+        {
+            var code = Models.Permissions.Team.Perm("manage");
+
+            var groupsHavingIt = Repository.RoleGroups.All()
+                .Where(g => !string.IsNullOrWhiteSpace(g.Permissions)
+                            && g.Permissions.Split(',')
+                                .Select(p => p.Trim())
+                                .Any(p => string.Equals(p, code, StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+
+            if (groupsHavingIt.Count == 0) return;
+
+            // Bước 1 — tích ô cho những ai đang có vai qua các nhóm đó.
+            foreach (var user in Repository.Users.All())
+            {
+                if (user.IsTeamManager) continue;
+
+                var hasIt = groupsHavingIt.Any(g => Models.Roles.Has(user.Role, g.Code));
+                if (!hasIt) continue;
+
+                user.IsTeamManager = true;
+                Repository.Users.Update(user);
+            }
+
+            // Bước 2 — gỡ quyền khỏi mọi nhóm. Nhóm toàn quyền ("*") không đụng tới: gỡ một mã lẻ
+            // khỏi "*" nghĩa là phải liệt kê toàn bộ mã còn lại, biến nhóm quản trị thành danh
+            // sách cứng không tự nhận chức năng thêm về sau.
+            foreach (var group in groupsHavingIt)
+            {
+                if ((group.Permissions ?? string.Empty).Trim() == "*") continue;
+                RevokeFrom(group.Code, new[] { code });
             }
         }
 
