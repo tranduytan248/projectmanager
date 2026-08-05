@@ -267,9 +267,14 @@
                                     else if (r.IsSupportCapped)
                                     {
                                         @* Giờ hỗ trợ bị cắt vì vượt trần — phải thấy được ngay
-                                           trên bảng, không thì con số giờ công trông như sai. *@
-                                        <span class="danger-text" title="Giờ hỗ trợ vượt trần: phần dư không tính vào điểm lẫn giờ công">
-                                            @r.SupportHoursRaw.ToString("0.#")h · vượt trần @r.SupportCapHours.ToString("0.#")h
+                                           trên bảng, không thì con số giờ công trông như sai.
+                                           Giữ nguyên dạng "đã tính / mốc" như dòng bình thường
+                                           rồi mới nói phần vượt: đảo thứ tự thì số thô đứng
+                                           trước, đọc nhầm thành mốc. *@
+                                        <span class="danger-text"
+                                              title="Giờ hỗ trợ thực tế @r.SupportHoursRaw.ToString("0.#")h, vượt mốc nên phần dư không tính vào điểm lẫn giờ công">
+                                            @r.SupportHours.ToString("0.#")/@r.SupportCapHours.ToString("0.#")h ·
+                                            thực tế @r.SupportHoursRaw.ToString("0.#")h
                                         </span>
                                     }
                                     else

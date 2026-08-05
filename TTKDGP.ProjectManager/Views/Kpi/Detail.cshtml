@@ -344,13 +344,24 @@
         {
             <span class="hint">
                 <span class="danger-text">
-                    Giờ hỗ trợ thực tế @Model.SupportHoursRaw.ToString("0.#") giờ, vượt trần
+                    Giờ hỗ trợ thực tế @Model.SupportHoursRaw.ToString("0.#") giờ, vượt mốc
                     @Model.SupportCapHours.ToString("0.#") giờ
                 </span>
-                — chỉ @Model.SupportHours.ToString("0.#") giờ được tính vào giờ công,
+                — chỉ @Model.SupportHours.ToString("0.#") giờ được tính (vào điểm lẫn giờ công),
                 @Model.SupportHoursCut.ToString("0.#") giờ không được tính.
-                Trần = @KpiConfigService.Current.SupportHoursShare.ToString("0.##") &times; giờ yêu
+                Mốc = @KpiConfigService.Current.SupportHoursShare.ToString("0.##") &times; giờ yêu
                 cầu của tháng; hỗ trợ là việc phụ nên không được chiếm trọn quỹ giờ.
+                @if (Model.SupportHoursRaw >= Model.RequiredHours && Model.RequiredHours > 0)
+                {
+                    @* Giờ hỗ trợ bằng đúng cả tháng thường là dấu hiệu một đầu việc bị đặt hạn
+                       trải suốt tháng, chứ không phải người đó làm hỗ trợ toàn thời gian. *@
+                    <text>
+                        <br /><strong>Đáng chú ý:</strong> giờ hỗ trợ bằng hoặc vượt trọn quỹ giờ
+                        tháng (@Model.RequiredHours.ToString("0.#") giờ) — thường do một đầu việc
+                        được đặt ngày bắt đầu và hạn hoàn thành trải suốt tháng. Xem lại thời gian
+                        của các việc bên dưới nếu con số này không phản ánh đúng thực tế.
+                    </text>
+                }
             </span>
         }
     </div>
