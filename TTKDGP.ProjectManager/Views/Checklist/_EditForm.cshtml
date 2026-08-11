@@ -209,7 +209,9 @@
 
         <div class="form-field full">
             @Html.LabelReq(m => m.Description)
-            @Html.TextAreaFor(m => m.Description, new { rows = 3 })
+            @* Cùng trình soạn thảo với ô mô tả của dự án — nội dung lưu dạng HTML, đã lọc
+               qua HtmlSanitizer.Clean khi lưu và ToDisplay khi hiển thị. *@
+            @Html.TextAreaFor(m => m.Description, new { rows = 3, data_rich = "true" })
         </div>
     </div>
 

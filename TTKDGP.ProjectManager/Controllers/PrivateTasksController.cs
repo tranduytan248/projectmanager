@@ -104,6 +104,10 @@ namespace TTKDGP.ProjectManager.Controllers
             model.ProjectName = null;
             model.ParentId = 0;
 
+            // Mô tả đến từ trình soạn thảo WYSIWYG (HTML) — lọc về tập thẻ an toàn TRƯỚC khi lưu,
+            // vì chỗ hiển thị dùng Html.Raw.
+            model.Description = HtmlSanitizer.Clean(model.Description);
+
             decimal bonusValue;
             if (!decimal.TryParse((bonus ?? string.Empty).Replace(',', '.'),
                     NumberStyles.Number, CultureInfo.InvariantCulture, out bonusValue)

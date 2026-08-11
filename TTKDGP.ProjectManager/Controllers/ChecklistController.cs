@@ -519,6 +519,11 @@ namespace TTKDGP.ProjectManager.Controllers
                 TryValidateModel(model);
             }
 
+            // Mô tả đến từ trình soạn thảo WYSIWYG (HTML) — lọc về tập thẻ an toàn TRƯỚC khi lưu,
+            // vì chỗ hiển thị dùng Html.Raw. Lọc sau nhánh trên để áp cho cả người sửa toàn phần
+            // lẫn người chỉ báo tiến độ, vì cả hai form đều gửi ô này lên.
+            model.Description = HtmlSanitizer.Clean(model.Description);
+
             if (!model.DueDate.HasValue)
             {
                 ModelState.AddModelError("DueDate", "Vui lòng nhập hạn hoàn thành.");

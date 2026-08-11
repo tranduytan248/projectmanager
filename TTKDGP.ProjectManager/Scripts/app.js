@@ -32,8 +32,8 @@
             }
 
             // Ô nằm trong hộp thoại thì thả danh sách chọn NGAY TRONG hộp. Mặc định Select2 gắn
-            // danh sách vào thẳng <body> — tức là nằm ngoài nền hộp thoại, nên bấm chọn một mục
-            // bị tính là bấm ra ngoài. Danh sách cũng đứng yên khi cuộn trong hộp.
+            // danh sách vào thẳng <body>, nằm ngoài hộp — danh sách khi đó đứng yên một chỗ
+            // trong lúc nội dung hộp cuộn bên dưới, trông như bị lệch khỏi ô.
             var $dialog = $select.closest('.modal');
             if ($dialog.length) options.dropdownParent = $dialog;
 
@@ -201,32 +201,14 @@
         $title = $backdrop.find('.modal-title');
         $body = $backdrop.find('.modal-body');
 
-        // Đóng khi bấm ra ngoài hộp. Phải xét CẢ hai đầu của cú bấm: chuột nhấn xuống ở đâu và
-        // nhả ra ở đâu. Chỉ nghe 'click' là không đủ và còn gây đóng nhầm — bôi đen chữ trong ô
-        // rồi kéo tay ra ngoài, hoặc thả chuột sau khi kéo thanh cuộn, đều sinh ra một sự kiện
-        // click mà trình duyệt tính đích là nền, làm hộp thoại đóng và mất hết dữ liệu đang nhập.
+        // CỐ Ý KHÔNG đóng hộp thoại khi bấm ra nền.
         //
-        // Ghi lại nơi nhấn xuống, chỉ đóng khi cả nhấn lẫn nhả đều đúng trên nền.
-        var pressedOnBackdrop = false;
-
-        $backdrop.on('mousedown', function (e) {
-            pressedOnBackdrop = e.target === $backdrop[0];
-        });
-
-        $backdrop.on('mouseup', function (e) {
-            var releasedOnBackdrop = e.target === $backdrop[0];
-            var shouldClose = pressedOnBackdrop && releasedOnBackdrop;
-            pressedOnBackdrop = false;
-
-            if (shouldClose) close();
-        });
-
-        // Nhấn xuống trong hộp rồi nhả ra ngoài cũng phải xoá dấu, không thì cú bấm kế tiếp
-        // trên nền lại bị tính nhầm là đã nhấn từ trước.
-        $(document).on('mouseup', function () {
-            pressedOnBackdrop = false;
-        });
-
+        // Hộp thoại ở đây gần như luôn là một biểu mẫu đang nhập dở — có ô mô tả nhiều dòng và
+        // trình soạn thảo. Đóng bằng một cú bấm hụt ra nền là xoá sạch những gì đã gõ mà không
+        // hỏi han gì, và người dùng không có cách nào lấy lại. Cái giá của việc bấm nhầm lớn hơn
+        // hẳn chút tiện lợi của thao tác bấm-nền-để-đóng.
+        //
+        // Vẫn còn ba lối đóng rõ ràng: nút ✕ ở góc, nút Huỷ trong form, và phím Esc.
         $backdrop.on('click', '.modal-close', close);
         $(document).on('keydown', function (e) {
             if (e.key === 'Escape' && $backdrop.hasClass('open')) close();

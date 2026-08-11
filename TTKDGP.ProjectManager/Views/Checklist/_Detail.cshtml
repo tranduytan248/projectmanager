@@ -134,7 +134,9 @@
     {
         <div class="form-static">
             <span class="form-static-label">Mô tả</span>
-            @Model.Description
+            @* Nội dung từ WYSIWYG, đã lọc khi lưu; ToDisplay lọc thêm lần nữa rồi mới Raw.
+               Mô tả cũ là văn bản thuần thì ToDisplay tự mã hoá và giữ xuống dòng. *@
+            <div class="rich-content">@Html.Raw(HtmlSanitizer.ToDisplay(Model.Description))</div>
         </div>
     }
 </div>

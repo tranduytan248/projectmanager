@@ -114,7 +114,9 @@
         @if (!string.IsNullOrWhiteSpace(Model.Description))
         {
             <p class="hint" style="margin-top:12px"><strong>Mô tả và nhật ký cập nhật</strong></p>
-            <pre class="message-preview">@Model.Description</pre>
+            @* Nội dung từ WYSIWYG, đã lọc khi lưu; ToDisplay lọc thêm lần nữa rồi mới Raw.
+               Mô tả cũ là văn bản thuần thì ToDisplay tự mã hoá và giữ xuống dòng. *@
+            <div class="rich-content">@Html.Raw(HtmlSanitizer.ToDisplay(Model.Description))</div>
         }
     </div>
 </div>
