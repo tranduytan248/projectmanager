@@ -2608,6 +2608,57 @@ table.data tbody tr.row-due-danger > td:first-child::before { background: var(--
     }
 }
 
+/* ===== Giờ công (logtime) trong hộp chi tiết công việc ===== */
+
+.timelog-section { margin-top: 4px; }
+
+/* Bốn con số tóm tắt: đã ghi / trần việc / còn lại / hôm nay. Tự xuống hàng khi hộp hẹp. */
+.timelog-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 22px;
+    margin-bottom: 10px;
+}
+
+.timelog-stat { display: flex; flex-direction: column; gap: 2px; }
+.timelog-stat-label { font-size: 12px; color: var(--text-muted); }
+.timelog-stat strong { font-size: 15px; }
+
+.timelog-bar { margin-bottom: 10px; }
+
+/* Vượt trần thì thanh chuyển đỏ — chỉ xảy ra với dữ liệu cũ, phải thấy ngay. */
+.timelog-over { background: var(--danger); }
+
+.timelog-alert { margin: 0 0 10px; }
+.timelog-empty { font-size: 13px; margin: 6px 0 10px; }
+
+/* Bảng các lượt đã ghi: gọn hơn bảng thường vì nằm trong hộp thoại. */
+.timelog-table { margin-bottom: 10px; }
+.timelog-table table.data th,
+.timelog-table table.data td { padding-top: 6px; padding-bottom: 6px; }
+
+.timelog-del {
+    border: 0;
+    background: none;
+    padding: 0;
+    color: var(--danger);
+    font-size: 12px;
+    cursor: pointer;
+}
+.timelog-del:hover { text-decoration: underline; }
+
+/* Hàng nhập: ngày + số giờ để vừa đủ, ô nội dung ăn hết chỗ còn lại. */
+.timelog-form { margin-top: 4px; }
+.timelog-form .filters { align-items: flex-end; }
+.timelog-form .filter-field { min-width: 0; }
+.timelog-form #logDate { width: 150px; }
+.timelog-form #logHours { width: 110px; }
+
+.timelog-blocked { display: block; margin-top: 6px; }
+
+/* Token chống giả mạo: chỉ để script đọc, không chiếm chỗ trên giao diện. */
+.timelog-token { display: none; }
+
 /* ===== Trình soạn thảo WYSIWYG gọn (textarea[data-rich], xem AppRichText trong app.js) ===== */
 
 .rich-editor { border: 1px solid var(--border-strong); border-radius: var(--radius-xs); background: var(--surface); }

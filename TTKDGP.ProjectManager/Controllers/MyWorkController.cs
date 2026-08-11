@@ -231,6 +231,7 @@ namespace TTKDGP.ProjectManager.Controllers
             ViewBag.States = TaskStates.All;
             ViewBag.CanReport = CanEditTask(task);
             ViewBag.Comments = WorkService.CommentsOfTask(id);
+            ViewBag.TimeLogModel = TimeLogService.BuildViewModel(task, CurrentUserId);
 
             return View(task);
         }

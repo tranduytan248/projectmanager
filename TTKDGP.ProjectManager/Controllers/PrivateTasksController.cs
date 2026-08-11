@@ -266,7 +266,10 @@ namespace TTKDGP.ProjectManager.Controllers
                 CommentAttachments.Delete(c.AttachmentFile);
             }
 
+            // Dọn luôn giờ công đã ghi: để sót dòng mồ côi thì tổng giờ theo NGÀY của người đó
+            // vẫn cộng phần giờ của việc đã xoá, và họ bị chặn oan khi ghi giờ mới.
             Repository.WorkComments.DeleteWhere(c => c.TaskId == id);
+            TimeLogService.DeleteOfTask(id);
             Repository.WorkTasks.Delete(id);
 
             Notify(string.Format("Đã xoá việc \"{0}\".", task.Title));

@@ -20,6 +20,7 @@
     var project = ViewBag.Project as WorkProject;
     var parentTitle = ViewBag.ParentTitle as string;
     var comments = ViewBag.CommentsModel as TaskCommentsViewModel ?? new TaskCommentsViewModel { TaskId = Model.Id };
+    var timeLogs = ViewBag.TimeLogModel as TaskTimeLogViewModel ?? new TaskTimeLogViewModel { TaskId = Model.Id };
 }
 
 <div class="task-detail-split">
@@ -139,6 +140,21 @@
             <div class="rich-content">@Html.Raw(HtmlSanitizer.ToDisplay(Model.Description))</div>
         </div>
     }
+</div>
+
+@* Giờ công: người thực hiện tự ghi, nhiều lượt và nhiều ngày khác nhau. Khối này tự vẽ lại
+   sau mỗi lần ghi/xoá nên bọc trong một thẻ có id để đoạn script bên dưới thay đúng chỗ. *@
+<div class="form-section timelog-section">
+    <div class="form-section-title">Giờ công</div>
+    @* Token chống giả mạo để NGOÀI khối được vẽ lại — mỗi lần ghi/xoá là cả khối bị thay,
+       để bên trong thì lần gửi thứ hai không còn token. *@
+    <div class="timelog-token">@Html.AntiForgeryToken()</div>
+    <div data-timelog-box
+         data-task-id="@Model.Id"
+         data-add-url="@Url.Action("LogTime", "Checklist")"
+         data-delete-url="@Url.Action("DeleteTimeLog", "Checklist")">
+        @Html.Partial("_TimeLogs", timeLogs)
+    </div>
 </div>
 
 <div class="form-actions">

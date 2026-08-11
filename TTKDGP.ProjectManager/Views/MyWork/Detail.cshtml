@@ -5,6 +5,7 @@
     var states = ViewBag.States as string[] ?? TaskStates.All;
     var comments = ViewBag.Comments as List<WorkComment> ?? new List<WorkComment>();
     var canReport = (bool)ViewBag.CanReport;
+    var timeLogs = ViewBag.TimeLogModel as TaskTimeLogViewModel ?? new TaskTimeLogViewModel { TaskId = Model.Id };
 
     var detailCrumbs = new List<Crumb>
     {
@@ -162,6 +163,22 @@
         </div>
     </div>
 }
+
+@* Giờ công: người thực hiện tự ghi, nhiều lượt và nhiều ngày khác nhau. Dùng chung partial
+   với hộp thoại chi tiết nên chỉ một nơi định nghĩa cách hiển thị. *@
+<div class="card">
+    <div class="card-head">Giờ công</div>
+    <div class="card-body">
+        @* Token để NGOÀI khối được vẽ lại — mỗi lần ghi/xoá là cả khối bị thay. *@
+        <div class="timelog-token">@Html.AntiForgeryToken()</div>
+        <div data-timelog-box
+             data-task-id="@Model.Id"
+             data-add-url="@Url.Action("LogTime", "Checklist")"
+             data-delete-url="@Url.Action("DeleteTimeLog", "Checklist")">
+            @Html.Partial("../Checklist/_TimeLogs", timeLogs)
+        </div>
+    </div>
+</div>
 
 <div class="card">
     <div class="card-head">

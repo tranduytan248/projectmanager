@@ -238,6 +238,7 @@
                 $body.html(html);
                 if (window.AppSelect2) window.AppSelect2.init($body[0]);
                 if (window.AppRichText) window.AppRichText.init($body[0]);
+                if (window.AppTimeLog) window.AppTimeLog.init($body[0]);
                 if (window.AppRequiredNote) window.AppRequiredNote.init($body[0]);
             })
             .fail(function () {
@@ -462,6 +463,95 @@
 
     $(function () { init(document); });
     window.AppRichText = { init: init };
+})(jQuery);
+
+// Khối "Giờ công" (logtime) — dùng chung cho hộp thoại chi tiết và trang chi tiết công việc.
+// Ghi/xoá bằng AJAX rồi thay cả khối bằng HTML máy chủ trả về, nên mọi con số (trần, còn lại)
+// luôn do máy chủ tính — màn hình không tự cộng trừ để khỏi lệch với luật lúc lưu.
+(function ($) {
+    'use strict';
+
+    function bind($box) {
+        if (!$box.length || $box.attr('data-timelog-ready')) return;
+        $box.attr('data-timelog-ready', '1');
+
+        var taskId = $box.data('task-id');
+        var addUrl = $box.data('add-url');
+        var deleteUrl = $box.data('delete-url');
+
+        // Token nằm NGOÀI khối được vẽ lại nên đọc theo tài liệu cha, và đọc lại ở mỗi lượt
+        // gửi thay vì nhớ sẵn — phòng khi trang có nhiều khối cùng lúc.
+        function token() {
+            return $box.closest('.timelog-section, .card-body, body')
+                .find('input[name="__RequestVerificationToken"]').first().val();
+        }
+
+        function failed(xhr) {
+            // Vi phạm mốc chặn thì máy chủ trả 400 kèm đúng lý do — hiện nguyên văn câu đó.
+            window.alert(xhr && xhr.status === 400 && xhr.responseText
+                ? xhr.responseText
+                : 'Không ghi được giờ công. Hãy thử lại.');
+        }
+
+        // Khối tự vẽ lại sau mỗi lần ghi/xoá nên các nút bên trong phải bắt theo kiểu uỷ quyền
+        // từ thẻ bọc; gắn thẳng vào nút thì lần vẽ lại thứ hai là mất trình xử lý.
+        $box.on('click', '#logTimeAdd', function () {
+            var $btn = $(this);
+            var date = $box.find('#logDate').val();
+            var hours = $box.find('#logHours').val();
+
+            if (!date) { window.alert('Hãy chọn ngày làm.'); return; }
+
+            // Nhập theo thói quen tiếng Việt: "2,5" cũng phải hiểu là 2.5.
+            hours = (hours || '').toString().replace(',', '.');
+            if (!hours || isNaN(parseFloat(hours)) || parseFloat(hours) <= 0) {
+                window.alert('Hãy nhập số giờ lớn hơn 0.');
+                return;
+            }
+
+            $btn.prop('disabled', true);
+
+            $.post(addUrl, {
+                id: taskId,
+                workDate: date,
+                hours: hours,
+                note: $box.find('#logNote').val(),
+                __RequestVerificationToken: token()
+            })
+                .done(function (html) { $box.html(html); })
+                .fail(failed)
+                .always(function () { $btn.prop('disabled', false); });
+        });
+
+        $box.on('click', '[data-timelog-id]', function () {
+            if (!window.confirm('Xoá lượt ghi giờ này?')) return;
+
+            $.post(deleteUrl, {
+                id: taskId,
+                logId: $(this).data('timelog-id'),
+                __RequestVerificationToken: token()
+            })
+                .done(function (html) { $box.html(html); })
+                .fail(failed);
+        });
+
+        // Enter trong ô số giờ hoặc ô nội dung là ghi luôn, khỏi phải rê chuột sang nút.
+        $box.on('keydown', '#logHours, #logNote', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                $box.find('#logTimeAdd').trigger('click');
+            }
+        });
+    }
+
+    function init(root) {
+        $(root || document).find('[data-timelog-box]').each(function () {
+            bind($(this));
+        });
+    }
+
+    $(function () { init(document); });
+    window.AppTimeLog = { init: init };
 })(jQuery);
 
 // Kéo thả thẻ trên bảng Kanban.

@@ -301,6 +301,7 @@ namespace TTKDGP.ProjectManager.Controllers
             ViewBag.CanEditPrivate = task.ProjectId <= 0 && CanEditPrivateTask(task);
             ViewBag.Project = Repository.WorkProjects.Find(task.ProjectId);
             ViewBag.CommentsModel = BuildComments(task);
+            ViewBag.TimeLogModel = BuildTimeLogs(task);
 
             var parent = task.ParentId > 0 ? Repository.WorkTasks.Find(task.ParentId) : null;
             ViewBag.ParentTitle = parent == null
@@ -335,6 +336,83 @@ namespace TTKDGP.ProjectManager.Controllers
                 Comments = WorkService.CommentsOfTask(task.Id),
                 Participants = participants
             };
+        }
+
+        // ---------- Giờ công (logtime) ----------
+
+        // Khối "Giờ công" dựng ở TimeLogService.BuildViewModel — dùng chung với trang chi tiết
+        // bên MyWork để hai nơi không lệch cách tính.
+        private TaskTimeLogViewModel BuildTimeLogs(WorkTask task)
+        {
+            return TimeLogService.BuildViewModel(task, CurrentUserId);
+        }
+
+        /// <summary>
+        /// Ghi một lượt giờ công. Trả lại partial khối giờ để hộp thoại tự vẽ lại; vi phạm mốc
+        /// chặn thì trả 400 kèm lý do để chỗ gửi hiện đúng câu đó.
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "wtasks.view")]
+        public ActionResult LogTime(int id, DateTime workDate, decimal hours, string note)
+        {
+            var task = Repository.WorkTasks.Find(id);
+            if (task == null || !CanSeeTask(task)) return HttpNotFound();
+
+            // Lớp chặn thật nằm ở đây chứ không ở màn hình: form gửi lên sửa tay được.
+            if (CurrentUserId <= 0 || task.AssigneeUserId != CurrentUserId)
+            {
+                return LogTimeError("Chỉ người được giao việc mới ghi được giờ công.");
+            }
+
+            if (TaskStates.IsClosed(task.State))
+            {
+                return LogTimeError("Công việc đã đóng nên không ghi thêm giờ được.");
+            }
+
+            var error = TimeLogService.Add(task, CurrentUserId,
+                CurrentUser == null ? null : CurrentUser.FullName, workDate, hours, note);
+
+            if (error != null) return LogTimeError(error);
+
+            return PartialView("_TimeLogs", BuildTimeLogs(task));
+        }
+
+        /// <summary>
+        /// Xoá một lượt giờ đã ghi. Chỉ xoá được dòng của CHÍNH MÌNH — giờ công là căn cứ chấm
+        /// KPI nên không ai được sửa của người khác.
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "wtasks.view")]
+        public ActionResult DeleteTimeLog(int id, int logId)
+        {
+            var task = Repository.WorkTasks.Find(id);
+            if (task == null || !CanSeeTask(task)) return HttpNotFound();
+
+            var log = Repository.WorkTimeLogs.Find(logId);
+            if (log == null || log.TaskId != id) return HttpNotFound();
+
+            if (CurrentUserId <= 0 || log.UserId != CurrentUserId)
+            {
+                return LogTimeError("Chỉ xoá được dòng giờ của chính bạn.");
+            }
+
+            if (TaskStates.IsClosed(task.State))
+            {
+                return LogTimeError("Công việc đã đóng nên không sửa được giờ đã ghi.");
+            }
+
+            Repository.WorkTimeLogs.Delete(logId);
+            return PartialView("_TimeLogs", BuildTimeLogs(task));
+        }
+
+        /// <summary>Trả lỗi dạng chữ kèm mã 400 để phía gửi hiện đúng lý do.</summary>
+        private ActionResult LogTimeError(string message)
+        {
+            Response.StatusCode = 400;
+            Response.TrySkipIisCustomErrors = true;
+            return Content(message);
         }
 
         /// <summary>
@@ -671,12 +749,16 @@ namespace TTKDGP.ProjectManager.Controllers
                 CommentAttachments.Delete(c.AttachmentFile);
             }
 
+            // Dọn luôn giờ công đã ghi: để sót dòng mồ côi thì tổng giờ theo NGÀY của người đó
+            // vẫn cộng phần giờ của việc đã xoá, và họ bị chặn oan khi ghi giờ mới.
             foreach (var childId in descendants)
             {
                 Repository.WorkComments.DeleteWhere(c => c.TaskId == childId);
+                TimeLogService.DeleteOfTask(childId);
                 Repository.WorkTasks.Delete(childId);
             }
             Repository.WorkComments.DeleteWhere(c => c.TaskId == id);
+            TimeLogService.DeleteOfTask(id);
             Repository.WorkTasks.Delete(id);
 
             Notify(descendants.Count > 0
