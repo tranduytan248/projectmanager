@@ -90,6 +90,11 @@ namespace TTKDGP.ProjectManager.Services
             var content = comment.Content;
             var actor = string.IsNullOrWhiteSpace(actorName) ? "Một người" : actorName;
 
+            // Dò tên trên bản ĐÃ GỠ THẺ. Nội dung trao đổi soạn bằng trình soạn thảo nên thẻ có
+            // thể nằm xen giữa một cái tên (bôi đậm mỗi chữ cuối chẳng hạn) — so trên chuỗi HTML
+            // thô sẽ trượt và người được nhắc lặng lẽ không nhận được gì.
+            var plain = Infrastructure.HtmlSanitizer.ToPlainText(content);
+
             // Mảnh HTML liên kết file đính kèm — do hệ thống dựng nên mới được thay nguyên vẹn.
             var attachmentHtml = comment.HasAttachment
                 ? string.Format("<p>File đính kèm: <a href=\"{0}\">{1}</a> <em>(đăng nhập để tải)</em></p>",
@@ -102,7 +107,7 @@ namespace TTKDGP.ProjectManager.Services
             {
                 if (person.Id == actorUserId || string.IsNullOrWhiteSpace(person.FullName)) continue;
 
-                if (content.IndexOf("@" + person.FullName.Trim(),
+                if (plain.IndexOf("@" + person.FullName.Trim(),
                         StringComparison.CurrentCultureIgnoreCase) < 0) continue;
 
                 var n = Add(person.Id, NotificationTypes.Mentioned,

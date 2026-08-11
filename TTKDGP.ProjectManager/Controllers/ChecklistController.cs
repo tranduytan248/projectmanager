@@ -294,6 +294,11 @@ namespace TTKDGP.ProjectManager.Controllers
 
             ViewBag.CanEdit = CanEditTask(task);
             ViewBag.CanEditAll = CanEditAllOfTask(task);
+
+            // Việc riêng (ngoài dự án) đi theo luật riêng: chỉ người GIAO việc mới sửa thông tin,
+            // người thực hiện báo cáo lại bằng khung trao đổi. Tính sẵn ở đây để hộp chi tiết chỉ
+            // hiện nút Cập nhật cho đúng người.
+            ViewBag.CanEditPrivate = task.ProjectId <= 0 && CanEditPrivateTask(task);
             ViewBag.Project = Repository.WorkProjects.Find(task.ProjectId);
             ViewBag.CommentsModel = BuildComments(task);
 
@@ -344,7 +349,12 @@ namespace TTKDGP.ProjectManager.Controllers
             var task = Repository.WorkTasks.Find(id);
             if (task == null || !CanSeeTask(task)) return HttpNotFound();
 
-            var hasText = !string.IsNullOrWhiteSpace(content);
+            // Nội dung soạn bằng trình soạn thảo (HTML) — lọc về tập thẻ an toàn TRƯỚC khi lưu,
+            // vì chỗ hiển thị dùng Html.Raw. Clean trả null khi chỉ có thẻ rỗng, nên kiểm "có
+            // chữ hay không" phải xét SAU khi lọc: gõ mỗi dấu cách trong ô soạn thảo vẫn sinh ra
+            // "<div><br></div>", tính là có nội dung thì sẽ lưu một dòng trao đổi trống trơn.
+            var cleaned = HtmlSanitizer.Clean(content);
+            var hasText = !string.IsNullOrWhiteSpace(cleaned);
             var hasFile = file != null && file.ContentLength > 0;
 
             if (hasText || hasFile)
@@ -354,7 +364,7 @@ namespace TTKDGP.ProjectManager.Controllers
                     TaskId = id,
                     UserId = CurrentUserId,
                     AuthorName = CurrentUser == null ? "(không rõ)" : CurrentUser.FullName,
-                    Content = hasText ? content.Trim() : null,
+                    Content = hasText ? cleaned : null,
                     CreatedAt = DateTime.Now
                 };
 

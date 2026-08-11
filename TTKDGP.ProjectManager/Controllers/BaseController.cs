@@ -127,6 +127,25 @@ namespace TTKDGP.ProjectManager.Controllers
         /// <summary>
         /// Được xem dự án này không: Quản lý Tổ xem tất cả, còn lại phải đang hoặc đã từng tham gia.
         /// </summary>
+        /// <summary>
+        /// Được sửa THÔNG TIN của một việc riêng (ngoài dự án) không — chỉ người đã giao việc.
+        ///
+        /// Việc riêng là thoả thuận giữa người giao và người nhận, nên tên việc, hạn, điểm cộng
+        /// và người thực hiện thuộc về người giao. Người thực hiện báo cáo lại bằng khung trao
+        /// đổi; cho họ tự sửa hạn hay điểm cộng thì con số chấm KPI mất hết ý nghĩa.
+        ///
+        /// Việc cũ chưa lưu người giao (AssignedByUserId = 0) thì không khoá, nếu không những
+        /// việc giao từ trước sẽ không còn ai sửa được.
+        /// </summary>
+        protected bool CanEditPrivateTask(WorkTask task)
+        {
+            if (task == null) return false;
+            if (IsTeamManager) return true;
+            if (task.AssignedByUserId <= 0) return true;
+
+            return CurrentUserId > 0 && task.AssignedByUserId == CurrentUserId;
+        }
+
         protected bool CanViewProject(int projectId)
         {
             if (IsTeamManager) return true;

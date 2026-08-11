@@ -2500,6 +2500,17 @@ table.data tbody tr.row-due-danger > td:first-child::before { background: var(--
 .chat-input-wrap { position: relative; margin-top: 8px; }
 .chat-input-wrap textarea { min-height: 60px; }
 
+/* Trình soạn thảo trong khung trao đổi: thấp hơn ô Mô tả để không chiếm hết chỗ của
+   danh sách trao đổi, nhưng vẫn giãn ra được khi gõ dài. */
+.chat-input-wrap .rich-area { min-height: 60px; max-height: 30vh; overflow-y: auto; }
+.chat-input-wrap .rich-toolbar { padding: 4px 6px; }
+
+/* Nội dung một lượt trao đổi đã soạn bằng trình soạn thảo: bỏ khoảng cách thừa của thẻ đoạn
+   để các dòng không bị rời rạc trong khung chat vốn hẹp. */
+.chat-content.rich-content > :first-child { margin-top: 0; }
+.chat-content.rich-content > :last-child { margin-bottom: 0; }
+.chat-content.rich-content p { margin: 0 0 6px; }
+
 .chat-send-row {
     display: flex;
     align-items: center;

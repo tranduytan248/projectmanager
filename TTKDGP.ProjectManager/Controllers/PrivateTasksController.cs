@@ -61,8 +61,20 @@ namespace TTKDGP.ProjectManager.Controllers
             ViewBag.Users = WorkService.ActiveUsers();
             ViewBag.OverdueCount = list.Count(t => t.IsOverdue);
 
+            // Tập id những việc mà người đang xem được sửa/xoá. Tính ở đây bằng CHÍNH hàm mà
+            // controller dùng để chặn, nên nút trên màn hình không bao giờ lệch với quyền thật.
+            ViewBag.EditableTaskIds = new HashSet<int>(
+                list.Where(CanEditPrivateTask).Select(t => t.Id));
+
             return View(PagedList<WorkTask>.From(list, page, WorkService.PageSize));
         }
+
+        // Quy tắc "chỉ người giao việc mới sửa được" nằm ở BaseController.CanEditPrivateTask —
+        // dùng chung với màn chi tiết bên Checklist để hai nơi không lệch nhau.
+        //
+        // Quyền wtasks.create ở thuộc tính AppAuthorize chỉ chặn ở mức CHỨC NĂNG (ai được vào màn
+        // Giao việc riêng). Hàm kia là lớp thứ hai, chặn theo TỪNG việc — thiếu nó thì người giao
+        // việc A sửa được việc do người khác giao chỉ bằng cách đổi id trên thanh địa chỉ.
 
         [HttpGet]
         [AppAuthorize(Permission = "wtasks.create")]
@@ -73,6 +85,10 @@ namespace TTKDGP.ProjectManager.Controllers
             {
                 task = Repository.WorkTasks.Find(id.Value);
                 if (task == null || task.Kind != TaskKinds.Standalone) return HttpNotFound();
+
+                // Không phải người giao việc thì coi như không có — trả 404 chứ không phải 403,
+                // để không lộ ra là việc đó có tồn tại.
+                if (!CanEditPrivateTask(task)) return HttpNotFound();
             }
             else
             {
@@ -137,6 +153,10 @@ namespace TTKDGP.ProjectManager.Controllers
             {
                 current = Repository.WorkTasks.Find(model.Id);
                 if (current == null || current.Kind != TaskKinds.Standalone) return HttpNotFound();
+
+                // Lớp chặn thật nằm ở đây: form gửi lên sửa tay được, nên không thể tin việc màn
+                // hình đã ẩn nút. Chỉ người giao việc (hoặc Quản lý Tổ) mới được ghi.
+                if (!CanEditPrivateTask(current)) return HttpNotFound();
             }
 
             if (!ModelState.IsValid) return EditFormWithErrors(model);
@@ -226,6 +246,9 @@ namespace TTKDGP.ProjectManager.Controllers
         {
             var task = Repository.WorkTasks.Find(id);
             if (task == null || task.Kind != TaskKinds.Standalone) return HttpNotFound();
+
+            // Chỉ người giao việc (hoặc Quản lý Tổ) mới được xoá, cùng quy tắc với việc sửa.
+            if (!CanEditPrivateTask(task)) return HttpNotFound();
 
             // Việc đã vào phiếu chấm KPI thì không xoá — xoá đi là phiếu đã duyệt mất căn cứ.
             if (Repository.KpiLines.All().Any(l => l.TaskId == id))

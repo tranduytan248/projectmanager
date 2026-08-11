@@ -6,6 +6,10 @@
     var overdueCount = (int)ViewBag.OverdueCount;
     var showClosed = ViewBag.ShowClosed != null && (bool)ViewBag.ShowClosed;
     var can = ViewBag.Can as Func<string, bool>;
+
+    // Chỉ người ĐÃ GIAO việc (và Quản lý Tổ) mới sửa/xoá được từng dòng. Danh sách này do
+    // controller tính bằng đúng hàm dùng để chặn, nên nút hiện ra luôn khớp với quyền thật.
+    var editableIds = ViewBag.EditableTaskIds as HashSet<int> ?? new HashSet<int>();
 }
 
 <div class="page-head">
@@ -129,14 +133,18 @@
                                 }
                             </td>
                             <td class="actions">
+                                @{ var canEditRow = editableIds.Contains(t.Id); }
                                 <details class="row-menu">
                                     <summary>Thao tác ▾</summary>
                                     <div class="row-menu-items">
-                                        <a href="@Url.Action("Edit", "PrivateTasks", new { id = t.Id })"
-                                           data-modal-url="@Url.Action("Edit", "PrivateTasks", new { id = t.Id })"
-                                           data-modal-title="Sửa việc riêng">Sửa việc</a>
+                                        @if (canEditRow)
+                                        {
+                                            <a href="@Url.Action("Edit", "PrivateTasks", new { id = t.Id })"
+                                               data-modal-url="@Url.Action("Edit", "PrivateTasks", new { id = t.Id })"
+                                               data-modal-title="Sửa việc riêng">Sửa việc</a>
+                                        }
                                         <a href="@Url.Action("Detail", "MyWork", new { id = t.Id })">Trang chi tiết &amp; trao đổi</a>
-                                        @if (can == null || can("wtasks.delete"))
+                                        @if (canEditRow && (can == null || can("wtasks.delete")))
                                         {
                                             <div class="row-menu-sep"></div>
                                             using (Html.BeginForm("Delete", "PrivateTasks", new { id = t.Id }, FormMethod.Post))

@@ -36,9 +36,9 @@ else
             {
                 if (!string.IsNullOrWhiteSpace(c.Content))
                 {
-                    @* Nội dung đã HTML-encode trong Highlight trước khi tô @tên — không render thẳng
-                       văn bản người dùng nhập. *@
-                    <div class="chat-content">@Highlight(c.Content)</div>
+                    @* Nội dung soạn bằng trình soạn thảo: đã lọc qua HtmlSanitizer khi lưu, lọc
+                       thêm lần nữa trong Highlight rồi mới tô @tên. *@
+                    <div class="chat-content rich-content">@Highlight(c.Content)</div>
                 }
                 if (c.HasAttachment)
                 {
@@ -55,24 +55,45 @@ else
 
 @functions {
     /// <summary>
-    /// HTML-encode nội dung TRƯỚC, rồi mới tô đậm các cụm @Tên khớp với người tham gia dự án.
-    /// Mẫu so khớp cũng encode y hệt nên hai bên luôn khớp nhau; ngoài các cụm được bọc thẻ,
-    /// toàn bộ còn lại là văn bản đã escape — không dùng Html.Raw với dữ liệu thô.
+    /// Lọc nội dung về tập thẻ an toàn rồi tô đậm các cụm @Tên khớp với người tham gia.
+    ///
+    /// Nội dung đến từ trình soạn thảo nên đã là HTML và ĐÃ được lọc lúc lưu; ToDisplay lọc
+    /// thêm lần nữa ở đây (và tự mã hoá nếu là trao đổi cũ dạng chữ thuần), nên chuỗi đưa vào
+    /// Html.Raw luôn nằm trong danh sách trắng.
+    ///
+    /// Chỉ tô ở PHẦN CHỮ NẰM NGOÀI THẺ: tách chuỗi theo từng thẻ rồi chỉ thay trong các đoạn
+    /// giữa. Thay thẳng trên cả chuỗi thì một cái tên trùng với thuộc tính bên trong thẻ
+    /// (href="...@...") sẽ bị chèn span vào giữa và làm vỡ thẻ đó.
     /// </summary>
     private IHtmlString Highlight(string content)
     {
-        var encoded = HttpUtility.HtmlEncode(content ?? string.Empty);
+        var html = HtmlSanitizer.ToDisplay(content) ?? string.Empty;
 
-        foreach (var p in Model.Participants
+        var names = Model.Participants
             .Where(x => !string.IsNullOrWhiteSpace(x.FullName))
-            .OrderByDescending(x => x.FullName.Length))
+            .Select(x => x.FullName.Trim())
+            .OrderByDescending(n => n.Length)
+            .ToList();
+
+        if (names.Count == 0) return new HtmlString(html);
+
+        // Tách thành các mảnh: mảnh bắt đầu bằng '<' là thẻ (giữ nguyên), còn lại là chữ.
+        var parts = Regex.Split(html, "(<[^>]*>)");
+
+        for (var i = 0; i < parts.Length; i++)
         {
-            var pattern = "@" + Regex.Escape(HttpUtility.HtmlEncode(p.FullName.Trim()));
-            encoded = Regex.Replace(encoded, pattern,
-                m => "<span class=\"mention\">" + m.Value + "</span>",
-                RegexOptions.IgnoreCase);
+            if (parts[i].StartsWith("<", StringComparison.Ordinal)) continue;
+
+            foreach (var name in names)
+            {
+                // Tên trong phần chữ đã ở dạng đã mã hoá, nên mẫu so khớp cũng phải mã hoá y hệt.
+                var pattern = "@" + Regex.Escape(HttpUtility.HtmlEncode(name));
+                parts[i] = Regex.Replace(parts[i], pattern,
+                    m => "<span class=\"mention\">" + m.Value + "</span>",
+                    RegexOptions.IgnoreCase);
+            }
         }
 
-        return new HtmlString(encoded);
+        return new HtmlString(string.Concat(parts));
     }
 }

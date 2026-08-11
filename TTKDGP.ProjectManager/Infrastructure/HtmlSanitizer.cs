@@ -86,6 +86,35 @@ namespace TTKDGP.ProjectManager.Infrastructure
             return Clean(stored);
         }
 
+        /// <summary>
+        /// Gỡ hết thẻ, trả về phần chữ thuần. Dùng khi cần DÒ NỘI DUNG chứ không phải hiển thị —
+        /// ví dụ tìm cụm "@Tên" để gửi thông báo nhắc tên.
+        ///
+        /// Cần thiết vì trình soạn thảo có thể xen thẻ vào giữa một cái tên: người dùng bôi đậm
+        /// mỗi chữ "Hoàng" thì nội dung thành "@Nguyễn Ngọc Châu &lt;b&gt;Hoàng&lt;/b&gt;", so
+        /// chuỗi thô sẽ không khớp và thông báo lặng lẽ không gửi.
+        ///
+        /// Đổi thẻ xuống dòng thành khoảng trắng để hai chữ ở hai dòng không dính liền nhau.
+        /// </summary>
+        public static string ToPlainText(string html)
+        {
+            if (string.IsNullOrWhiteSpace(html)) return string.Empty;
+
+            var sb = new StringBuilder(html.Length);
+            var insideTag = false;
+
+            foreach (var c in html)
+            {
+                if (c == '<') { insideTag = true; sb.Append(' '); continue; }
+                if (c == '>') { insideTag = false; continue; }
+                if (!insideTag) sb.Append(c);
+            }
+
+            // Giải mã thực thể (&amp; &#64; ...) rồi gom khoảng trắng thừa do việc gỡ thẻ sinh ra.
+            var text = HttpUtility.HtmlDecode(sb.ToString());
+            return Regex.Replace(text, "\\s+", " ").Trim();
+        }
+
         /// <summary>Dựng lại một thẻ sạch từ phần ruột giữa "&lt;" và "&gt;"; thẻ lạ trả về chuỗi rỗng.</summary>
         private static string CleanTag(string inner)
         {

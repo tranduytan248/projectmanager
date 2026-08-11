@@ -9,13 +9,13 @@
     var canEdit = ViewBag.CanEdit != null && (bool)ViewBag.CanEdit;
     var canEditAll = ViewBag.CanEditAll != null && (bool)ViewBag.CanEditAll;
 
-    // Việc riêng (ngoài dự án) sửa ở màn "Giao việc riêng", mà màn đó đòi quyền wtasks.create.
-    // Người được giao tuy sửa được việc của mình nhưng có thể không có quyền ấy — hiện nút cho
-    // họ thì bấm vào chỉ nhận lỗi. Kiểm ngay tại đây để nút chỉ hiện khi thật sự mở được.
-    var can = ViewBag.Can as Func<string, bool>;
-    if (canEdit && Model.ProjectId <= 0)
+    // Việc riêng (ngoài dự án) chỉ NGƯỜI GIAO VIỆC mới sửa được thông tin; người thực hiện
+    // báo cáo lại bằng khung trao đổi bên phải. Cờ này do controller tính bằng đúng hàm dùng
+    // để chặn ở máy chủ, nên nút hiện ra luôn khớp với quyền thật.
+    var canEditPrivate = ViewBag.CanEditPrivate != null && (bool)ViewBag.CanEditPrivate;
+    if (Model.ProjectId <= 0)
     {
-        canEdit = can != null && can("wtasks.create");
+        canEdit = canEditPrivate;
     }
     var project = ViewBag.Project as WorkProject;
     var parentTitle = ViewBag.ParentTitle as string;
@@ -168,8 +168,8 @@
     <span class="hint">
         @if (Model.ProjectId <= 0)
         {
-            <text>Việc riêng chỉ sửa được ở màn <strong>Giao việc riêng</strong> — bấm
-            <em>Mở trang chi tiết</em> để cập nhật tiến độ của bạn.</text>
+            <text>Thông tin việc riêng do <strong>người giao việc</strong> giữ. Bạn báo cáo
+            tiến độ bằng khung <strong>Trao đổi</strong> bên cạnh.</text>
         }
         else
         {
@@ -194,9 +194,11 @@
         @Html.AntiForgeryToken()
         <input type="hidden" name="id" value="@Model.Id" />
 
+        @* Ô trao đổi dùng cùng trình soạn thảo với ô Mô tả: AppRichText ẩn textarea này đi và
+           dựng .rich-editor ngay sau nó, nội dung HTML đồng bộ ngược về textarea khi gửi. *@
         <div class="chat-input-wrap">
             <div id="mentionMenu" class="mention-menu"></div>
-            <textarea id="chatInput" name="content" rows="2"
+            <textarea id="chatInput" name="content" rows="2" data-rich="true"
                       placeholder="Trao đổi với PM và người tham gia... Gõ &#64; để nhắc tên"></textarea>
         </div>
 
@@ -233,6 +235,28 @@
         var $input = $('#chatInput');
         var $menu = $('#mentionMenu');
 
+        // Ô nhập giờ là trình soạn thảo: AppRichText ẩn textarea và dựng .rich-area ngay sau nó.
+        // Mọi thao tác gõ/đọc con trỏ phải làm trên vùng soạn thảo đó, còn textarea chỉ là nơi
+        // chứa HTML lúc gửi form. Dựng ngay tại đây để không phải chờ tới lượt khởi tạo chung.
+        if (window.AppRichText) window.AppRichText.init($form[0]);
+        var $area = $input.closest('.chat-input-wrap').find('.rich-area');
+
+        // Đọc HTML hiện có trong ô soạn thảo và đẩy ngược về textarea trước khi gửi.
+        function syncInput() {
+            if ($area.length) $input.val($area.html());
+        }
+
+        // Còn chữ thật hay chỉ có thẻ rỗng (<br>, <div></div> do trình duyệt tự sinh).
+        function hasText() {
+            var text = $area.length ? $area.text() : $input.val();
+            return $.trim((text || '').replace(/ /g, ' ')).length > 0;
+        }
+
+        function clearInput() {
+            if ($area.length) $area.empty();
+            $input.val('');
+        }
+
         // Ký tự mở đầu một lượt nhắc tên. Không viết thẳng vào mã vì Razor giành mất ký tự này.
         var AT = String.fromCharCode(64);
 
@@ -265,20 +289,41 @@
         var items = [];
         var active = -1;
 
+        // Vị trí con trỏ trong ô soạn thảo: trả về đúng nút chữ và chỉ số trong nút đó.
+        // Khác textarea (chỉ là một chuỗi phẳng), contenteditable chia nội dung thành nhiều nút
+        // nên chỉ xét NÚT CHỮ đang chứa con trỏ — đủ dùng vì một lượt nhắc tên không bao giờ
+        // trải qua hai nút.
+        function caret() {
+            var sel = window.getSelection();
+            if (!sel || !sel.rangeCount) return null;
+
+            var range = sel.getRangeAt(0);
+            if (!range.collapsed) return null;
+
+            var node = range.startContainer;
+            if (node.nodeType !== 3) return null;                 // 3 = nút chữ
+            if (!$.contains($area[0], node)) return null;
+
+            return { node: node, offset: range.startOffset };
+        }
+
         function tokenAtCaret() {
-            var pos = $input[0].selectionStart;
-            var text = $input.val().slice(0, pos);
+            var c = caret();
+            if (!c) return null;
+
+            var text = c.node.nodeValue.slice(0, c.offset);
             var at = text.lastIndexOf(AT);
             if (at < 0) return null;
 
             // Ký tự nhắc tên phải đứng đầu chuỗi hoặc sau khoảng trắng/dấu câu — địa chỉ email
-            // gõ giữa câu không phải là một lượt nhắc tên.
-            if (at > 0 && !/[\s.,;:!?()\[\]"']/.test(text.charAt(at - 1))) return null;
+            // gõ giữa câu không phải là một lượt nhắc tên. Khoảng trắng cứng do trình soạn thảo
+            // sinh ra cũng tính là khoảng trắng.
+            if (at > 0 && !/[\s.,;:!?()\[\]"' ]/.test(text.charAt(at - 1))) return null;
 
             var query = text.slice(at + 1);
             if (query.length > 40 || query.indexOf('\n') >= 0) return null;
 
-            return { start: at, query: query };
+            return { node: c.node, offset: c.offset, start: at, query: query };
         }
 
         function hideMenu() {
@@ -322,13 +367,24 @@
             var p = items[idx];
             if (!token || !p) { hideMenu(); return; }
 
-            var val = $input.val();
-            var pos = $input[0].selectionStart;
-            var before = val.slice(0, token.start) + AT + p.name + ' ';
+            // Thay đúng đoạn đang gõ dở bằng ký tự nhắc tên kèm tên đầy đủ và một khoảng trắng,
+            // rồi đặt con trỏ ngay sau đó.
+            var node = token.node;
+            var value = node.nodeValue;
+            var inserted = AT + p.name + ' ';
 
-            $input.val(before + val.slice(pos));
-            $input[0].setSelectionRange(before.length, before.length);
-            $input.focus();
+            node.nodeValue = value.slice(0, token.start) + inserted + value.slice(token.offset);
+
+            var sel = window.getSelection();
+            var range = document.createRange();
+            var pos = token.start + inserted.length;
+            range.setStart(node, pos);
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            $area.trigger('focus');
+            syncInput();
             hideMenu();
         }
 
@@ -338,12 +394,12 @@
             $menu.children().removeClass('active').eq(active).addClass('active');
         }
 
-        $input.on('input click', function () {
+        $area.on('input click keyup', function () {
             var token = tokenAtCaret();
             if (token) renderMenu(token); else hideMenu();
         });
 
-        $input.on('keydown', function (e) {
+        $area.on('keydown', function (e) {
             if ($menu.hasClass('open')) {
                 if (e.key === 'ArrowDown') { e.preventDefault(); move(1); return; }
                 if (e.key === 'ArrowUp') { e.preventDefault(); move(-1); return; }
@@ -362,7 +418,7 @@
             }
         });
 
-        // mousedown thay vì click để chọn xong textarea không bị mất focus.
+        // mousedown thay vì click để chọn xong ô soạn thảo không bị mất con trỏ.
         $menu.on('mousedown', '.mention-item', function (e) {
             e.preventDefault();
             pick(parseInt($(this).attr('data-index'), 10));
@@ -405,7 +461,11 @@
             e.stopPropagation();
 
             var hasFile = $file[0].files && $file[0].files.length > 0;
-            if (!$.trim($input.val()) && !hasFile) return;
+
+            // Đẩy nội dung từ ô soạn thảo về textarea TRƯỚC khi dựng FormData, không thì gửi đi
+            // một chuỗi rỗng. Ô chỉ chứa thẻ rỗng cũng coi như chưa gõ gì.
+            syncInput();
+            if (!hasText() && !hasFile) return;
 
             var $btn = $form.find('[type="submit"]').prop('disabled', true);
 
@@ -419,7 +479,7 @@
             })
                 .done(function (html) {
                     $box.html(html);
-                    $input.val('');
+                    clearInput();
                     clearFile();
                     hideMenu();
                     updateCount();
