@@ -49,7 +49,6 @@ namespace TTKDGP.ProjectManager.Controllers
                 ActiveMemberCount = rows.Where(r => r.IsActive).Select(r => r.MemberId).Distinct().Count(),
                 AssignmentCount = rows.Count(r => r.IsActive),
 
-                TelegramReady = AppSettings.Telegram.IsConfigured,
                 EmailReady = AppSettings.Email.IsConfigured
             };
 

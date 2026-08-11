@@ -1,0 +1,147 @@
+﻿@model TTKDGP.ProjectManager.Services.UserPhoneSyncService.Preview
+@{
+    ViewBag.Title = "Lấy số điện thoại từ HRM";
+    var changes = Model.Changes;
+    var missing = Model.Missing;
+}
+
+<div class="page-head">
+    <div>
+        <h1>Lấy số điện thoại từ HRM</h1>
+        <p>
+            Đối chiếu tài khoản với <strong>danh bạ nhân sự HRM</strong> theo <strong>email</strong>,
+            rồi ghi số điện thoại thẳng vào bảng Người dùng. Số này là nơi nhận
+            <strong>tin nhắn nhắc hạn công việc</strong>.
+        </p>
+        <p>
+            HRM không có số thì <strong>giữ nguyên</strong> số đang lưu — không xoá số đã điền tay.
+        </p>
+    </div>
+    <a class="btn btn-default" href="@Url.Action("Index", "Users")">Về danh sách</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-value">@changes.Count</div>
+                <div class="stat-label">Sẽ cập nhật</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">@Model.UpToDateCount</div>
+                <div class="stat-label">Đã khớp HRM</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">@missing.Count</div>
+                <div class="stat-label">HRM không có số</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">@Model.Rows.Count</div>
+                <div class="stat-label">Tài khoản đang hoạt động</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-head">
+        <span>Sẽ cập nhật (@changes.Count)</span>
+        <span class="muted" style="font-weight:400">Ghép theo email</span>
+    </div>
+
+    @if (changes.Count == 0)
+    {
+        <div class="empty-state">
+            Không có số nào cần cập nhật — mọi tài khoản đều đã khớp với HRM hoặc HRM chưa có số.
+        </div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th>Tài khoản</th>
+                        <th>Họ và tên</th>
+                        <th>Email (khoá ghép)</th>
+                        <th>Số đang lưu</th>
+                        <th>Số theo HRM</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in changes)
+                    {
+                        <tr>
+                            <td><strong>@r.UserName</strong></td>
+                            <td>@r.FullName</td>
+                            <td class="muted">@r.Email</td>
+                            <td class="muted nowrap">@(r.HasCurrentPhone ? r.CurrentPhone : "—")</td>
+                            <td class="nowrap"><strong>@r.HrmPhone</strong></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        using (Html.BeginForm("SyncPhones", "Users", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            <div class="card-body">
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary"
+                            onclick="return confirm('Ghi số điện thoại cho @changes.Count tài khoản theo danh sách trên?');">
+                        Cập nhật số điện thoại
+                    </button>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@if (missing.Count > 0)
+{
+    <div class="card">
+        <div class="card-head">
+            <span>HRM không có số (@missing.Count)</span>
+            <span class="muted" style="font-weight:400">Cần điền tay nếu muốn nhận tin nhắc</span>
+        </div>
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th>Tài khoản</th>
+                        <th>Họ và tên</th>
+                        <th>Email</th>
+                        <th>Số đang lưu</th>
+                        <th>Lý do</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in missing)
+                    {
+                        <tr>
+                            <td><strong>@r.UserName</strong></td>
+                            <td>@r.FullName</td>
+                            <td class="muted">@(r.NoEmail ? "—" : r.Email)</td>
+                            <td class="nowrap">
+                                @if (r.HasCurrentPhone)
+                                {
+                                    <text>@r.CurrentPhone</text>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-waiting">Chưa có</span>
+                                }
+                            </td>
+                            <td class="muted">
+                                @(r.NoEmail
+                                    ? "Tài khoản chưa điền email nên không ghép được sang HRM."
+                                    : "Không tìm thấy email này trong danh bạ HRM, hoặc HRM chưa khai số.")
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

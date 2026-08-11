@@ -31,6 +31,12 @@
                 options.allowClear = true;
             }
 
+            // Ô nằm trong hộp thoại thì thả danh sách chọn NGAY TRONG hộp. Mặc định Select2 gắn
+            // danh sách vào thẳng <body> — tức là nằm ngoài nền hộp thoại, nên bấm chọn một mục
+            // bị tính là bấm ra ngoài. Danh sách cũng đứng yên khi cuộn trong hộp.
+            var $dialog = $select.closest('.modal');
+            if ($dialog.length) options.dropdownParent = $dialog;
+
             $select.select2(options);
         });
     }
@@ -195,10 +201,32 @@
         $title = $backdrop.find('.modal-title');
         $body = $backdrop.find('.modal-body');
 
-        $backdrop.on('click', function (e) {
-            // Chỉ đóng khi bấm đúng vào nền, không đóng khi bấm bên trong hộp.
-            if (e.target === $backdrop[0]) close();
+        // Đóng khi bấm ra ngoài hộp. Phải xét CẢ hai đầu của cú bấm: chuột nhấn xuống ở đâu và
+        // nhả ra ở đâu. Chỉ nghe 'click' là không đủ và còn gây đóng nhầm — bôi đen chữ trong ô
+        // rồi kéo tay ra ngoài, hoặc thả chuột sau khi kéo thanh cuộn, đều sinh ra một sự kiện
+        // click mà trình duyệt tính đích là nền, làm hộp thoại đóng và mất hết dữ liệu đang nhập.
+        //
+        // Ghi lại nơi nhấn xuống, chỉ đóng khi cả nhấn lẫn nhả đều đúng trên nền.
+        var pressedOnBackdrop = false;
+
+        $backdrop.on('mousedown', function (e) {
+            pressedOnBackdrop = e.target === $backdrop[0];
         });
+
+        $backdrop.on('mouseup', function (e) {
+            var releasedOnBackdrop = e.target === $backdrop[0];
+            var shouldClose = pressedOnBackdrop && releasedOnBackdrop;
+            pressedOnBackdrop = false;
+
+            if (shouldClose) close();
+        });
+
+        // Nhấn xuống trong hộp rồi nhả ra ngoài cũng phải xoá dấu, không thì cú bấm kế tiếp
+        // trên nền lại bị tính nhầm là đã nhấn từ trước.
+        $(document).on('mouseup', function () {
+            pressedOnBackdrop = false;
+        });
+
         $backdrop.on('click', '.modal-close', close);
         $(document).on('keydown', function (e) {
             if (e.key === 'Escape' && $backdrop.hasClass('open')) close();

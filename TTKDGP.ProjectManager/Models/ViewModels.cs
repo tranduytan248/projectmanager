@@ -113,6 +113,14 @@ namespace TTKDGP.ProjectManager.Models
         public string Email { get; set; }
 
         /// <summary>
+        /// Số điện thoại nhận SMS. Thường do màn "Mở tài khoản từ HRM" điền, sửa tay được ở đây
+        /// cho những người HRM chưa khai số.
+        /// </summary>
+        [Display(Name = "Số điện thoại")]
+        [StringLength(30, ErrorMessage = "Số điện thoại tối đa 30 ký tự")]
+        public string Phone { get; set; }
+
+        /// <summary>
         /// Các quyền được chọn (chọn được nhiều). Lưu xuống <see cref="User.Role"/> dưới dạng
         /// chuỗi ngăn bởi dấu phẩy.
         /// </summary>
@@ -212,7 +220,6 @@ namespace TTKDGP.ProjectManager.Models
         public int ActiveMemberCount { get; set; }
         public int AssignmentCount { get; set; }
 
-        public bool TelegramReady { get; set; }
         public bool EmailReady { get; set; }
 
         public int MissingMemberCount { get { return MissingMembers == null ? 0 : MissingMembers.Count; } }
@@ -276,11 +283,23 @@ namespace TTKDGP.ProjectManager.Models
         public string FullName { get; set; }
         public string Email { get; set; }
 
+        /// <summary>Số điện thoại lấy từ HRM. Có thể trống nếu HRM chưa khai.</summary>
+        public string Phone { get; set; }
+
         /// <summary>Tên đăng nhập HRM, suy từ email (bỏ phần đuôi miền).</summary>
         public string UserName { get; set; }
 
         /// <summary>Tài khoản đang có của người này; 0 nghĩa là sắp mở mới.</summary>
         public int UserId { get; set; }
+
+        /// <summary>
+        /// Với tài khoản đã có: số HRM khác số đang lưu nên lần chạy này sẽ ghi đè.
+        /// Dùng để màn xem trước nói rõ ai sắp bị đổi số, thay vì lặng lẽ sửa.
+        /// </summary>
+        public bool PhoneWillUpdate { get; set; }
+
+        /// <summary>Số đang lưu trên tài khoản, chỉ để đối chiếu khi <see cref="PhoneWillUpdate"/>.</summary>
+        public string CurrentPhone { get; set; }
     }
 
     /// <summary>Một nhân sự bị bỏ qua, kèm lý do để quản trị biết đường xử lý tay.</summary>
@@ -335,6 +354,12 @@ namespace TTKDGP.ProjectManager.Models
         public bool HasWork
         {
             get { return ToCreate.Count > 0 || Existing.Count > 0; }
+        }
+
+        /// <summary>Các tài khoản đã có mà lần chạy này sẽ ghi đè số điện thoại theo HRM.</summary>
+        public List<UserProvisionRow> PhoneChanges
+        {
+            get { return Existing.Where(r => r.PhoneWillUpdate).ToList(); }
         }
 
         public UserProvisionViewModel()

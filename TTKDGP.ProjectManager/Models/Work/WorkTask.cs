@@ -89,6 +89,18 @@ namespace TTKDGP.ProjectManager.Models
         {
             return state == Done || state == Cancelled;
         }
+
+        /// <summary>
+        /// Việc KHÔNG còn chạy đồng hồ hạn: đã đóng, hoặc đang tạm dừng.
+        ///
+        /// Tạm dừng nghĩa là việc đang vướng ở đâu đó chờ gỡ — người thực hiện không làm được
+        /// gì thêm, nên đếm tiếp số ngày quá hạn là bắt họ chịu quãng thời gian nằm ngoài tầm
+        /// tay. Ngày tạm dừng vẫn giữ nguyên để khi chạy lại còn biết hạn cũ là bao giờ.
+        /// </summary>
+        public static bool IsClockStopped(string state)
+        {
+            return IsClosed(state) || state == Paused;
+        }
     }
 
     /// <summary>
@@ -211,12 +223,15 @@ namespace TTKDGP.ProjectManager.Models
             }
         }
 
-        /// <summary>Đã quá hạn mà chưa xong.</summary>
+        /// <summary>
+        /// Đã quá hạn mà chưa xong. Việc tạm dừng KHÔNG tính quá hạn — đồng hồ dừng theo
+        /// <see cref="TaskStates.IsClockStopped"/>.
+        /// </summary>
         public bool IsOverdue
         {
             get
             {
-                if (TaskStates.IsClosed(State) || !DueDate.HasValue) return false;
+                if (TaskStates.IsClockStopped(State) || !DueDate.HasValue) return false;
                 return DateTime.Today > DueDate.Value.Date;
             }
         }
@@ -229,7 +244,7 @@ namespace TTKDGP.ProjectManager.Models
         {
             get
             {
-                if (TaskStates.IsClosed(State) || !DueDate.HasValue) return false;
+                if (TaskStates.IsClockStopped(State) || !DueDate.HasValue) return false;
 
                 var left = (DueDate.Value.Date - DateTime.Today).TotalDays;
                 return left >= 0 && left <= 1;

@@ -273,6 +273,18 @@ namespace TTKDGP.ProjectManager.Infrastructure
             /// <summary>Giờ gửi mail riêng cho từng thành viên (sáng thứ Sáu, về tuần này).</summary>
             public static int MemberEmailHour { get { return Clamp(GetInt("Reminder:MemberEmailHour", 8)); } }
 
+            /// <summary>
+            /// Nhắc hạn công việc qua SMS, hai lượt mỗi ngày làm việc (sáng và chiều).
+            /// Tắt riêng được mà không đụng tới các kỳ nhắc bằng mail.
+            /// </summary>
+            public static bool TaskSmsEnabled { get { return GetBool("Reminder:TaskSmsEnabled", false); } }
+
+            /// <summary>Giờ nhắc buổi sáng.</summary>
+            public static int TaskSmsMorningHour { get { return Clamp(GetInt("Reminder:TaskSmsMorningHour", 8)); } }
+
+            /// <summary>Giờ nhắc buổi chiều.</summary>
+            public static int TaskSmsAfternoonHour { get { return Clamp(GetInt("Reminder:TaskSmsAfternoonHour", 17)); } }
+
             public static string TriggerKey { get { return Get("Reminder:TriggerKey"); } }
 
             private static int Clamp(int hour)

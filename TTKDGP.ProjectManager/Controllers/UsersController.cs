@@ -5,6 +5,7 @@ using System.Web.Mvc;
 using TTKDGP.ProjectManager.Data;
 using TTKDGP.ProjectManager.Infrastructure;
 using TTKDGP.ProjectManager.Models;
+using TTKDGP.ProjectManager.Services;
 
 namespace TTKDGP.ProjectManager.Controllers
 {
@@ -48,6 +49,7 @@ namespace TTKDGP.ProjectManager.Controllers
                 UserName = user.UserName,
                 FullName = user.FullName,
                 Email = user.Email,
+                Phone = user.Phone,
                 SelectedRoles = Roles.Split(user.Role),
                 IsTeamManager = user.IsTeamManager,
                 IsActive = user.IsActive
@@ -99,6 +101,22 @@ namespace TTKDGP.ProjectManager.Controllers
                 }
             }
 
+            // Số điện thoại cũng tuỳ chọn. Có nhập thì bắt phải đúng dạng ngay tại đây bằng chính
+            // bộ chuẩn hoá của tổng đài — sai dạng mà để lọt thì tới lúc gửi SMS mới vỡ, khi đó
+            // không còn ai ngồi đó mà sửa.
+            var phone = string.IsNullOrWhiteSpace(model.Phone) ? null : model.Phone.Trim();
+            if (phone != null)
+            {
+                List<string> invalid;
+                var normalized = SmsClient.NormalizePhones(phone, out invalid);
+
+                if (normalized.Count != 1 || invalid.Count > 0)
+                {
+                    ModelState.AddModelError("Phone",
+                        "Số điện thoại không hợp lệ. Nhập một số dạng 09xxxxxxxx hoặc 84xxxxxxxxx.");
+                }
+            }
+
             if (!ModelState.IsValid)
             {
                 PopulateLists();
@@ -112,6 +130,7 @@ namespace TTKDGP.ProjectManager.Controllers
                     UserName = model.UserName.Trim(),
                     FullName = model.FullName.Trim(),
                     Email = email,
+                    Phone = phone,
                     Role = roleValue,
                     PasswordHash = PasswordHasher.Hash(model.Password),
                     IsTeamManager = model.IsTeamManager,
@@ -147,6 +166,7 @@ namespace TTKDGP.ProjectManager.Controllers
             user.UserName = model.UserName.Trim();
             user.FullName = model.FullName.Trim();
             user.Email = email;
+            user.Phone = phone;
             user.Role = roleValue;
             user.IsTeamManager = model.IsTeamManager;
             user.IsActive = model.IsActive;
@@ -188,6 +208,34 @@ namespace TTKDGP.ProjectManager.Controllers
 
             Repository.Users.Delete(id);
             Notify("Đã xoá tài khoản \"" + user.UserName + "\".");
+            return RedirectToAction("Index");
+        }
+
+        // ---------- Đổ số điện thoại từ HRM sang bảng Người dùng ----------
+
+        /// <summary>
+        /// Xem trước việc lấy số điện thoại bên nhân sự HRM đổ sang tài khoản, ghép theo email.
+        /// Chưa ghi gì — bấm xác nhận mới ghi.
+        /// </summary>
+        [HttpGet]
+        [AppAuthorize(Permission = "users.provision")]
+        public ActionResult SyncPhones()
+        {
+            return View(UserPhoneSyncService.Build());
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [ActionName("SyncPhones")]
+        [AppAuthorize(Permission = "users.provision")]
+        public ActionResult SyncPhonesConfirmed()
+        {
+            var updated = UserPhoneSyncService.Apply();
+
+            Notify(updated == 0
+                ? "Không có số nào cần cập nhật."
+                : string.Format("Đã cập nhật số điện thoại cho {0} tài khoản.", updated));
+
             return RedirectToAction("Index");
         }
 
@@ -242,6 +290,7 @@ namespace TTKDGP.ProjectManager.Controllers
             var now = DateTime.Now;
             var created = 0;
             var reset = 0;
+            var phoneUpdated = 0;
 
             foreach (var row in model.ToCreate)
             {
@@ -250,6 +299,7 @@ namespace TTKDGP.ProjectManager.Controllers
                     UserName = row.UserName,
                     FullName = row.FullName,
                     Email = row.Email,
+                    Phone = row.Phone,
                     Role = Roles.Reporter,
                     PasswordHash = PasswordHasher.Hash(model.Password),
                     IsActive = true,
@@ -274,6 +324,15 @@ namespace TTKDGP.ProjectManager.Controllers
                     changed = true;
                 }
 
+                // HRM là nguồn của số điện thoại nên số bên đó thắng. Nhưng HRM bỏ trống thì giữ
+                // nguyên số đang có — nhiều người được điền tay vì HRM chưa khai, xoá đi là mất.
+                if (row.PhoneWillUpdate)
+                {
+                    user.Phone = row.Phone;
+                    changed = true;
+                    phoneUpdated++;
+                }
+
                 if (model.ResetExisting)
                 {
                     user.PasswordHash = PasswordHasher.Hash(model.Password);
@@ -286,6 +345,7 @@ namespace TTKDGP.ProjectManager.Controllers
 
             var parts = new List<string>();
             if (created > 0) parts.Add(string.Format("mở {0} tài khoản", created));
+            if (phoneUpdated > 0) parts.Add(string.Format("cập nhật số điện thoại {0} tài khoản", phoneUpdated));
             if (reset > 0) parts.Add(string.Format("đặt lại mật khẩu {0} tài khoản đã có", reset));
 
             Notify(parts.Count == 0
@@ -365,6 +425,7 @@ namespace TTKDGP.ProjectManager.Controllers
                     EmployeeCode = e.Code,
                     FullName = e.FullName,
                     Email = email,
+                    Phone = (e.PhoneNumber ?? string.Empty).Trim(),
                     UserName = userName
                 };
 
@@ -383,6 +444,13 @@ namespace TTKDGP.ProjectManager.Controllers
                 }
 
                 row.UserId = account.Id;
+                row.CurrentPhone = (account.Phone ?? string.Empty).Trim();
+
+                // Chỉ tính là "sẽ cập nhật" khi HRM thật sự có số và số đó khác số đang lưu.
+                // HRM bỏ trống thì giữ nguyên số cũ — không lấy khoảng trắng đè lên dữ liệu tốt.
+                row.PhoneWillUpdate = row.Phone.Length > 0
+                    && !string.Equals(row.Phone, row.CurrentPhone, StringComparison.Ordinal);
+
                 matchedUserIds.Add(account.Id);
                 model.Existing.Add(row);
             }

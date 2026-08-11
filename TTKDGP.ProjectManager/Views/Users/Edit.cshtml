@@ -46,6 +46,17 @@
             </div>
 
             <div class="form-field">
+                @Html.LabelFor(m => m.Phone)
+                @Html.TextBoxFor(m => m.Phone, new { type = "tel", autocomplete = "off", placeholder = "09xxxxxxxx" })
+                @Html.ValidationMessageFor(m => m.Phone, "", new { @class = "field-error" })
+                <span class="hint">
+                    Không bắt buộc. Nơi nhận tin nhắn SMS. Màn
+                    <a href="@Url.Action("Provision", "Users")">Mở tài khoản từ HRM</a>
+                    tự điền và cập nhật lại số này theo HRM.
+                </span>
+            </div>
+
+            <div class="form-field">
                 @* Bắt buộc chọn ít nhất một nhóm — [Required] trên mảng không chặn được mảng
                    rỗng nên UsersController kiểm tay, nhãn phải tự đánh dấu. *@
                 @Html.LabelReq("SelectedRoles", "Nhóm quyền")

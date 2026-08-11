@@ -114,7 +114,7 @@ namespace TTKDGP.ProjectManager.Models
 
         public static readonly PermModule TeamReports =
             new PermModule("teamreports", "Báo cáo nhân sự", "Chính",
-                new[] { A(View, "Xem"), A("save", "Lưu tổng hợp"), A("send", "Gửi Telegram") });
+                new[] { A(View, "Xem"), A("save", "Lưu tổng hợp") });
 
         public static readonly PermModule WorkLogs =
             new PermModule("worklogs", "Tiến trình công việc", "Chính",

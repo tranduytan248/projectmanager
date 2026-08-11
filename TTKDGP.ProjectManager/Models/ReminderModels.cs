@@ -3,26 +3,38 @@ using System.Collections.Generic;
 
 namespace TTKDGP.ProjectManager.Models
 {
-    /// <summary>Các kỳ nhắc báo cáo.</summary>
+    /// <summary>
+    /// Các kỳ nhắc báo cáo.
+    ///
+    /// Ba giá trị 1-3 là các kỳ gửi tin lên nhóm Telegram — nay đã bỏ, chỉ còn dùng làm
+    /// mốc tuần khi rà soát trên màn hình. Giữ lại giá trị để các dòng nhật ký cũ trong
+    /// cơ sở dữ liệu vẫn đọc được.
+    /// </summary>
     public enum ReminderKind
     {
-        /// <summary>Sáng thứ Hai — điểm lại các dự án chưa báo cáo của tuần trước. Gửi vào nhóm.</summary>
+        /// <summary>Rà soát các dự án chưa báo cáo của tuần trước.</summary>
         MondayPreviousWeek = 1,
 
-        /// <summary>Chiều thứ Sáu — nhắc các dự án chưa báo cáo của tuần này. Gửi vào nhóm.</summary>
+        /// <summary>Rà soát các dự án chưa báo cáo của tuần này.</summary>
         FridayCurrentWeek = 2,
 
-        /// <summary>
-        /// Sáng thứ Bảy — tổng hợp PM nào chưa báo cáo, dạng danh sách phẳng
-        /// "Tên PM - Dự án" để anh Tân theo dõi. Cũng gửi vào nhóm.
-        /// </summary>
+        /// <summary>Kỳ tổng hợp cũ gửi lên nhóm — không còn dùng.</summary>
         SaturdayAdminSummary = 3,
 
         /// <summary>
         /// Sáng thứ Sáu — mail riêng cho từng thành viên, liệt kê những dự án của
-        /// TUẦN NÀY mà họ còn phải báo cáo cho PM. Không gửi vào nhóm.
+        /// TUẦN NÀY mà họ còn phải báo cáo cho PM.
         /// </summary>
-        FridayMemberEmails = 4
+        FridayMemberEmails = 4,
+
+        /// <summary>
+        /// Nhắc hạn công việc qua SMS, lượt buổi SÁNG của ngày làm việc.
+        /// Đếm số việc hết hạn đúng trong ngày hôm đó.
+        /// </summary>
+        TaskDueSmsMorning = 5,
+
+        /// <summary>Nhắc hạn công việc qua SMS, lượt buổi CHIỀU của cùng ngày.</summary>
+        TaskDueSmsAfternoon = 6
     }
 
     /// <summary>Một dự án mà thành viên còn phải báo cáo, kèm nơi gửi báo cáo.</summary>
@@ -129,10 +141,7 @@ namespace TTKDGP.ProjectManager.Models
 
         public int MissingProjectCount { get; set; }
 
-        /// <summary>Nội dung tin nhắn gửi lên nhóm Telegram.</summary>
-        public string Message { get; set; }
-
-        /// <summary>Không còn dự án nào thiếu báo cáo thì không cần gửi tin.</summary>
+        /// <summary>Không còn dự án nào thiếu báo cáo thì không cần nhắc.</summary>
         public bool HasSomethingToSend { get { return MissingProjectCount > 0; } }
 
         public string KindLabel
@@ -180,10 +189,15 @@ namespace TTKDGP.ProjectManager.Models
         public int MissingProjectCount { get; set; }
         public int PmCount { get; set; }
 
-        /// <summary>Số mail đã gửi được. Chỉ có ý nghĩa với kỳ gửi mail cho thành viên.</summary>
+        /// <summary>
+        /// Số tin đã gửi được — mail với kỳ nhắc báo cáo, tin nhắn với kỳ nhắc hạn công việc.
+        /// </summary>
         public int SentCount { get; set; }
 
-        /// <summary>Số người lẽ ra phải nhận mail nhưng chưa điền email.</summary>
+        /// <summary>
+        /// Số người lẽ ra phải nhận nhưng thiếu nơi nhận: chưa điền email (kỳ mail),
+        /// hoặc chưa có số điện thoại (kỳ SMS).
+        /// </summary>
         public int NoEmailCount { get; set; }
 
         /// <summary>Nội dung đã gửi, giữ lại để đối chiếu.</summary>
@@ -199,16 +213,34 @@ namespace TTKDGP.ProjectManager.Models
             {
                 switch (Kind)
                 {
-                    case ReminderKind.MondayPreviousWeek: return "Thứ Hai · nhóm";
-                    case ReminderKind.FridayCurrentWeek: return "Thứ Sáu · nhóm";
+                    case ReminderKind.MondayPreviousWeek: return "Thứ Hai · nhóm (đã bỏ)";
+                    case ReminderKind.FridayCurrentWeek: return "Thứ Sáu · nhóm (đã bỏ)";
                     case ReminderKind.FridayMemberEmails: return "Thứ Sáu · mail";
-                    default: return "Thứ Bảy · nhóm";
+                    case ReminderKind.TaskDueSmsMorning: return "Hạn công việc · SMS sáng";
+                    case ReminderKind.TaskDueSmsAfternoon: return "Hạn công việc · SMS chiều";
+                    default: return "Thứ Bảy · nhóm (đã bỏ)";
                 }
             }
         }
 
-        /// <summary>Kỳ gửi mail đếm theo số người nhận, các kỳ còn lại đếm theo số PM.</summary>
-        public bool IsEmailKind { get { return Kind == ReminderKind.FridayMemberEmails; } }
+        /// <summary>Kỳ nhắc hạn công việc bằng SMS (sáng hoặc chiều).</summary>
+        public bool IsTaskSmsKind
+        {
+            get
+            {
+                return Kind == ReminderKind.TaskDueSmsMorning
+                    || Kind == ReminderKind.TaskDueSmsAfternoon;
+            }
+        }
+
+        /// <summary>
+        /// Kỳ đếm theo SỐ NGƯỜI NHẬN (đã gửi / cần gửi) thay vì theo số PM — gồm kỳ gửi mail
+        /// riêng cho từng thành viên và các kỳ nhắn tin nhắc hạn công việc.
+        /// </summary>
+        public bool IsEmailKind
+        {
+            get { return Kind == ReminderKind.FridayMemberEmails || IsTaskSmsKind; }
+        }
     }
 
     /// <summary>Màn hình quản trị thông báo.</summary>
@@ -255,18 +287,21 @@ namespace TTKDGP.ProjectManager.Models
 
         public bool EmailReady { get { return EmailEnabled && EmailHasHost && EmailHasAccount; } }
 
-        public int MondayHour { get; set; }
-        public int FridayHour { get; set; }
-        public int SaturdayHour { get; set; }
         public int MemberEmailHour { get; set; }
 
         /// <summary>Lịch tự động có đang chạy không. Ở máy phát triển thường là tắt.</summary>
         public bool AutoSend { get; set; }
 
-        /// <summary>Xem trước nội dung của các kỳ nhắc, tính trên dữ liệu hiện tại.</summary>
-        public ReminderReport MondayPreview { get; set; }
-        public ReminderReport FridayPreview { get; set; }
-        public ReminderReport SaturdayPreview { get; set; }
+        // ----- Nhắc hạn công việc bằng SMS -----
+        public bool TaskSmsEnabled { get; set; }
+        public int TaskSmsMorningHour { get; set; }
+        public int TaskSmsAfternoonHour { get; set; }
+
+        /// <summary>Tổng đài SMS đã cấu hình đủ để gửi chưa.</summary>
+        public bool SmsReady { get; set; }
+
+        /// <summary>Xem trước: hôm nay ai có việc đến hạn, ai chưa có số điện thoại.</summary>
+        public Services.TaskDueSmsService.Preview TaskSmsPreview { get; set; }
 
         public List<ReminderLog> History { get; set; }
 

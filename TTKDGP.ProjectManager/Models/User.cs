@@ -121,6 +121,18 @@ namespace TTKDGP.ProjectManager.Models
         public string Email { get; set; }
 
         /// <summary>
+        /// Số điện thoại di động, nơi nhận tin nhắn SMS. Nguồn gốc là HRM (GoConnect) — màn
+        /// "Mở tài khoản từ HRM" điền vào và cập nhật lại mỗi lần chạy — nhưng vẫn sửa tay được
+        /// ở màn tài khoản cho những người HRM chưa có số.
+        ///
+        /// Lưu NGUYÊN VĂN như HRM trả về; việc chuẩn hoá sang dạng tổng đài nhận (84xxxxxxxxx)
+        /// để <see cref="Infrastructure.SmsClient.NormalizePhones"/> lo lúc gửi.
+        /// </summary>
+        [Display(Name = "Số điện thoại")]
+        [StringLength(30, ErrorMessage = "Số điện thoại tối đa 30 ký tự")]
+        public string Phone { get; set; }
+
+        /// <summary>
         /// Một hoặc nhiều quyền, ngăn bởi dấu phẩy (ví dụ "Manager,Reporter").
         /// Dùng <see cref="Roles.Has"/> / <see cref="Roles.Split"/> để so sánh, đừng so chuỗi thẳng.
         /// </summary>

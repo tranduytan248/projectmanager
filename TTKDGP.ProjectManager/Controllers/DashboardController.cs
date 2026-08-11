@@ -103,10 +103,15 @@ namespace TTKDGP.ProjectManager.Controllers
                 DoneCount = mine.Count(t => t.State == TaskStates.Done)
             };
 
-            result.DueSoonCount = open.Count(t => !t.IsOverdue && t.DueDate.HasValue
+            // Việc tạm dừng đang chờ gỡ vướng chứ không chờ người làm, nên không tính là sắp đến
+            // hạn và cũng không đẩy vào danh sách việc cần tập trung hôm nay. Nó vẫn nằm trong
+            // OpenCount vì vẫn là việc chưa xong.
+            result.DueSoonCount = open.Count(t => !TaskStates.IsClockStopped(t.State)
+                                                  && !t.IsOverdue && t.DueDate.HasValue
                                                   && t.DueDate.Value.Date <= dueLimit);
 
             result.Focus = open
+                .Where(t => !TaskStates.IsClockStopped(t.State))
                 .Where(t => t.IsOverdue || (t.DueDate.HasValue && t.DueDate.Value.Date <= dueLimit))
                 .OrderByDescending(t => t.IsOverdue)
                 .ThenBy(t => t.DueDate ?? DateTime.MaxValue)

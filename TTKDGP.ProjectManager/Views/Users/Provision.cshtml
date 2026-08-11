@@ -13,6 +13,10 @@
             <strong>Báo cáo công việc</strong> và dùng được ngay — công việc giao thẳng theo
             tài khoản, không cần gắn hồ sơ nào.
         </p>
+        <p>
+            Lần chạy này cũng lấy <strong>số điện thoại</strong> từ HRM về cho tài khoản — số dùng
+            để gửi SMS. HRM bỏ trống thì giữ nguyên số đang lưu, không xoá.
+        </p>
     </div>
     <a class="btn btn-default" href="@Url.Action("Index", "Users")">Về danh sách</a>
 </div>
@@ -50,6 +54,7 @@
                         <th>Mã NV</th>
                         <th>Nhân sự</th>
                         <th>Email</th>
+                        <th>Số điện thoại</th>
                         <th>Tài khoản HRM</th>
                     </tr>
                 </thead>
@@ -60,6 +65,16 @@
                             <td class="muted">@row.EmployeeCode</td>
                             <td>@row.FullName</td>
                             <td class="muted">@row.Email</td>
+                            <td class="muted nowrap">
+                                @if (string.IsNullOrWhiteSpace(row.Phone))
+                                {
+                                    <span class="badge badge-waiting">HRM chưa có</span>
+                                }
+                                else
+                                {
+                                    <text>@row.Phone</text>
+                                }
+                            </td>
                             <td><strong>@row.UserName</strong></td>
                         </tr>
                     }
@@ -68,6 +83,43 @@
         </div>
     }
 </div>
+
+@* Số điện thoại lấy từ HRM sẽ ghi đè số đang lưu. Liệt kê rõ ai bị đổi, vì đây là dữ liệu
+   có thể đã được điền tay trước đó. *@
+@if (Model.PhoneChanges.Count > 0)
+{
+    <div class="card">
+        <div class="card-head">
+            <span>Sẽ cập nhật số điện thoại (@Model.PhoneChanges.Count)</span>
+            <span class="muted" style="font-weight:400">Tài khoản đã có, lấy số mới theo HRM</span>
+        </div>
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th>Tài khoản</th>
+                        <th>Nhân sự</th>
+                        <th>Số đang lưu</th>
+                        <th>Số theo HRM</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.PhoneChanges)
+                    {
+                        <tr>
+                            <td><strong>@row.UserName</strong></td>
+                            <td>@row.FullName</td>
+                            <td class="muted nowrap">
+                                @(string.IsNullOrWhiteSpace(row.CurrentPhone) ? "—" : row.CurrentPhone)
+                            </td>
+                            <td class="nowrap"><strong>@row.Phone</strong></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
 
 @if (Model.HasWork)
 {

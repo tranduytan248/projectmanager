@@ -8,6 +8,15 @@
 @{
     var canEdit = ViewBag.CanEdit != null && (bool)ViewBag.CanEdit;
     var canEditAll = ViewBag.CanEditAll != null && (bool)ViewBag.CanEditAll;
+
+    // Việc riêng (ngoài dự án) sửa ở màn "Giao việc riêng", mà màn đó đòi quyền wtasks.create.
+    // Người được giao tuy sửa được việc của mình nhưng có thể không có quyền ấy — hiện nút cho
+    // họ thì bấm vào chỉ nhận lỗi. Kiểm ngay tại đây để nút chỉ hiện khi thật sự mở được.
+    var can = ViewBag.Can as Func<string, bool>;
+    if (canEdit && Model.ProjectId <= 0)
+    {
+        canEdit = can != null && can("wtasks.create");
+    }
     var project = ViewBag.Project as WorkProject;
     var parentTitle = ViewBag.ParentTitle as string;
     var comments = ViewBag.CommentsModel as TaskCommentsViewModel ?? new TaskCommentsViewModel { TaskId = Model.Id };
@@ -133,8 +142,18 @@
 <div class="form-actions">
     @if (canEdit)
     {
+        @*
+            Hộp chi tiết này dùng chung cho MỌI loại việc, nên nút sửa phải trỏ đúng nơi xử lý
+            của từng loại. Việc riêng (ngoài dự án) mang ProjectId = 0 — đẩy nó sang Checklist
+            thì bên đó tìm dự án số 0 không thấy và trả 404, hộp thoại chỉ hiện được đúng dòng
+            "Không tải được nội dung".
+        *@
+        var editUrl = Model.ProjectId > 0
+            ? Url.Action("Edit", "Checklist", new { projectId = Model.ProjectId, id = Model.Id })
+            : Url.Action("Edit", "PrivateTasks", new { id = Model.Id });
+
         <button type="button" class="btn btn-primary"
-                data-modal-url="@Url.Action("Edit", "Checklist", new { projectId = Model.ProjectId, id = Model.Id })"
+                data-modal-url="@editUrl"
                 data-modal-title="@(canEditAll ? "Sửa công việc" : "Cập nhật tiến độ")">
             @(canEditAll ? "Cập nhật" : "Cập nhật tiến độ")
         </button>
@@ -145,7 +164,16 @@
 @if (!canEdit)
 {
     <span class="hint">
-        Bạn chỉ xem được công việc này. Sửa được là PM dự án, Quản lý Tổ, hoặc chính người được giao việc.
+        @if (Model.ProjectId <= 0)
+        {
+            <text>Việc riêng chỉ sửa được ở màn <strong>Giao việc riêng</strong> — bấm
+            <em>Mở trang chi tiết</em> để cập nhật tiến độ của bạn.</text>
+        }
+        else
+        {
+            <text>Bạn chỉ xem được công việc này. Sửa được là PM dự án, Quản lý Tổ,
+            hoặc chính người được giao việc.</text>
+        }
     </span>
 }
 </div>

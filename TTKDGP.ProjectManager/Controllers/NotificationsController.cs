@@ -19,31 +19,6 @@ namespace TTKDGP.ProjectManager.Controllers
             return View(BuildModel());
         }
 
-        /// <summary>Gửi ngay một kỳ nhắc, không chờ tới lịch.</summary>
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        [AppAuthorize(Permission = "notifications.send")]
-        public ActionResult Send(ReminderKind kind)
-        {
-            var log = ReminderService.Run(kind, DateTime.Now, true, CurrentUser.Name);
-
-            if (log.Success && log.MissingProjectCount == 0)
-            {
-                Notify("Không có dự án nào thiếu báo cáo nên chưa gửi tin nào.");
-            }
-            else if (log.Success)
-            {
-                Notify(string.Format("Đã gửi nhắc {0} dự án của {1} PM lên nhóm Telegram.",
-                    log.MissingProjectCount, log.PmCount));
-            }
-            else
-            {
-                NotifyError("Gửi thất bại: " + log.Error);
-            }
-
-            return RedirectToAction("Index");
-        }
-
         /// <summary>Gửi ngay mail nhắc cho từng thành viên, không chờ tới sáng thứ Sáu.</summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -68,6 +43,45 @@ namespace TTKDGP.ProjectManager.Controllers
             else
             {
                 NotifyError("Gửi mail thất bại: " + log.Error);
+            }
+
+            return RedirectToAction("Index");
+        }
+
+        /// <summary>
+        /// Gửi ngay lượt nhắc hạn công việc bằng SMS, không chờ tới giờ hẹn.
+        ///
+        /// Ghi nhật ký là lượt THỦ CÔNG nên không chiếm chỗ của lượt tự động trong ngày —
+        /// bấm thử lúc 10h thì chiều 17h lịch vẫn chạy như thường.
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "notifications.send")]
+        public ActionResult SendTaskDueSms()
+        {
+            var now = DateTime.Now;
+            var kind = now.Hour < AppSettings.Reminder.TaskSmsAfternoonHour
+                ? ReminderKind.TaskDueSmsMorning
+                : ReminderKind.TaskDueSmsAfternoon;
+
+            var log = TaskDueSmsService.Run(kind, now, true, CurrentUser.Name);
+
+            if (log.PmCount == 0)
+            {
+                Notify(log.Error ?? "Không có ai cần nhắc hôm nay.");
+            }
+            else if (log.Success && log.NoEmailCount > 0)
+            {
+                Notify(string.Format("Đã gửi {0} tin. Còn {1} người có việc đến hạn nhưng chưa có số điện thoại.",
+                    log.SentCount, log.NoEmailCount));
+            }
+            else if (log.Success)
+            {
+                Notify(string.Format("Đã gửi {0} tin nhắc hạn công việc.", log.SentCount));
+            }
+            else
+            {
+                NotifyError("Gửi tin thất bại: " + log.Error);
             }
 
             return RedirectToAction("Index");
@@ -185,14 +199,13 @@ namespace TTKDGP.ProjectManager.Controllers
                 EmailDisplayName = AppSettings.Email.DisplayName,
                 EmailMaskedPassword = AppSettings.Email.MaskedPassword,
                 MemberReminders = ReminderService.BuildMemberReminders(now),
-                MondayHour = AppSettings.Reminder.MondayHour,
-                FridayHour = AppSettings.Reminder.FridayHour,
-                SaturdayHour = AppSettings.Reminder.SaturdayHour,
                 MemberEmailHour = AppSettings.Reminder.MemberEmailHour,
                 AutoSend = AppSettings.Reminder.AutoSend,
-                MondayPreview = ReminderService.Build(ReminderKind.MondayPreviousWeek, now),
-                FridayPreview = ReminderService.Build(ReminderKind.FridayCurrentWeek, now),
-                SaturdayPreview = ReminderService.Build(ReminderKind.SaturdayAdminSummary, now),
+                TaskSmsEnabled = AppSettings.Reminder.TaskSmsEnabled,
+                TaskSmsMorningHour = AppSettings.Reminder.TaskSmsMorningHour,
+                TaskSmsAfternoonHour = AppSettings.Reminder.TaskSmsAfternoonHour,
+                SmsReady = AppSettings.Sms.IsConfigured,
+                TaskSmsPreview = TaskDueSmsService.Build(now),
                 History = Repository.ReminderLogs.All()
                     .OrderByDescending(l => l.SentAt)
                     .Take(20)

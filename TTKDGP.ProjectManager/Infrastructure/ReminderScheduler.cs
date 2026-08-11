@@ -27,7 +27,7 @@ namespace TTKDGP.ProjectManager.Infrastructure
         public static void Start()
         {
             // Máy phát triển để Reminder:AutoSend = false nên không dựng bộ hẹn giờ,
-            // tránh việc chạy thử ở local lại bắn tin thật vào nhóm.
+            // tránh việc chạy thử ở local lại bắn mail thật cho anh em.
             if (!AppSettings.Reminder.AutoSend) return;
 
             lock (Sync)
@@ -75,28 +75,47 @@ namespace TTKDGP.ProjectManager.Infrastructure
 
             var sent = 0;
 
-            if (IsDue(now, DayOfWeek.Monday, AppSettings.Reminder.MondayHour, ReminderKind.MondayPreviousWeek))
-            {
-                ReminderService.Run(ReminderKind.MondayPreviousWeek, now, false, null);
-                sent++;
-            }
-
-            // Sáng thứ Sáu: mail riêng cho từng thành viên, trước tin nhắc chung buổi chiều.
+            // Sáng thứ Sáu: mail riêng cho từng thành viên.
+            // Các kỳ nhắc gửi lên nhóm Telegram đã bỏ.
             if (IsDue(now, DayOfWeek.Friday, AppSettings.Reminder.MemberEmailHour, ReminderKind.FridayMemberEmails))
             {
                 ReminderService.RunMemberEmails(now, false, null);
                 sent++;
             }
 
-            if (IsDue(now, DayOfWeek.Friday, AppSettings.Reminder.FridayHour, ReminderKind.FridayCurrentWeek))
+            sent += RunTaskDueSms(now);
+
+            return sent;
+        }
+
+        /// <summary>
+        /// Nhắc hạn công việc bằng SMS: mỗi ngày làm việc hai lượt, sáng và chiều.
+        ///
+        /// Hai lượt là hai kỳ riêng nên lượt chiều vẫn chạy dù sáng đã gửi. Ngày nghỉ được chặn
+        /// ngay tại đây để bộ lịch không ghi thêm dòng nhật ký thừa vào mỗi thứ Bảy, Chủ nhật.
+        /// </summary>
+        private static int RunTaskDueSms(DateTime now)
+        {
+            if (!AppSettings.Reminder.TaskSmsEnabled) return 0;
+            if (!TaskDueSmsService.IsWorkingDay(now)) return 0;
+
+            var sent = 0;
+            var morningHour = AppSettings.Reminder.TaskSmsMorningHour;
+            var afternoonHour = AppSettings.Reminder.TaskSmsAfternoonHour;
+
+            // Lượt sáng chỉ gửi bù TRONG BUỔI SÁNG — hết giờ chiều thì thôi, vì lượt chiều ngay
+            // sau đó mang đúng nội dung ấy. Không chặn thì một lần khởi động lại lúc 17h sẽ bắn
+            // hai tin giống hệt nhau cách nhau vài phút.
+            if (now.Hour < afternoonHour
+                && IsDailyDue(now, morningHour, ReminderKind.TaskDueSmsMorning))
             {
-                ReminderService.Run(ReminderKind.FridayCurrentWeek, now, false, null);
+                TaskDueSmsService.Run(ReminderKind.TaskDueSmsMorning, now, false, null);
                 sent++;
             }
 
-            if (IsDue(now, DayOfWeek.Saturday, AppSettings.Reminder.SaturdayHour, ReminderKind.SaturdayAdminSummary))
+            if (IsDailyDue(now, afternoonHour, ReminderKind.TaskDueSmsAfternoon))
             {
-                ReminderService.Run(ReminderKind.SaturdayAdminSummary, now, false, null);
+                TaskDueSmsService.Run(ReminderKind.TaskDueSmsAfternoon, now, false, null);
                 sent++;
             }
 
@@ -108,12 +127,22 @@ namespace TTKDGP.ProjectManager.Infrastructure
             if (now.DayOfWeek != day) return false;
             if (now.Hour < hour) return false;
 
-            // Kỳ được rà soát: thứ Hai xét tuần trước, thứ Sáu xét tuần này.
-            var target = kind == ReminderKind.MondayPreviousWeek ? now.AddDays(-7) : now;
-            var year = WeekHelper.GetYear(target);
-            var week = WeekHelper.GetWeek(target);
+            var year = WeekHelper.GetYear(now);
+            var week = WeekHelper.GetWeek(now);
 
             return !ReminderService.AlreadySent(kind, year, week);
+        }
+
+        /// <summary>
+        /// Kỳ lặp theo NGÀY đã tới giờ chưa. Khác <see cref="IsDue"/> ở chỗ mốc chống gửi trùng
+        /// là ngày chứ không phải tuần — kỳ nhắc ngày nào cũng chạy nên dùng mốc tuần thì cả
+        /// tuần chỉ gửi được đúng một lần.
+        /// </summary>
+        private static bool IsDailyDue(DateTime now, int hour, ReminderKind kind)
+        {
+            if (now.Hour < hour) return false;
+
+            return !TaskDueSmsService.AlreadySent(kind, now);
         }
     }
 }

@@ -99,11 +99,8 @@ namespace TTKDGP.ProjectManager.Models
         public int TotalReported { get; set; }
         public int TotalMissing { get; set; }
 
-        /// <summary>Nội dung tổng hợp đã dựng sẵn, để xem trước / sao chép / gửi lên nhóm.</summary>
+        /// <summary>Nội dung tổng hợp đã dựng sẵn, để xem trước và sao chép.</summary>
         public string SummaryText { get; set; }
-
-        /// <summary>Đủ cấu hình Telegram để bấm gửi hay chưa.</summary>
-        public bool TelegramReady { get; set; }
 
         public TeamReportViewModel()
         {

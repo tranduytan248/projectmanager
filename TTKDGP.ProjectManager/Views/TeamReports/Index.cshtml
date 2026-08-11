@@ -8,7 +8,7 @@
 <div class="page-head">
     <div>
         <h1>Báo cáo nhân sự</h1>
-        <p>Nội dung công việc theo tuần do nhân sự tham gia dự án tự báo cáo. Xem, tổng hợp rồi gửi lại lên nhóm.</p>
+        <p>Nội dung công việc theo tuần do nhân sự tham gia dự án tự báo cáo. Xem rồi tổng hợp lại.</p>
     </div>
 
     <div class="week-box">
@@ -225,8 +225,7 @@ else
         </div>
         <div class="card-body">
             <p class="hint" style="margin-top:0">
-                Nội dung dưới đây gộp từ báo cáo của các nhân sự ở trên. Sao chép để dán vào báo cáo,
-                hoặc gửi thẳng lên nhóm Telegram.
+                Nội dung dưới đây gộp từ báo cáo của các nhân sự ở trên. Sao chép để dán vào báo cáo.
             </p>
 
             <div class="form-field">
@@ -236,26 +235,7 @@ else
 
             <div class="form-actions">
                 <button type="button" class="btn btn-default" data-copy-target="#summaryText">Sao chép</button>
-
-                @using (Html.BeginForm("Send", "TeamReports",
-                    new { year = Model.Year, week = Model.Week, projectId = Model.ProjectId, memberId = Model.MemberId, onlyMine = Model.OnlyMyProjects },
-                    FormMethod.Post, new { @class = "inline-form" }))
-                {
-                    @Html.AntiForgeryToken()
-                    <button type="submit" class="btn btn-primary"
-                            @(Model.TelegramReady ? "" : "disabled=disabled")
-                            onclick="return confirm('Gửi bản tổng hợp này lên nhóm Telegram?');">
-                        Gửi lên nhóm Telegram
-                    </button>
-                }
             </div>
-
-            @if (!Model.TelegramReady)
-            {
-                <span class="hint">
-                    Chưa cấu hình Telegram nên chưa gửi được — xem màn hình <strong>Thông báo</strong>.
-                </span>
-            }
         </div>
     </div>
 }

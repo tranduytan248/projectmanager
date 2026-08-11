@@ -123,6 +123,8 @@
     <Compile Include="Infrastructure\GoConnectScheduler.cs" />
     <Compile Include="Models\ReminderModels.cs" />
     <Compile Include="Services\ReminderService.cs" />
+    <Compile Include="Services\TaskDueSmsService.cs" />
+    <Compile Include="Services\UserPhoneSyncService.cs" />
     <Compile Include="Services\GoConnectService.cs" />
     <Compile Include="Services\GoConnectSyncService.cs" />
     <Compile Include="Controllers\NotificationsController.cs" />
@@ -261,6 +263,7 @@
     <Content Include="Views\Users\Index.cshtml" />
     <Content Include="Views\Users\Edit.cshtml" />
     <Content Include="Views\Users\Provision.cshtml" />
+    <Content Include="Views\Users\SyncPhones.cshtml" />
     <Content Include="Views\PermissionGroups\Index.cshtml" />
     <Content Include="Views\PermissionGroups\Edit.cshtml" />
     <Content Include="Views\Dashboard\Index.cshtml" />

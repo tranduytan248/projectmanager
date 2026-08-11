@@ -176,7 +176,8 @@ namespace TTKDGP.ProjectManager.Controllers
 
             if (due == ChecklistDueFilters.Soon)
             {
-                if (TaskStates.IsClosed(task.State) || !task.DueDate.HasValue) return false;
+                // Việc tạm dừng không nằm trong nhóm "sắp đến hạn" — đồng hồ hạn của nó đã dừng.
+                if (TaskStates.IsClockStopped(task.State) || !task.DueDate.HasValue) return false;
 
                 var limit = DateTime.Today.AddDays(ChecklistDueFilters.SoonDays);
                 return !task.IsOverdue && task.DueDate.Value.Date <= limit;

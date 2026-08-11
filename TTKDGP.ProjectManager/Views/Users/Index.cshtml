@@ -11,6 +11,7 @@
         <p>Tài khoản đăng nhập để cập nhật dữ liệu. Tổng cộng @Model.Count tài khoản.</p>
     </div>
     <div class="btn-row">
+        <a class="btn btn-default" href="@Url.Action("SyncPhones", "Users")">Lấy số điện thoại từ HRM</a>
         <a class="btn btn-default" href="@Url.Action("Provision", "Users")">Mở tài khoản cho nhân sự</a>
         <a class="btn btn-primary" href="@Url.Action("Edit", "Users")">+ Tạo người dùng</a>
     </div>
@@ -24,6 +25,7 @@
                     <th>Tên đăng nhập</th>
                     <th>Họ và tên</th>
                     <th>Email</th>
+                    <th>Số điện thoại</th>
                     <th>Phân quyền</th>
                     <th>Trạng thái</th>
                     <th>Ngày tạo</th>
@@ -51,6 +53,16 @@
                             else
                             {
                                 <a href="mailto:@u.Email">@u.Email</a>
+                            }
+                        </td>
+                        <td class="nowrap">
+                            @if (string.IsNullOrWhiteSpace(u.Phone))
+                            {
+                                <span class="muted">—</span>
+                            }
+                            else
+                            {
+                                <text>@u.Phone</text>
                             }
                         </td>
                         <td>

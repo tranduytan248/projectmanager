@@ -142,6 +142,46 @@ namespace TTKDGP.ProjectManager.Data
             return HrBulk.Upsert(list, MergeSql, DeclareParams, BindParams, EnsureTable, progress, "nhân sự");
         }
 
+        /// <summary>
+        /// Bảng tra SỐ ĐIỆN THOẠI theo email của toàn bộ nhân sự HRM, chỉ lấy người thật sự có số.
+        ///
+        /// Dùng để điền số cho tài khoản nội bộ: khoá ghép là email — cũng chính là khoá nghiệp vụ
+        /// của bảng nhân sự — nên không phụ thuộc vào việc người đó thuộc đơn vị nào. Tài khoản
+        /// trong hệ thống rải ở nhiều tổ khác nhau, lọc theo một đơn vị là bỏ sót.
+        ///
+        /// Chỉ đọc hai cột thay vì cả bản ghi, và về một lượt thay vì hỏi từng người.
+        /// So khớp không phân biệt hoa thường.
+        /// </summary>
+        public static Dictionary<string, string> PhonesByEmail()
+        {
+            var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            using (var conn = Db.Open())
+            {
+                EnsureTable(conn);
+
+                using (var cmd = new SqlCommand(
+                    "SELECT [Email], [PhoneNumber] FROM [" + Table + "] " +
+                    "WHERE [Email] IS NOT NULL AND LTRIM(RTRIM([Email])) <> '' " +
+                    "  AND [PhoneNumber] IS NOT NULL AND LTRIM(RTRIM([PhoneNumber])) <> ''", conn))
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        var email = reader.GetString(0).Trim();
+                        var phone = reader.GetString(1).Trim();
+                        if (email.Length == 0 || phone.Length == 0) continue;
+
+                        // Trùng email về nguyên tắc không xảy ra (đã kiểm trên dữ liệu thật);
+                        // có sót thì giữ bản gặp trước, không ghi đè lung tung.
+                        if (!map.ContainsKey(email)) map[email] = phone;
+                    }
+                }
+            }
+
+            return map;
+        }
+
         /// <summary>Lấy một người theo email, null nếu chưa có.</summary>
         public static HrEmployee GetByEmail(string email)
         {

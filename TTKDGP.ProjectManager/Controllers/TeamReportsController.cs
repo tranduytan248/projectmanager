@@ -10,7 +10,7 @@ using TTKDGP.ProjectManager.Models;
 namespace TTKDGP.ProjectManager.Controllers
 {
     /// <summary>
-    /// PM xem báo cáo tuần của nhân sự tham gia dự án, rồi tổng hợp và gửi lại lên nhóm Telegram.
+    /// PM xem báo cáo tuần của nhân sự tham gia dự án, rồi tổng hợp lại để báo cáo tiếp.
     /// Nguồn dữ liệu chính là nhật ký tuần do nhân sự tự ghi ở màn "Báo cáo của tôi".
     /// </summary>
     [AppAuthorize]
@@ -122,41 +122,6 @@ namespace TTKDGP.ProjectManager.Controllers
             return Redirect(BackUrl(year, week, projectId, memberId, onlyMine));
         }
 
-        /// <summary>Gửi bản tổng hợp lên nhóm Telegram (dùng bot nhắc báo cáo).</summary>
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        [AppAuthorize(Permission = "teamreports.send")]
-        public ActionResult Send(int year, int week, int? projectId, int? memberId, bool? onlyMine)
-        {
-            var model = BuildModel(year, week, projectId, memberId, onlyMine);
-
-            if (model.Groups.Count == 0)
-            {
-                NotifyError("Không có nội dung nào để gửi trong tuần này.");
-                return Redirect(BackUrl(year, week, projectId, memberId, onlyMine));
-            }
-
-            if (!AppSettings.Telegram.IsConfigured)
-            {
-                NotifyError("Chưa cấu hình Telegram nên chưa gửi được. Xem màn hình Thông báo.");
-                return Redirect(BackUrl(year, week, projectId, memberId, onlyMine));
-            }
-
-            var result = TelegramClient.SendMessage(
-                AppSettings.Telegram.BotToken, AppSettings.Telegram.ChatId, BuildTelegramMessage(model));
-
-            if (result.Ok)
-            {
-                Notify(string.Format("Đã gửi tổng hợp tuần {0}/{1} lên nhóm.", week, year));
-            }
-            else
-            {
-                NotifyError("Gửi thất bại: " + result.Error);
-            }
-
-            return Redirect(BackUrl(year, week, projectId, memberId, onlyMine));
-        }
-
         private string BackUrl(int year, int week, int? projectId, int? memberId, bool? onlyMine)
         {
             return Url.Action("Index", new
@@ -200,8 +165,7 @@ namespace TTKDGP.ProjectManager.Controllers
                 MemberId = memberId,
                 CanFilterMine = myProjectIds.Count > 0,
                 YearOptions = WeekHelper.YearOptions(Repository.YearsInLogs()),
-                StatusOptions = AppSettings.Reporter.ReportableWorkStatuses,
-                TelegramReady = AppSettings.Telegram.IsConfigured
+                StatusOptions = AppSettings.Reporter.ReportableWorkStatuses
             };
 
             // Mặc định lọc về dự án mình làm PM nếu có, cho đúng vai trò người dùng màn này.
@@ -351,42 +315,6 @@ namespace TTKDGP.ProjectManager.Controllers
             return text.ToString();
         }
 
-        /// <summary>Bản gửi Telegram — cùng nội dung nhưng có đánh dấu đậm, đã thoát ký tự HTML.</summary>
-        private static string BuildTelegramMessage(TeamReportViewModel model)
-        {
-            var text = new StringBuilder();
-            text.AppendFormat("📋 <b>Tổng hợp công việc tuần {0}/{1}</b> ({2:dd/MM} – {3:dd/MM/yyyy})",
-                model.Week, model.Year, model.WeekFrom, model.WeekTo);
-            text.AppendLine();
-
-            foreach (var g in model.Groups)
-            {
-                text.AppendLine();
-                text.Append("▪️ <b>").Append(Escape(g.ProjectName)).Append("</b>");
-                if (!string.IsNullOrWhiteSpace(g.PmName)) text.Append(" — PM: ").Append(Escape(g.PmName));
-                text.AppendLine();
-
-                foreach (var m in g.Members)
-                {
-                    text.Append("   • ").Append(Escape(m.MemberName)).Append(": ");
-                    text.Append(m.HasReport ? Escape(OneLine(m.Content)) : "<i>chưa báo cáo</i>");
-                    text.AppendLine();
-                }
-            }
-
-            text.AppendLine();
-            text.AppendFormat("✅ {0} đã báo cáo · ⏳ {1} chưa báo cáo", model.TotalReported, model.TotalMissing);
-
-            var link = AppSettings.PublicLink;
-            if (!string.IsNullOrWhiteSpace(link))
-            {
-                text.AppendLine();
-                text.AppendFormat("🌐 <a href=\"{0}\">{1}</a>", Escape(link), Escape(AppSettings.PublicUrl));
-            }
-
-            return text.ToString();
-        }
-
         /// <summary>Gộp nội dung nhiều dòng thành một dòng cho gọn bản tổng hợp.</summary>
         private static string OneLine(string content)
         {
@@ -399,12 +327,6 @@ namespace TTKDGP.ProjectManager.Controllers
                 .Where(p => p.Length > 0);
 
             return string.Join("; ", parts);
-        }
-
-        private static string Escape(string text)
-        {
-            if (string.IsNullOrEmpty(text)) return string.Empty;
-            return text.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
         }
 
         private int LinkedMemberId()

@@ -8,15 +8,14 @@
     <div>
         <h1>Nhắc báo cáo</h1>
         <p>
-            <strong>Gửi vào nhóm Telegram:</strong>
-            thứ Hai @Model.MondayHour giờ rà soát tuần trước ·
-            thứ Sáu @Model.FridayHour giờ rà soát tuần này ·
-            thứ Bảy @Model.SaturdayHour giờ tổng hợp cho anh Tân.
-        </p>
-        <p>
             <strong>Gửi mail riêng cho từng thành viên:</strong>
             thứ Sáu @Model.MemberEmailHour giờ, liệt kê tên dự án và email PM cần gửi báo cáo về
             để PM tổng hợp lên hệ thống.
+        </p>
+        <p>
+            <strong>Nhắc hạn công việc qua SMS:</strong>
+            @Model.TaskSmsMorningHour giờ sáng và @Model.TaskSmsAfternoonHour giờ chiều,
+            các ngày làm việc trong tuần (trừ thứ Bảy, Chủ nhật).
         </p>
         <p>Dự án ở trạng thái <em>coi như đã dừng</em> không bị nhắc.</p>
     </div>
@@ -82,20 +81,11 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td><strong>Nhắc báo cáo</strong><br /><span class="muted">thứ Hai · thứ Sáu · thứ Bảy</span></td>
+                        <td><strong>Nhắc báo cáo</strong><br /><span class="muted">không còn gửi Telegram</span></td>
                         <td>@BotCell(Model.BotName, Model.ConnectionError, Model.HasToken)</td>
                         <td class="nowrap">@Model.MaskedToken</td>
                         <td>@ChatCell(Model.ChatId, Model.HasChatId)</td>
-                        <td>
-                            @if (Model.TelegramEnabled && Model.HasToken && Model.HasChatId)
-                            {
-                                <span class="badge badge-active">Sẵn sàng gửi</span>
-                            }
-                            else
-                            {
-                                <span class="badge badge-waiting">Chưa gửi được</span>
-                            }
-                        </td>
+                        <td><span class="badge badge-inactive">Đã ngừng</span></td>
                     </tr>
                     <tr>
                         <td><strong>Đăng nhập GoConnect</strong><br /><span class="muted">hỏi mã OTP mỗi sáng</span></td>
@@ -117,49 +107,11 @@
             </table>
         </div>
 
-        <div class="form-grid" style="margin-top:16px">
-            <div class="full">
-                <strong>Lịch tự động:</strong>
-                @if (Model.AutoSend)
-                {
-                    <span class="badge badge-active">Đang bật</span>
-                    <span class="muted">
-                        — tự gửi thứ Hai @Model.MondayHour giờ, thứ Sáu @Model.FridayHour giờ,
-                        thứ Bảy @Model.SaturdayHour giờ.
-                    </span>
-                }
-                else
-                {
-                    <span class="badge badge-inactive">Đang tắt</span>
-                    <span class="muted">
-                        — chỉ gửi khi bấm nút bên dưới. Bản publish Release tự bật lịch;
-                        máy phát triển để tắt cho khỏi bắn tin thật vào nhóm.
-                    </span>
-                }
-            </div>
+        <div class="alert" style="margin-top:16px;margin-bottom:0">
+            <strong>Đã bỏ nhắc báo cáo qua Telegram.</strong>
+            Hệ thống không còn gửi tin lên nhóm nữa — việc nhắc báo cáo nay đi bằng mail riêng
+            cho từng thành viên. Cấu hình bot bên trên vẫn giữ để dò chat id khi cần.
         </div>
-
-        @if (!Model.TelegramEnabled || !Model.HasToken || !Model.HasChatId)
-        {
-            <div class="alert alert-danger" style="margin-top:16px;margin-bottom:0">
-                <strong>Chưa gửi được.</strong> Tạo file <code>App_Config\secrets.config</code>
-                (chép từ <code>secrets.example.config</code>) và điền:
-                <ul style="margin:8px 0 0;padding-left:20px">
-                    @if (!Model.TelegramEnabled)
-                    {
-                        <li><code>Telegram:Enabled</code> = <code>true</code></li>
-                    }
-                    @if (!Model.HasToken)
-                    {
-                        <li><code>Telegram:BotToken</code> — lấy từ @@BotFather</li>
-                    }
-                    @if (!Model.HasChatId)
-                    {
-                        <li><code>Telegram:ChatId</code> — thêm bot vào nhóm, gửi một tin trong nhóm rồi bấm <em>Dò chat id</em> bên dưới</li>
-                    }
-                </ul>
-            </div>
-        }
 
         <div class="form-actions">
             @using (Html.BeginForm("Discover", "Notifications", FormMethod.Post, new { @class = "inline-form" }))
@@ -194,6 +146,137 @@
     </div>
 </div>
 
+@* Nhắc hạn công việc bằng SMS. Xem trước đúng danh sách mà lượt gửi tới sẽ dùng. *@
+<div class="card">
+    <div class="card-head">
+        <span>Nhắc hạn công việc qua SMS</span>
+        <span class="muted" style="font-weight:400">
+            @Model.TaskSmsMorningHour giờ &amp; @Model.TaskSmsAfternoonHour giờ · ngày làm việc
+        </span>
+    </div>
+    <div class="card-body">
+        <div class="form-grid">
+            <div>
+                <strong>Trạng thái:</strong><br />
+                @if (Model.TaskSmsEnabled && Model.SmsReady)
+                {
+                    <span class="badge badge-active">Đang bật</span>
+                }
+                else if (!Model.TaskSmsEnabled)
+                {
+                    <span class="badge badge-inactive">Đang tắt</span>
+                }
+                else
+                {
+                    <span class="badge badge-waiting">Chưa gửi được</span>
+                }
+            </div>
+            <div>
+                <strong>Ngày đang xét:</strong><br />
+                @Model.TaskSmsPreview.Day.ToString("dd/MM/yyyy")
+                @if (!Model.TaskSmsPreview.IsWorkingDay)
+                {
+                    <span class="muted"> — ngày nghỉ, không nhắc</span>
+                }
+            </div>
+            <div class="full">
+                <strong>Nội dung tin:</strong><br />
+                <span class="muted">Bạn có [số lượng] task sẽ hết hạn trong ngày @Model.TaskSmsPreview.Day.ToString("dd/MM/yyyy")</span>
+            </div>
+        </div>
+
+        @if (!Model.SmsReady)
+        {
+            <div class="alert alert-danger" style="margin-top:16px;margin-bottom:0">
+                <strong>Chưa gửi được tin.</strong> Cần <code>Sms:Enabled</code> = <code>true</code>
+                và <code>Sms:GatewayUrl</code> trỏ đúng tổng đài.
+            </div>
+        }
+
+        <hr />
+
+        <div class="stats" style="margin-bottom:16px">
+            <div class="stat">
+                <div class="stat-value">@Model.TaskSmsPreview.SendableCount</div>
+                <div class="stat-label">Người sẽ nhận tin</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">@Model.TaskSmsPreview.Recipients.Sum(r => r.DueCount)</div>
+                <div class="stat-label">Lượt việc đến hạn</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">@Model.TaskSmsPreview.NoPhoneCount</div>
+                <div class="stat-label">Chưa có số điện thoại</div>
+            </div>
+        </div>
+
+        @if (Model.TaskSmsPreview.Recipients.Count == 0)
+        {
+            <p class="muted">
+                @(Model.TaskSmsPreview.IsWorkingDay
+                    ? "Không có việc nào hết hạn trong ngày hôm nay — không cần nhắc ai."
+                    : "Hôm nay là ngày nghỉ nên lịch không chạy.")
+            </p>
+        }
+        else
+        {
+            if (Model.TaskSmsPreview.NoPhoneCount > 0)
+            {
+                <div class="alert alert-danger">
+                    Có @Model.TaskSmsPreview.NoPhoneCount người có việc đến hạn nhưng chưa điền số
+                    điện thoại nên sẽ không nhận được tin. Chạy
+                    <a href="@Url.Action("SyncPhones", "Users")">Lấy số điện thoại từ HRM</a>
+                    để đổ số sang hàng loạt, hoặc điền tay ở màn
+                    <a href="@Url.Action("Index", "Users")">Người dùng</a>.
+                </div>
+            }
+
+            <div class="table-wrap">
+                <table class="data">
+                    <thead>
+                        <tr>
+                            <th>Người nhận</th>
+                            <th>Số điện thoại</th>
+                            <th class="num">Việc đến hạn</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in Model.TaskSmsPreview.Recipients.OrderByDescending(x => x.DueCount))
+                        {
+                            <tr>
+                                <td><strong>@r.FullName</strong></td>
+                                <td class="nowrap">
+                                    @if (r.CanSend)
+                                    {
+                                        <text>@r.Phone</text>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-waiting">Chưa có số</span>
+                                    }
+                                </td>
+                                <td class="num">@r.DueCount</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        <div class="form-actions">
+            @using (Html.BeginForm("SendTaskDueSms", "Notifications", FormMethod.Post, new { @class = "inline-form" }))
+            {
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-primary"
+                        @(Model.SmsReady && Model.TaskSmsPreview.SendableCount > 0 ? "" : "disabled=disabled")
+                        onclick="return confirm('Gửi tin nhắc hạn ngay cho @Model.TaskSmsPreview.SendableCount người trong danh sách trên?');">
+                    Gửi tin ngay
+                </button>
+            }
+        </div>
+    </div>
+</div>
+
 <div class="card">
     <div class="card-head">
         <span>Mail riêng cho từng thành viên</span>
@@ -218,6 +301,22 @@
             <div class="full">
                 <strong>Người gửi hiển thị:</strong><br />
                 @Model.EmailDisplayName &lt;@Model.EmailFrom&gt;
+            </div>
+            <div class="full">
+                <strong>Lịch tự động:</strong>
+                @if (Model.AutoSend)
+                {
+                    <span class="badge badge-active">Đang bật</span>
+                    <span class="muted">— tự gửi sáng thứ Sáu @Model.MemberEmailHour giờ.</span>
+                }
+                else
+                {
+                    <span class="badge badge-inactive">Đang tắt</span>
+                    <span class="muted">
+                        — chỉ gửi khi bấm nút bên dưới. Bản publish Release tự bật lịch;
+                        máy phát triển để tắt cho khỏi bắn mail thật.
+                    </span>
+                }
             </div>
         </div>
 
@@ -342,59 +441,6 @@
         }
     </div>
 </div>
-
-@foreach (var preview in new[] { Model.SaturdayPreview, Model.FridayPreview, Model.MondayPreview })
-{
-    <div class="card">
-        <div class="card-head">
-            <span>@preview.KindLabel</span>
-            <span class="muted" style="font-weight:400">
-                Tuần @preview.Week/@preview.Year (@preview.WeekFrom.ToString("dd/MM") – @preview.WeekTo.ToString("dd/MM/yyyy"))
-            </span>
-        </div>
-        <div class="card-body">
-            <div class="stats" style="margin-bottom:16px">
-                <div class="stat">
-                    <div class="stat-value">@preview.MissingProjectCount</div>
-                    <div class="stat-label">Dự án chưa báo cáo</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value">@preview.ReportedProjects</div>
-                    <div class="stat-label">Đã báo cáo</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value">@preview.TotalOpenProjects</div>
-                    <div class="stat-label">Dự án đang chạy</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value">@preview.Groups.Count</div>
-                    <div class="stat-label">PM bị nhắc</div>
-                </div>
-            </div>
-
-            @if (!preview.HasSomethingToSend)
-            {
-                <p class="muted">Mọi dự án đang chạy đều đã có báo cáo trong tuần này — không cần gửi nhắc.</p>
-            }
-            else
-            {
-                <p class="hint" style="margin-bottom:8px">Nội dung sẽ gửi lên nhóm:</p>
-                <pre class="message-preview">@preview.Message</pre>
-            }
-
-            <div class="form-actions">
-                @using (Html.BeginForm("Send", "Notifications", new { kind = preview.Kind }, FormMethod.Post, new { @class = "inline-form" }))
-                {
-                    @Html.AntiForgeryToken()
-                    <button type="submit" class="btn btn-primary"
-                            onclick="return confirm('Gửi ngay nội dung này lên nhóm Telegram?');">
-                        Gửi ngay lên nhóm
-                    </button>
-                }
-            </div>
-        </div>
-    </div>
-}
 
 <div class="card">
     <div class="card-head">
