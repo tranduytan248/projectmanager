@@ -351,13 +351,34 @@ namespace TTKDGP.ProjectManager.Controllers
         /// Ghi một lượt giờ công. Trả lại partial khối giờ để hộp thoại tự vẽ lại; vi phạm mốc
         /// chặn thì trả 400 kèm lý do để chỗ gửi hiện đúng câu đó.
         /// </summary>
+        // Số giờ nhận dạng CHUỖI rồi tự parse theo InvariantCulture, KHÔNG để model binder lo.
+        // Ứng dụng chạy culture vi-VN (Web.config), ở đó dấu chấm là phân cách hàng NGHÌN: để
+        // binder đọc "1.5" nó ra 15 giờ — vẫn dưới trần 12? không, nhưng "0.5" thành 5 giờ thì
+        // lọt qua mọi mốc chặn và sai âm thầm. Nhận cả dấu chấm lẫn dấu phẩy cho người dùng gõ
+        // theo thói quen nào cũng đúng.
         [HttpPost]
         [ValidateAntiForgeryToken]
         [AppAuthorize(Permission = "wtasks.view")]
-        public ActionResult LogTime(int id, DateTime workDate, decimal hours, string note)
+        public ActionResult LogTime(int id, string workDate, string hours, string note)
         {
             var task = Repository.WorkTasks.Find(id);
             if (task == null || !CanSeeTask(task)) return HttpNotFound();
+
+            // Ô <input type="date"> luôn gửi dạng yyyy-MM-dd bất kể ngôn ngữ trình duyệt, nên
+            // đọc theo đúng khuôn đó thay vì để binder suy diễn theo culture vi-VN.
+            DateTime dateValue;
+            if (!DateTime.TryParseExact((workDate ?? string.Empty).Trim(), "yyyy-MM-dd",
+                    CultureInfo.InvariantCulture, DateTimeStyles.None, out dateValue))
+            {
+                return LogTimeError("Ngày làm không hợp lệ.");
+            }
+
+            decimal hoursValue;
+            if (!decimal.TryParse((hours ?? string.Empty).Trim().Replace(',', '.'),
+                    NumberStyles.Number, CultureInfo.InvariantCulture, out hoursValue))
+            {
+                return LogTimeError("Số giờ không hợp lệ. Nhập ví dụ 2 hoặc 2,5.");
+            }
 
             // Lớp chặn thật nằm ở đây chứ không ở màn hình: form gửi lên sửa tay được.
             if (CurrentUserId <= 0 || task.AssigneeUserId != CurrentUserId)
@@ -371,7 +392,7 @@ namespace TTKDGP.ProjectManager.Controllers
             }
 
             var error = TimeLogService.Add(task, CurrentUserId,
-                CurrentUser == null ? null : CurrentUser.FullName, workDate, hours, note);
+                CurrentUser == null ? null : CurrentUser.FullName, dateValue, hoursValue, note);
 
             if (error != null) return LogTimeError(error);
 

@@ -110,29 +110,31 @@ else
 @if (Model.CanLog)
 {
     <div class="timelog-form">
-        <div class="filters">
-            <div class="filter-field">
+        <div class="timelog-row">
+            <div class="timelog-field">
                 <label for="logDate">Ngày làm</label>
                 <input type="date" id="logDate" value="@Model.DefaultDate.ToString("yyyy-MM-dd")"
                        max="@DateTime.Today.ToString("yyyy-MM-dd")" />
             </div>
-            <div class="filter-field">
+            <div class="timelog-field timelog-field-hours">
                 <label for="logHours">Số giờ</label>
-                <input type="number" id="logHours" step="0.25" min="0.25"
-                       max="@Model.MaxPerDay.ToString("0.##")" placeholder="Ví dụ 2,5" />
+                @* Nhận cả "2.5" lẫn "2,5" — gửi nguyên văn, máy chủ tự đọc theo khuôn cố định.
+                   Dùng type=text + inputmode để bàn phím điện thoại vẫn ra bàn phím số mà trình
+                   duyệt không tự ép định dạng theo ngôn ngữ máy. *@
+                <input type="text" id="logHours" inputmode="decimal" autocomplete="off"
+                       placeholder="2,5" />
             </div>
-            <div class="filter-field grow">
+            <div class="timelog-field timelog-field-note">
                 <label for="logNote">Nội dung đã làm</label>
-                <input type="text" id="logNote" maxlength="500" placeholder="Không bắt buộc" />
+                <input type="text" id="logNote" maxlength="500" autocomplete="off"
+                       placeholder="Không bắt buộc" />
             </div>
-            <div class="btn-row" style="padding-bottom:1px">
-                <button type="button" id="logTimeAdd" class="btn btn-primary">Ghi giờ</button>
-            </div>
+            <button type="button" id="logTimeAdd" class="btn btn-primary timelog-submit">Ghi giờ</button>
         </div>
         <span class="hint">
+            Nhập giờ lẻ được: <strong>2,5</strong> hoặc <strong>2.5</strong> đều là hai tiếng rưỡi.
             Tối đa <strong>@Model.MaxPerDay.ToString("0.##") giờ</strong> mỗi ngày tính trên tất cả
             công việc — hôm nay còn <strong>@Model.TodayRemaining.ToString("0.##") giờ</strong>.
-            Một công việc ghi được nhiều lượt, nhiều ngày khác nhau.
         </span>
     </div>
 }

@@ -502,9 +502,12 @@
 
             if (!date) { window.alert('Hãy chọn ngày làm.'); return; }
 
-            // Nhập theo thói quen tiếng Việt: "2,5" cũng phải hiểu là 2.5.
-            hours = (hours || '').toString().replace(',', '.');
-            if (!hours || isNaN(parseFloat(hours)) || parseFloat(hours) <= 0) {
+            // Gửi NGUYÊN VĂN chuỗi người dùng gõ, để máy chủ tự đọc theo khuôn cố định. Đổi
+            // dấu ở đây rồi để model binder đọc theo culture vi-VN là hỏng: ở đó dấu chấm là
+            // phân cách hàng nghìn nên "0.5" biến thành 5 giờ và lọt qua mọi mốc chặn.
+            hours = $.trim((hours || '').toString());
+            if (!hours || parseFloat(hours.replace(',', '.')) <= 0 ||
+                isNaN(parseFloat(hours.replace(',', '.')))) {
                 window.alert('Hãy nhập số giờ lớn hơn 0.');
                 return;
             }
