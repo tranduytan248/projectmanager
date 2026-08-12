@@ -256,6 +256,13 @@ namespace TTKDGP.ProjectManager.Controllers
                 return RedirectToAction("Detail", new { id = id });
             }
 
+            var logError = TimeLogService.ValidateStateChange(task, state);
+            if (logError != null)
+            {
+                NotifyError(logError);
+                return RedirectToAction("Detail", new { id = id });
+            }
+
             WorkService.ApplyState(task, state, progress);
 
             if (!string.IsNullOrWhiteSpace(note))

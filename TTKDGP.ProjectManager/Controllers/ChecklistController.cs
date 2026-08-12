@@ -233,6 +233,12 @@ namespace TTKDGP.ProjectManager.Controllers
                 return Json(new { ok = false, message = "Trạng thái không hợp lệ." });
             }
 
+            var logError = TimeLogService.ValidateStateChange(task, state);
+            if (logError != null)
+            {
+                return Json(new { ok = false, message = logError });
+            }
+
             WorkService.ApplyState(task, state);
             task.UpdatedAt = DateTime.Now;
             task.UpdatedBy = CurrentUser == null ? null : CurrentUser.FullName;

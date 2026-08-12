@@ -1,4 +1,5 @@
 ﻿using System.Web.Mvc;
+using TTKDGP.ProjectManager.Infrastructure;
 
 namespace TTKDGP.ProjectManager
 {
@@ -6,7 +7,7 @@ namespace TTKDGP.ProjectManager
     {
         public static void RegisterGlobalFilters(GlobalFilterCollection filters)
         {
-            filters.Add(new HandleErrorAttribute());
+            filters.Add(new LoggingHandleErrorAttribute());
         }
     }
 }

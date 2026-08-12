@@ -79,6 +79,24 @@ namespace TTKDGP.ProjectManager.Services
         }
 
         /// <summary>
+        /// Kiểm trước khi đổi trạng thái đầu việc sang Đang làm hoặc Hoàn thành: phải đã ghi giờ
+        /// công ít nhất một lượt. Trả null nếu hợp lệ, ngược lại trả câu báo lỗi đã viết sẵn.
+        ///
+        /// Không xét state khác (Chưa bắt đầu, Tạm dừng, Huỷ) — những trạng thái đó không thể hiện
+        /// đã có công sức bỏ ra nên không cần căn cứ giờ công.
+        /// </summary>
+        public static string ValidateStateChange(WorkTask task, string state)
+        {
+            if (task == null) return null;
+            if (state != TaskStates.InProgress && state != TaskStates.Done) return null;
+            if (TotalOfTask(task.Id) > 0) return null;
+
+            return string.Format(
+                "Phải ghi giờ công cho việc này trước khi chuyển sang trạng thái \"{0}\".",
+                TaskStates.Display(state));
+        }
+
+        /// <summary>
         /// Kiểm một lượt ghi giờ trước khi lưu. Trả null nếu hợp lệ, ngược lại trả câu báo lỗi
         /// đã viết sẵn cho người dùng đọc.
         ///
