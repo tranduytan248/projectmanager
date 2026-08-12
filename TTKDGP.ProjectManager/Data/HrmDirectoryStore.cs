@@ -113,6 +113,30 @@ namespace TTKDGP.ProjectManager.Data
             return result;
         }
 
+        /// <summary>Ghép tên đơn vị từ gốc tới <paramref name="departmentId"/> thành một chuỗi
+        /// "Viễn thông Khánh Hòa / Trung tâm X / Tổ Y" bằng cách đi ngược lên
+        /// <see cref="DepartmentHrm.DepartmentParentId"/>. Null nếu không có đơn vị hoặc đơn vị
+        /// không còn trong <paramref name="byId"/>.</summary>
+        public static string FullPath(int? departmentId, Dictionary<int, DepartmentHrm> byId)
+        {
+            if (!departmentId.HasValue) return null;
+
+            var names = new List<string>();
+            var currentId = departmentId;
+            var guard = 0; // chặn vòng lặp vô hạn nếu dữ liệu cha-con hỏng
+
+            while (currentId.HasValue && guard++ < 20)
+            {
+                DepartmentHrm dept;
+                if (!byId.TryGetValue(currentId.Value, out dept)) break;
+
+                names.Insert(0, dept.DepartmentName);
+                currentId = dept.DepartmentParentId;
+            }
+
+            return names.Count > 0 ? string.Join(" / ", names) : null;
+        }
+
         private static DepartmentHrm ReadRow(IDataRecord row)
         {
             return new DepartmentHrm
