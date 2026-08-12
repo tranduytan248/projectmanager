@@ -57,6 +57,9 @@ namespace TTKDGP.ProjectManager.Models
 
         public int CommentCount { get; set; }
 
+        /// <summary>Tổng giờ công đã ghi vào đầu việc này, của mọi người. 0 khi chưa ai ghi.</summary>
+        public decimal LoggedHours { get; set; }
+
         /// <summary>
         /// Người đang xem có sửa được ĐÚNG đầu việc này không. Tính theo từng dòng chứ không theo
         /// cả màn hình: thành viên sửa được việc của mình nhưng không đụng được việc người khác.

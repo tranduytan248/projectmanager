@@ -46,7 +46,9 @@ namespace TTKDGP.ProjectManager.Controllers
             if (project == null || !CanViewProject(projectId)) return HttpNotFound();
 
             var tasks = ProjectTasks(projectId);
-            var allRows = BuildTree(tasks, WorkService.CommentCounts(tasks.Select(t => t.Id)));
+            var taskIds = tasks.Select(t => t.Id).ToList();
+            var allRows = BuildTree(tasks, WorkService.CommentCounts(taskIds),
+                TimeLogService.TotalsByTask(taskIds));
 
             // Quyền tính một lần cho cả dự án rồi mới xét từng dòng — CanEditProject phải đọc CSDL,
             // gọi lại cho mỗi đầu việc là hàng trăm lượt đọc thừa.
@@ -1403,7 +1405,8 @@ namespace TTKDGP.ProjectManager.Controllers
         }
 
         /// <summary>Dàn cây thành danh sách phẳng theo đúng thứ tự hiển thị, kèm độ sâu.</summary>
-        private static List<ChecklistRow> BuildTree(List<WorkTask> tasks, Dictionary<int, int> commentCounts)
+        private static List<ChecklistRow> BuildTree(List<WorkTask> tasks, Dictionary<int, int> commentCounts,
+            Dictionary<int, decimal> loggedHours)
         {
             var rows = new List<ChecklistRow>();
             var byParent = tasks.GroupBy(t => t.ParentId)
@@ -1415,28 +1418,41 @@ namespace TTKDGP.ProjectManager.Controllers
                 .OrderBy(t => t.SortOrder).ToList();
 
             var visited = new HashSet<int>();
-            foreach (var root in roots) AddBranch(rows, root, 0, byParent, commentCounts, visited);
+            foreach (var root in roots)
+            {
+                AddBranch(rows, root, 0, byParent, commentCounts, loggedHours, visited);
+            }
 
             return rows;
         }
 
         private static void AddBranch(List<ChecklistRow> rows, WorkTask task, int depth,
             Dictionary<int, List<WorkTask>> byParent, Dictionary<int, int> commentCounts,
-            HashSet<int> visited)
+            Dictionary<int, decimal> loggedHours, HashSet<int> visited)
         {
             // Chống chu trình cha-con do dữ liệu hỏng, nếu không vòng đệ quy sẽ treo.
             if (!visited.Add(task.Id)) return;
 
             int comments;
             commentCounts.TryGetValue(task.Id, out comments);
-            rows.Add(new ChecklistRow { Task = task, Depth = depth, CommentCount = comments });
+
+            decimal hours;
+            loggedHours.TryGetValue(task.Id, out hours);
+
+            rows.Add(new ChecklistRow
+            {
+                Task = task,
+                Depth = depth,
+                CommentCount = comments,
+                LoggedHours = hours
+            });
 
             List<WorkTask> children;
             if (!byParent.TryGetValue(task.Id, out children)) return;
 
             foreach (var child in children)
             {
-                AddBranch(rows, child, depth + 1, byParent, commentCounts, visited);
+                AddBranch(rows, child, depth + 1, byParent, commentCounts, loggedHours, visited);
             }
         }
 

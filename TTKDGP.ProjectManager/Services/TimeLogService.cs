@@ -40,6 +40,24 @@ namespace TTKDGP.ProjectManager.Services
         }
 
         /// <summary>
+        /// Tổng giờ của NHIỀU đầu việc một lượt, trả map TaskId → số giờ.
+        ///
+        /// Bảng checklist cần con số này cho từng dòng; gọi <see cref="TotalOfTask"/> trong vòng
+        /// lặp thì mỗi dòng lại quét lại cả bảng giờ công — cùng lối nghĩ với CommentCounts.
+        /// Việc chưa ghi giờ nào KHÔNG có khoá trong map, nơi gọi tự hiểu là 0.
+        /// </summary>
+        public static Dictionary<int, decimal> TotalsByTask(IEnumerable<int> taskIds)
+        {
+            var ids = new HashSet<int>(taskIds ?? Enumerable.Empty<int>());
+            if (ids.Count == 0) return new Dictionary<int, decimal>();
+
+            return Repository.WorkTimeLogs.All()
+                .Where(l => ids.Contains(l.TaskId))
+                .GroupBy(l => l.TaskId)
+                .ToDictionary(g => g.Key, g => g.Sum(l => l.Hours));
+        }
+
+        /// <summary>
         /// Tổng giờ một người đã khai trong một ngày, cộng trên mọi đầu việc.
         /// <paramref name="exceptLogId"/> để bỏ qua chính dòng đang sửa khi tính lại.
         /// </summary>

@@ -3204,6 +3204,16 @@ table.list td.lead.child::after {
 .due-late small { color: var(--st-late); }
 .due-done small { color: var(--text-faint); font-weight: 500; }
 
+/* ===== Giờ công trên bảng checklist =====
+   Số giờ đã ghi trên trần của việc. Cùng lối trình bày với cột Hạn: số chính đậm,
+   phần phụ nhỏ và nhạt hơn, canh theo cột số để so sánh giữa các dòng bằng mắt. */
+.hours { font-variant-numeric: tabular-nums; white-space: nowrap; line-height: 1.35; }
+.hours b { font-weight: 550; }
+.hours small { color: var(--text-faint); font-weight: 500; margin-left: 2px; }
+
+/* Vượt trần chỉ xảy ra với dữ liệu cũ — báo đỏ để còn rà lại. */
+.hours-over b { color: var(--st-late); }
+
 /* ===== Tiến độ =====
    Thanh nhỏ cạnh con số: so sánh nhiều dòng bằng mắt, không phải đọc từng số. */
 .prog { display: flex; align-items: center; gap: 9px; min-width: 96px; }

@@ -229,6 +229,7 @@ else
                         <th class="col-hide-sm">Ưu tiên</th>
                         <th class="col-hide-sm">Hạn</th>
                         <th class="col-hide-sm">Tiến độ</th>
+                        <th class="num col-hide-sm">Giờ công</th>
                         <th>Trạng thái</th>
                         <th class="num col-hide-sm">Trao đổi</th>
                         @if (Model.CanEditAny)
@@ -284,6 +285,11 @@ else
                                     }
                                     <span>·</span>
                                     <span>@t.Progress%</span>
+                                    @if (row.LoggedHours > 0)
+                                    {
+                                        <span>·</span>
+                                        <span>@row.LoggedHours.ToString("0.##")h công</span>
+                                    }
                                     @if (row.CommentCount > 0)
                                     {
                                         <span>·</span>
@@ -342,6 +348,26 @@ else
                                     <div class="prog-track"><i style="width:@t.Progress%"></i></div>
                                     <span>@t.Progress%</span>
                                 </div>
+                            </td>
+
+                            @* Giờ công đã ghi, kèm trần của việc để biết đã dùng bao nhiêu phần.
+                               Việc thiếu ngày thì không có trần — chỉ hiện số giờ, không hiện mẫu số. *@
+                            <td class="num nowrap col-hide-sm">
+                                @if (row.LoggedHours > 0)
+                                {
+                                    var cap = TimeLogRules.TaskCap(t.StartDate, t.DueDate);
+                                    <div class="hours @(cap.HasValue && row.LoggedHours > cap.Value ? "hours-over" : "")">
+                                        <b>@row.LoggedHours.ToString("0.##")h</b>
+                                        @if (cap.HasValue)
+                                        {
+                                            <small>/ @cap.Value.ToString("0.##")h</small>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="muted">—</span>
+                                }
                             </td>
 
                             <td>

@@ -9,6 +9,15 @@
     var assignedTasks = ViewBag.AssignedTasks as List<WorkTask> ?? new List<WorkTask>();
     var isSaved = ViewBag.IsSaved != null && (bool)ViewBag.IsSaved;
 
+    // Giờ công thật của từng việc (người thực hiện tự khai). Việc chưa ai ghi thì không có
+    // khoá trong map — hàm dưới trả 0 để chỗ hiển thị khỏi phải kiểm tra hai lần.
+    var loggedHours = ViewBag.LoggedHours as Dictionary<int, decimal> ?? new Dictionary<int, decimal>();
+    Func<WorkTask, decimal> loggedOf = task =>
+    {
+        decimal h;
+        return loggedHours.TryGetValue(task.Id, out h) ? h : 0m;
+    };
+
     var can = ViewBag.Can as Func<string, bool>;
     var canGenerate = can != null && can("kpi.generate");
     var canConfig = can != null && can("kpi.config");
@@ -382,6 +391,7 @@
                         <th class="nowrap col-hide-sm">Thời gian</th>
                         <th class="col-hide-sm">Báo cáo đúng hạn</th>
                         <th class="center">Giờ tính</th>
+                        <th class="center">Giờ công</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -423,6 +433,17 @@
                                     <span class="muted">—</span>
                                 }
                             </td>
+                            <td class="center">
+                                @{ var loggedSup = loggedOf(t); }
+                                @if (loggedSup > 0)
+                                {
+                                    <strong>@loggedSup.ToString("0.##")h</strong>
+                                }
+                                else
+                                {
+                                    <span class="muted">—</span>
+                                }
+                            </td>
                         </tr>
                     }
                 </tbody>
@@ -430,6 +451,8 @@
         </div>
         <div class="card-body">
             <span class="hint">
+                <strong>Giờ công</strong> là số giờ người thực hiện tự khai; điểm KPI chấm theo
+                <strong>Giờ tính</strong> (quy đổi từ khoảng ngày), không theo Giờ công.
                 Cộng cột <strong>Giờ tính</strong> thường ra số lớn hơn
                 @Model.SupportHoursRaw.ToString("0.#") giờ của cả nhóm: nhiều việc chạy trùng ngày
                 thì ngày đó chỉ được tính <strong>một lần</strong>.
@@ -510,6 +533,7 @@
                         <th class="nowrap col-hide-sm">Thời gian</th>
                         <th class="col-hide-sm">Báo cáo đúng hạn</th>
                         <th class="center">Giờ tính</th>
+                        <th class="center">Giờ công</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -556,6 +580,17 @@
                                     <span class="muted">—</span>
                                 }
                             </td>
+                            <td class="center">
+                                @{ var logged = loggedOf(t); }
+                                @if (logged > 0)
+                                {
+                                    <strong>@logged.ToString("0.##")h</strong>
+                                }
+                                else
+                                {
+                                    <span class="muted">—</span>
+                                }
+                            </td>
                         </tr>
                     }
                 </tbody>
@@ -563,6 +598,9 @@
         </div>
         <div class="card-body">
             <span class="hint">
+                <strong>Giờ công</strong> là số giờ người thực hiện tự khai vào từng việc, còn
+                <strong>Giờ tính</strong> là giờ quy đổi từ khoảng ngày của việc — điểm KPI chấm
+                theo Giờ tính, không theo Giờ công.
                 Cộng cột <strong>Giờ tính</strong> thường ra số lớn hơn
                 @Model.ExecuteHours.ToString("0.#") giờ của cả nhóm: nhiều việc chạy trùng ngày thì
                 ngày đó chỉ được tính <strong>một lần</strong> — một người làm ba việc song song
