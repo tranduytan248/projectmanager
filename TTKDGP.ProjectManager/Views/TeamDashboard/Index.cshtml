@@ -148,6 +148,7 @@
                     <th>Tên</th>
                     <th class="center">KPI tạm tính</th>
                     <th class="col-hide-sm">Xếp loại</th>
+                    <th class="center col-hide-sm">Điểm trừ</th>
                     <th class="center col-hide-sm">Giờ công</th>
                 </tr>
             </thead>
@@ -171,6 +172,9 @@
                         <td class="center"><strong>@row.Kpi.FinalPoint.ToString("0.##")</strong></td>
                         <td class="col-hide-sm">
                             <span class="@KpiRanks.BadgeClass(row.Kpi.Rank)">@row.Kpi.Rank</span>
+                        </td>
+                        <td class="center col-hide-sm">
+                            @row.TotalPenalty.ToString("0.##")/@row.TotalTasks
                         </td>
                         <td class="center col-hide-sm">
                             @row.Kpi.WorkedHours.ToString("0.#")/@row.Kpi.RequiredHours.ToString("0.#")
