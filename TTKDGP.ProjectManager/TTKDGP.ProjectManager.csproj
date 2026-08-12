@@ -303,6 +303,9 @@
     <Content Include="Views\Checklist\Index.cshtml" />
     <Content Include="Views\Kpi\Index.cshtml" />
     <Content Include="Views\Kpi\Detail.cshtml" />
+    <Content Include="Views\KpiConfig\Index.cshtml" />
+    <Content Include="Views\Functions\Index.cshtml" />
+    <Content Include="Views\Functions\Edit.cshtml" />
     <Content Include="Views\Checklist\Edit.cshtml" />
     <Content Include="Views\Checklist\ImportPreview.cshtml" />
     <Content Include="Views\MyWork\Tasks.cshtml" />

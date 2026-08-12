@@ -402,6 +402,17 @@
         for (var i = 0; i < nodes.length; i++) nodes[i].textContent = text;
     }
 
+    // Gõ dấu phẩy (thói quen số Việt Nam, vd "0,25") vào ô type="number" khiến trình duyệt coi
+    // ô đó KHÔNG HỢP LỆ và ÂM THẦM CHẶN việc gửi biểu mẫu — không có thông báo lỗi rõ ràng nào,
+    // trang chỉ tải lại y nguyên nên trông như đã lưu bị mất. Tự đổi phẩy thành chấm ngay khi gõ
+    // để không bao giờ rơi vào tình huống đó.
+    form.addEventListener("input", function (e) {
+        var el = e.target;
+        if (el && el.tagName === "INPUT" && el.type === "number" && el.value.indexOf(",") !== -1) {
+            el.value = el.value.replace(",", ".");
+        }
+    });
+
     function refresh() {
         var support = num("SupportMaxPoint");
         var execute = num("ExecuteMaxPoint");
