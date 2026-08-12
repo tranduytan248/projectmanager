@@ -35,11 +35,48 @@ namespace TTKDGP.ProjectManager.Controllers
 
         public ActionResult Employees(int? page, string keyword, int? departmentId, int? jobId)
         {
-            ViewBag.DepartmentOptions = DepartmentHrmStore.All();
+            var departments = DepartmentHrmStore.All();
+            var deptById = departments.ToDictionary(d => d.DepartmentId);
+
+            ViewBag.DepartmentOptions = departments;
             ViewBag.Keyword = keyword;
             ViewBag.DepartmentId = departmentId;
 
-            return View(EmployeeHrmStore.Page(page ?? 1, PageSize, keyword, departmentId, jobId));
+            var result = EmployeeHrmStore.Page(page ?? 1, PageSize, keyword, departmentId, jobId);
+
+            // Đổi tên đơn vị (chỉ tên cấp sâu nhất, lấy qua JOIN trong Page) thành cả đường dẫn
+            // "Viễn thông Khánh Hòa / Trung tâm X / Tổ Y" cho dễ nhận ra đơn vị nằm ở nhánh nào.
+            foreach (var e in result.Items)
+            {
+                var path = FullDepartmentPath(e.DepartmentId, deptById);
+                if (path != null) e.DepartmentName = path;
+            }
+
+            return View(result);
+        }
+
+        /// <summary>Ghép tên đơn vị từ gốc tới <paramref name="departmentId"/> thành một chuỗi
+        /// "Viễn thông Khánh Hòa / Trung tâm X / Tổ Y" bằng cách đi ngược lên theo
+        /// <see cref="DepartmentHrm.DepartmentParentId"/>. Null nếu không có đơn vị hoặc đơn vị
+        /// không còn trong <paramref name="deptById"/>.</summary>
+        private static string FullDepartmentPath(int? departmentId, Dictionary<int, DepartmentHrm> deptById)
+        {
+            if (!departmentId.HasValue) return null;
+
+            var names = new List<string>();
+            var currentId = departmentId;
+            var guard = 0; // chặn vòng lặp vô hạn nếu dữ liệu cha-con hỏng
+
+            while (currentId.HasValue && guard++ < 20)
+            {
+                DepartmentHrm dept;
+                if (!deptById.TryGetValue(currentId.Value, out dept)) break;
+
+                names.Insert(0, dept.DepartmentName);
+                currentId = dept.DepartmentParentId;
+            }
+
+            return names.Count > 0 ? string.Join(" / ", names) : null;
         }
 
         public ActionResult Departments(int? page, string keyword)
