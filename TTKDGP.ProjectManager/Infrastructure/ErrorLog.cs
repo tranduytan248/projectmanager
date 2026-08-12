@@ -26,6 +26,12 @@ namespace TTKDGP.ProjectManager.Infrastructure
 
         public static void Write(Exception ex, HttpContext context)
         {
+            Write(ex, context == null ? null : new HttpContextWrapper(context));
+        }
+
+        /// <summary>Bản dùng cho tầng MVC, nơi ngữ cảnh đi lại dưới dạng HttpContextBase.</summary>
+        public static void Write(Exception ex, HttpContextBase context)
+        {
             if (ex == null) return;
 
             try
@@ -56,7 +62,7 @@ namespace TTKDGP.ProjectManager.Infrastructure
             File.Move(file, old);
         }
 
-        private static string Format(Exception ex, HttpContext context)
+        private static string Format(Exception ex, HttpContextBase context)
         {
             var sb = new StringBuilder();
             sb.AppendLine(new string('-', 78));
