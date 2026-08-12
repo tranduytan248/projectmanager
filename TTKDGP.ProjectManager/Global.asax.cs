@@ -86,6 +86,16 @@ namespace TTKDGP.ProjectManager
             }
         }
 
+        /// <summary>
+        /// Ghi lại mọi lỗi chưa bắt được. customErrors đang bật nên người dùng chỉ thấy trang chủ,
+        /// còn form gửi bằng AJAX thì chỉ thấy "Không lưu được" — không có bước này thì nguyên nhân
+        /// thật sự không để lại dấu vết nào. Xem App_Data\errors.log.
+        /// </summary>
+        protected void Application_Error(object sender, EventArgs e)
+        {
+            ErrorLog.Write(Server.GetLastError(), Context);
+        }
+
         protected void Application_BeginRequest(object sender, EventArgs e)
         {
             // Dữ liệu và giao diện đều bằng tiếng Việt, cố định culture để sắp xếp và định dạng nhất quán.

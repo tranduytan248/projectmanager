@@ -300,9 +300,25 @@
                     if (window.AppRichText) window.AppRichText.init($body[0]);
                     if (window.AppRequiredNote) window.AppRequiredNote.init($body[0]);
                 })
-                .fail(function () {
+                .fail(function (xhr) {
                     $submit.prop('disabled', false);
-                    alert('Không lưu được. Hãy thử lại.');
+
+                    // Nói rõ hỏng ở đâu thay vì một câu chung chung. Phiên đăng nhập hết hạn là
+                    // trường hợp hay gặp nhất và cũng dễ sửa nhất — nạp lại trang là xong, nên
+                    // tách riêng ra; các mã còn lại kèm số để còn đối chiếu với App_Data\errors.log.
+                    var msg;
+                    if (xhr.status === 0) {
+                        msg = 'Mất kết nối tới máy chủ. Kiểm tra mạng rồi thử lại.';
+                    } else if (xhr.status === 403 || xhr.status === 401) {
+                        msg = 'Phiên đăng nhập đã hết hạn hoặc bạn không có quyền. '
+                            + 'Hãy tải lại trang và đăng nhập lại.';
+                    } else if (xhr.status === 500) {
+                        msg = 'Máy chủ gặp lỗi khi lưu (500). '
+                            + 'Nếu vừa để trang mở lâu, hãy tải lại trang rồi nhập lại.';
+                    } else {
+                        msg = 'Không lưu được (mã ' + xhr.status + '). Hãy thử lại.';
+                    }
+                    alert(msg);
                 });
         });
     });

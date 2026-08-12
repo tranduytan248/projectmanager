@@ -107,6 +107,7 @@
     <Compile Include="Infrastructure\ViewHelpers.cs" />
     <Compile Include="Infrastructure\LabelHelpers.cs" />
     <Compile Include="Infrastructure\HtmlSanitizer.cs" />
+    <Compile Include="Infrastructure\ErrorLog.cs" />
     <Compile Include="Models\Member.cs" />
     <Compile Include="Models\HrEmployee.cs" />
     <Compile Include="Models\Project.cs" />

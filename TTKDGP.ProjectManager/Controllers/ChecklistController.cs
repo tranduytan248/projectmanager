@@ -442,6 +442,10 @@ namespace TTKDGP.ProjectManager.Controllers
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
+        // Ô trao đổi là trình soạn thảo WYSIWYG nên gửi lên HTML. Nội dung vào đây bằng tham số
+        // rời chứ không qua model nên [AllowHtml] không với tới được — phải tắt kiểm tra ở mức
+        // action. An toàn vì HtmlSanitizer.Clean ngay bên dưới lọc về danh sách thẻ trắng.
+        [ValidateInput(false)]
         [AppAuthorize(Permission = "wtasks.view")]
         public ActionResult Comment(int id, string content, HttpPostedFileBase file)
         {

@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.Web.Mvc;
 
 namespace TTKDGP.ProjectManager.Models
 {
@@ -133,7 +134,15 @@ namespace TTKDGP.ProjectManager.Models
         [StringLength(250, ErrorMessage = "Tên công việc tối đa 250 ký tự")]
         public string Title { get; set; }
 
+        /// <summary>
+        /// Mô tả dạng HTML từ trình soạn thảo WYSIWYG. [AllowHtml] để MVC không chặn khi gửi form;
+        /// nội dung LUÔN được lọc qua HtmlSanitizer trước khi lưu và trước khi hiển thị.
+        ///
+        /// Thiếu thuộc tính này thì ASP.NET chặn ngay ở bước dựng model: gõ mô tả có gạch đầu dòng
+        /// hay chữ đậm là lỗi 500, hộp thoại chỉ kịp báo "Không lưu được".
+        /// </summary>
         [Display(Name = "Mô tả")]
+        [AllowHtml]
         public string Description { get; set; }
 
         /// <summary>Mục cha để gom nhóm checklist nhiều cấp. 0 là mục gốc.</summary>
@@ -308,8 +317,13 @@ namespace TTKDGP.ProjectManager.Models
         /// <summary>Tên người viết lúc viết — giữ để mạch hội thoại còn đọc được nếu tài khoản bị xoá.</summary>
         public string AuthorName { get; set; }
 
+        /// <summary>
+        /// Nội dung trao đổi, cũng đến từ trình soạn thảo WYSIWYG nên phải cho phép HTML —
+        /// xem ghi chú ở <see cref="WorkTask.Description"/>.
+        /// </summary>
         [Required(ErrorMessage = "Vui lòng nhập nội dung trao đổi")]
         [StringLength(4000, ErrorMessage = "Nội dung tối đa 4000 ký tự")]
+        [AllowHtml]
         public string Content { get; set; }
 
         // ---------- File đính kèm (mỗi lượt trao đổi tối đa một file) ----------

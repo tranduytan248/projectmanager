@@ -310,6 +310,9 @@ namespace TTKDGP.ProjectManager.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        // Nội dung soạn bằng trình soạn thảo WYSIWYG nên là HTML; vào đây bằng tham số rời nên
+        // [AllowHtml] không với tới. Lọc bằng HtmlSanitizer.Clean trước khi lưu.
+        [ValidateInput(false)]
         [AppAuthorize(Permission = "wtasks.view")]
         public ActionResult Comment(int id, string content, HttpPostedFileBase file)
         {
