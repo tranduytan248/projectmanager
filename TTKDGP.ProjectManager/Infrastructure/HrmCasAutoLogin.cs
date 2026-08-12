@@ -348,8 +348,9 @@ namespace TTKDGP.ProjectManager.Infrastructure
         /// ra ngoài. Server giới hạn mỗi lần gọi tối đa <see cref="DanhBaPageSize"/> bản ghi (đúng
         /// bằng "limit" quan sát được trong curl thật), nên phải phân trang bằng "offset" và gộp
         /// lại cho tới khi đủ "length" (tổng số bản ghi khớp domain) server trả về ở trang đầu.
-        /// Sau khi gộp xong: lưu JSON thô ra App_Data\hrm-debug rồi báo số bản ghi qua Telegram
-        /// (không dán nguyên JSON vào tin nhắn — dữ liệu nhân sự có thể dài và nhạy cảm).
+        /// Sau khi gộp xong: lưu thẳng vào CSDL qua <see cref="HrmDirectorySync"/> rồi báo số bản
+        /// ghi qua Telegram — KHÔNG lưu JSON thô ra file nữa (dữ liệu đã có trong CSDL, giữ thêm
+        /// bản file chỉ là trùng lặp và có thể tồn đọng dữ liệu nhân sự trên đĩa không cần thiết).
         ///
         /// department_id=5741 lấy nguyên theo ví dụ curl bạn cung cấp (đơn vị của chính tài khoản
         /// đăng nhập) — nếu cần tổng quát hoá cho tài khoản khác thì phải đọc động từ phiên, không
@@ -435,11 +436,6 @@ namespace TTKDGP.ProjectManager.Infrastructure
                 var json = await page.EvaluateAsync<string>(script,
                     new { pageSize = DanhBaPageSize, maxPages = DanhBaMaxPages });
 
-                var dir = MapAppData("hrm-debug");
-                Directory.CreateDirectory(dir);
-                var file = Path.Combine(dir, "danhba-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".json");
-                File.WriteAllText(file, json);
-
                 var parsed = JObject.Parse(json);
                 var records = parsed["result"] != null ? parsed["result"]["records"] as JArray : null;
                 var error = parsed["error"];
@@ -457,8 +453,8 @@ namespace TTKDGP.ProjectManager.Infrastructure
                     : string.Empty;
 
                 if (notify != null)
-                    notify(string.Format("📇 Đã lấy danh bạ: {0}/{1} bản ghi.{2} Đã lưu JSON đầy đủ ở App_Data\\hrm-debug\\{3}",
-                        count, total.HasValue ? total.Value.ToString() : count.ToString(), warnTruncated, Path.GetFileName(file)));
+                    notify(string.Format("📇 Đã lấy danh bạ: {0}/{1} bản ghi.{2}",
+                        count, total.HasValue ? total.Value.ToString() : count.ToString(), warnTruncated));
 
                 if (records != null && records.Count > 0)
                 {

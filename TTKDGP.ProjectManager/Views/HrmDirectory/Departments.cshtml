@@ -1,0 +1,95 @@
+﻿@model TTKDGP.ProjectManager.Models.PagedList<TTKDGP.ProjectManager.Models.DepartmentHrm>
+@using System.Collections.Generic
+@using TTKDGP.ProjectManager.Infrastructure
+@{
+    ViewBag.Title = "Đơn vị (CAS VNPT)";
+    var parentNameById = ViewBag.ParentNameById as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var countById = ViewBag.EmployeeCountById as Dictionary<int, int> ?? new Dictionary<int, int>();
+}
+
+<div class="page-head">
+    <div>
+        <h1>Đơn vị — CAS VNPT (HRM)</h1>
+        <p>
+            Cây đơn vị lấy từ cổng CAS VNPT (id.vnpt.com.vn → hrm.vnpt.vn) qua lệnh
+            <code>/signin</code> trên bot Telegram. Tổng cộng @Model.Pager.TotalItems đơn vị.
+        </p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        @using (Html.BeginForm("Departments", "HrmDirectory", FormMethod.Get))
+        {
+            <div class="filters">
+                <div class="filter-field grow">
+                    <label for="keyword">Tìm kiếm</label>
+                    <input type="search" id="keyword" name="keyword" value="@ViewBag.Keyword"
+                           placeholder="Tên đơn vị..." />
+                </div>
+                <div class="btn-row" style="padding-bottom:1px">
+                    <button type="submit" class="btn btn-primary">Lọc</button>
+                    <a class="btn btn-default" href="@Url.Action("Departments", "HrmDirectory")">Xoá lọc</a>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="card">
+    @if (Model.Items.Count == 0)
+    {
+        <div class="empty-state">
+            Chưa có đơn vị nào phù hợp. Nếu bảng còn trống, nhắn <code>/signin</code> cho bot Telegram để đăng nhập và đồng bộ.
+        </div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th>Tên đơn vị</th>
+                        <th>Đơn vị cha</th>
+                        <th class="num">Nhân sự</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var d in Model.Items)
+                    {
+                        string parentName = null;
+                        if (d.DepartmentParentId.HasValue) parentNameById.TryGetValue(d.DepartmentParentId.Value, out parentName);
+                        var count = countById.ContainsKey(d.DepartmentId) ? countById[d.DepartmentId] : 0;
+
+                        <tr>
+                            <td><strong>@ViewHelpers.OrDash(d.DepartmentName)</strong></td>
+                            <td class="muted wrap-text">
+                                @if (!d.DepartmentParentId.HasValue)
+                                {
+                                    <span class="muted">— (gốc)</span>
+                                }
+                                else
+                                {
+                                    @ViewHelpers.OrDash(parentName)
+                                }
+                            </td>
+                            <td class="num">
+                                @if (count > 0)
+                                {
+                                    <a href="@Url.Action("Employees", "HrmDirectory", new { departmentId = d.DepartmentId })"
+                                       title="Xem nhân sự thuộc đơn vị này">@count</a>
+                                }
+                                else
+                                {
+                                    <span class="muted">0</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @Html.Partial("_Pager", Model.Pager)
+    }
+</div>

@@ -181,6 +181,18 @@ namespace TTKDGP.ProjectManager.Models
         public static readonly PermModule Hrm =
             new PermModule("hrm", "HRM", "Nhân sự", new[] { A(View, "Xem") });
 
+        /// <summary>
+        /// Danh bạ lấy từ cổng CAS VNPT (id.vnpt.com.vn → hrm.vnpt.vn) qua lệnh "/signin" trên bot
+        /// Telegram, xem <see cref="Infrastructure.AppSettings.Hrm"/>. HOÀN TOÀN KHÁC module
+        /// <see cref="Hrm"/> ở trên (đó là dữ liệu đồng bộ từ GoConnect).
+        ///
+        /// KHÔNG đưa vào <see cref="ManagerDefaults"/>/<see cref="ReporterDefaults"/> — cũng như
+        /// module Hrm, đây là thông tin cá nhân của toàn bộ nhân sự công ty nên chỉ Admin (nhóm
+        /// "*") mới thấy theo mặc định.
+        /// </summary>
+        public static readonly PermModule HrmDirectory =
+            new PermModule("hrmdirectory", "CAS VNPT (HRM)", "Nhân sự", new[] { A(View, "Xem") });
+
         public static readonly PermModule Notifications =
             new PermModule("notifications", "Thông báo", "Quản trị",
                 new[] { A(View, "Xem"), A("send", "Gửi / Kích hoạt") });
@@ -215,7 +227,7 @@ namespace TTKDGP.ProjectManager.Models
         {
             Home, MyReports, Projects, Members, Assignments, TeamReports, WorkLogs, Catalog,
             Team, WorkProjects, WorkTasks, WorkReports, Kpi, Leaves, Workload,
-            Hrm, Notifications, GoConnect, Integrations, Users, Roles, Functions
+            Hrm, HrmDirectory, Notifications, GoConnect, Integrations, Users, Roles, Functions
         };
 
         /// <summary>Tất cả mã chức năng đầy đủ (module.action) — dùng để cấp toàn quyền.</summary>
@@ -350,7 +362,11 @@ namespace TTKDGP.ProjectManager.Models
                     Group("HRM",
                         Child("Nhân sự", "Hrm", Hrm.Perm(View), "Employees"),
                         Child("Đơn vị", "Hrm", Hrm.Perm(View), "Workplaces"),
-                        Child("Chức danh", "Hrm", Hrm.Perm(View), "Positions"))
+                        Child("Chức danh", "Hrm", Hrm.Perm(View), "Positions")),
+                    Group("CAS VNPT (HRM)",
+                        Child("Nhân sự", "HrmDirectory", HrmDirectory.Perm(View), "Employees"),
+                        Child("Đơn vị", "HrmDirectory", HrmDirectory.Perm(View), "Departments"),
+                        Child("Chức danh", "HrmDirectory", HrmDirectory.Perm(View), "Jobs"))
                 }
             },
             new MenuSection

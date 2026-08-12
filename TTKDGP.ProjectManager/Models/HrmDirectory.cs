@@ -68,5 +68,13 @@ namespace TTKDGP.ProjectManager.Models
         public bool IsCongTacVien { get; set; }
 
         public DateTime UpdatedAt { get; set; }
+
+        /// <summary>Tên đơn vị, chỉ có khi đọc qua <see cref="Data.EmployeeHrmStore.Page"/> (JOIN
+        /// sang department_hrm). Rỗng khi đọc qua đường khác.</summary>
+        public string DepartmentName { get; set; }
+
+        /// <summary>Tên chức danh, chỉ có khi đọc qua <see cref="Data.EmployeeHrmStore.Page"/>
+        /// (JOIN sang job_hrm). Rỗng khi đọc qua đường khác.</summary>
+        public string JobName { get; set; }
     }
 }

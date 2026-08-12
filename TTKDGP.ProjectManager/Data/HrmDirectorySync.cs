@@ -32,8 +32,8 @@ namespace TTKDGP.ProjectManager.Data
         {
             if (records == null || records.Count == 0) return;
 
-            int unresolvedParents;
-            var departments = BuildDepartments(records, out unresolvedParents);
+            List<string> unresolvedPaths;
+            var departments = BuildDepartments(records, out unresolvedPaths);
             var jobs = BuildJobs(records);
             var employees = BuildEmployees(records);
 
@@ -50,18 +50,34 @@ namespace TTKDGP.ProjectManager.Data
 
             if (notify == null) return;
 
-            var warn = unresolvedParents > 0
+            var warn = unresolvedPaths.Count > 0
                 ? string.Format(
                     " ⚠️ {0} đơn vị chưa suy được đơn vị cha (không có ai trực thuộc trực tiếp đơn vị cha đó trong dữ liệu lần này).",
-                    unresolvedParents)
+                    unresolvedPaths.Count)
                 : string.Empty;
 
             notify(string.Format(
                 "💾 Đã lưu vào CSDL: {0} đơn vị, {1} chức danh, {2} nhân sự.{3}",
                 deptSaved, jobSaved, empSaved, warn));
+
+            if (unresolvedPaths.Count == 0) return;
+
+            var lines = new List<string>
+            {
+                string.Format("📋 Danh sách {0} đơn vị chưa suy được đơn vị cha, nhờ xem lại:", unresolvedPaths.Count)
+            };
+            var i = 0;
+            foreach (var path in unresolvedPaths.OrderBy(p => p, StringComparer.Ordinal))
+            {
+                i++;
+                lines.Add(string.Format("{0}. {1}", i, System.Web.HttpUtility.HtmlEncode(path)));
+            }
+            notify(string.Join("\n", lines));
         }
 
-        private static List<DepartmentHrm> BuildDepartments(JArray records, out int unresolvedParents)
+        /// <summary>Đường dẫn tên đầy đủ ("Viễn thông Khánh Hòa / Trung tâm Hạ tầng / Tổ Y") của
+        /// những đơn vị KHÔNG suy được đơn vị cha, để báo ra ngoài cho người xem đánh giá.</summary>
+        private static List<DepartmentHrm> BuildDepartments(JArray records, out List<string> unresolvedPaths)
         {
             // id đơn vị -> đường dẫn tên đầy đủ ("Viễn thông Khánh Hòa / Trung tâm Hạ tầng").
             var pathById = new Dictionary<int, string>();
@@ -85,7 +101,7 @@ namespace TTKDGP.ProjectManager.Data
                 new DepartmentHrm { DepartmentId = RootDepartmentId, DepartmentName = RootDepartmentName, DepartmentParentId = null }
             };
 
-            var unresolved = 0;
+            var unresolved = new List<string>();
             foreach (var kv in pathById)
             {
                 var segments = SplitPath(kv.Value);
@@ -99,13 +115,13 @@ namespace TTKDGP.ProjectManager.Data
                     var parentPath = string.Join(" / ", segments.Take(segments.Length - 1));
                     int foundId;
                     if (idByPath.TryGetValue(parentPath, out foundId)) parentId = foundId;
-                    else unresolved++;
+                    else unresolved.Add(kv.Value);
                 }
 
                 result.Add(new DepartmentHrm { DepartmentId = kv.Key, DepartmentName = name, DepartmentParentId = parentId });
             }
 
-            unresolvedParents = unresolved;
+            unresolvedPaths = unresolved;
             return result;
         }
 

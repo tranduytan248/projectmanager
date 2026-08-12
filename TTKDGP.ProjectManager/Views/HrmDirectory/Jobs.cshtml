@@ -1,0 +1,83 @@
+﻿@model TTKDGP.ProjectManager.Models.PagedList<TTKDGP.ProjectManager.Models.JobHrm>
+@using System.Collections.Generic
+@using TTKDGP.ProjectManager.Infrastructure
+@{
+    ViewBag.Title = "Chức danh (CAS VNPT)";
+    var countById = ViewBag.EmployeeCountById as Dictionary<int, int> ?? new Dictionary<int, int>();
+}
+
+<div class="page-head">
+    <div>
+        <h1>Chức danh — CAS VNPT (HRM)</h1>
+        <p>
+            Danh mục chức danh lấy từ cổng CAS VNPT (id.vnpt.com.vn → hrm.vnpt.vn) qua lệnh
+            <code>/signin</code> trên bot Telegram. Tổng cộng @Model.Pager.TotalItems chức danh.
+        </p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        @using (Html.BeginForm("Jobs", "HrmDirectory", FormMethod.Get))
+        {
+            <div class="filters">
+                <div class="filter-field grow">
+                    <label for="keyword">Tìm kiếm</label>
+                    <input type="search" id="keyword" name="keyword" value="@ViewBag.Keyword"
+                           placeholder="Tên hoặc mã chức danh..." />
+                </div>
+                <div class="btn-row" style="padding-bottom:1px">
+                    <button type="submit" class="btn btn-primary">Lọc</button>
+                    <a class="btn btn-default" href="@Url.Action("Jobs", "HrmDirectory")">Xoá lọc</a>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="card">
+    @if (Model.Items.Count == 0)
+    {
+        <div class="empty-state">
+            Chưa có chức danh nào phù hợp. Nếu bảng còn trống, nhắn <code>/signin</code> cho bot Telegram để đăng nhập và đồng bộ.
+        </div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th>Tên chức danh</th>
+                        <th>Mã</th>
+                        <th class="num">Nhân sự</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var j in Model.Items)
+                    {
+                        var count = countById.ContainsKey(j.JobId) ? countById[j.JobId] : 0;
+
+                        <tr>
+                            <td><strong>@ViewHelpers.OrDash(j.JobName)</strong></td>
+                            <td class="muted nowrap">@ViewHelpers.OrDash(j.JobCode)</td>
+                            <td class="num">
+                                @if (count > 0)
+                                {
+                                    <a href="@Url.Action("Employees", "HrmDirectory", new { jobId = j.JobId })"
+                                       title="Xem nhân sự giữ chức danh này">@count</a>
+                                }
+                                else
+                                {
+                                    <span class="muted">0</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @Html.Partial("_Pager", Model.Pager)
+    }
+</div>

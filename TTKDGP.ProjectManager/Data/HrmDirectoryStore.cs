@@ -365,6 +365,131 @@ namespace TTKDGP.ProjectManager.Data
             }
         }
 
+        /// <summary>Số nhân sự theo từng đơn vị — dùng để hiện cột "Nhân sự" trên bảng Đơn vị.</summary>
+        public static Dictionary<int, int> CountsByDepartment()
+        {
+            return CountsByColumn("department_id");
+        }
+
+        /// <summary>Số nhân sự theo từng chức danh — dùng để hiện cột "Nhân sự" trên bảng Chức danh.</summary>
+        public static Dictionary<int, int> CountsByJob()
+        {
+            return CountsByColumn("job_id");
+        }
+
+        private static Dictionary<int, int> CountsByColumn(string column)
+        {
+            var result = new Dictionary<int, int>();
+
+            using (var conn = Db.Open())
+            {
+                EnsureTable(conn);
+
+                var sql = "SELECT [" + column + "], COUNT(*) FROM [" + Table + "] " +
+                          "WHERE [" + column + "] IS NOT NULL GROUP BY [" + column + "]";
+
+                using (var cmd = new SqlCommand(sql, conn))
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read()) result[reader.GetInt32(0)] = reader.GetInt32(1);
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>Lấy một trang nhân sự, kèm tên đơn vị và tên chức danh. Từ khoá tìm trên họ
+        /// tên, mã nhân viên, điện thoại, email, tên đơn vị và tên chức danh.</summary>
+        public static PagedList<EmployeeHrm> Page(
+            int page, int pageSize, string keyword, int? departmentId = null, int? jobId = null)
+        {
+            var like = HrBulk.Like(keyword);
+
+            const string from =
+                " FROM [" + Table + "] e" +
+                " LEFT JOIN [department_hrm] d ON d.[department_id] = e.[department_id]" +
+                " LEFT JOIN [job_hrm] j ON j.[job_id] = e.[job_id]";
+
+            const string where =
+                " WHERE (@Like IS NULL OR e.[full_name] LIKE @Like ESCAPE '\\' OR e.[employee_code] LIKE @Like ESCAPE '\\'" +
+                "        OR e.[mobile_phone] LIKE @Like ESCAPE '\\' OR e.[work_email] LIKE @Like ESCAPE '\\'" +
+                "        OR d.[department_name] LIKE @Like ESCAPE '\\' OR j.[job_name] LIKE @Like ESCAPE '\\')" +
+                "   AND (@DepartmentId IS NULL OR e.[department_id] = @DepartmentId)" +
+                "   AND (@JobId IS NULL OR e.[job_id] = @JobId)";
+
+            using (var conn = Db.Open())
+            {
+                EnsureTable(conn);
+                DepartmentHrmStore.EnsureTable(conn);
+                JobHrmStore.EnsureTable(conn);
+
+                int total;
+                using (var cmd = new SqlCommand("SELECT COUNT(*)" + from + where, conn))
+                {
+                    AddPageFilters(cmd, like, departmentId, jobId);
+                    total = Convert.ToInt32(cmd.ExecuteScalar());
+                }
+
+                page = PagedList<EmployeeHrm>.Clamp(page, Math.Max(1, (int)Math.Ceiling(total / (double)pageSize)));
+
+                var sql =
+                    "SELECT e.*, d.[department_name], j.[job_name]" + from + where +
+                    " ORDER BY e.[full_name], e.[employee_id]" +
+                    " OFFSET @Skip ROWS FETCH NEXT @Take ROWS ONLY";
+
+                var items = new List<EmployeeHrm>();
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    AddPageFilters(cmd, like, departmentId, jobId);
+                    cmd.Parameters.AddWithValue("@Skip", (page - 1) * pageSize);
+                    cmd.Parameters.AddWithValue("@Take", pageSize);
+
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read()) items.Add(ReadJoinedRow(reader));
+                    }
+                }
+
+                return PagedList<EmployeeHrm>.FromSlice(items, page, pageSize, total);
+            }
+        }
+
+        private static void AddPageFilters(SqlCommand cmd, string like, int? departmentId, int? jobId)
+        {
+            cmd.Parameters.AddWithValue("@Like", (object)like ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@DepartmentId", departmentId.HasValue ? (object)departmentId.Value : DBNull.Value);
+            cmd.Parameters.AddWithValue("@JobId", jobId.HasValue ? (object)jobId.Value : DBNull.Value);
+        }
+
+        private static EmployeeHrm ReadJoinedRow(IDataRecord row)
+        {
+            var e = ReadRow(row);
+            e.DepartmentName = HrBulk.Str(row, "department_name");
+            e.JobName = HrBulk.Str(row, "job_name");
+            return e;
+        }
+
+        private static EmployeeHrm ReadRow(IDataRecord row)
+        {
+            return new EmployeeHrm
+            {
+                EmployeeId = Convert.ToInt32(row["employee_id"]),
+                EmployeeCode = HrBulk.Str(row, "employee_code"),
+                FullName = HrBulk.Str(row, "full_name"),
+                MobilePhone = HrBulk.Str(row, "mobile_phone"),
+                WorkEmail = HrBulk.Str(row, "work_email"),
+                DepartmentId = HrBulk.Int(row, "department_id"),
+                JobId = HrBulk.Int(row, "job_id"),
+                ViTriCongViecId = HrBulk.Int(row, "vitri_congviec_id"),
+                ViTriCongViecName = HrBulk.Str(row, "vitri_congviec_name"),
+                ViTriCongViecCode = HrBulk.Str(row, "vitri_congviec_code"),
+                Birthday = row["birthday"] is DateTime ? (DateTime?)(DateTime)row["birthday"] : null,
+                GioiTinh = HrBulk.Str(row, "gioi_tinh"),
+                IsCongTacVien = row["is_congtacvien"] is bool && (bool)row["is_congtacvien"],
+                UpdatedAt = row["updated_at"] is DateTime ? (DateTime)row["updated_at"] : DateTime.MinValue
+            };
+        }
+
         private static void DeclareParams(SqlCommand cmd)
         {
             cmd.Parameters.Add("@employee_id", SqlDbType.Int);
