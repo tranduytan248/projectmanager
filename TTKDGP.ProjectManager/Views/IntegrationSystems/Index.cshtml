@@ -106,6 +106,60 @@
 </details>
 
 <details class="card api-help">
+    <summary>Hướng dẫn tích hợp API lấy dữ liệu CAS VNPT (HRM)</summary>
+    <div class="card-body">
+        <p>
+            Đối tác gọi <code>POST /api/hrmcas</code>, thân là JSON, xác thực bằng checksum SHA-256.
+            HOÀN TOÀN KHÁC API <code>/api/hrm</code> ở trên — đó là dữ liệu đồng bộ từ GoConnect, còn
+            API này lấy danh bạ từ cổng CAS VNPT (id.vnpt.com.vn → hrm.vnpt.vn) qua lệnh
+            <code>/signin</code> trên bot Telegram. Dùng chung <strong>partnerCode</strong>/<strong>secretKey</strong>
+            với API HRM (GoConnect).
+        </p>
+
+        <p class="hint" style="margin-bottom:6px"><strong>Các trường bản tin (đúng thứ tự tạo checksum):</strong></p>
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr><th class="num">#</th><th>Trường</th><th>Bắt buộc</th><th>Mô tả</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td class="num">1</td><td><code>partnerCode</code></td><td>Có</td><td>Mã hệ thống (cột Mã ở bảng trên)</td></tr>
+                    <tr><td class="num">2</td><td><code>requestId</code></td><td>Có</td><td>Mã yêu cầu duy nhất mỗi lần gọi</td></tr>
+                    <tr><td class="num">3</td><td><code>requestTime</code></td><td>Có</td><td>Thời gian gửi, dạng <code>yyyyMMddHHmmss</code></td></tr>
+                    <tr><td class="num">4</td><td><code>resource</code></td><td>Có</td><td><code>employees</code> · <code>departments</code> · <code>jobs</code></td></tr>
+                    <tr><td class="num">5</td><td><code>page</code></td><td>Không</td><td>Trang, mặc định 1</td></tr>
+                    <tr><td class="num">6</td><td><code>pageSize</code></td><td>Không</td><td>Số dòng/trang, mặc định 100, tối đa 500</td></tr>
+                    <tr><td class="num">7</td><td><code>keyword</code></td><td>Không</td><td>Từ khoá lọc — chỉ áp dụng cho <code>employees</code></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p class="hint" style="margin:12px 0 6px"><strong>Cách tạo checksum của request:</strong></p>
+        <pre class="message-preview">checksum = SHA256( partnerCode|requestId|requestTime|resource|page|pageSize|keyword|&lt;khoá bí mật&gt; )</pre>
+        <p class="hint">Quy tắc ghép chuỗi giống hệt API HRM (GoConnect) ở trên — xem chi tiết trong tài liệu tải về.</p>
+
+        <p class="hint" style="margin:12px 0 6px"><strong>Cấu trúc <code>data</code> theo từng <code>resource</code>:</strong></p>
+        <pre class="message-preview">employees: { code, fullName, phoneNumber, email, gender, birthday,
+  departmentId, departmentCode, department, jobCode, job,
+  workPositionCode, workPosition, isCollaborator }
+departments: { id, code, name, parentId, parentCode, employeeCount }
+jobs: { id, code, name, employeeCount }</pre>
+        <ul style="margin:6px 0 0;padding-left:20px;font-size:13px;color:var(--text-muted)">
+            <li><code>department</code> là đường dẫn đầy đủ từ đơn vị gốc tới đơn vị sâu nhất, ví dụ
+                <code>Viễn thông Khánh Hòa / Trung tâm X / Tổ Y</code>.</li>
+            <li><code>departmentCode</code>/<code>jobCode</code>/<code>code</code> (của <code>departments</code>)
+                khớp từ GoConnect theo tên — có thể vắng mặt nếu chưa khớp được.</li>
+            <li>Trường rỗng bị lược bỏ khỏi bản ghi, giống API HRM (GoConnect).</li>
+        </ul>
+
+        <p class="hint" style="margin-top:8px">
+            Mã lỗi và checksum phản hồi giống hệt API <code>/api/hrm</code> ở trên. Xem đầy đủ trong
+            <a href="@Url.Action("Docs", "Home")">Tài liệu tích hợp</a> → mục API lấy dữ liệu CAS VNPT (HRM).
+        </p>
+    </div>
+</details>
+
+<details class="card api-help">
     <summary>Hướng dẫn tích hợp API gửi tin nhắn SMS</summary>
     <div class="card-body">
         <p>

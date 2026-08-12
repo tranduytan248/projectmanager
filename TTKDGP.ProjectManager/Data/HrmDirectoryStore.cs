@@ -478,7 +478,7 @@ namespace TTKDGP.ProjectManager.Data
                 page = PagedList<EmployeeHrm>.Clamp(page, Math.Max(1, (int)Math.Ceiling(total / (double)pageSize)));
 
                 var sql =
-                    "SELECT e.*, d.[department_name], j.[job_name]" + from + where +
+                    "SELECT e.*, d.[department_name], j.[job_name], j.[job_code]" + from + where +
                     " ORDER BY e.[full_name], e.[employee_id]" +
                     " OFFSET @Skip ROWS FETCH NEXT @Take ROWS ONLY";
 
@@ -511,6 +511,7 @@ namespace TTKDGP.ProjectManager.Data
             var e = ReadRow(row);
             e.DepartmentName = HrBulk.Str(row, "department_name");
             e.JobName = HrBulk.Str(row, "job_name");
+            e.JobCode = HrBulk.Str(row, "job_code");
             return e;
         }
 

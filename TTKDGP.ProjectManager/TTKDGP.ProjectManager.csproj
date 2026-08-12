@@ -230,6 +230,8 @@
     <Content Include="App_Data\docs\HRM-API.postman_collection.json" />
     <Content Include="App_Data\docs\Huong-dan-tich-hop-API-SMS.md" />
     <Content Include="App_Data\docs\SMS-API.postman_collection.json" />
+    <Content Include="App_Data\docs\Huong-dan-tich-hop-API-CAS-HRM.md" />
+    <Content Include="App_Data\docs\CAS-HRM-API.postman_collection.json" />
     <Content Include="App_Data\seed\members.json" />
     <Content Include="App_Data\seed\projects.json" />
     <Content Include="App_Data\seed\projectMembers.json" />

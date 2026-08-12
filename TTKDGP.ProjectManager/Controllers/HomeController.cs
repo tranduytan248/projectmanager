@@ -138,6 +138,14 @@ namespace TTKDGP.ProjectManager.Controllers
                     fileName = "SMS-API.postman_collection.json";
                     contentType = "application/json; charset=utf-8";
                     break;
+                case "cas-guide":
+                    fileName = "Huong-dan-tich-hop-API-CAS-HRM.md";
+                    contentType = "text/markdown; charset=utf-8";
+                    break;
+                case "cas-postman":
+                    fileName = "CAS-HRM-API.postman_collection.json";
+                    contentType = "application/json; charset=utf-8";
+                    break;
                 default:
                     return HttpNotFound();
             }

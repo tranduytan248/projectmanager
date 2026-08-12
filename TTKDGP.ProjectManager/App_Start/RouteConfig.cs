@@ -16,6 +16,15 @@ namespace TTKDGP.ProjectManager
                 defaults: new { controller = "IntegrationApi", action = "Hrm" }
             );
 
+            // API tích hợp lấy dữ liệu danh bạ CAS VNPT (HRM) — nguồn hoàn toàn khác api/hrm ở
+            // trên (đó là dữ liệu đồng bộ từ GoConnect). Dùng chung cơ chế checksum + hệ thống
+            // tích hợp, chỉ khác resource và tầng dữ liệu bên dưới.
+            routes.MapRoute(
+                name: "IntegrationApiHrmCas",
+                url: "api/hrmcas",
+                defaults: new { controller = "IntegrationApi", action = "HrmCas" }
+            );
+
             // API tiện ích cho đối tác (gửi SMS). Giữ đúng đường dẫn quen thuộc của HRM.
             routes.MapRoute(
                 name: "UtilApiSendSms",

@@ -56,7 +56,14 @@ namespace TTKDGP.ProjectManager.Infrastructure
         /// <summary>Đọc số theo culture hiện hành, trượt thì đổi dấu ngăn rồi đọc theo chuẩn bất biến.</summary>
         private static bool TryParse(string raw, out decimal result)
         {
-            const NumberStyles styles = NumberStyles.Number;
+            // CỐ Ý không có AllowThousands: NumberStyles.Number cho phép dấu phân nhóm nghìn, mà
+            // vi-VN dùng chính dấu CHẤM cho việc đó — "0.7" bị hiểu thành nhóm nghìn rồi bị bỏ đi,
+            // ra kết quả sai là 7 thay vì 0,7 (dot bị nuốt mất) — SAI mà TryParse vẫn báo THÀNH
+            // CÔNG nên không bao giờ rơi xuống được nhánh bất biến bên dưới. Bỏ AllowThousands thì
+            // "0.7" ở vi-VN parse trượt đúng như kỳ vọng (dấu thập phân của vi-VN là dấu phẩy),
+            // rơi xuống InvariantCulture và đọc đúng 0.7. Vẫn giữ được lối gõ dấu phẩy quen thuộc
+            // ("0,7") vì đó mới đúng là dấu thập phân thật của vi-VN.
+            const NumberStyles styles = NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign;
 
             if (decimal.TryParse(raw, styles, CultureInfo.CurrentCulture, out result)) return true;
             if (decimal.TryParse(raw, styles, CultureInfo.InvariantCulture, out result)) return true;

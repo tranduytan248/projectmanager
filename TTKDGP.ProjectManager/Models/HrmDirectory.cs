@@ -96,5 +96,9 @@ namespace TTKDGP.ProjectManager.Models
         /// <summary>Tên chức danh, chỉ có khi đọc qua <see cref="Data.EmployeeHrmStore.Page"/>
         /// (JOIN sang job_hrm). Rỗng khi đọc qua đường khác.</summary>
         public string JobName { get; set; }
+
+        /// <summary>Mã chức danh, chỉ có khi đọc qua <see cref="Data.EmployeeHrmStore.Page"/>
+        /// (JOIN sang job_hrm). Rỗng khi đọc qua đường khác.</summary>
+        public string JobCode { get; set; }
     }
 }
