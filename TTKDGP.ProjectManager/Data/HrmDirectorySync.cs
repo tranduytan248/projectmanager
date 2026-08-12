@@ -13,11 +13,17 @@ namespace TTKDGP.ProjectManager.Data
     ///
     /// Điểm khó nhất là suy cây đơn vị: mỗi bản ghi nhân sự chỉ cho id của đơn vị SÂU NHẤT
     /// (vd 18942, "Viễn thông Khánh Hòa / Trung tâm Hạ tầng / Tổ Tổng hợp") — không có id
-    /// riêng cho từng cấp cha. Giải pháp: gom hết các cặp (id, đường dẫn tên) gặp được trong
-    /// dữ liệu, rồi với mỗi đơn vị, đơn vị cha suy ra bằng cách CẮT BỚT ĐOẠN CUỐI của đường
-    /// dẫn rồi TRA LẠI xem đường dẫn đó có khớp id nào khác đã gặp không — chỉ khớp được khi
-    /// có ít nhất một nhân sự thuộc trực tiếp đơn vị cha đó (dữ liệu thật cho thấy điều này
-    /// đúng: cả "Trung tâm Hạ tầng" lẫn tổ con "Tổ Tổng hợp" của nó đều có nhân sự riêng).
+    /// riêng cho từng cấp cha. Giải pháp hai bước:
+    ///
+    ///   1. Gom hết các cặp (id, đường dẫn tên) gặp được trong dữ liệu — đây là các đơn vị
+    ///      có nhân sự trực tiếp, id THẬT do API trả.
+    ///   2. Với MỌI đường dẫn xuất hiện (kể cả các đoạn CHA chỉ được nhắc tới gián tiếp, ví dụ
+    ///      "Trung tâm Kinh doanh Giải pháp" không ai trực thuộc trực tiếp mà chỉ các phòng/ban
+    ///      con của nó mới có nhân sự) — đơn vị nào CHƯA có id thật thì gán id GIẢ, đánh số từ
+    ///      <see cref="SyntheticDepartmentIdBase"/> + 1 trở đi, theo thứ tự cấp nông tới sâu rồi
+    ///      bảng chữ cái (ổn định qua các lần đồng bộ). Nhờ vậy cây luôn nối liền trọn vẹn, không
+    ///      còn đơn vị "mồ côi" như trước.
+    ///
     /// "Viễn thông Khánh Hòa" (gốc, cấp Viễn thông tỉnh) không có id thật trong API nên được
     /// gán cứng DepartmentId = 0, DepartmentParentId = null theo đúng yêu cầu nghiệp vụ.
     /// </summary>
@@ -25,6 +31,11 @@ namespace TTKDGP.ProjectManager.Data
     {
         public const int RootDepartmentId = 0;
         public const string RootDepartmentName = "Viễn thông Khánh Hòa";
+
+        /// <summary>Id giả bắt đầu từ đây + 1 (100001, 100002, ...) cho những đơn vị cấp trung
+        /// gian không có id thật trong API — xem tóm tắt ở đầu lớp. Chọn 100000 vì id thật quan
+        /// sát được trên dữ liệu hiện tại chỉ vài chục nghìn, còn xa mới chạm mốc này.</summary>
+        private const int SyntheticDepartmentIdBase = 100000;
 
         private static readonly string[] PathSeparator = { " / " };
 
@@ -144,10 +155,11 @@ namespace TTKDGP.ProjectManager.Data
         }
 
         /// <summary>Đường dẫn tên đầy đủ ("Viễn thông Khánh Hòa / Trung tâm Hạ tầng / Tổ Y") của
-        /// những đơn vị KHÔNG suy được đơn vị cha, để báo ra ngoài cho người xem đánh giá.</summary>
+        /// những đơn vị KHÔNG suy được đơn vị cha — chỉ còn xảy ra với đường dẫn rỗng/hỏng, giữ
+        /// lại để báo ra ngoài phòng khi dữ liệu nguồn có bất thường.</summary>
         private static List<DepartmentHrm> BuildDepartments(JArray records, out List<string> unresolvedPaths)
         {
-            // id đơn vị -> đường dẫn tên đầy đủ ("Viễn thông Khánh Hòa / Trung tâm Hạ tầng").
+            // id THẬT (do API trả) -> đường dẫn tên đầy đủ ("Viễn thông Khánh Hòa / Trung tâm Hạ tầng").
             var pathById = new Dictionary<int, string>();
             foreach (var record in records)
             {
@@ -156,7 +168,7 @@ namespace TTKDGP.ProjectManager.Data
                 pathById[dept.Item1] = dept.Item2.Trim();
             }
 
-            // Chiều ngược lại để tra "đường dẫn cha có id nào không". Nếu (hiếm) hai id trùng
+            // Chiều ngược lại để tra "đường dẫn này có id thật nào không". Nếu (hiếm) hai id trùng
             // tên đường dẫn thì giữ id gặp trước — không nên xảy ra với dữ liệu thật.
             var idByPath = new Dictionary<string, int>(StringComparer.Ordinal) { { RootDepartmentName, RootDepartmentId } };
             foreach (var kv in pathById)
@@ -164,33 +176,64 @@ namespace TTKDGP.ProjectManager.Data
                 if (!idByPath.ContainsKey(kv.Value)) idByPath[kv.Value] = kv.Key;
             }
 
+            // MỌI đường dẫn xuất hiện, kể cả các đoạn CHA chỉ được nhắc tới gián tiếp (không ai
+            // trực thuộc trực tiếp) — phải liệt kê đủ tổ tiên thì cây mới nối liền trọn vẹn.
+            var allPaths = new HashSet<string>(StringComparer.Ordinal) { RootDepartmentName };
+            foreach (var path in pathById.Values)
+            {
+                foreach (var ancestor in AncestorPathsIncludingSelf(path)) allPaths.Add(ancestor);
+            }
+
+            // Đường dẫn chưa có id thật thì gán id GIẢ — xử lý từ cấp NÔNG tới SÂU (rồi bảng chữ
+            // cái để ổn định qua các lần đồng bộ) để lúc gán, đường dẫn cha luôn đã có id sẵn.
+            var missingPaths = allPaths
+                .Where(p => !idByPath.ContainsKey(p))
+                .OrderBy(p => SplitPath(p).Length)
+                .ThenBy(p => p, StringComparer.Ordinal)
+                .ToList();
+
+            var syntheticId = SyntheticDepartmentIdBase;
+            foreach (var path in missingPaths) idByPath[path] = ++syntheticId;
+
             var result = new List<DepartmentHrm>
             {
                 new DepartmentHrm { DepartmentId = RootDepartmentId, DepartmentName = RootDepartmentName, DepartmentParentId = null }
             };
 
             var unresolved = new List<string>();
-            foreach (var kv in pathById)
+            foreach (var path in allPaths)
             {
-                var segments = SplitPath(kv.Value);
+                if (string.Equals(path, RootDepartmentName, StringComparison.Ordinal)) continue;
+
+                var segments = SplitPath(path);
                 if (segments.Length == 0) continue;
 
                 var name = segments[segments.Length - 1];
-                int? parentId = null;
+                var parentPath = segments.Length > 1
+                    ? string.Join(" / ", segments.Take(segments.Length - 1))
+                    : RootDepartmentName;
 
-                if (segments.Length > 1)
-                {
-                    var parentPath = string.Join(" / ", segments.Take(segments.Length - 1));
-                    int foundId;
-                    if (idByPath.TryGetValue(parentPath, out foundId)) parentId = foundId;
-                    else unresolved.Add(kv.Value);
-                }
+                int parentId;
+                int? resolvedParentId = null;
+                if (idByPath.TryGetValue(parentPath, out parentId)) resolvedParentId = parentId;
+                else unresolved.Add(path);
 
-                result.Add(new DepartmentHrm { DepartmentId = kv.Key, DepartmentName = name, DepartmentParentId = parentId });
+                result.Add(new DepartmentHrm { DepartmentId = idByPath[path], DepartmentName = name, DepartmentParentId = resolvedParentId });
             }
 
             unresolvedPaths = unresolved;
             return result;
+        }
+
+        /// <summary>Mọi đường dẫn tổ tiên của <paramref name="path"/>, TÍNH CẢ chính nó, từ dài
+        /// nhất tới ngắn nhất — vd "A / B / C" ra "A / B / C", "A / B", "A".</summary>
+        private static IEnumerable<string> AncestorPathsIncludingSelf(string path)
+        {
+            var segments = SplitPath(path);
+            for (var len = segments.Length; len >= 1; len--)
+            {
+                yield return string.Join(" / ", segments.Take(len));
+            }
         }
 
         private static List<JobHrm> BuildJobs(JArray records)
