@@ -475,5 +475,56 @@ namespace TTKDGP.ProjectManager.Infrastructure
                 get { return Enabled && HasToken && HasChatId; }
             }
         }
+
+        /// <summary>
+        /// Tự động đăng nhập cổng CAS của VNPT (id.vnpt.com.vn → hrm.vnpt.vn) bằng username/mật
+        /// khẩu. HOÀN TOÀN KHÁC với <see cref="GoConnect"/> (goconnect.vnpt.vn, đăng nhập bằng số
+        /// điện thoại + OTP, không mật khẩu) — hai hệ thống VNPT độc lập, không dùng chung cấu hình.
+        ///
+        /// Gõ "/signin" trên bot Telegram (Hrm:BotToken) để kích hoạt; nếu HRM hỏi OTP thì trả
+        /// lời OTP vào cùng cuộc trò chuyện đó.
+        /// </summary>
+        public static class Hrm
+        {
+            /// <summary>Bật/tắt toàn bộ tính năng.</summary>
+            public static bool Enabled { get { return GetBool("Hrm:Enabled", false); } }
+
+            /// <summary>Tên đăng nhập CAS. Đặt trong secrets.config, không đưa vào kho mã nguồn.</summary>
+            public static string Username { get { return Get("Hrm:Username"); } }
+
+            /// <summary>Mật khẩu CAS. Đặt trong secrets.config, không đưa vào kho mã nguồn.</summary>
+            public static string Password { get { return Get("Hrm:Password"); } }
+
+            /// <summary>Trang đăng nhập CAS đầy đủ (kèm tham số service/redirect_uri của HRM).</summary>
+            public static string LoginUrl { get { return Get("Hrm:LoginUrl"); } }
+
+            /// <summary>Token bot Telegram riêng cho tính năng này (đặt trong secrets.config).</summary>
+            public static string BotToken { get { return Get("Hrm:BotToken"); } }
+
+            public static bool HasToken { get { return !string.IsNullOrWhiteSpace(BotToken); } }
+
+            /// <summary>Chat id của chủ tài khoản — nơi bot hỏi OTP và nhận mã trả về.</summary>
+            public static string ChatId { get { return Get("Hrm:ChatId"); } }
+
+            public static bool HasChatId { get { return !string.IsNullOrWhiteSpace(ChatId); } }
+
+            /// <summary>Chạy trình duyệt ẩn (headless). Đặt false khi cần xem tận mắt lúc gỡ lỗi.</summary>
+            public static bool Headless { get { return GetBool("Hrm:Headless", true); } }
+
+            /// <summary>Thời gian chờ chủ tài khoản trả lời OTP trước khi huỷ phiên (giây).</summary>
+            public static int OtpTimeoutSeconds { get { return Math.Max(30, GetInt("Hrm:OtpTimeoutSeconds", 180)); } }
+
+            /// <summary>Đủ điều kiện chạy: đã bật, có username/mật khẩu, có bot và chat id.</summary>
+            public static bool IsConfigured
+            {
+                get
+                {
+                    return Enabled && HasToken && HasChatId
+                        && !string.IsNullOrWhiteSpace(Username)
+                        && !string.IsNullOrWhiteSpace(Password)
+                        && !string.IsNullOrWhiteSpace(LoginUrl);
+                }
+            }
+        }
     }
 }

@@ -123,6 +123,11 @@
     <Compile Include="Infrastructure\GoConnectSession.cs" />
     <Compile Include="Infrastructure\GoConnectTelegramPoller.cs" />
     <Compile Include="Infrastructure\GoConnectScheduler.cs" />
+    <Compile Include="Infrastructure\HrmCasAutoLogin.cs" />
+    <Compile Include="Infrastructure\HrmTelegramPoller.cs" />
+    <Compile Include="Models\HrmDirectory.cs" />
+    <Compile Include="Data\HrmDirectoryStore.cs" />
+    <Compile Include="Data\HrmDirectorySync.cs" />
     <Compile Include="Models\ReminderModels.cs" />
     <Compile Include="Services\ReminderService.cs" />
     <Compile Include="Services\TaskDueSmsService.cs" />
