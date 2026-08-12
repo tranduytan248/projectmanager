@@ -5,6 +5,7 @@
     ViewBag.Title = "Đơn vị (CAS VNPT)";
     var parentNameById = ViewBag.ParentNameById as Dictionary<int, string> ?? new Dictionary<int, string>();
     var countById = ViewBag.EmployeeCountById as Dictionary<int, int> ?? new Dictionary<int, int>();
+    var depthById = ViewBag.DepthById as Dictionary<int, int> ?? new Dictionary<int, int>();
 }
 
 <div class="page-head">
@@ -12,7 +13,8 @@
         <h1>Đơn vị — CAS VNPT (HRM)</h1>
         <p>
             Cây đơn vị lấy từ cổng CAS VNPT (id.vnpt.com.vn → hrm.vnpt.vn) qua lệnh
-            <code>/signin</code> trên bot Telegram. Tổng cộng @Model.Pager.TotalItems đơn vị.
+            <code>/signin</code> trên bot Telegram. Tổng cộng @Model.Pager.TotalItems đơn vị,
+            sắp xếp theo phân cấp (đơn vị cha trước, các đơn vị con thụt lề theo sau).
         </p>
     </div>
 </div>
@@ -50,7 +52,9 @@
                 <thead>
                     <tr>
                         <th>Tên đơn vị</th>
+                        <th>Mã đơn vị</th>
                         <th>Đơn vị cha</th>
+                        <th>Mã đơn vị cha</th>
                         <th class="num">Nhân sự</th>
                     </tr>
                 </thead>
@@ -63,9 +67,17 @@
                             parentNameById.TryGetValue(d.DepartmentParentId.Value, out parentName);
                         }
                         var count = countById.ContainsKey(d.DepartmentId) ? countById[d.DepartmentId] : 0;
+                        var depth = depthById.ContainsKey(d.DepartmentId) ? depthById[d.DepartmentId] : 0;
 
                         <tr>
-                            <td><strong>@ViewHelpers.OrDash(d.DepartmentName)</strong></td>
+                            <td style="padding-left: @(1 + depth * 1.5)em">
+                                @if (depth > 0)
+                                {
+                                    <span class="muted">└</span>
+                                }
+                                <strong>@ViewHelpers.OrDash(d.DepartmentName)</strong>
+                            </td>
+                            <td class="muted nowrap">@ViewHelpers.OrDash(d.DepartmentCode)</td>
                             <td class="muted wrap-text">
                                 @if (!d.DepartmentParentId.HasValue)
                                 {
@@ -76,6 +88,7 @@
                                     @ViewHelpers.OrDash(parentName)
                                 }
                             </td>
+                            <td class="muted nowrap">@ViewHelpers.OrDash(d.DepartmentParentCode)</td>
                             <td class="num">
                                 @if (count > 0)
                                 {

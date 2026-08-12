@@ -37,6 +37,9 @@ namespace TTKDGP.ProjectManager.Data
             var jobs = BuildJobs(records);
             var employees = BuildEmployees(records);
 
+            int matchedDepartments;
+            MapCodesFromWorkplaces(departments, employees, out matchedDepartments);
+
             // Xoá sạch cả ba bảng trước khi nạp lại — danh bạ HRM là ảnh chụp hiện trạng, người
             // đã nghỉ/đơn vị đã giải thể không nên tồn lại từ lần đồng bộ trước. Xoá con trước
             // cha (dù chưa có ràng buộc FK) để nếu sau này thêm FK thì thứ tự vẫn đúng.
@@ -57,8 +60,9 @@ namespace TTKDGP.ProjectManager.Data
                 : string.Empty;
 
             notify(string.Format(
-                "💾 Đã lưu vào CSDL: {0} đơn vị, {1} chức danh, {2} nhân sự.{3}",
-                deptSaved, jobSaved, empSaved, warn));
+                "💾 Đã lưu vào CSDL: {0} đơn vị, {1} chức danh, {2} nhân sự.{3}\n" +
+                "🔗 Khớp mã đơn vị theo GoConnect: {4}/{0} đơn vị.",
+                deptSaved, jobSaved, empSaved, warn, matchedDepartments));
 
             if (unresolvedPaths.Count == 0) return;
 
@@ -73,6 +77,70 @@ namespace TTKDGP.ProjectManager.Data
                 lines.Add(string.Format("{0}. {1}", i, System.Web.HttpUtility.HtmlEncode(path)));
             }
             notify(string.Join("\n", lines));
+        }
+
+        /// <summary>
+        /// Suy <see cref="DepartmentHrm.DepartmentCode"/>/<see cref="DepartmentHrm.DepartmentParentCode"/>
+        /// bằng cách khớp TÊN đơn vị với <c>HrWorkplaces</c> (đơn vị đồng bộ từ GoConnect, đã có
+        /// sẵn mã chuẩn và cây cha-con đúng). Đây là nguồn ĐỘC LẬP với cây nội bộ CAS
+        /// (<see cref="DepartmentHrm.DepartmentParentId"/>) nên vẫn ra được mã cha kể cả với
+        /// những đơn vị mà cây nội bộ chưa suy được cha (xem <paramref name="departments"/> có
+        /// <c>DepartmentParentId</c> null nhưng không phải gốc).
+        ///
+        /// Trùng tên hiếm gặp thì giữ đơn vị GoConnect gặp trước — dữ liệu thật của một tỉnh
+        /// không có hai đơn vị cùng tên.
+        /// </summary>
+        private static void MapCodesFromWorkplaces(
+            List<DepartmentHrm> departments, List<EmployeeHrm> employees, out int matchedCount)
+        {
+            var workplaces = HrWorkplaceStore.All();
+
+            var byName = new Dictionary<string, HrWorkplace>(StringComparer.OrdinalIgnoreCase);
+            foreach (var w in workplaces)
+            {
+                if (w == null || string.IsNullOrWhiteSpace(w.WpName)) continue;
+                var key = w.WpName.Trim();
+                if (!byName.ContainsKey(key)) byName[key] = w;
+            }
+
+            var byId = new Dictionary<string, HrWorkplace>(StringComparer.OrdinalIgnoreCase);
+            foreach (var w in workplaces)
+            {
+                if (w == null || string.IsNullOrWhiteSpace(w.WpId)) continue;
+                var key = w.WpId.Trim();
+                if (!byId.ContainsKey(key)) byId[key] = w;
+            }
+
+            var codeByDepartmentId = new Dictionary<int, string>();
+            var matched = 0;
+
+            foreach (var d in departments)
+            {
+                if (string.IsNullOrWhiteSpace(d.DepartmentName)) continue;
+
+                HrWorkplace match;
+                if (!byName.TryGetValue(d.DepartmentName.Trim(), out match)) continue;
+
+                matched++;
+                d.DepartmentCode = match.WpCode;
+                codeByDepartmentId[d.DepartmentId] = match.WpCode;
+
+                if (!string.IsNullOrWhiteSpace(match.WpParent))
+                {
+                    HrWorkplace parentWp;
+                    if (byId.TryGetValue(match.WpParent.Trim(), out parentWp)) d.DepartmentParentCode = parentWp.WpCode;
+                }
+            }
+
+            foreach (var e in employees)
+            {
+                if (!e.DepartmentId.HasValue) continue;
+
+                string code;
+                if (codeByDepartmentId.TryGetValue(e.DepartmentId.Value, out code)) e.DepartmentCode = code;
+            }
+
+            matchedCount = matched;
         }
 
         /// <summary>Đường dẫn tên đầy đủ ("Viễn thông Khánh Hòa / Trung tâm Hạ tầng / Tổ Y") của

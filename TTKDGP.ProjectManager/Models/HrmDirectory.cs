@@ -20,6 +20,21 @@ namespace TTKDGP.ProjectManager.Models
         /// đơn vị cha đó trong dữ liệu nên chưa suy ra được id.</summary>
         public int? DepartmentParentId { get; set; }
 
+        /// <summary>
+        /// Mã đơn vị, suy ra bằng cách khớp TÊN với <c>HrWorkplaces</c> (đơn vị đồng bộ từ
+        /// GoConnect, đã có sẵn mã chuẩn) — xem <see cref="Data.HrmDirectorySync"/>. Null khi
+        /// không tìm được đơn vị cùng tên bên GoConnect.
+        /// </summary>
+        public string DepartmentCode { get; set; }
+
+        /// <summary>
+        /// Mã đơn vị CHA, lấy từ đơn vị cha thật của đơn vị đã khớp bên GoConnect (đi theo
+        /// <c>HrWorkplace.WpParent</c>), KHÔNG phải suy từ <see cref="DepartmentParentId"/> ở
+        /// trên. Nhờ vậy vẫn ra được mã cha cả với những đơn vị mà cây nội bộ CAS chưa suy được
+        /// cha (xem cảnh báo "chưa suy được đơn vị cha" khi đồng bộ).
+        /// </summary>
+        public string DepartmentParentCode { get; set; }
+
         public DateTime UpdatedAt { get; set; }
     }
 
@@ -51,6 +66,11 @@ namespace TTKDGP.ProjectManager.Models
 
         /// <summary>Tham chiếu tới <see cref="DepartmentHrm.DepartmentId"/>.</summary>
         public int? DepartmentId { get; set; }
+
+        /// <summary>Mã đơn vị — chép lại từ <see cref="DepartmentHrm.DepartmentCode"/> của đơn vị
+        /// mình lúc đồng bộ, xem <see cref="Data.HrmDirectorySync"/>. Null khi đơn vị chưa khớp
+        /// được mã bên GoConnect.</summary>
+        public string DepartmentCode { get; set; }
 
         /// <summary>Tham chiếu tới <see cref="JobHrm.JobId"/>.</summary>
         public int? JobId { get; set; }

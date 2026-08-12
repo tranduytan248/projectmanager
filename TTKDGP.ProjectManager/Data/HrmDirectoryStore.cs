@@ -19,15 +19,20 @@ namespace TTKDGP.ProjectManager.Data
         private static bool _schemaReady;
         private static readonly object Sync = new object();
         private const int NameLen = 255;
+        private const int CodeLen = 64;
 
         private const string MergeSql =
             "MERGE [" + Table + "] AS t " +
             "USING (SELECT @department_id AS department_id) AS s ON t.[department_id] = s.department_id " +
             "WHEN MATCHED THEN UPDATE SET " +
-            "  [department_name]=@department_name,[department_parent_id]=@department_parent_id,[updated_at]=@updated_at " +
+            "  [department_name]=@department_name,[department_parent_id]=@department_parent_id," +
+            "  [department_code]=@department_code,[department_parent_code]=@department_parent_code," +
+            "  [updated_at]=@updated_at " +
             "WHEN NOT MATCHED THEN INSERT " +
-            "  ([department_id],[department_name],[department_parent_id],[updated_at]) " +
-            "  VALUES (@department_id,@department_name,@department_parent_id,@updated_at);";
+            "  ([department_id],[department_name],[department_parent_id],[department_code]," +
+            "   [department_parent_code],[updated_at]) " +
+            "  VALUES (@department_id,@department_name,@department_parent_id,@department_code," +
+            "   @department_parent_code,@updated_at);";
 
         public static void EnsureTable()
         {
@@ -53,6 +58,11 @@ namespace TTKDGP.ProjectManager.Data
                     ")";
 
                 using (var cmd = new SqlCommand(sql, conn)) cmd.ExecuteNonQuery();
+
+                // Cột thêm sau — bảng cũ đã tồn tại từ trước không tự có, phải vá bằng ALTER.
+                HrBulk.EnsureColumn(conn, Table, "department_code", "NVARCHAR(" + CodeLen + ")");
+                HrBulk.EnsureColumn(conn, Table, "department_parent_code", "NVARCHAR(" + CodeLen + ")");
+
                 _schemaReady = true;
             }
         }
@@ -110,6 +120,8 @@ namespace TTKDGP.ProjectManager.Data
                 DepartmentId = Convert.ToInt32(row["department_id"]),
                 DepartmentName = HrBulk.Str(row, "department_name"),
                 DepartmentParentId = HrBulk.Int(row, "department_parent_id"),
+                DepartmentCode = HrBulk.Str(row, "department_code"),
+                DepartmentParentCode = HrBulk.Str(row, "department_parent_code"),
                 UpdatedAt = row["updated_at"] is DateTime ? (DateTime)row["updated_at"] : DateTime.MinValue
             };
         }
@@ -119,6 +131,8 @@ namespace TTKDGP.ProjectManager.Data
             cmd.Parameters.Add("@department_id", SqlDbType.Int);
             cmd.Parameters.Add("@department_name", SqlDbType.NVarChar, NameLen);
             cmd.Parameters.Add("@department_parent_id", SqlDbType.Int);
+            cmd.Parameters.Add("@department_code", SqlDbType.NVarChar, CodeLen);
+            cmd.Parameters.Add("@department_parent_code", SqlDbType.NVarChar, CodeLen);
             cmd.Parameters.Add("@updated_at", SqlDbType.DateTime2);
         }
 
@@ -127,6 +141,8 @@ namespace TTKDGP.ProjectManager.Data
             cmd.Parameters["@department_id"].Value = d.DepartmentId;
             cmd.Parameters["@department_name"].Value = HrBulk.Fit(d.DepartmentName, NameLen);
             cmd.Parameters["@department_parent_id"].Value = HrBulk.Num(d.DepartmentParentId);
+            cmd.Parameters["@department_code"].Value = HrBulk.Fit(d.DepartmentCode, CodeLen);
+            cmd.Parameters["@department_parent_code"].Value = HrBulk.Fit(d.DepartmentParentCode, CodeLen);
             cmd.Parameters["@updated_at"].Value = d.UpdatedAt;
         }
     }
@@ -263,22 +279,24 @@ namespace TTKDGP.ProjectManager.Data
         private const int PhoneLen = 30;
         private const int EmailLen = 255;
         private const int GenderLen = 20;
+        private const int DepartmentCodeLen = 64;
 
         private const string MergeSql =
             "MERGE [" + Table + "] AS t " +
             "USING (SELECT @employee_id AS employee_id) AS s ON t.[employee_id] = s.employee_id " +
             "WHEN MATCHED THEN UPDATE SET " +
             "  [employee_code]=@employee_code,[full_name]=@full_name,[mobile_phone]=@mobile_phone," +
-            "  [work_email]=@work_email,[department_id]=@department_id,[job_id]=@job_id," +
+            "  [work_email]=@work_email,[department_id]=@department_id,[department_code]=@department_code," +
+            "  [job_id]=@job_id," +
             "  [vitri_congviec_id]=@vitri_congviec_id,[vitri_congviec_name]=@vitri_congviec_name," +
             "  [vitri_congviec_code]=@vitri_congviec_code,[birthday]=@birthday,[gioi_tinh]=@gioi_tinh," +
             "  [is_congtacvien]=@is_congtacvien,[updated_at]=@updated_at " +
             "WHEN NOT MATCHED THEN INSERT " +
             "  ([employee_id],[employee_code],[full_name],[mobile_phone],[work_email],[department_id]," +
-            "   [job_id],[vitri_congviec_id],[vitri_congviec_name],[vitri_congviec_code],[birthday]," +
+            "   [department_code],[job_id],[vitri_congviec_id],[vitri_congviec_name],[vitri_congviec_code],[birthday]," +
             "   [gioi_tinh],[is_congtacvien],[updated_at]) " +
             "  VALUES (@employee_id,@employee_code,@full_name,@mobile_phone,@work_email,@department_id," +
-            "   @job_id,@vitri_congviec_id,@vitri_congviec_name,@vitri_congviec_code,@birthday," +
+            "   @department_code,@job_id,@vitri_congviec_id,@vitri_congviec_name,@vitri_congviec_code,@birthday," +
             "   @gioi_tinh,@is_congtacvien,@updated_at);";
 
         public static void EnsureTable()
@@ -321,6 +339,9 @@ namespace TTKDGP.ProjectManager.Data
                     "CREATE INDEX [IX_" + Table + "_department_id] ON [" + Table + "] ([department_id])";
 
                 using (var cmd = new SqlCommand(index, conn)) cmd.ExecuteNonQuery();
+
+                // Cột thêm sau — bảng cũ đã tồn tại từ trước không tự có, phải vá bằng ALTER.
+                HrBulk.EnsureColumn(conn, Table, "department_code", "NVARCHAR(" + DepartmentCodeLen + ")");
 
                 _schemaReady = true;
             }
@@ -479,6 +500,7 @@ namespace TTKDGP.ProjectManager.Data
                 MobilePhone = HrBulk.Str(row, "mobile_phone"),
                 WorkEmail = HrBulk.Str(row, "work_email"),
                 DepartmentId = HrBulk.Int(row, "department_id"),
+                DepartmentCode = HrBulk.Str(row, "department_code"),
                 JobId = HrBulk.Int(row, "job_id"),
                 ViTriCongViecId = HrBulk.Int(row, "vitri_congviec_id"),
                 ViTriCongViecName = HrBulk.Str(row, "vitri_congviec_name"),
@@ -498,6 +520,7 @@ namespace TTKDGP.ProjectManager.Data
             cmd.Parameters.Add("@mobile_phone", SqlDbType.NVarChar, PhoneLen);
             cmd.Parameters.Add("@work_email", SqlDbType.NVarChar, EmailLen);
             cmd.Parameters.Add("@department_id", SqlDbType.Int);
+            cmd.Parameters.Add("@department_code", SqlDbType.NVarChar, DepartmentCodeLen);
             cmd.Parameters.Add("@job_id", SqlDbType.Int);
             cmd.Parameters.Add("@vitri_congviec_id", SqlDbType.Int);
             cmd.Parameters.Add("@vitri_congviec_name", SqlDbType.NVarChar, NameLen);
@@ -516,6 +539,7 @@ namespace TTKDGP.ProjectManager.Data
             cmd.Parameters["@mobile_phone"].Value = HrBulk.Fit(e.MobilePhone, PhoneLen);
             cmd.Parameters["@work_email"].Value = HrBulk.Fit(e.WorkEmail, EmailLen);
             cmd.Parameters["@department_id"].Value = HrBulk.Num(e.DepartmentId);
+            cmd.Parameters["@department_code"].Value = HrBulk.Fit(e.DepartmentCode, DepartmentCodeLen);
             cmd.Parameters["@job_id"].Value = HrBulk.Num(e.JobId);
             cmd.Parameters["@vitri_congviec_id"].Value = HrBulk.Num(e.ViTriCongViecId);
             cmd.Parameters["@vitri_congviec_name"].Value = HrBulk.Fit(e.ViTriCongViecName, NameLen);

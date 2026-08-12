@@ -66,6 +66,7 @@
                         <th>Điện thoại</th>
                         <th>Email</th>
                         <th>Đơn vị</th>
+                        <th>Mã đơn vị</th>
                         <th>Chức danh</th>
                         <th>Vị trí công việc</th>
                     </tr>
@@ -85,6 +86,7 @@
                             <td class="muted nowrap">@ViewHelpers.OrDash(e.MobilePhone)</td>
                             <td class="muted">@ViewHelpers.OrDash(e.WorkEmail)</td>
                             <td class="muted wrap-text">@ViewHelpers.OrDash(e.DepartmentName)</td>
+                            <td class="muted nowrap">@ViewHelpers.OrDash(e.DepartmentCode)</td>
                             <td class="muted wrap-text">@ViewHelpers.OrDash(e.JobName)</td>
                             <td class="muted wrap-text">@ViewHelpers.OrDash(e.ViTriCongViecName)</td>
                         </tr>

@@ -126,6 +126,25 @@ namespace TTKDGP.ProjectManager.Data
             var value = row[column];
             return value is DBNull ? (int?)null : Convert.ToInt32(value);
         }
+
+        /// <summary>
+        /// Thêm cột mới vào bảng ĐÃ TỒN TẠI nếu chưa có — dùng khi một bảng do <c>EnsureTable</c>
+        /// tạo từ trước cần thêm cột ở bản sau. <c>CREATE TABLE IF NOT EXISTS</c> chỉ chạy lúc
+        /// bảng chưa có nên không tự thêm cột cho bảng đã tồn tại.
+        /// </summary>
+        public static void EnsureColumn(SqlConnection conn, string table, string column, string sqlType)
+        {
+            var sql = string.Format(
+                "IF COL_LENGTH(@t, @c) IS NULL EXEC('ALTER TABLE [' + @t + '] ADD [' + @c + '] {0} NULL')",
+                sqlType);
+
+            using (var cmd = new SqlCommand(sql, conn))
+            {
+                cmd.Parameters.AddWithValue("@t", table);
+                cmd.Parameters.AddWithValue("@c", column);
+                cmd.ExecuteNonQuery();
+            }
+        }
     }
 
     /// <summary>
