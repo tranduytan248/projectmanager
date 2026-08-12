@@ -58,7 +58,10 @@
                     @foreach (var d in Model.Items)
                     {
                         string parentName = null;
-                        if (d.DepartmentParentId.HasValue) parentNameById.TryGetValue(d.DepartmentParentId.Value, out parentName);
+                        if (d.DepartmentParentId.HasValue)
+                        {
+                            parentNameById.TryGetValue(d.DepartmentParentId.Value, out parentName);
+                        }
                         var count = countById.ContainsKey(d.DepartmentId) ? countById[d.DepartmentId] : 0;
 
                         <tr>
