@@ -2668,7 +2668,7 @@ table.data tbody tr.row-due-danger > td:first-child::before { background: var(--
     display: flex;
     align-items: flex-end;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 16px;
     margin-bottom: 8px;
 }
 
@@ -2681,13 +2681,17 @@ table.data tbody tr.row-due-danger > td:first-child::before { background: var(--
     white-space: nowrap;
 }
 
-.timelog-field input { margin: 0; }
+/* min-width:0 de ghi de luat global "input[type=text] { min-width: 160px }" — khong co dong
+   nay thi input Ngay/So gio luon bi keo rong toi thieu 160px du wrapper khai bao hep hon, tran
+   de len o ke ben. */
+.timelog-field input { margin: 0; min-width: 0; }
 
-.timelog-field-hours { width: 92px; flex: 0 0 92px; }
+/* Chi nhap so nho kieu "2,5" — 64px la du, khong can rong nhu o ngay. */
+.timelog-field-hours { width: 64px; flex: 0 0 64px; }
 /* min-width chan flex-shrink ep o nay hep hon nhan cua no (nhan "Noi dung da lam" khong xuong
    dong, dat white-space: nowrap) — thieu dong nay thi o co the co lai qua nho, chu nhan tran ra
    ngoai de len o ben canh thay vi tu xuong dong nhu flex-wrap du dinh. */
-.timelog-field-note { flex: 1 1 180px; min-width: 140px; }
+.timelog-field-note { flex: 1 1 140px; min-width: 110px; }
 .timelog-row #logDate { width: 152px; }
 .timelog-submit { flex: 0 0 auto; }
 
