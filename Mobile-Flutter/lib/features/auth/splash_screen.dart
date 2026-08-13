@@ -21,7 +21,8 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with TickerProviderStateMixin {
   static const _splashDuration = Duration(seconds: 3);
 
   final _appCache = AppCache();
@@ -79,14 +80,18 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
             alignment: Alignment.bottomCenter,
             clipBehavior: Clip.none,
             children: [
-              Positioned(top: 0, child: _RisingSteam(controller: _steamController)),
+              Positioned(
+                  top: 0, child: _RisingSteam(controller: _steamController)),
               ScaleTransition(
                 scale: Tween(begin: 0.88, end: 1.0).animate(
-                  CurvedAnimation(parent: _cupController, curve: Curves.easeOutCubic),
+                  CurvedAnimation(
+                      parent: _cupController, curve: Curves.easeOutCubic),
                 ),
                 child: FadeTransition(
-                  opacity: CurvedAnimation(parent: _cupController, curve: Curves.easeOut),
-                  child: Image.asset('assets/images/splash_cup.png', width: 190),
+                  opacity: CurvedAnimation(
+                      parent: _cupController, curve: Curves.easeOut),
+                  child:
+                      Image.asset('assets/images/splash_cup.png', width: 190),
                 ),
               ),
             ],

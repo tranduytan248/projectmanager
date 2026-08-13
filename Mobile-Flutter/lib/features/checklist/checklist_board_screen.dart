@@ -16,7 +16,8 @@ class ChecklistBoardScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: Text('Checklist du an #$projectId')),
       body: PlaceholderBody(
-        message: 'TODO: GET /api/checklist?projectId=$projectId (tuong ung ChecklistController)\n'
+        message:
+            'TODO: GET /api/checklist?projectId=$projectId (tuong ung ChecklistController)\n'
             'Goi y dung package kanban_board de dung board keo-tha.',
       ),
     );

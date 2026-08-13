@@ -12,7 +12,8 @@ class ChecklistBoardController extends StatelessController {
 
   @override
   Display view(BuildContext context) {
-    final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+    final args =
+        ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
     final projectId = args?['projectId'] as String? ?? '';
 
     return Display(

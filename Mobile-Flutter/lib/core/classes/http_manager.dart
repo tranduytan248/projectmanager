@@ -42,14 +42,16 @@ class HttpManager {
         error.error is SocketException;
   }
 
-  Future<void> _onError(DioException error, ErrorInterceptorHandler handler) async {
+  Future<void> _onError(
+      DioException error, ErrorInterceptorHandler handler) async {
     final statusCode = error.response?.statusCode;
 
     if (statusCode == 401) {
       await _forceLogout();
     } else if (_isNetworkError(error)) {
       await _showOfflineDialogOnce(error);
-    } else if (statusCode != null && {403, 404, 500, 502, 503}.contains(statusCode)) {
+    } else if (statusCode != null &&
+        {403, 404, 500, 502, 503}.contains(statusCode)) {
       await DialogService.showWarning(
         'May chu tra ve loi ($statusCode). Vui long thu lai sau.',
       );
@@ -71,7 +73,8 @@ class HttpManager {
     final completer = Completer<bool>();
     _groupLocks[group] = completer;
     try {
-      await DialogService.showWarning('Mat ket noi mang. Vui long kiem tra va thu lai.');
+      await DialogService.showWarning(
+          'Mat ket noi mang. Vui long kiem tra va thu lai.');
     } finally {
       _groupLocks.remove(group);
       completer.complete(false);
@@ -84,13 +87,15 @@ class HttpManager {
     try {
       await onUnauthorized?.call();
       await Nav.toAndClearStack(loginRouteName);
-      await DialogService.showWarning('Phien dang nhap da het han, vui long dang nhap lai.');
+      await DialogService.showWarning(
+          'Phien dang nhap da het han, vui long dang nhap lai.');
     } finally {
       _isLoggingOut = false;
     }
   }
 
-  Future<Response<T>> get<T>(String path, {Map<String, dynamic>? params, Options? options}) {
+  Future<Response<T>> get<T>(String path,
+      {Map<String, dynamic>? params, Options? options}) {
     return dio.get<T>(path, queryParameters: params, options: options);
   }
 

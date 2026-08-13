@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 
@@ -43,8 +44,8 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isSubmitting = true);
     try {
       final auth = context.read<AuthProvider>();
-      final success =
-          await auth.login(context, _usernameController.text.trim(), _passwordController.text);
+      final success = await auth.login(
+          context, _usernameController.text.trim(), _passwordController.text);
       if (mounted && success) {
         await Nav.to(context, AppRoutes.dashboard);
       }
@@ -62,173 +63,194 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // Ve tran man hinh (khong de he thong tu to mau sau SafeArea) de nen gradient phu het
-      // ca vung status bar, giong mau thiet ke.
-      extendBodyBehindAppBar: true,
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [AppTheme.brandBlueLight, AppTheme.brandBlue],
-          ),
-        ),
-        child: Stack(
-          children: [
-            // Hinh coc phong to, mo nhat, lam nen trang tri o goc duoi — cung mot bo nhan dien
-            // voi icon app va splash, khong can dung them tai nguyen anh nao khac.
-            Positioned(
-              right: -70,
-              bottom: -40,
-              child: Opacity(
-                opacity: 0.08,
-                child: Image.asset('assets/images/logo_mark.png', width: 320),
-              ),
+    // Status bar trong suot, icon mau sang — de vung status bar hoa lien vao nen gradient phia
+    // duoi thay vi hien mot thanh mau toi rieng (mac dinh cua he thong) tao thanh "header" gia.
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light.copyWith(
+        statusBarColor: Colors.transparent,
+        systemNavigationBarColor: AppTheme.brandBlueDark,
+        systemNavigationBarIconBrightness: Brightness.light,
+      ),
+      child: Scaffold(
+        // Ve tran man hinh (khong de he thong tu to mau sau SafeArea) de nen gradient phu het
+        // ca vung status bar, giong mau thiet ke.
+        extendBodyBehindAppBar: true,
+        body: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [AppTheme.brandBlue, AppTheme.brandBlueDark],
             ),
-            SafeArea(
-              child: Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 360),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Image.asset('assets/images/logo_mark.png', width: 64),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'BrewTask',
-                            style: TextStyle(
-                              fontSize: 30,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'QUẢN LÝ CÔNG VIỆC',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white.withValues(alpha: 0.85),
-                              letterSpacing: 3,
-                            ),
-                          ),
-                          const SizedBox(height: 28),
-                          Text(
-                            'CHÀO MỪNG BẠN QUAY TRỞ LẠI',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white.withValues(alpha: 0.7),
-                              letterSpacing: 1.5,
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          _PillField(
-                            controller: _usernameController,
-                            hint: 'Tài khoản',
-                            icon: Icons.person_outline,
-                            textInputAction: TextInputAction.next,
-                            validator: (value) => (value == null || value.trim().isEmpty)
-                                ? 'Nhập tài khoản'
-                                : null,
-                          ),
-                          const SizedBox(height: 14),
-                          _PillField(
-                            controller: _passwordController,
-                            hint: 'Mật khẩu',
-                            icon: Icons.lock_outline,
-                            obscureText: _obscurePassword,
-                            textInputAction: TextInputAction.done,
-                            onFieldSubmitted: (_) => _isSubmitting ? null : _submit(),
-                            validator: (value) =>
-                                (value == null || value.isEmpty) ? 'Nhập mật khẩu' : null,
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                                color: Colors.white70,
-                                size: 20,
-                              ),
-                              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                            ),
-                          ),
-                          const SizedBox(height: 26),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 50,
-                            child: FilledButton(
-                              style: FilledButton.styleFrom(
-                                backgroundColor: AppTheme.brandBlueLight,
-                                foregroundColor: Colors.white,
-                                shape: const StadiumBorder(),
-                                elevation: 0,
-                              ),
-                              onPressed: _isSubmitting ? null : _submit,
-                              child: _isSubmitting
-                                  ? const SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : const Text(
-                                      'ĐĂNG NHẬP',
-                                      style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 1),
-                                    ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          TextButton(
-                            onPressed: () =>
-                                ToastService.show('Tính năng đang được phát triển.'),
-                            child: Text(
-                              'Quên mật khẩu?',
+          ),
+          child: Stack(
+            children: [
+              // Hinh coc phong to, mo nhat, lam nen trang tri o goc duoi — cung mot bo nhan dien
+              // voi icon app va splash, khong can dung them tai nguyen anh nao khac.
+              Positioned(
+                right: -70,
+                bottom: -40,
+                child: Opacity(
+                  opacity: 0.08,
+                  child: Image.asset('assets/images/logo_mark.png', width: 320),
+                ),
+              ),
+              SafeArea(
+                child: Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 28, vertical: 32),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 360),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Image.asset('assets/images/logo_mark.png',
+                                width: 64),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'BrewTask',
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.85),
-                                decoration: TextDecoration.underline,
-                                decorationColor: Colors.white.withValues(alpha: 0.85),
+                                fontSize: 30,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                letterSpacing: 1,
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 40),
-                          Text(
-                            'Trung tâm KDGP - VNPT KHA',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white.withValues(alpha: 0.6),
-                            ),
-                          ),
-                          if (_versionLabel.isNotEmpty) ...[
                             const SizedBox(height: 2),
                             Text(
-                              _versionLabel,
-                              textAlign: TextAlign.center,
+                              'QUẢN LÝ CÔNG VIỆC',
                               style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.white.withValues(alpha: 0.45),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white.withValues(alpha: 0.85),
+                                letterSpacing: 3,
                               ),
                             ),
+                            const SizedBox(height: 28),
+                            Text(
+                              'CHÀO MỪNG BẠN QUAY TRỞ LẠI',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white.withValues(alpha: 0.7),
+                                letterSpacing: 1.5,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            _PillField(
+                              controller: _usernameController,
+                              hint: 'Tài khoản',
+                              icon: Icons.person_outline,
+                              textInputAction: TextInputAction.next,
+                              validator: (value) =>
+                                  (value == null || value.trim().isEmpty)
+                                      ? 'Nhập tài khoản'
+                                      : null,
+                            ),
+                            const SizedBox(height: 14),
+                            _PillField(
+                              controller: _passwordController,
+                              hint: 'Mật khẩu',
+                              icon: Icons.lock_outline,
+                              obscureText: _obscurePassword,
+                              textInputAction: TextInputAction.done,
+                              onFieldSubmitted: (_) =>
+                                  _isSubmitting ? null : _submit(),
+                              validator: (value) =>
+                                  (value == null || value.isEmpty)
+                                      ? 'Nhập mật khẩu'
+                                      : null,
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                  color: Colors.white70,
+                                  size: 20,
+                                ),
+                                onPressed: () => setState(
+                                    () => _obscurePassword = !_obscurePassword),
+                              ),
+                            ),
+                            const SizedBox(height: 26),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 50,
+                              child: FilledButton(
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: AppTheme.brandBlueDarker,
+                                  foregroundColor: Colors.white,
+                                  shape: const StadiumBorder(),
+                                  elevation: 0,
+                                ),
+                                onPressed: _isSubmitting ? null : _submit,
+                                child: _isSubmitting
+                                    ? const SizedBox(
+                                        height: 20,
+                                        width: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : const Text(
+                                        'ĐĂNG NHẬP',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: 1),
+                                      ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            TextButton(
+                              onPressed: () => ToastService.show(
+                                  'Tính năng đang được phát triển.'),
+                              child: Text(
+                                'Quên mật khẩu?',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.85),
+                                  decoration: TextDecoration.underline,
+                                  decorationColor:
+                                      Colors.white.withValues(alpha: 0.85),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 40),
+                            Text(
+                              'Trung tâm KDGP - VNPT KHA',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white.withValues(alpha: 0.6),
+                              ),
+                            ),
+                            if (_versionLabel.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                _versionLabel,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.white.withValues(alpha: 0.45),
+                                ),
+                              ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

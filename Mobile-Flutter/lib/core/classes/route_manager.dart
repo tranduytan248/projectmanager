@@ -26,14 +26,17 @@ class Nav {
   Nav._();
 
   /// Day mot man moi len tren cung (giu lai man cu trong stack).
-  static Future<T?> toNamed<T>(BuildContext context, String routeName, {Object? arguments}) {
+  static Future<T?> toNamed<T>(BuildContext context, String routeName,
+      {Object? arguments}) {
     return Navigator.of(context).pushNamed<T>(routeName, arguments: arguments);
   }
 
   /// Thay man hien tai bang man moi (dung khi chuyen tab, hoac khi dang nhap xong thi khong
   /// muon nguoi dung bam Back quay lai man Login).
-  static Future<T?> to<T>(BuildContext context, String routeName, {Object? arguments}) {
-    return Navigator.of(context).pushReplacementNamed<T, void>(routeName, arguments: arguments);
+  static Future<T?> to<T>(BuildContext context, String routeName,
+      {Object? arguments}) {
+    return Navigator.of(context)
+        .pushReplacementNamed<T, void>(routeName, arguments: arguments);
   }
 
   /// Dong man hien tai, quay lai man truoc.
@@ -45,6 +48,7 @@ class Nav {
   static Future<T?> toAndClearStack<T>(String routeName, {Object? arguments}) {
     final state = navigatorKey.currentState;
     if (state == null) return Future.value(null);
-    return state.pushNamedAndRemoveUntil<T>(routeName, (route) => false, arguments: arguments);
+    return state.pushNamedAndRemoveUntil<T>(routeName, (route) => false,
+        arguments: arguments);
   }
 }

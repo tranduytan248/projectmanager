@@ -19,7 +19,8 @@ class AppCache {
     await Cache.deleteData(_loginInfoKey);
   }
 
-  Future<void> saveLoginInfo({required String displayName, required List<String> permissions}) {
+  Future<void> saveLoginInfo(
+      {required String displayName, required List<String> permissions}) {
     return Cache.saveData(
       _loginInfoKey,
       jsonEncode({'displayName': displayName, 'permissions': permissions}),

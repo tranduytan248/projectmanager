@@ -11,6 +11,6 @@ class LeaveRequestFormController extends StatelessController {
   bool get auth => true;
 
   @override
-  Display view(BuildContext context) =>
-      const Display(title: 'Dang ky nghi phep', mobile: LeaveRequestFormScreen());
+  Display view(BuildContext context) => const Display(
+      title: 'Dang ky nghi phep', mobile: LeaveRequestFormScreen());
 }

@@ -12,7 +12,8 @@ class NotificationsScreen extends StatelessWidget {
       currentIndex: 3,
       appBar: AppBar(title: const Text('Thong bao')),
       body: const PlaceholderBody(
-        message: 'TODO: GET /api/notifications (tuong ung UserNotificationsController)\n'
+        message:
+            'TODO: GET /api/notifications (tuong ung UserNotificationsController)\n'
             'Ket hop Firebase Cloud Messaging de bao push.',
       ),
     );

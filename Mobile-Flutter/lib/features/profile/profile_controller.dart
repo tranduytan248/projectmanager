@@ -11,5 +11,6 @@ class ProfileController extends StatelessController {
   bool get auth => true;
 
   @override
-  Display view(BuildContext context) => const Display(title: 'Ca nhan', mobile: ProfileScreen());
+  Display view(BuildContext context) =>
+      const Display(title: 'Cai dat', mobile: ProfileScreen());
 }

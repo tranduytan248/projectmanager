@@ -3,16 +3,28 @@ import 'package:flutter/material.dart';
 class AppTheme {
   AppTheme._();
 
-  /// Mau xanh thuong hieu — trung voi mau nen icon_app.png va splash nguyen sinh cua he dieu
-  /// hanh (xem pubspec.yaml muc flutter_native_splash), de moi cho hien logo la mot the thong
-  /// nhat: icon ngoai man hinh chinh, splash luc mo app, va man Dang nhap.
+  // Cung bo token --primary/--primary-dark/--primary-darker/--primary-soft dinh nghia trong
+  // TTKDGP.ProjectManager/Content/site.css — mobile va web dung CHUNG mot he mau thuong hieu,
+  // sua o site.css thi nho sua lai o day cho khop (chua co co che dung file .css chung).
+  //
+  // Quy uoc cua site.css (giu nguyen ben mobile): --primary CHI danh cho thao tac (nut, lien
+  // ket, muc dang chon) — KHONG dung cho trang thai du lieu (xong han/qua han/canh bao dung
+  // mau ngu nghia rieng, xem them ghi chu trong site.css).
+
+  /// = --primary. Trung voi mau nen icon_app.png va splash nguyen sinh cua he dieu hanh (xem
+  /// pubspec.yaml muc flutter_native_splash), de moi cho hien logo la mot the thong nhat.
   static const brandBlue = Color(0xFF1A56A8);
 
-  /// Ban sang hon cua brandBlue (cung tong mau, tang do sang ~L+12% theo HSL) — dung cho nut
-  /// bam/nhan can noi bat tren nen brandBlue.
-  static const brandBlueLight = Color(0xFF2271DD);
+  /// = --primary-dark.
+  static const brandBlueDark = Color(0xFF143F7D);
 
-  static const _seedColor = brandBlueLight;
+  /// = --primary-darker.
+  static const brandBlueDarker = Color(0xFF10386F);
+
+  /// = --primary-soft. Nen nhat cho khoi/badge lien quan toi thao tac chinh.
+  static const brandBlueSoft = Color(0xFFEAF1FB);
+
+  static const _seedColor = brandBlue;
 
   static ThemeData get light => ThemeData(
         useMaterial3: true,

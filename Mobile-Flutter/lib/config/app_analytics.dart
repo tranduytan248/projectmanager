@@ -14,6 +14,7 @@ import 'package:flutter/widgets.dart';
 class AppAnalytics {
   AppAnalytics._();
 
-  static final List<NavigatorObserver> observers =
-      kIsWeb ? const [] : [FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance)];
+  static final List<NavigatorObserver> observers = kIsWeb
+      ? const []
+      : [FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance)];
 }

@@ -12,7 +12,8 @@ class TaskDetailController extends StatelessController {
 
   @override
   Display view(BuildContext context) {
-    final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+    final args =
+        ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
     final taskId = args?['taskId'] as String? ?? '';
 
     return Display(

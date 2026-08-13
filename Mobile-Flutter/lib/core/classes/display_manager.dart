@@ -32,9 +32,11 @@ class Display extends StatelessWidget {
   static const _desktopLargeBreak = 1400.0;
 
   Widget _pick(double width) {
-    if (width >= _desktopLargeBreak) return desktopLarge ?? _pick(_desktopLargeBreak - 1);
+    if (width >= _desktopLargeBreak)
+      return desktopLarge ?? _pick(_desktopLargeBreak - 1);
     if (width >= _desktopBreak) return desktop ?? _pick(_desktopBreak - 1);
-    if (width >= _tabletLandscapeBreak) return tabletLandscape ?? _pick(_tabletLandscapeBreak - 1);
+    if (width >= _tabletLandscapeBreak)
+      return tabletLandscape ?? _pick(_tabletLandscapeBreak - 1);
     if (width >= _tabletBreak) return tablet ?? _pick(_tabletBreak - 1);
     if (width >= _mobileLandscapeBreak) return mobileLandscape ?? mobile;
     return mobile;

@@ -8,7 +8,8 @@ import '../classes/app_keys.dart';
 class DialogService {
   DialogService._();
 
-  static BuildContext? get _context => navigatorKey.currentState?.overlay?.context;
+  static BuildContext? get _context =>
+      navigatorKey.currentState?.overlay?.context;
 
   static Future<bool> _show({
     required String title,
@@ -43,7 +44,11 @@ class DialogService {
   }
 
   static Future<bool> showConfirm(String message, {String title = 'Xac nhan'}) {
-    return _show(title: title, message: message, accentColor: Colors.blue, cancelText: 'Huy');
+    return _show(
+        title: title,
+        message: message,
+        accentColor: Colors.blue,
+        cancelText: 'Huy');
   }
 
   static Future<bool> showWarning(String message, {String title = 'Canh bao'}) {
@@ -54,7 +59,8 @@ class DialogService {
     return _show(title: title, message: message, accentColor: Colors.blue);
   }
 
-  static Future<bool> showSuccess(String message, {String title = 'Thanh cong'}) {
+  static Future<bool> showSuccess(String message,
+      {String title = 'Thanh cong'}) {
     return _show(title: title, message: message, accentColor: Colors.green);
   }
 

@@ -10,7 +10,8 @@ class LeaveApprovalScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Duyet nghi phep')),
       body: const PlaceholderBody(
-        message: 'TODO: GET /api/team/leaves + POST /api/team/leaves/{id}/approve (LeavesController)\n'
+        message:
+            'TODO: GET /api/team/leaves + POST /api/team/leaves/{id}/approve (LeavesController)\n'
             'Danh sach cho duyet + hanh dong duyet/tu choi.',
       ),
     );

@@ -12,7 +12,8 @@ class TaskDetailScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: Text('Chi tiet cong viec #$taskId')),
       body: PlaceholderBody(
-        message: 'TODO: GET /api/checklist/$taskId (tuong ung ChecklistController)\n'
+        message:
+            'TODO: GET /api/checklist/$taskId (tuong ung ChecklistController)\n'
             'Mo ta, trang thai, comment, timelog, dinh kem.',
       ),
     );

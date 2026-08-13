@@ -11,10 +11,11 @@ class TeamDashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppBottomNav(
-      currentIndex: 5,
+      currentIndex: 4,
       appBar: AppBar(title: const Text('Bang dieu khien To')),
       body: const PlaceholderBody(
-        message: 'TODO: GET /api/team/dashboard (tuong ung TeamDashboardController)\n'
+        message:
+            'TODO: GET /api/team/dashboard (tuong ung TeamDashboardController)\n'
             'Tong hop tien do ca to, workload, danh sach du an.',
       ),
     );

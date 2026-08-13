@@ -13,6 +13,7 @@ class ToastService {
 
     messenger
       ..clearSnackBars()
-      ..showSnackBar(SnackBar(content: Text(message), duration: const Duration(seconds: 2)));
+      ..showSnackBar(SnackBar(
+          content: Text(message), duration: const Duration(seconds: 2)));
   }
 }

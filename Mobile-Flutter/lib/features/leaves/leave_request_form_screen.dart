@@ -14,7 +14,8 @@ class LeaveRequestFormScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('TODO: form ngay bat dau/ket thuc, ly do, gui POST /api/leaves.'),
+            const Text(
+                'TODO: form ngay bat dau/ket thuc, ly do, gui POST /api/leaves.'),
             const SizedBox(height: 16),
             const TextField(decoration: InputDecoration(labelText: 'Ly do')),
             const SizedBox(height: 24),

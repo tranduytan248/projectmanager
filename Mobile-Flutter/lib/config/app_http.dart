@@ -22,8 +22,10 @@ class AppHttp extends HttpManager {
     dio.interceptors.add(InterceptorsWrapper(onRequest: _onRequest));
   }
 
-  Future<void> _onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
-    final token = await TokenStorage(const FlutterSecureStorage()).readAccessToken();
+  Future<void> _onRequest(
+      RequestOptions options, RequestInterceptorHandler handler) async {
+    final token =
+        await TokenStorage(const FlutterSecureStorage()).readAccessToken();
     if (token != null) {
       options.headers['Authorization'] = 'Bearer $token';
     }

@@ -77,7 +77,7 @@ class MyWorkScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppBottomNav(
-      currentIndex: 1,
+      currentIndex: 2,
       appBar: AppBar(
         title: const Text('Viec cua toi'),
         backgroundColor: AppTheme.brandBlue,
@@ -85,7 +85,8 @@ class MyWorkScreen extends StatelessWidget {
       ),
       body: ListView.separated(
         itemCount: _demoTasks.length,
-        separatorBuilder: (context, index) => const Divider(height: 1, indent: 68),
+        separatorBuilder: (context, index) =>
+            const Divider(height: 1, indent: 68),
         itemBuilder: (context, index) => _TaskRow(task: _demoTasks[index]),
       ),
     );
@@ -108,14 +109,16 @@ class _TaskRow extends StatelessWidget {
         extentRatio: 0.5,
         children: [
           SlidableAction(
-            onPressed: (_) => ToastService.show('Giao viec "${task.code}" — dang phat trien.'),
-            backgroundColor: AppTheme.brandBlueLight,
+            onPressed: (_) => ToastService.show(
+                'Giao viec "${task.code}" — dang phat trien.'),
+            backgroundColor: AppTheme.brandBlueDark,
             foregroundColor: Colors.white,
             icon: Icons.person_add_alt,
             label: 'Giao viec',
           ),
           SlidableAction(
-            onPressed: (_) => ToastService.show('Chuyen trang thai "${task.code}" — dang phat trien.'),
+            onPressed: (_) => ToastService.show(
+                'Chuyen trang thai "${task.code}" — dang phat trien.'),
             backgroundColor: AppTheme.brandBlue,
             foregroundColor: Colors.white,
             icon: Icons.sync_alt,
@@ -124,7 +127,8 @@ class _TaskRow extends StatelessWidget {
         ],
       ),
       child: InkWell(
-        onTap: () => Nav.toNamed(context, AppRoutes.taskDetail, arguments: {'taskId': task.id}),
+        onTap: () => Nav.toNamed(context, AppRoutes.taskDetail,
+            arguments: {'taskId': task.id}),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
@@ -134,7 +138,7 @@ class _TaskRow extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: AppTheme.brandBlueLight,
+                  color: AppTheme.brandBlueDark,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(task.icon, color: Colors.white, size: 20),
@@ -162,14 +166,15 @@ class _TaskRow extends StatelessWidget {
                       children: [
                         Text(
                           task.code,
-                          style: const TextStyle(fontSize: 12.5, color: Colors.black54),
+                          style: const TextStyle(
+                              fontSize: 12.5, color: Colors.black54),
                         ),
                         _StateBadge(state: task.state),
                         Text(
                           task.dueLabel,
                           style: const TextStyle(
                             fontSize: 12.5,
-                            color: AppTheme.brandBlueLight,
+                            color: AppTheme.brandBlueDark,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -197,7 +202,8 @@ class _StateBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        border: Border.all(color: AppTheme.brandBlueLight.withValues(alpha: 0.5)),
+        border:
+            Border.all(color: AppTheme.brandBlueDark.withValues(alpha: 0.5)),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
@@ -205,7 +211,7 @@ class _StateBadge extends StatelessWidget {
         style: const TextStyle(
           fontSize: 10.5,
           fontWeight: FontWeight.w700,
-          color: AppTheme.brandBlueLight,
+          color: AppTheme.brandBlueDark,
           letterSpacing: 0.3,
         ),
       ),

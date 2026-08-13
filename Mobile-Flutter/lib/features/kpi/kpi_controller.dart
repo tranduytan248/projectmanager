@@ -11,5 +11,6 @@ class KpiController extends StatelessController {
   bool get auth => true;
 
   @override
-  Display view(BuildContext context) => const Display(title: 'KPI cua toi', mobile: KpiScreen());
+  Display view(BuildContext context) =>
+      const Display(title: 'KPI cua toi', mobile: KpiScreen());
 }

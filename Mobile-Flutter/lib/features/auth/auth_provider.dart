@@ -25,7 +25,8 @@ class AuthProvider extends ChangeNotifier {
   List<String> get permissions => _permissions;
 
   /// Tuong ung co "Quan ly To" (wteam.manage) o web.
-  bool get isTeamManager => _permissions.contains('*') || _permissions.contains('wteam.manage');
+  bool get isTeamManager =>
+      _permissions.contains('*') || _permissions.contains('wteam.manage');
 
   /// Doc lai trang thai da luu (neu co) ngay khi provider duoc tao — de app biet ngay tu dau
   /// nguoi dung da dang nhap tu truoc hay chua, khong phai doi mot vong build.
@@ -43,7 +44,8 @@ class AuthProvider extends ChangeNotifier {
   /// Tra ve true/false de LoginScreen biet co dieu huong sang Dashboard hay khong. Loi (sai
   /// tai khoan hoac loi server) hien thi ngay tai day qua ToastService thay vi bat LoginScreen
   /// tu doc ma loi 0/-1 — cung mot cho xu ly du sau nay them nhieu diem goi login() khac.
-  Future<bool> login(BuildContext context, String username, String password) async {
+  Future<bool> login(
+      BuildContext context, String username, String password) async {
     final result = await doAuth(context, username, password);
     if (result == 0) {
       ToastService.show('Sai tai khoan hoac mat khau.');

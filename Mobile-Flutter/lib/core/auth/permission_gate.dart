@@ -17,7 +17,8 @@ class PermissionGate extends StatelessWidget {
   final Widget child;
   final Widget fallback;
 
-  bool get _allowed => permissions.contains('*') || permissions.contains(required);
+  bool get _allowed =>
+      permissions.contains('*') || permissions.contains(required);
 
   @override
   Widget build(BuildContext context) => _allowed ? child : fallback;
