@@ -521,6 +521,11 @@ namespace TTKDGP.ProjectManager.Controllers
             }
 
             Repository.WorkTaskTodos.Update(todo);
+
+            // Báo cho người tạo việc và người được giao việc là việc con vừa đổi trạng thái.
+            NotificationService.TodoToggled(task, todo, CurrentUserId,
+                CurrentUser == null ? null : CurrentUser.FullName);
+
             return PartialView("_Todos", BuildTodos(task));
         }
 
