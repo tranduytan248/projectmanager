@@ -13,7 +13,7 @@ class ProfileScreen extends StatelessWidget {
 
     return AppBottomNav(
       currentIndex: 3,
-      appBar: AppBar(title: const Text('Cai dat')),
+      appBar: AppBar(title: const Text('Cài đặt')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -23,11 +23,11 @@ class ProfileScreen extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
             const Text(
-                'TODO: GET /api/auth/me — ho so, doi mat khau, danh sach quyen.'),
+                'TODO: GET /api/auth/me — hồ sơ, đổi mật khẩu, danh sách quyền.'),
             const Spacer(),
             FilledButton.tonal(
               onPressed: () => context.read<AuthProvider>().logout(context),
-              child: const Text('Dang xuat'),
+              child: const Text('Đăng xuất'),
             ),
           ],
         ),

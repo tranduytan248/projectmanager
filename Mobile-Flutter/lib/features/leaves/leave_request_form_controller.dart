@@ -12,5 +12,5 @@ class LeaveRequestFormController extends StatelessController {
 
   @override
   Display view(BuildContext context) => const Display(
-      title: 'Dang ky nghi phep', mobile: LeaveRequestFormScreen());
+      title: 'Đăng ký nghỉ phép', mobile: LeaveRequestFormScreen());
 }

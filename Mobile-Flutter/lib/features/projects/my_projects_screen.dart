@@ -10,11 +10,11 @@ class MyProjectsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppBottomNav(
       currentIndex: 1,
-      appBar: AppBar(title: const Text('Du an cua toi')),
+      appBar: AppBar(title: const Text('Dự án của tôi')),
       body: const PlaceholderBody(
         message:
-            'TODO: GET /api/projects/mine (tuong ung WorkProjectsController)\n'
-            'Danh sach du an dang tham gia.',
+            'TODO: GET /api/projects/mine (tương ứng WorkProjectsController)\n'
+            'Danh sách dự án đang tham gia.',
       ),
     );
   }

@@ -10,10 +10,10 @@ class ProjectDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Du an #$projectId')),
+      appBar: AppBar(title: Text('Dự án #$projectId')),
       body: PlaceholderBody(
         message: 'TODO: GET /api/projects/$projectId\n'
-            'Thanh vien, tien do, file dinh kem. Dan sang ChecklistBoardScreen.',
+            'Thành viên, tiến độ, file đính kèm. Dẫn sang ChecklistBoardScreen.',
       ),
     );
   }

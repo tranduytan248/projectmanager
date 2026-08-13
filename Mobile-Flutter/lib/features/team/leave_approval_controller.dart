@@ -12,5 +12,5 @@ class LeaveApprovalController extends StatelessController {
 
   @override
   Display view(BuildContext context) =>
-      const Display(title: 'Duyet nghi phep', mobile: LeaveApprovalScreen());
+      const Display(title: 'Duyệt nghỉ phép', mobile: LeaveApprovalScreen());
 }

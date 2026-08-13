@@ -12,5 +12,5 @@ class MyProjectsController extends StatelessController {
 
   @override
   Display view(BuildContext context) =>
-      const Display(title: 'Du an cua toi', mobile: MyProjectsScreen());
+      const Display(title: 'Dự án của tôi', mobile: MyProjectsScreen());
 }

@@ -48,17 +48,20 @@ class AuthProvider extends ChangeNotifier {
       BuildContext context, String username, String password) async {
     final result = await doAuth(context, username, password);
     if (result == 0) {
-      ToastService.show('Sai tai khoan hoac mat khau.');
+      ToastService.show('Sai tài khoản hoặc mật khẩu.');
       return false;
     }
     if (result == -1) {
-      ToastService.show('Loi he thong, vui long thu lai sau.');
+      ToastService.show('Lỗi hệ thống, vui lòng thử lại sau.');
       return false;
     }
 
+    // Doc lai tu AppCache (khong dung thang username/['*']) de khop chinh xac voi nhung gi
+    // doAuth vua luu — cung mot nguon voi _hydrate() dung sau khi app khoi dong lai.
+    final info = _appCache.getLoginInfo();
     _isAuthenticated = true;
-    _displayName = username;
-    _permissions = const ['*'];
+    _displayName = info?['displayName'] as String? ?? username;
+    _permissions = (info?['permissions'] as List?)?.cast<String>() ?? const [];
     notifyListeners();
     return true;
   }

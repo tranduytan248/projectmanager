@@ -10,11 +10,11 @@ class TaskDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Chi tiet cong viec #$taskId')),
+      appBar: AppBar(title: Text('Chi tiết công việc #$taskId')),
       body: PlaceholderBody(
         message:
-            'TODO: GET /api/checklist/$taskId (tuong ung ChecklistController)\n'
-            'Mo ta, trang thai, comment, timelog, dinh kem.',
+            'TODO: GET /api/checklist/$taskId (tương ứng ChecklistController)\n'
+            'Mô tả, trạng thái, comment, timelog, đính kèm.',
       ),
     );
   }

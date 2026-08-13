@@ -1,7 +1,7 @@
 name: ttkdgp_mobile
 description: BrewTask - Quan Ly Cong Viec. Ung dung di dong cho he thong quan ly du an & nhan su TTKDGP.
 publish_to: 'none'
-version: 0.1.0+1
+version: 1.0.0+1
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -45,6 +45,10 @@ dependencies:
   # nhung thang trong web/index.html, khong qua goi nay.
   firebase_core: ^4.13.0
   firebase_analytics: ^12.4.6
+  # phosphor_flutter (goc) khong tuong thich Flutter moi: IconData da thanh "final class" nen
+  # PhosphorIconData khong the extends duoc nua, build that (khong phai flutter analyze) se loi
+  # bien dich. phosphor_icons la ban ke thua duoc bao tuong thich Flutter 3.43+, cung API.
+  phosphor_icons: ^3.0.1
 
 dev_dependencies:
   flutter_test:

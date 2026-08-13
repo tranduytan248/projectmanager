@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_icons/phosphor_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../../config/app_theme.dart';
@@ -42,26 +43,26 @@ class _DemoTask {
 
 const _demoProjects = [
   _DemoProject(
-    title: 'Ung dung di dong BrewTask',
-    subtitle: 'Ke hoach cong viec, giao dien sach va hien dai',
+    title: 'Ứng dụng di động BrewTask',
+    subtitle: 'Kế hoạch công việc, giao diện sạch và hiện đại',
     progress: 0.64,
     memberCount: 4,
   ),
   _DemoProject(
-    title: 'Trang quan ly du an',
-    subtitle: 'He thong theo doi tien do va KPI noi bo',
+    title: 'Trang quản lý dự án',
+    subtitle: 'Hệ thống theo dõi tiến độ và KPI nội bộ',
     progress: 0.34,
     memberCount: 6,
   ),
   _DemoProject(
-    title: 'Cong thong tin nhan su',
-    subtitle: 'Ho so, cham cong, nghi phep tap trung',
+    title: 'Cổng thông tin nhân sự',
+    subtitle: 'Hồ sơ, chấm công, nghỉ phép tập trung',
     progress: 0.82,
     memberCount: 3,
   ),
   _DemoProject(
-    title: 'Tich hop CAS - HRM',
-    subtitle: 'Dong bo tai khoan giua cac he thong noi bo',
+    title: 'Tích hợp CAS - HRM',
+    subtitle: 'Đồng bộ tài khoản giữa các hệ thống nội bộ',
     progress: 0.18,
     memberCount: 2,
   ),
@@ -69,30 +70,30 @@ const _demoProjects = [
 
 const _demoTasks = [
   _DemoTask(
-    title: 'Hop voi khach hang ve yeu cau moi',
-    projectName: 'Ung dung di dong BrewTask',
+    title: 'Họp với khách hàng về yêu cầu mới',
+    projectName: 'Ứng dụng di động BrewTask',
     timeLabel: '09:00',
     highPriority: true,
     isToday: true,
   ),
   _DemoTask(
-    title: 'Duyet giao dien man hinh Home',
-    projectName: 'Ung dung di dong BrewTask',
+    title: 'Duyệt giao diện màn hình Home',
+    projectName: 'Ứng dụng di động BrewTask',
     timeLabel: '14:30',
     highPriority: false,
     isToday: true,
   ),
   _DemoTask(
-    title: 'Bao cao tien do tuan cho Quan ly To',
-    projectName: 'Trang quan ly du an',
+    title: 'Báo cáo tiến độ tuần cho Quản lý Tổ',
+    projectName: 'Trang quản lý dự án',
     timeLabel: '17:00',
     highPriority: true,
     isToday: true,
   ),
   _DemoTask(
-    title: 'Kiem thu chuc nang dang nhap',
-    projectName: 'Cong thong tin nhan su',
-    timeLabel: 'Thu Hai',
+    title: 'Kiểm thử chức năng đăng nhập',
+    projectName: 'Cổng thông tin nhân sự',
+    timeLabel: 'Thứ Hai',
     highPriority: false,
     isToday: false,
   ),
@@ -165,7 +166,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             const SizedBox(height: 24),
             const Text(
-              'Cong viec',
+              'Công việc',
               style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
@@ -196,7 +197,7 @@ class _Header extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Chao, $displayName!',
+                'Chào, $displayName!',
                 style: const TextStyle(
                     fontSize: 13,
                     color: Colors.black54,
@@ -204,7 +205,7 @@ class _Header extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Ban co $projectCount du an',
+                'Bạn có $projectCount dự án',
                 style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
@@ -214,7 +215,7 @@ class _Header extends StatelessWidget {
           ),
         ),
         _CircleIconButton(
-          icon: Icons.notifications_outlined,
+          icon: PhosphorIconsRegular.bellSimple,
           onTap: () => Nav.toNamed(context, AppRoutes.notifications),
         ),
       ],
@@ -240,7 +241,7 @@ class _CircleIconButton extends StatelessWidget {
           color: AppTheme.brandBlue.withValues(alpha: 0.08),
           shape: BoxShape.circle,
         ),
-        child: Icon(icon, color: AppTheme.brandBlue, size: 22),
+        child: PhosphorIcon(icon, color: AppTheme.brandBlue, size: 22),
       ),
     );
   }
@@ -262,12 +263,12 @@ class _TodayBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.event_available_outlined,
+          const PhosphorIcon(PhosphorIconsRegular.calendarCheck,
               color: Colors.white, size: 20),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Ban co $count cong viec hom nay',
+              'Bạn có $count công việc hôm nay',
               style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
@@ -279,7 +280,8 @@ class _TodayBanner extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             child: const Padding(
               padding: EdgeInsets.all(4),
-              child: Icon(Icons.close, color: Colors.white70, size: 18),
+              child: PhosphorIcon(PhosphorIconsRegular.x,
+                  color: Colors.white70, size: 18),
             ),
           ),
         ],
@@ -303,19 +305,19 @@ class _FilterRow extends StatelessWidget {
     return Row(
       children: [
         _FilterChip(
-          label: 'Tat ca ($totalCount)',
+          label: 'Tất cả ($totalCount)',
           selected: current == _TaskFilter.all,
           onTap: () => onChanged(_TaskFilter.all),
         ),
         const SizedBox(width: 8),
         _FilterChip(
-          label: 'Hom nay',
+          label: 'Hôm nay',
           selected: current == _TaskFilter.today,
           onTap: () => onChanged(_TaskFilter.today),
         ),
         const SizedBox(width: 8),
         _FilterChip(
-          label: 'Sap toi',
+          label: 'Sắp tới',
           selected: current == _TaskFilter.upcoming,
           onTap: () => onChanged(_TaskFilter.upcoming),
         ),
@@ -373,14 +375,9 @@ class _ProjectCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.brandBlue.withValues(alpha: 0.06),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          // Flat: phan biet the bang vien mong thay vi do bong, khop huong thiet ke chung cua
+          // app (xem app_bottom_nav.dart).
+          border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
         ),
         // MainAxisSize.min + khong dung Spacer: chieu cao card do NOI DUNG quyet dinh, khong
         // ep vao mot chieu cao co dinh cua GridView — tranh tai dien loi tran khi font he thong
@@ -396,7 +393,7 @@ class _ProjectCard extends StatelessWidget {
                 color: AppTheme.brandBlueDark,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.folder_outlined,
+              child: const PhosphorIcon(PhosphorIconsRegular.folder,
                   color: Colors.white, size: 16),
             ),
             const SizedBox(height: 8),
@@ -576,7 +573,7 @@ class _TaskRow extends StatelessWidget {
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: const Text(
-                    'Uu tien cao',
+                    'Ưu tiên cao',
                     style: TextStyle(
                         fontSize: 9.5,
                         fontWeight: FontWeight.w700,

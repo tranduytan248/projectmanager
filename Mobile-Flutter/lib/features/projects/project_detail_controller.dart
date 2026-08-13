@@ -17,7 +17,7 @@ class ProjectDetailController extends StatelessController {
     final projectId = args?['projectId'] as String? ?? '';
 
     return Display(
-      title: 'Chi tiet du an',
+      title: 'Chi tiết dự án',
       mobile: ProjectDetailScreen(projectId: projectId),
     );
   }

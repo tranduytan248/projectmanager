@@ -8,11 +8,11 @@ class PrivateTasksScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Giao viec rieng')),
+      appBar: AppBar(title: const Text('Giao việc riêng')),
       body: const PlaceholderBody(
         message:
-            'TODO: GET/POST /api/team/private-tasks (tuong ung PrivateTasksController)\n'
-            'Tao/giao task ngoai du an cho thanh vien to.',
+            'TODO: GET/POST /api/team/private-tasks (tương ứng PrivateTasksController)\n'
+            'Tạo/giao task ngoài dự án cho thành viên tổ.',
       ),
     );
   }

@@ -8,11 +8,11 @@ class LeaveApprovalScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Duyet nghi phep')),
+      appBar: AppBar(title: const Text('Duyệt nghỉ phép')),
       body: const PlaceholderBody(
         message:
             'TODO: GET /api/team/leaves + POST /api/team/leaves/{id}/approve (LeavesController)\n'
-            'Danh sach cho duyet + hanh dong duyet/tu choi.',
+            'Danh sách chờ duyệt + hành động duyệt/từ chối.',
       ),
     );
   }

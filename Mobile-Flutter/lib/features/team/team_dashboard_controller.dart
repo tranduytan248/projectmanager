@@ -12,5 +12,5 @@ class TeamDashboardController extends StatelessController {
 
   @override
   Display view(BuildContext context) =>
-      const Display(title: 'Bang dieu khien To', mobile: TeamDashboardScreen());
+      const Display(title: 'Bảng điều khiển Tổ', mobile: TeamDashboardScreen());
 }

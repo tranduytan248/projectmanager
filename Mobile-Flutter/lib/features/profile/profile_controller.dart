@@ -12,5 +12,5 @@ class ProfileController extends StatelessController {
 
   @override
   Display view(BuildContext context) =>
-      const Display(title: 'Cai dat', mobile: ProfileScreen());
+      const Display(title: 'Cài đặt', mobile: ProfileScreen());
 }

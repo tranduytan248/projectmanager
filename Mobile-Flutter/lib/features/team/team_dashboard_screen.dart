@@ -12,11 +12,11 @@ class TeamDashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppBottomNav(
       currentIndex: 4,
-      appBar: AppBar(title: const Text('Bang dieu khien To')),
+      appBar: AppBar(title: const Text('Bảng điều khiển Tổ')),
       body: const PlaceholderBody(
         message:
-            'TODO: GET /api/team/dashboard (tuong ung TeamDashboardController)\n'
-            'Tong hop tien do ca to, workload, danh sach du an.',
+            'TODO: GET /api/team/dashboard (tương ứng TeamDashboardController)\n'
+            'Tổng hợp tiến độ cả tổ, workload, danh sách dự án.',
       ),
     );
   }

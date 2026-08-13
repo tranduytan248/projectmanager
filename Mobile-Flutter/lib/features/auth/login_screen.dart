@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:phosphor_icons/phosphor_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../../config/app_theme.dart';
@@ -8,6 +9,10 @@ import '../../core/classes/route_manager.dart';
 import '../../core/utils/toast_service.dart';
 import '../app_routes.dart';
 import 'auth_provider.dart';
+
+/// Do AppTheme.statusDanger (do dam) qua chim tren nen brandBlue toi cua man dang nhap, dung
+/// mot sac do nhat hon rieng cho man nay de van doc ro chu "loi" ma khong lac mau ngu nghia.
+const _errorColor = Color(0xFFFF8A80);
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -32,10 +37,21 @@ class _LoginScreenState extends State<LoginScreen> {
 
   /// Doc so build THAT tu goi cai dat, khong go tay — luon khop pubspec.yaml luc build, khong
   /// bao gio lech nhu chuoi hardcode moi lan tang version ma quen sua o day.
+  ///
+  /// Quy uoc hien thi rieng cua du an: "1.00.xxx" — 1 la phien ban dau tien, 00 la lan cap nhat
+  /// thu n (tang moi lan phat hanh mot dot thay doi), xxx la so chuc nang duoc cap nhat trong
+  /// lan do. pubspec.yaml van giu dung semver (vi du "1.2.5") de cong cu Flutter doc duoc; o day
+  /// chi dem lai chu so 0 cho dung khuon hien thi, khong doi gia tri.
   Future<void> _loadVersion() async {
     final info = await PackageInfo.fromPlatform();
     if (!mounted) return;
-    setState(() => _versionLabel = 'v${info.version}+${info.buildNumber}');
+
+    final parts = info.version.split('.');
+    final major = parts.isNotEmpty ? parts[0] : '1';
+    final minor = (parts.length > 1 ? parts[1] : '0').padLeft(2, '0');
+    final patch = (parts.length > 2 ? parts[2] : '0').padLeft(3, '0');
+
+    setState(() => _versionLabel = 'v$major.$minor.$patch');
   }
 
   Future<void> _submit() async {
@@ -72,19 +88,15 @@ class _LoginScreenState extends State<LoginScreen> {
         systemNavigationBarIconBrightness: Brightness.light,
       ),
       child: Scaffold(
-        // Ve tran man hinh (khong de he thong tu to mau sau SafeArea) de nen gradient phu het
-        // ca vung status bar, giong mau thiet ke.
+        // Ve tran man hinh (khong de he thong tu to mau sau SafeArea) de nen mau phu het ca
+        // vung status bar, giong mau thiet ke.
         extendBodyBehindAppBar: true,
         body: Container(
           width: double.infinity,
           height: double.infinity,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [AppTheme.brandBlue, AppTheme.brandBlueDark],
-            ),
-          ),
+          // Nen phang mot mau (khong gradient) — dung huong flat design chung ca app, thay vi
+          // do do tu brandBlue sang brandBlueDark nhu truoc.
+          color: AppTheme.brandBlue,
           child: Stack(
             children: [
               // Hinh coc phong to, mo nhat, lam nen trang tri o goc duoi — cung mot bo nhan dien
@@ -146,7 +158,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             _PillField(
                               controller: _usernameController,
                               hint: 'Tài khoản',
-                              icon: Icons.person_outline,
+                              icon: PhosphorIconsRegular.user,
                               textInputAction: TextInputAction.next,
                               validator: (value) =>
                                   (value == null || value.trim().isEmpty)
@@ -157,7 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             _PillField(
                               controller: _passwordController,
                               hint: 'Mật khẩu',
-                              icon: Icons.lock_outline,
+                              icon: PhosphorIconsRegular.lockSimple,
                               obscureText: _obscurePassword,
                               textInputAction: TextInputAction.done,
                               onFieldSubmitted: (_) =>
@@ -167,10 +179,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ? 'Nhập mật khẩu'
                                       : null,
                               suffixIcon: IconButton(
-                                icon: Icon(
+                                icon: PhosphorIcon(
                                   _obscurePassword
-                                      ? Icons.visibility_off_outlined
-                                      : Icons.visibility_outlined,
+                                      ? PhosphorIconsRegular.eyeSlash
+                                      : PhosphorIconsRegular.eye,
                                   color: Colors.white70,
                                   size: 20,
                                 ),
@@ -293,7 +305,7 @@ class _PillField extends StatelessWidget {
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
-        prefixIcon: Icon(icon, color: Colors.white70, size: 20),
+        prefixIcon: PhosphorIcon(icon, color: Colors.white70, size: 20),
         suffixIcon: suffixIcon,
         filled: true,
         fillColor: Colors.white.withValues(alpha: 0.14),
@@ -312,13 +324,13 @@ class _PillField extends StatelessWidget {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
-          borderSide: const BorderSide(color: Colors.orangeAccent, width: 1.4),
+          borderSide: const BorderSide(color: _errorColor, width: 1.4),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
-          borderSide: const BorderSide(color: Colors.orangeAccent, width: 1.4),
+          borderSide: const BorderSide(color: _errorColor, width: 1.4),
         ),
-        errorStyle: const TextStyle(color: Colors.orangeAccent),
+        errorStyle: const TextStyle(color: _errorColor),
       ),
     );
   }
