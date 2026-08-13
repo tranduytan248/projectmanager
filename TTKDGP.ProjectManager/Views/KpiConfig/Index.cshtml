@@ -115,7 +115,7 @@
             <div class="form-grid">
                 <div class="form-field">
                     <label for="SupportMaxPoint">Điểm nhóm Hỗ trợ khi đủ mốc giờ</label>
-                    <input type="number" step="0.01" min="0" max="1000" required
+                    <input type="text" inputmode="decimal" required
                            id="SupportMaxPoint" name="SupportMaxPoint"
                            data-default="@nv(d.SupportMaxPoint)"
                            value="@nv(Model.SupportMaxPoint)" />
@@ -127,7 +127,7 @@
                 </div>
                 <div class="form-field">
                     <label for="SupportHoursShare">Mốc giờ nhóm Hỗ trợ (cũng là trần)</label>
-                    <input type="number" step="0.05" min="0.05" max="1" required
+                    <input type="text" inputmode="decimal" required
                            id="SupportHoursShare" name="SupportHoursShare"
                            data-default="@nv(d.SupportHoursShare)"
                            value="@nv(Model.SupportHoursShare)" />
@@ -142,7 +142,7 @@
                 </div>
                 <div class="form-field">
                     <label for="ExecuteMaxPoint">Điểm nhóm Thực hiện khi đủ định mức</label>
-                    <input type="number" step="0.01" min="0" max="1000" required
+                    <input type="text" inputmode="decimal" required
                            id="ExecuteMaxPoint" name="ExecuteMaxPoint"
                            data-default="@nv(d.ExecuteMaxPoint)"
                            value="@nv(Model.ExecuteMaxPoint)" />
@@ -153,7 +153,7 @@
                 </div>
                 <div class="form-field">
                     <label for="ExecuteHoursShare">Định mức giờ nhóm Thực hiện</label>
-                    <input type="number" step="0.05" min="0.05" max="1" required
+                    <input type="text" inputmode="decimal" required
                            id="ExecuteHoursShare" name="ExecuteHoursShare"
                            data-default="@nv(d.ExecuteHoursShare)"
                            value="@nv(Model.ExecuteHoursShare)" />
@@ -189,7 +189,7 @@
             <div class="form-grid-3">
                 <div class="form-field">
                     <label for="SupportLateFreeCount">Số lần trễ được bỏ qua</label>
-                    <input type="number" step="1" min="0" max="99" required
+                    <input type="text" inputmode="numeric" required
                            id="SupportLateFreeCount" name="SupportLateFreeCount"
                            data-default="@d.SupportLateFreeCount"
                            value="@Model.SupportLateFreeCount" />
@@ -197,7 +197,7 @@
                 </div>
                 <div class="form-field">
                     <label for="SupportLate2Penalty">Trừ khi vượt 1 lần</label>
-                    <input type="number" step="0.01" min="0" max="1000" required
+                    <input type="text" inputmode="decimal" required
                            id="SupportLate2Penalty" name="SupportLate2Penalty"
                            data-default="@nv(d.SupportLate2Penalty)"
                            value="@nv(Model.SupportLate2Penalty)" />
@@ -205,7 +205,7 @@
                 </div>
                 <div class="form-field">
                     <label for="SupportLateMorePenalty">Trừ khi vượt nhiều hơn</label>
-                    <input type="number" step="0.01" min="0" max="1000" required
+                    <input type="text" inputmode="decimal" required
                            id="SupportLateMorePenalty" name="SupportLateMorePenalty"
                            data-default="@nv(d.SupportLateMorePenalty)"
                            value="@nv(Model.SupportLateMorePenalty)" />
@@ -224,7 +224,7 @@
                 <div class="form-grid">
                     <div class="form-field">
                         <label for="ExecuteLatePenalty">Trừ cho mỗi lần trễ</label>
-                        <input type="number" step="0.01" min="0" max="1000" required
+                        <input type="text" inputmode="decimal" required
                                id="ExecuteLatePenalty" name="ExecuteLatePenalty"
                                data-default="@nv(d.ExecuteLatePenalty)"
                                value="@nv(Model.ExecuteLatePenalty)" />
@@ -248,7 +248,7 @@
             <div class="form-grid">
                 <div class="form-field">
                     <label for="HoursPerDay">Số giờ của một ngày công</label>
-                    <input type="number" step="0.5" min="0.5" max="24" required
+                    <input type="text" inputmode="decimal" required
                            id="HoursPerDay" name="HoursPerDay"
                            data-default="@nv(d.HoursPerDay)"
                            value="@nv(Model.HoursPerDay)" />
@@ -289,28 +289,28 @@
             <div class="form-grid">
                 <div class="form-field">
                     <label for="RankExcellent">Xuất sắc — từ</label>
-                    <input type="number" step="0.01" min="0" max="1000" required
+                    <input type="text" inputmode="decimal" required
                            id="RankExcellent" name="RankExcellent"
                            data-default="@nv(d.RankExcellent)"
                            value="@nv(Model.RankExcellent)" />
                 </div>
                 <div class="form-field">
                     <label for="RankGood">Tốt — từ</label>
-                    <input type="number" step="0.01" min="0" max="1000" required
+                    <input type="text" inputmode="decimal" required
                            id="RankGood" name="RankGood"
                            data-default="@nv(d.RankGood)"
                            value="@nv(Model.RankGood)" />
                 </div>
                 <div class="form-field">
                     <label for="RankFair">Khá — từ</label>
-                    <input type="number" step="0.01" min="0" max="1000" required
+                    <input type="text" inputmode="decimal" required
                            id="RankFair" name="RankFair"
                            data-default="@nv(d.RankFair)"
                            value="@nv(Model.RankFair)" />
                 </div>
                 <div class="form-field">
                     <label for="RankPass">Đạt — từ</label>
-                    <input type="number" step="0.01" min="0" max="1000" required
+                    <input type="text" inputmode="decimal" required
                            id="RankPass" name="RankPass"
                            data-default="@nv(d.RankPass)"
                            value="@nv(Model.RankPass)" />
@@ -401,6 +401,17 @@
         var nodes = document.querySelectorAll(selector);
         for (var i = 0; i < nodes.length; i++) nodes[i].textContent = text;
     }
+
+    // Gõ dấu phẩy (thói quen số Việt Nam, vd "0,25") vào ô type="number" khiến trình duyệt coi
+    // ô đó KHÔNG HỢP LỆ và ÂM THẦM CHẶN việc gửi biểu mẫu — không có thông báo lỗi rõ ràng nào,
+    // trang chỉ tải lại y nguyên nên trông như đã lưu bị mất. Tự đổi phẩy thành chấm ngay khi gõ
+    // để không bao giờ rơi vào tình huống đó.
+    form.addEventListener("input", function (e) {
+        var el = e.target;
+        if (el && el.tagName === "INPUT" && el.type === "number" && el.value.indexOf(",") !== -1) {
+            el.value = el.value.replace(",", ".");
+        }
+    });
 
     function refresh() {
         var support = num("SupportMaxPoint");

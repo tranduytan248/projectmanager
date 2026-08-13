@@ -40,9 +40,17 @@ TTKDGP.ProjectManager/App_Data/playwright-browsers/
 TTKDGP.ProjectManager/App_Data/goconnect-debug/
 TTKDGP.ProjectManager/App_Data/goconnect-lastrun.txt
 
+# Ảnh/HTML gỡ lỗi của đăng nhập CAS HRM — sinh ra tại chỗ, không phải mã nguồn.
+# hrm_session.json đã bị loại ở dòng App_Data/*.json phía trên.
+TTKDGP.ProjectManager/App_Data/hrm-debug/
+
 # ---- Bí mật ----
 # Chứa token bot Telegram và khoá kích hoạt. Chỉ commit file .example.
 TTKDGP.ProjectManager/App_Config/secrets.config
+
+# File credentials tạm để thử nghiệm đăng nhập HRM — không phải nơi lưu chính thức,
+# chuyển sang App_Config/secrets.config sau. Không được commit trong lúc nào.
+TTKDGP.ProjectManager/config.json
 
 # ---- Khác ----
 Thumbs.db

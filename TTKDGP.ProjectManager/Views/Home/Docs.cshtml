@@ -10,7 +10,7 @@
 </div>
 
 <div class="card">
-    <div class="card-head">API lấy dữ liệu HRM</div>
+    <div class="card-head">API lấy dữ liệu HRM (GoConnect)</div>
     <div class="card-body">
         <p class="muted" style="margin-top:0">
             API lấy dữ liệu HRM (nhân sự, đơn vị, chức danh). Tải về để xem hướng dẫn và thử bằng Postman.
@@ -20,6 +20,25 @@
                 Hướng dẫn sử dụng (.md)
             </a>
             <a class="btn btn-default" href="@Url.Action("Download", "Home", new { doc = "postman" })">
+                Bộ Postman (.json)
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-head">API lấy dữ liệu CAS VNPT (HRM)</div>
+    <div class="card-body">
+        <p class="muted" style="margin-top:0">
+            API lấy dữ liệu danh bạ CAS VNPT (nhân sự, đơn vị, chức danh) — nguồn hoàn toàn khác
+            API HRM ở trên (đó là dữ liệu đồng bộ từ GoConnect). Tải về để xem hướng dẫn và thử
+            bằng Postman.
+        </p>
+        <div class="btn-row">
+            <a class="btn btn-primary" href="@Url.Action("Download", "Home", new { doc = "cas-guide" })">
+                Hướng dẫn sử dụng (.md)
+            </a>
+            <a class="btn btn-default" href="@Url.Action("Download", "Home", new { doc = "cas-postman" })">
                 Bộ Postman (.json)
             </a>
         </div>

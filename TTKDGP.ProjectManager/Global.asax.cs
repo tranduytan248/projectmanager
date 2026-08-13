@@ -54,12 +54,17 @@ namespace TTKDGP.ProjectManager
 
             // GoConnect: chỉ lắng nghe lệnh /hrm qua Telegram, KHÔNG hẹn giờ tự động.
             Infrastructure.GoConnectTelegramPoller.Start();
+
+            // Hrm: đăng nhập CAS VNPT (id.vnpt.com.vn), lắng nghe lệnh /signin qua Telegram.
+            // Hệ thống hoàn toàn khác GoConnect ở trên, có bot và cấu hình riêng.
+            Infrastructure.HrmTelegramPoller.Start();
         }
 
         protected void Application_End()
         {
             Infrastructure.ReminderScheduler.Stop();
             Infrastructure.GoConnectTelegramPoller.Stop();
+            Infrastructure.HrmTelegramPoller.Stop();
         }
 
         /// <summary>Dựng lại thông tin người dùng từ cookie đăng nhập cho mỗi request.</summary>

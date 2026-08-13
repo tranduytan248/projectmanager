@@ -232,6 +232,22 @@ namespace TTKDGP.ProjectManager.Controllers
 
         public KpiMonth Kpi { get; set; }
 
+        /// <summary>
+        /// Tổng điểm trừ trong tháng — cộng mức trừ trễ hạn của nhóm hỗ trợ và nhóm thực hiện
+        /// (xem <see cref="KpiService.SupportLatePenalty"/>/<see cref="KpiService.ExecuteLatePenalty"/>).
+        /// Việc riêng không có mức trừ, chỉ không được cộng điểm khi trễ/chưa xong nên không tính ở đây.
+        /// </summary>
+        public decimal TotalPenalty
+        {
+            get { return KpiService.SupportLatePenalty(Kpi.SupportLateCount) + KpiService.ExecuteLatePenalty(Kpi.ExecuteLateCount); }
+        }
+
+        /// <summary>Tổng số đầu việc trong tháng, gộp cả ba nhóm hỗ trợ/thực hiện/việc riêng.</summary>
+        public int TotalTasks
+        {
+            get { return Kpi.SupportTotal + Kpi.ExecuteTotal + Kpi.AssignedTotal; }
+        }
+
         /// <summary>Việc triển khai trong tháng: bao nhiêu dự án, bao nhiêu đầu việc.</summary>
         public TeamProjectCount Implement { get; set; }
 

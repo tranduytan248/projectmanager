@@ -123,6 +123,11 @@
     <Compile Include="Infrastructure\GoConnectSession.cs" />
     <Compile Include="Infrastructure\GoConnectTelegramPoller.cs" />
     <Compile Include="Infrastructure\GoConnectScheduler.cs" />
+    <Compile Include="Infrastructure\HrmCasAutoLogin.cs" />
+    <Compile Include="Infrastructure\HrmTelegramPoller.cs" />
+    <Compile Include="Models\HrmDirectory.cs" />
+    <Compile Include="Data\HrmDirectoryStore.cs" />
+    <Compile Include="Data\HrmDirectorySync.cs" />
     <Compile Include="Models\ReminderModels.cs" />
     <Compile Include="Services\ReminderService.cs" />
     <Compile Include="Services\TaskDueSmsService.cs" />
@@ -132,6 +137,7 @@
     <Compile Include="Controllers\NotificationsController.cs" />
     <Compile Include="Controllers\GoConnectController.cs" />
     <Compile Include="Controllers\HrmController.cs" />
+    <Compile Include="Controllers\HrmDirectoryController.cs" />
     <Compile Include="Controllers\IntegrationSystemsController.cs" />
     <Compile Include="Controllers\IntegrationApiController.cs" />
     <Compile Include="Controllers\MyReportsController.cs" />
@@ -224,6 +230,8 @@
     <Content Include="App_Data\docs\HRM-API.postman_collection.json" />
     <Content Include="App_Data\docs\Huong-dan-tich-hop-API-SMS.md" />
     <Content Include="App_Data\docs\SMS-API.postman_collection.json" />
+    <Content Include="App_Data\docs\Huong-dan-tich-hop-API-CAS-HRM.md" />
+    <Content Include="App_Data\docs\CAS-HRM-API.postman_collection.json" />
     <Content Include="App_Data\seed\members.json" />
     <Content Include="App_Data\seed\projects.json" />
     <Content Include="App_Data\seed\projectMembers.json" />
@@ -251,6 +259,9 @@
     <Content Include="Views\Hrm\Employees.cshtml" />
     <Content Include="Views\Hrm\Workplaces.cshtml" />
     <Content Include="Views\Hrm\Positions.cshtml" />
+    <Content Include="Views\HrmDirectory\Employees.cshtml" />
+    <Content Include="Views\HrmDirectory\Departments.cshtml" />
+    <Content Include="Views\HrmDirectory\Jobs.cshtml" />
     <Content Include="Views\MyReports\Index.cshtml" />
     <Content Include="Views\TeamReports\Index.cshtml" />
     <Content Include="Views\IntegrationSystems\Index.cshtml" />
@@ -294,6 +305,9 @@
     <Content Include="Views\Checklist\Index.cshtml" />
     <Content Include="Views\Kpi\Index.cshtml" />
     <Content Include="Views\Kpi\Detail.cshtml" />
+    <Content Include="Views\KpiConfig\Index.cshtml" />
+    <Content Include="Views\Functions\Index.cshtml" />
+    <Content Include="Views\Functions\Edit.cshtml" />
     <Content Include="Views\Checklist\Edit.cshtml" />
     <Content Include="Views\Checklist\ImportPreview.cshtml" />
     <Content Include="Views\MyWork\Tasks.cshtml" />

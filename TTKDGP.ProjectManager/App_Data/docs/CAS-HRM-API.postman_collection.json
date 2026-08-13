@@ -1,0 +1,357 @@
+{
+  "info": {
+    "_postman_id": "b8e4d1f2-3c5e-4f7a-9b01-2d3e4f5a6b7c",
+    "name": "CAS HRM API - Tich hop lay du lieu danh ba CAS VNPT",
+    "description": "API POST /api/hrmcas lay du lieu danh ba CAS VNPT (employees, departments, jobs), xac thuc bang checksum SHA-256. Hoan toan khac API /api/hrm (du lieu GoConnect) nhung dung chung partnerCode/secretKey. Dien baseUrl, partnerCode, secretKey o tab Variables roi Send.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Nhan su (employees)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Tu dong sinh requestId, requestTime va tinh checksum truoc khi gui.",
+              "var partnerCode = pm.variables.get(\"partnerCode\");",
+              "var secretKey   = pm.variables.get(\"secretKey\");",
+              "",
+              "// ---- Cac truong cua request nay ----",
+              "var resource = \"employees\";",
+              "var page     = \"1\";",
+              "var pageSize = \"100\";",
+              "var keyword  = \"\";",
+              "",
+              "function pad(n) { return (n < 10 ? \"0\" : \"\") + n; }",
+              "var now = new Date();",
+              "var requestTime = \"\" + now.getFullYear() + pad(now.getMonth() + 1) + pad(now.getDate()) + pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());",
+              "var requestId = \"REQ-\" + requestTime + \"-\" + Math.floor(Math.random() * 100000);",
+              "",
+              "// checksum = SHA256( cac truong noi bang \"|\", secretKey o cuoi )",
+              "var raw = [partnerCode, requestId, requestTime, resource, page, pageSize, keyword, secretKey].join(\"|\");",
+              "var checksum = CryptoJS.SHA256(raw).toString(CryptoJS.enc.Hex);",
+              "",
+              "pm.variables.set(\"requestId\", requestId);",
+              "pm.variables.set(\"requestTime\", requestTime);",
+              "pm.variables.set(\"resource\", resource);",
+              "pm.variables.set(\"page\", page);",
+              "pm.variables.set(\"pageSize\", pageSize);",
+              "pm.variables.set(\"keyword\", keyword);",
+              "pm.variables.set(\"checksum\", checksum);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "var res = pm.response.json();",
+              "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"code = 00 (thanh cong)\", function () { pm.expect(res.code).to.eql(\"00\"); });",
+              "",
+              "// Xac thuc checksum cua phan hoi",
+              "var secretKey = pm.variables.get(\"secretKey\");",
+              "var raw = [res.code, res.message, res.requestId, res.resource, String(res.page), String(res.pageSize), String(res.totalItems), secretKey].join(\"|\");",
+              "var expected = CryptoJS.SHA256(raw).toString(CryptoJS.enc.Hex);",
+              "pm.test(\"Checksum phan hoi hop le\", function () { pm.expect(res.checksum).to.eql(expected); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"partnerCode\": \"{{partnerCode}}\",\n  \"requestId\": \"{{requestId}}\",\n  \"requestTime\": \"{{requestTime}}\",\n  \"resource\": \"{{resource}}\",\n  \"page\": {{page}},\n  \"pageSize\": {{pageSize}},\n  \"keyword\": \"{{keyword}}\",\n  \"checksum\": \"{{checksum}}\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/hrmcas",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "api", "hrmcas" ]
+        },
+        "description": "Lay danh sach nhan su CAS VNPT, phan trang. checksum tinh tu dong trong Pre-request Script."
+      }
+    },
+    {
+      "name": "Don vi (departments)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Tu dong sinh requestId, requestTime va tinh checksum truoc khi gui.",
+              "var partnerCode = pm.variables.get(\"partnerCode\");",
+              "var secretKey   = pm.variables.get(\"secretKey\");",
+              "",
+              "// ---- Cac truong cua request nay ----",
+              "var resource = \"departments\";",
+              "var page     = \"1\";",
+              "var pageSize = \"200\";",
+              "var keyword  = \"\";",
+              "",
+              "function pad(n) { return (n < 10 ? \"0\" : \"\") + n; }",
+              "var now = new Date();",
+              "var requestTime = \"\" + now.getFullYear() + pad(now.getMonth() + 1) + pad(now.getDate()) + pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());",
+              "var requestId = \"REQ-\" + requestTime + \"-\" + Math.floor(Math.random() * 100000);",
+              "",
+              "// checksum = SHA256( cac truong noi bang \"|\", secretKey o cuoi )",
+              "var raw = [partnerCode, requestId, requestTime, resource, page, pageSize, keyword, secretKey].join(\"|\");",
+              "var checksum = CryptoJS.SHA256(raw).toString(CryptoJS.enc.Hex);",
+              "",
+              "pm.variables.set(\"requestId\", requestId);",
+              "pm.variables.set(\"requestTime\", requestTime);",
+              "pm.variables.set(\"resource\", resource);",
+              "pm.variables.set(\"page\", page);",
+              "pm.variables.set(\"pageSize\", pageSize);",
+              "pm.variables.set(\"keyword\", keyword);",
+              "pm.variables.set(\"checksum\", checksum);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "var res = pm.response.json();",
+              "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"code = 00 (thanh cong)\", function () { pm.expect(res.code).to.eql(\"00\"); });",
+              "",
+              "// Xac thuc checksum cua phan hoi",
+              "var secretKey = pm.variables.get(\"secretKey\");",
+              "var raw = [res.code, res.message, res.requestId, res.resource, String(res.page), String(res.pageSize), String(res.totalItems), secretKey].join(\"|\");",
+              "var expected = CryptoJS.SHA256(raw).toString(CryptoJS.enc.Hex);",
+              "pm.test(\"Checksum phan hoi hop le\", function () { pm.expect(res.checksum).to.eql(expected); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"partnerCode\": \"{{partnerCode}}\",\n  \"requestId\": \"{{requestId}}\",\n  \"requestTime\": \"{{requestTime}}\",\n  \"resource\": \"{{resource}}\",\n  \"page\": {{page}},\n  \"pageSize\": {{pageSize}},\n  \"keyword\": \"{{keyword}}\",\n  \"checksum\": \"{{checksum}}\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/hrmcas",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "api", "hrmcas" ]
+        },
+        "description": "Lay danh sach don vi CAS VNPT (cay to chuc, kem ma khop tu GoConnect neu co). keyword khong ap dung cho resource nay."
+      }
+    },
+    {
+      "name": "Chuc danh (jobs)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Tu dong sinh requestId, requestTime va tinh checksum truoc khi gui.",
+              "var partnerCode = pm.variables.get(\"partnerCode\");",
+              "var secretKey   = pm.variables.get(\"secretKey\");",
+              "",
+              "// ---- Cac truong cua request nay ----",
+              "var resource = \"jobs\";",
+              "var page     = \"1\";",
+              "var pageSize = \"100\";",
+              "var keyword  = \"\";",
+              "",
+              "function pad(n) { return (n < 10 ? \"0\" : \"\") + n; }",
+              "var now = new Date();",
+              "var requestTime = \"\" + now.getFullYear() + pad(now.getMonth() + 1) + pad(now.getDate()) + pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());",
+              "var requestId = \"REQ-\" + requestTime + \"-\" + Math.floor(Math.random() * 100000);",
+              "",
+              "// checksum = SHA256( cac truong noi bang \"|\", secretKey o cuoi )",
+              "var raw = [partnerCode, requestId, requestTime, resource, page, pageSize, keyword, secretKey].join(\"|\");",
+              "var checksum = CryptoJS.SHA256(raw).toString(CryptoJS.enc.Hex);",
+              "",
+              "pm.variables.set(\"requestId\", requestId);",
+              "pm.variables.set(\"requestTime\", requestTime);",
+              "pm.variables.set(\"resource\", resource);",
+              "pm.variables.set(\"page\", page);",
+              "pm.variables.set(\"pageSize\", pageSize);",
+              "pm.variables.set(\"keyword\", keyword);",
+              "pm.variables.set(\"checksum\", checksum);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "var res = pm.response.json();",
+              "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"code = 00 (thanh cong)\", function () { pm.expect(res.code).to.eql(\"00\"); });",
+              "",
+              "// Xac thuc checksum cua phan hoi",
+              "var secretKey = pm.variables.get(\"secretKey\");",
+              "var raw = [res.code, res.message, res.requestId, res.resource, String(res.page), String(res.pageSize), String(res.totalItems), secretKey].join(\"|\");",
+              "var expected = CryptoJS.SHA256(raw).toString(CryptoJS.enc.Hex);",
+              "pm.test(\"Checksum phan hoi hop le\", function () { pm.expect(res.checksum).to.eql(expected); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"partnerCode\": \"{{partnerCode}}\",\n  \"requestId\": \"{{requestId}}\",\n  \"requestTime\": \"{{requestTime}}\",\n  \"resource\": \"{{resource}}\",\n  \"page\": {{page}},\n  \"pageSize\": {{pageSize}},\n  \"keyword\": \"{{keyword}}\",\n  \"checksum\": \"{{checksum}}\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/hrmcas",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "api", "hrmcas" ]
+        },
+        "description": "Lay danh sach chuc danh CAS VNPT."
+      }
+    },
+    {
+      "name": "Nhan su - loc theo tu khoa",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Tu dong sinh requestId, requestTime va tinh checksum truoc khi gui.",
+              "var partnerCode = pm.variables.get(\"partnerCode\");",
+              "var secretKey   = pm.variables.get(\"secretKey\");",
+              "",
+              "// ---- Cac truong cua request nay ----",
+              "var resource = \"employees\";",
+              "var page     = \"1\";",
+              "var pageSize = \"20\";",
+              "var keyword  = \"nguyen\";",
+              "",
+              "function pad(n) { return (n < 10 ? \"0\" : \"\") + n; }",
+              "var now = new Date();",
+              "var requestTime = \"\" + now.getFullYear() + pad(now.getMonth() + 1) + pad(now.getDate()) + pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());",
+              "var requestId = \"REQ-\" + requestTime + \"-\" + Math.floor(Math.random() * 100000);",
+              "",
+              "// checksum = SHA256( cac truong noi bang \"|\", secretKey o cuoi )",
+              "var raw = [partnerCode, requestId, requestTime, resource, page, pageSize, keyword, secretKey].join(\"|\");",
+              "var checksum = CryptoJS.SHA256(raw).toString(CryptoJS.enc.Hex);",
+              "",
+              "pm.variables.set(\"requestId\", requestId);",
+              "pm.variables.set(\"requestTime\", requestTime);",
+              "pm.variables.set(\"resource\", resource);",
+              "pm.variables.set(\"page\", page);",
+              "pm.variables.set(\"pageSize\", pageSize);",
+              "pm.variables.set(\"keyword\", keyword);",
+              "pm.variables.set(\"checksum\", checksum);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "var res = pm.response.json();",
+              "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"code = 00 (thanh cong)\", function () { pm.expect(res.code).to.eql(\"00\"); });",
+              "",
+              "// Xac thuc checksum cua phan hoi",
+              "var secretKey = pm.variables.get(\"secretKey\");",
+              "var raw = [res.code, res.message, res.requestId, res.resource, String(res.page), String(res.pageSize), String(res.totalItems), secretKey].join(\"|\");",
+              "var expected = CryptoJS.SHA256(raw).toString(CryptoJS.enc.Hex);",
+              "pm.test(\"Checksum phan hoi hop le\", function () { pm.expect(res.checksum).to.eql(expected); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"partnerCode\": \"{{partnerCode}}\",\n  \"requestId\": \"{{requestId}}\",\n  \"requestTime\": \"{{requestTime}}\",\n  \"resource\": \"{{resource}}\",\n  \"page\": {{page}},\n  \"pageSize\": {{pageSize}},\n  \"keyword\": \"{{keyword}}\",\n  \"checksum\": \"{{checksum}}\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/hrmcas",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "api", "hrmcas" ]
+        },
+        "description": "Vi du loc: keyword = \"nguyen\"."
+      }
+    },
+    {
+      "name": "Vi du loi - checksum sai",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function pad(n) { return (n < 10 ? \"0\" : \"\") + n; }",
+              "var now = new Date();",
+              "var requestTime = \"\" + now.getFullYear() + pad(now.getMonth() + 1) + pad(now.getDate()) + pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());",
+              "pm.variables.set(\"requestId\", \"REQ-\" + requestTime + \"-ERR\");",
+              "pm.variables.set(\"requestTime\", requestTime);",
+              "pm.variables.set(\"resource\", \"employees\");",
+              "pm.variables.set(\"page\", \"1\");",
+              "pm.variables.set(\"pageSize\", \"5\");",
+              "pm.variables.set(\"keyword\", \"\");",
+              "pm.variables.set(\"checksum\", \"checksum_khong_hop_le\");"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "var res = pm.response.json();",
+              "pm.test(\"code = 01 (checksum sai)\", function () { pm.expect(res.code).to.eql(\"01\"); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"partnerCode\": \"{{partnerCode}}\",\n  \"requestId\": \"{{requestId}}\",\n  \"requestTime\": \"{{requestTime}}\",\n  \"resource\": \"{{resource}}\",\n  \"page\": {{page}},\n  \"pageSize\": {{pageSize}},\n  \"keyword\": \"{{keyword}}\",\n  \"checksum\": \"{{checksum}}\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/hrmcas",
+          "host": [ "{{baseUrl}}" ],
+          "path": [ "api", "hrmcas" ]
+        },
+        "description": "Gui checksum sai de xem phan hoi loi (code 01)."
+      }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://pmncpt.cenit.vn", "type": "string" },
+    { "key": "partnerCode", "value": "CRM", "type": "string" },
+    { "key": "secretKey", "value": "DAN-KHOA-BI-MAT-VAO-DAY", "type": "string" }
+  ]
+}
