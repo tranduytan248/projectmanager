@@ -1,6 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Ban debug tu them quyen nay (xem src/debug/AndroidManifest.xml) nen luc chay
+         `flutter run` van goi mang binh thuong du khai o day hay khong — nhung ban release thi
+         KHONG, thieu dong nay se khien moi cuoc goi mang (API cua app lan Firebase Analytics)
+         im lang that bai tren ban release/production. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="ttkdgp_mobile"
+        android:label="BrewTask"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

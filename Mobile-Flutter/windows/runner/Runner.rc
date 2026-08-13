@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.ttkdgp" "\0"
-            VALUE "FileDescription", "ttkdgp_mobile" "\0"
+            VALUE "CompanyName", "vnptkha.kdgp" "\0"
+            VALUE "FileDescription", "BrewTask - Quan Ly Cong Viec" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "ttkdgp_mobile" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.ttkdgp. All rights reserved." "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 VNPT KHA. All rights reserved." "\0"
             VALUE "OriginalFilename", "ttkdgp_mobile.exe" "\0"
-            VALUE "ProductName", "ttkdgp_mobile" "\0"
+            VALUE "ProductName", "BrewTask" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

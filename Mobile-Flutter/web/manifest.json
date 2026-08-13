@@ -1,11 +1,11 @@
 {
-    "name": "ttkdgp_mobile",
-    "short_name": "ttkdgp_mobile",
+    "name": "BrewTask - Quản Lý Công Việc",
+    "short_name": "BrewTask",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#1A56A8",
+    "theme_color": "#1A56A8",
+    "description": "BrewTask - Quản Lý Công Việc",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

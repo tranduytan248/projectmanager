@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "810388374826",
+    "project_id": "brewtask-99719",
+    "storage_bucket": "brewtask-99719.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:810388374826:android:989fdfe7a29f588cf40a53",
+        "android_client_info": {
+          "package_name": "vnptkha.kdgp.brewtask"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqwo-nn8sr5f-J8gf0ELcr6VGktFw3N5E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

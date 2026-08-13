@@ -5,10 +5,10 @@
 // 'flutter create' template.
 
 // The application's name. By default this is also the title of the Flutter window.
-PRODUCT_NAME = ttkdgp_mobile
+PRODUCT_NAME = BrewTask
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.ttkdgp.ttkdgpMobile
+PRODUCT_BUNDLE_IDENTIFIER = vnptkha.kdgp.brewtask
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2026 com.ttkdgp. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2026 VNPT KHA. All rights reserved.

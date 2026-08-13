@@ -1,8 +1,10 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../config/app_cache.dart';
+import '../../config/app_theme.dart';
 import '../../core/classes/route_manager.dart';
 import '../app_routes.dart';
 import 'auth_routes.dart';
@@ -22,9 +24,6 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
   static const _splashDuration = Duration(seconds: 3);
 
-  /// Cung mau xanh voi icon_app.png, de splash va icon ngoai man hinh chinh la mot the thong nhat.
-  static const _brandBlue = Color(0xFF03448C);
-
   final _appCache = AppCache();
 
   late final AnimationController _cupController;
@@ -34,14 +33,21 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   void initState() {
     super.initState();
 
+    // An thanh trang thai/dieu huong trong luc splash de ca man hinh la mot manh xanh lien
+    // mach (khop voi splash nguyen sinh cua OS, cung dang an status bar) — hien lai truoc khi
+    // sang Login/Dashboard o _redirect, khong thi cac man sau cung bi mat thanh trang thai theo.
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+
+    // Khong bounce (bo Curves.elasticOut cu) — mo dan + lon dan nhe nhang cho diu mat, giong
+    // cach native splash (flutter_native_splash) dung im icon roi Flutter tiep quan nhe nhang.
     _cupController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 700),
+      duration: const Duration(milliseconds: 900),
     )..forward();
 
     _steamController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1800),
+      duration: const Duration(milliseconds: 2400),
     )..repeat();
 
     Future.delayed(_splashDuration, _redirect);
@@ -55,6 +61,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   }
 
   Future<void> _redirect() async {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     final isLogin = await _appCache.isLogin();
     if (!mounted) return;
     await Nav.toAndClearStack(isLogin ? AppRoutes.dashboard : AuthRoutes.login);
@@ -63,7 +70,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _brandBlue,
+      backgroundColor: AppTheme.brandBlue,
       body: Center(
         child: SizedBox(
           width: 220,
@@ -74,9 +81,11 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
             children: [
               Positioned(top: 0, child: _RisingSteam(controller: _steamController)),
               ScaleTransition(
-                scale: CurvedAnimation(parent: _cupController, curve: Curves.elasticOut),
+                scale: Tween(begin: 0.88, end: 1.0).animate(
+                  CurvedAnimation(parent: _cupController, curve: Curves.easeOutCubic),
+                ),
                 child: FadeTransition(
-                  opacity: _cupController,
+                  opacity: CurvedAnimation(parent: _cupController, curve: Curves.easeOut),
                   child: Image.asset('assets/images/splash_cup.png', width: 190),
                 ),
               ),
@@ -124,9 +133,12 @@ class _SteamWisp extends StatelessWidget {
       animation: controller,
       builder: (context, child) {
         final t = (controller.value + phase) % 1.0;
-        final opacity = math.sin(t * math.pi).clamp(0.0, 1.0);
-        final riseY = -30.0 * t;
-        final sway = math.sin(t * math.pi * 2) * 3;
+        // sin uon nhe o ca hai dau (mo/tan cham hon o giua vong lap) thay vi boc/tan deu deu,
+        // trong tu nhien hon; bien do bay len va lac ngang cung giam de dang nhin nhe nhang.
+        final eased = Curves.easeInOut.transform(t);
+        final opacity = math.sin(t * math.pi).clamp(0.0, 1.0) * 0.85;
+        final riseY = -22.0 * eased;
+        final sway = math.sin(t * math.pi * 2) * 2;
 
         return Opacity(
           opacity: opacity,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'config/app_analytics.dart';
 import 'config/app_routes.dart';
 import 'config/app_theme.dart';
 import 'config/theme_provider.dart';
@@ -17,13 +18,14 @@ class TtkdgpApp extends StatelessWidget {
     return MaterialApp(
       navigatorKey: navigatorKey,
       scaffoldMessengerKey: scaffoldMessengerKey,
-      title: 'TTKDGP Project Manager',
+      title: 'BrewTask - Quản Lý Công Việc',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: themeMode,
       initialRoute: AuthRoutes.splash,
       routes: Routes().routes,
+      navigatorObservers: AppAnalytics.observers,
     );
   }
 }
