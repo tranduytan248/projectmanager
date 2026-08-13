@@ -15,13 +15,14 @@ cau va boi canh ngan gon de khong mat y khi quay lai.
   buoc cho ban production (hien pm.vn local dang chay HTTP thuan de test), CORS (khong can voi
   app native nhung can neu co ban web/PWA sau nay).
 
-### 2. Man "Cai dat" (Settings) tren mobile - thiet ke lai
+### 2. Man "Cai dat" (Settings) tren mobile - thiet ke lai — DA LAM 2026-08-14
 - Yeu cau: 2026-08-14
-- Gom cac muc: Thong tin ca nhan, Chinh sach bao mat, Dieu khoan su dung, Dang ky nghi phep,
-  Thoat (dang xuat).
-- Kieu trinh bay: list hoac luoi icon (chua chot, can hoi lai khi bat tay lam).
-- Man hien tai (`lib/features/profile/profile_screen.dart`) chi la placeholder trong (ten +
-  TODO + nut Dang xuat).
+- Da lam: danh sach (khong phai luoi icon — hop hon voi noi dung do dai khac nhau) gom Thong
+  tin ca nhan (bottom sheet: ho ten + vai tro), Chinh sach bao mat + Dieu khoan su dung (man
+  tinh, noi dung viet moi vi chua co API/trang web tuong ung), Dang ky nghi phep (dan sang
+  AppRoutes.leaves da co san), Thoat (dialog xac nhan roi dang xuat).
+- Con thieu: "Thong tin ca nhan" moi chi hien ho ten + vai tro suy ra tu quyen (chua co API
+  /auth/me tra ho so day du de sua doi mat khau, so dien thoai... — xem lai khi co API do).
 
 ### 3. Dashboard mobile hien theo vai tro (Bao cao cong viec / Quan ly / Quan tri)
 - Yeu cau: 2026-08-14
