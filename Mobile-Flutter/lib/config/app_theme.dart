@@ -42,7 +42,11 @@ class AppTheme {
   static ThemeData get light => ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: _seedColor),
-        appBarTheme: const AppBarTheme(centerTitle: true),
+        // Mac dinh Material3 lay mau "surface" tu seed (hoi ngar xanh), khong phai trang tuyet
+        // doi — ep trang de khop dung voi cac the trong app deu dung Colors.white, va de status
+        // bar trong suot (xem app_bottom_nav.dart) hoa lien mach vao nen thay vi lo mot vet mau.
+        scaffoldBackgroundColor: Colors.white,
+        appBarTheme: const AppBarTheme(centerTitle: true, backgroundColor: Colors.white),
       );
 
   static ThemeData get dark => ThemeData(

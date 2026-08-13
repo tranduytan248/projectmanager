@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:phosphor_icons/phosphor_icons.dart';
 
 import '../../config/app_routes.dart' show Routes;
@@ -81,16 +82,24 @@ class AppBottomNav extends StatelessWidget {
     // khong to sang dong nao ca, thay vi vuot qua do dai danh sach roi crash.
     final selectedIndex = currentIndex < _tabs.length ? currentIndex : null;
 
-    return Scaffold(
-      appBar: appBar,
-      body: body,
-      floatingActionButton: floatingActionButton,
-      bottomNavigationBar: _FlatBottomBar(
-        selectedIndex: selectedIndex ?? -1,
-        onSelect: (index) {
-          if (index == selectedIndex) return;
-          _switchTab(context, _tabs[index].routeName);
-        },
+    // Thanh trang thai trong suot + icon mau toi: nen trang cua man noi lien vao vung status
+    // bar thay vi hien mot dai mau toi mac dinh cua he thong, cho cam giac "fullscreen" giong
+    // nhu man dang nhap (xem login_screen.dart) nhung doi mau icon vi nen o day la mau trang.
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark.copyWith(
+        statusBarColor: Colors.transparent,
+      ),
+      child: Scaffold(
+        appBar: appBar,
+        body: body,
+        floatingActionButton: floatingActionButton,
+        bottomNavigationBar: _FlatBottomBar(
+          selectedIndex: selectedIndex ?? -1,
+          onSelect: (index) {
+            if (index == selectedIndex) return;
+            _switchTab(context, _tabs[index].routeName);
+          },
+        ),
       ),
     );
   }
