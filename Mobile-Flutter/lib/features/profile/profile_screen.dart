@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart';
 
-import '../auth/auth_controller.dart';
+import '../../shared/widgets/app_bottom_nav.dart';
+import '../auth/auth_provider.dart';
 
-class ProfileScreen extends ConsumerWidget {
+class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final auth = ref.watch(authControllerProvider);
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
 
-    return Scaffold(
+    return AppBottomNav(
+      currentIndex: 4,
       appBar: AppBar(title: const Text('Ca nhan')),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -22,7 +24,7 @@ class ProfileScreen extends ConsumerWidget {
             const Text('TODO: GET /api/auth/me — ho so, doi mat khau, danh sach quyen.'),
             const Spacer(),
             FilledButton.tonal(
-              onPressed: () => ref.read(authControllerProvider.notifier).logout(),
+              onPressed: () => context.read<AuthProvider>().logout(context),
               child: const Text('Dang xuat'),
             ),
           ],

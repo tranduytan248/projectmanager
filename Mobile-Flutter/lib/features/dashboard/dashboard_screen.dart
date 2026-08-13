@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../shared/widgets/app_bottom_nav.dart';
 import '../../shared/widgets/placeholder_body.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -7,7 +8,8 @@ class DashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return AppBottomNav(
+      currentIndex: 0,
       appBar: AppBar(title: const Text('Tong quan')),
       body: const PlaceholderBody(
         message: 'TODO: GET /api/dashboard (tuong ung DashboardController)\n'

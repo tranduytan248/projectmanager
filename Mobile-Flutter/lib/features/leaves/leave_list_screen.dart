@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
+import '../../core/classes/route_manager.dart';
 import '../../shared/widgets/placeholder_body.dart';
+import '../app_routes.dart';
 
 class LeaveListScreen extends StatelessWidget {
   const LeaveListScreen({super.key});
@@ -15,7 +16,7 @@ class LeaveListScreen extends StatelessWidget {
             'Lich su dang ky nghi phep.',
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push('/leaves/new'),
+        onPressed: () => Nav.toNamed(context, AppRoutes.leaveNew),
         icon: const Icon(Icons.add),
         label: const Text('Dang ky'),
       ),

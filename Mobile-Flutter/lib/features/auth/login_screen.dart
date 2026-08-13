@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart';
 
-import 'auth_controller.dart';
+import '../../core/classes/route_manager.dart';
+import '../app_routes.dart';
+import 'auth_provider.dart';
 
-class LoginScreen extends ConsumerStatefulWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isSubmitting = false;
@@ -18,10 +20,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _submit() async {
     setState(() => _isSubmitting = true);
     try {
-      await ref.read(authControllerProvider.notifier).login(
-            _usernameController.text.trim(),
-            _passwordController.text,
-          );
+      final auth = context.read<AuthProvider>();
+      await auth.login(context, _usernameController.text.trim(), _passwordController.text);
+      if (mounted && auth.isAuthenticated) {
+        await Nav.to(context, AppRoutes.dashboard);
+      }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }

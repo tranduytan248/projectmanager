@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/classes/route_manager.dart';
+
 class LeaveRequestFormScreen extends StatelessWidget {
   const LeaveRequestFormScreen({super.key});
 
@@ -17,7 +19,7 @@ class LeaveRequestFormScreen extends StatelessWidget {
             const TextField(decoration: InputDecoration(labelText: 'Ly do')),
             const SizedBox(height: 24),
             FilledButton(
-              onPressed: () => Navigator.of(context).maybePop(),
+              onPressed: () => Nav.close(context),
               child: const Text('Gui yeu cau'),
             ),
           ],

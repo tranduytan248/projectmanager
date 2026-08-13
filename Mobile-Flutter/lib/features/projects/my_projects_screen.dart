@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../shared/widgets/app_bottom_nav.dart';
 import '../../shared/widgets/placeholder_body.dart';
 
 class MyProjectsScreen extends StatelessWidget {
@@ -7,7 +8,8 @@ class MyProjectsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return AppBottomNav(
+      currentIndex: 2,
       appBar: AppBar(title: const Text('Du an cua toi')),
       body: const PlaceholderBody(
         message: 'TODO: GET /api/projects/mine (tuong ung WorkProjectsController)\n'

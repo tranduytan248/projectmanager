@@ -11,17 +11,17 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.6
 
-  # State management
-  flutter_riverpod: ^2.5.1
-
-  # Routing (ho tro shell route cho bottom nav + redirect theo trang thai dang nhap)
-  go_router: ^14.2.0
+  # State management + DI
+  provider: ^6.1.5+1
 
   # Goi API
   dio: ^5.4.3+1
 
   # Luu access/refresh token an toan
   flutter_secure_storage: ^9.2.2
+
+  # Cache trang thai dang nhap (AppCache) tren nen SharedPreferences
+  shared_preferences: ^2.5.3
 
   # Cache offline nhe cho danh sach cong viec/du an
   hive: ^2.2.3
