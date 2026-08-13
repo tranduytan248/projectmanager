@@ -1,0 +1,43 @@
+﻿@model TTKDGP.ProjectManager.Models.TaskTodoViewModel
+@*
+    Khối "Việc cần làm" (todolist con) trong hộp chi tiết công việc. Được trả lại nguyên khối sau
+    mỗi lần thêm/sửa/xoá/tick để hộp thoại tự vẽ lại — chỉ MỘT nơi định nghĩa cách hiển thị.
+    Thuần UI, không tính điểm KPI — khác hẳn cây checklist dự án.
+*@
+
+@if (Model.TotalCount > 0)
+{
+    <div class="todo-list">
+        @foreach (var item in Model.Items)
+        {
+            <div class="todo-item @(item.IsDone ? "done" : "")" data-todo-id="@item.Id">
+                <label class="todo-check">
+                    <input type="checkbox" class="todo-toggle" @(item.IsDone ? "checked" : "")
+                           @(Model.CanManage ? "" : "disabled") />
+                    <span class="todo-text">@item.Content</span>
+                </label>
+
+                @if (Model.CanManage)
+                {
+                    <span class="todo-actions">
+                        <button type="button" class="todo-edit" title="Sửa">&#9998;</button>
+                        <button type="button" class="todo-del" title="Xoá">&times;</button>
+                    </span>
+                }
+            </div>
+        }
+    </div>
+}
+else
+{
+    <p class="muted todo-empty">Chưa có việc con nào.</p>
+}
+
+@if (Model.CanManage)
+{
+    <div class="todo-add-row">
+        <input type="text" class="todo-add-input" maxlength="300" autocomplete="off"
+               placeholder="Thêm việc con... (Enter để lưu)" />
+        <button type="button" class="btn btn-default btn-sm todo-add-btn">Thêm</button>
+    </div>
+}

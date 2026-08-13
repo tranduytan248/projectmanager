@@ -28,6 +28,12 @@ namespace TTKDGP.ProjectManager.Models
         /// Dùng chung một mẫu thì người nhận việc dự án đọc thấy "được giao việc riêng".
         /// </summary>
         public const string ProjectTaskAssigned = "GiaoViecDuAn";
+
+        /// <summary>
+        /// Có lượt trao đổi mới trong một công việc — báo cho người tạo việc và người đang được
+        /// giao việc (nếu khác người vừa viết). Bấm vào mở trao đổi của công việc.
+        /// </summary>
+        public const string CommentAdded = "TraoDoiMoi";
     }
 
     /// <summary>

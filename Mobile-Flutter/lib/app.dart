@@ -5,7 +5,7 @@ import 'config/app_routes.dart';
 import 'config/app_theme.dart';
 import 'config/theme_provider.dart';
 import 'core/classes/app_keys.dart';
-import 'features/app_routes.dart';
+import 'features/auth/auth_routes.dart';
 
 class TtkdgpApp extends StatelessWidget {
   const TtkdgpApp({super.key});
@@ -22,7 +22,7 @@ class TtkdgpApp extends StatelessWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: themeMode,
-      initialRoute: AppRoutes.dashboard,
+      initialRoute: AuthRoutes.splash,
       routes: Routes().routes,
     );
   }

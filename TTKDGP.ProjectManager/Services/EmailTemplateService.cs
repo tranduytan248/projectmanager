@@ -84,6 +84,30 @@ namespace TTKDGP.ProjectManager.Services
             },
             new EmailTemplateDefinition
             {
+                Code = NotificationTypes.CommentAdded,
+                Name = "Có trao đổi mới trong công việc",
+                Description = "Gửi cho người tạo việc và người đang được giao việc khi có lượt "
+                    + "trao đổi mới (trừ chính người vừa viết).",
+                Params =
+                {
+                    new EmailTemplateParam("HoTen", "Họ tên người nhận"),
+                    new EmailTemplateParam("NguoiTraoDoi", "Người vừa gửi trao đổi"),
+                    new EmailTemplateParam("TenCongViec", "Tên công việc"),
+                    new EmailTemplateParam("TenDuAn", "Tên dự án"),
+                    new EmailTemplateParam("NoiDung", "Nội dung trao đổi"),
+                    new EmailTemplateParam("TepDinhKem", "Liên kết file đính kèm (tự trống nếu không có)"),
+                    new EmailTemplateParam("LienKet", "Liên kết mở trao đổi (cần đăng nhập)")
+                },
+                DefaultSubject = "[NCPT] {{NguoiTraoDoi}} vừa trao đổi trong công việc {{TenCongViec}}",
+                DefaultBody = "<p>Chào {{HoTen}},</p>"
+                    + "<p><strong>{{NguoiTraoDoi}}</strong> vừa gửi một lượt trao đổi mới trong công việc "
+                    + "<strong>{{TenCongViec}}</strong> (dự án {{TenDuAn}}):</p>"
+                    + "<blockquote style=\"margin:8px 0;padding:8px 14px;border-left:3px solid #1a56a8;background:#f4f7fb\">{{NoiDung}}</blockquote>"
+                    + "{{TepDinhKem}}"
+                    + "<p><a href=\"{{LienKet}}\">Mở trao đổi trong hệ thống</a> (cần đăng nhập).</p>"
+            },
+            new EmailTemplateDefinition
+            {
                 Code = NotificationTypes.TaskAssigned,
                 Name = "Được giao việc riêng",
                 Description = "Gửi khi Quản lý Tổ giao thẳng một việc riêng (ngoài dự án) cho bạn.",
@@ -346,6 +370,7 @@ namespace TTKDGP.ProjectManager.Services
                 { "TenDuAn", "Dự án minh hoạ" },
                 { "TenCongViec", "Công việc minh hoạ" },
                 { "NguoiNhac", "Nguyễn Văn A" },
+                { "NguoiTraoDoi", "Nguyễn Văn A" },
                 { "NoiDung", "Đây là nội dung trao đổi minh hoạ cho mail gửi thử." },
                 { "HanHoanThanh", DateTime.Today.AddDays(1).ToString("dd/MM/yyyy") },
                 { "TinhTrang", "sắp đến hạn (còn 1 ngày)" },

@@ -239,6 +239,7 @@
                 if (window.AppSelect2) window.AppSelect2.init($body[0]);
                 if (window.AppRichText) window.AppRichText.init($body[0]);
                 if (window.AppTimeLog) window.AppTimeLog.init($body[0]);
+                if (window.AppTaskTodo) window.AppTaskTodo.init($body[0]);
                 if (window.AppRequiredNote) window.AppRequiredNote.init($body[0]);
             })
             .fail(function () {
@@ -571,6 +572,128 @@
 
     $(function () { init(document); });
     window.AppTimeLog = { init: init };
+})(jQuery);
+
+// Todolist con (khối "Việc cần làm") trong hộp chi tiết công việc — thêm/sửa/xoá/tick bằng AJAX
+// rồi thay cả khối bằng HTML máy chủ trả về, cùng khuôn với AppTimeLog ở trên.
+(function ($) {
+    'use strict';
+
+    function bind($box) {
+        if (!$box.length || $box.attr('data-todo-ready')) return;
+        $box.attr('data-todo-ready', '1');
+
+        var taskId = $box.data('task-id');
+        var addUrl = $box.data('add-url');
+        var toggleUrl = $box.data('toggle-url');
+        var editUrl = $box.data('edit-url');
+        var deleteUrl = $box.data('delete-url');
+
+        // Token nằm NGOÀI khối được vẽ lại (trong .todo-section, không phải trong #taskTodoBox)
+        // nên đọc theo thẻ cha, giống cách AppTimeLog đọc token của nó.
+        function token() {
+            return $box.closest('.todo-section, .card-body, body')
+                .find('input[name="__RequestVerificationToken"]').first().val();
+        }
+
+        // Đọc lại số dòng/số dòng xong từ chính DOM vừa vẽ — khớp tuyệt đối với những gì máy chủ
+        // vừa trả, khỏi phải tự đếm lại trên chuỗi HTML.
+        function updateCount() {
+            var $count = $box.closest('.todo-section').find('#todoCount');
+            var total = $box.find('[data-todo-id]').length;
+            var done = $box.find('.todo-item.done').length;
+            $count.text('— ' + done + '/' + total + ' xong');
+        }
+
+        function failed(xhr) {
+            window.alert(xhr && xhr.status === 400 && xhr.responseText
+                ? xhr.responseText
+                : 'Không lưu được. Hãy thử lại.');
+        }
+
+        function post(url, data) {
+            data.id = taskId;
+            data.__RequestVerificationToken = token();
+
+            return $.post(url, data)
+                .done(function (html) {
+                    $box.html(html);
+                    updateCount();
+                })
+                .fail(failed);
+        }
+
+        $box.on('click', '.todo-add-btn', function () {
+            var $input = $box.find('.todo-add-input');
+            var text = $.trim($input.val());
+            if (!text) return;
+
+            post(addUrl, { content: text });
+        });
+
+        $box.on('keydown', '.todo-add-input', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                $box.find('.todo-add-btn').trigger('click');
+            }
+        });
+
+        $box.on('change', '.todo-toggle', function () {
+            var todoId = $(this).closest('[data-todo-id]').data('todo-id');
+            post(toggleUrl, { todoId: todoId });
+        });
+
+        $box.on('click', '.todo-del', function () {
+            if (!window.confirm('Xoá việc con này?')) return;
+
+            var todoId = $(this).closest('[data-todo-id]').data('todo-id');
+            post(deleteUrl, { todoId: todoId });
+        });
+
+        // Nút sửa chuyển dòng thành ô nhập ngay tại chỗ, Enter hoặc rời ô là lưu, Esc là bỏ qua.
+        $box.on('click', '.todo-edit', function () {
+            var $item = $(this).closest('[data-todo-id]');
+            if ($item.find('.todo-edit-input').length) return;
+
+            var todoId = $item.data('todo-id');
+            var $text = $item.find('.todo-text');
+            var original = $text.text();
+
+            var $input = $('<input type="text" class="todo-edit-input" maxlength="300" />')
+                .val(original);
+
+            $item.addClass('editing');
+            $text.hide().after($input);
+            $input.trigger('focus').select();
+
+            function commit() {
+                var text = $.trim($input.val());
+                if (!text || text === original) { cancel(); return; }
+                post(editUrl, { todoId: todoId, content: text });
+            }
+
+            function cancel() {
+                $input.remove();
+                $text.show();
+                $item.removeClass('editing');
+            }
+
+            $input.on('keydown', function (e) {
+                if (e.key === 'Enter') { e.preventDefault(); commit(); }
+                if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+            });
+            $input.on('blur', commit);
+        });
+    }
+
+    function init(root) {
+        $(root || document).find('[data-todo-box]').each(function () {
+            bind($(this));
+        });
+    }
+
+    $(function () { init(document); });
+    window.AppTaskTodo = { init: init };
 })(jQuery);
 
 // Kéo thả thẻ trên bảng Kanban.

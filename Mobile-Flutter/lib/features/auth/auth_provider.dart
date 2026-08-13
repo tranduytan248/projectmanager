@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../config/app_cache.dart';
 import '../../core/constants/route_names.dart';
 import '../../core/helpers/login_helper.dart';
+import '../../core/utils/toast_service.dart';
 
 /// Trang thai hien thi cua phien dang nhap — thay AuthController (StateNotifier) cu bang
 /// ChangeNotifier, dung mau CLAUDE.md "mot ChangeNotifier moi vung tinh nang, dang ky trong
@@ -39,14 +40,25 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> login(BuildContext context, String username, String password) async {
+  /// Tra ve true/false de LoginScreen biet co dieu huong sang Dashboard hay khong. Loi (sai
+  /// tai khoan hoac loi server) hien thi ngay tai day qua ToastService thay vi bat LoginScreen
+  /// tu doc ma loi 0/-1 — cung mot cho xu ly du sau nay them nhieu diem goi login() khac.
+  Future<bool> login(BuildContext context, String username, String password) async {
     final result = await doAuth(context, username, password);
-    if (result != 1) return;
+    if (result == 0) {
+      ToastService.show('Sai tai khoan hoac mat khau.');
+      return false;
+    }
+    if (result == -1) {
+      ToastService.show('Loi he thong, vui long thu lai sau.');
+      return false;
+    }
 
     _isAuthenticated = true;
     _displayName = username;
     _permissions = const ['*'];
     notifyListeners();
+    return true;
   }
 
   Future<void> logout(BuildContext context) async {

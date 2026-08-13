@@ -21,6 +21,7 @@
     var parentTitle = ViewBag.ParentTitle as string;
     var comments = ViewBag.CommentsModel as TaskCommentsViewModel ?? new TaskCommentsViewModel { TaskId = Model.Id };
     var timeLogs = ViewBag.TimeLogModel as TaskTimeLogViewModel ?? new TaskTimeLogViewModel { TaskId = Model.Id };
+    var todos = ViewBag.TodoModel as TaskTodoViewModel ?? new TaskTodoViewModel { TaskId = Model.Id };
 }
 
 <div class="task-detail-split">
@@ -154,6 +155,25 @@
          data-add-url="@Url.Action("LogTime", "Checklist")"
          data-delete-url="@Url.Action("DeleteTimeLog", "Checklist")">
         @Html.Partial("_TimeLogs", timeLogs)
+    </div>
+</div>
+
+@* Todolist con: chẻ nhỏ đầu việc thành các bước tick được. Thuần UI, không tính KPI — bọc trong
+   một thẻ có id để đoạn script bên dưới thay đúng chỗ sau mỗi lần thêm/sửa/xoá/tick. *@
+<div class="form-section todo-section">
+    <div class="form-section-title">
+        Việc cần làm
+        <span class="muted" id="todoCount">— @todos.DoneCount/@todos.TotalCount xong</span>
+    </div>
+    <div class="todo-token">@Html.AntiForgeryToken()</div>
+    <div id="taskTodoBox"
+         data-todo-box
+         data-task-id="@Model.Id"
+         data-add-url="@Url.Action("AddTodo", "Checklist")"
+         data-toggle-url="@Url.Action("ToggleTodo", "Checklist")"
+         data-edit-url="@Url.Action("EditTodo", "Checklist")"
+         data-delete-url="@Url.Action("DeleteTodo", "Checklist")">
+        @Html.Partial("_Todos", todos)
     </div>
 </div>
 

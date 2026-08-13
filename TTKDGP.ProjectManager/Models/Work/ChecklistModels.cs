@@ -220,6 +220,28 @@ namespace TTKDGP.ProjectManager.Models
         }
     }
 
+    /// <summary>
+    /// Todolist con của một đầu việc trong hộp thoại chi tiết — dùng cho cả lượt vẽ đầu lẫn phần
+    /// vẽ lại sau khi thêm/sửa/xoá/tick, giống <see cref="TaskCommentsViewModel"/>.
+    /// </summary>
+    public class TaskTodoViewModel
+    {
+        public int TaskId { get; set; }
+
+        /// <summary>Người đang xem có thêm/sửa/xoá/tick được không — xem BaseController.CanManageTodos.</summary>
+        public bool CanManage { get; set; }
+
+        public List<WorkTaskTodo> Items { get; set; }
+
+        public int DoneCount { get { return Items.Count(t => t.IsDone); } }
+        public int TotalCount { get { return Items.Count; } }
+
+        public TaskTodoViewModel()
+        {
+            Items = new List<WorkTaskTodo>();
+        }
+    }
+
     /// <summary>Kết quả xử lý một dòng import.</summary>
     public static class ImportOutcomes
     {
