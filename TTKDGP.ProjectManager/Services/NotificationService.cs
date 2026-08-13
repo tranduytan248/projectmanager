@@ -128,6 +128,47 @@ namespace TTKDGP.ProjectManager.Services
         }
 
         /// <summary>
+        /// Báo cho người tạo việc và người đang được giao việc khi có lượt trao đổi mới (web +
+        /// email). Không báo cho chính người vừa viết trao đổi; người tạo trùng người được giao
+        /// thì chỉ báo một lần.
+        /// </summary>
+        public static void CommentAdded(WorkTask task, WorkComment comment, int actorUserId, string actorName)
+        {
+            if (task == null || comment == null) return;
+
+            var actor = string.IsNullOrWhiteSpace(actorName) ? "Một người" : actorName;
+
+            var attachmentHtml = comment.HasAttachment
+                ? string.Format("<p>File đính kèm: <a href=\"{0}\">{1}</a> <em>(đăng nhập để tải)</em></p>",
+                    System.Web.HttpUtility.HtmlEncode(Infrastructure.AppSettings.PublicLink
+                        + "/Checklist/Attachment?commentId=" + comment.Id),
+                    System.Web.HttpUtility.HtmlEncode(comment.AttachmentName))
+                : string.Empty;
+
+            var recipients = new[] { task.AssignedByUserId, task.AssigneeUserId }
+                .Where(userId => userId > 0 && userId != actorUserId)
+                .Distinct();
+
+            foreach (var userId in recipients)
+            {
+                var n = Add(userId, NotificationTypes.CommentAdded,
+                    string.Format("{0} vừa gửi trao đổi mới trong công việc \"{1}\".", actor, task.Title),
+                    task.ProjectId, task.Id);
+
+                EmailTemplateService.Send(userId, NotificationTypes.CommentAdded,
+                    new Dictionary<string, string>
+                    {
+                        { "NguoiTraoDoi", actor },
+                        { "TenCongViec", task.Title },
+                        { "TenDuAn", string.IsNullOrWhiteSpace(task.ProjectName) ? "(ngoài dự án)" : task.ProjectName },
+                        { "NoiDung", comment.Content ?? string.Empty },
+                        { "LienKet", OpenLink(n) }
+                    },
+                    new Dictionary<string, string> { { "TepDinhKem", attachmentHtml } });
+            }
+        }
+
+        /// <summary>
         /// Báo cho người vừa được giao một việc riêng (web + email). Mail kèm liên kết file đính
         /// kèm của việc nếu có — liên kết đi qua action có kiểm quyền nên phải đăng nhập mới tải.
         /// </summary>

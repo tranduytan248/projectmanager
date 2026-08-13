@@ -2436,6 +2436,7 @@ table.data tbody tr.row-due-danger > td:first-child::before { background: var(--
 .notif-icon-project { background: var(--primary-soft); color: var(--primary); }
 .notif-icon-mention { background: #f0eefb; color: #4b3f9e; }
 .notif-icon-due { background: var(--warn-soft); color: var(--warn); }
+.notif-icon-comment { background: #e8f4ee; color: #1f7a4d; }
 
 .notif-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .notif-message { font-size: 13px; line-height: 1.45; }
@@ -2697,6 +2698,81 @@ table.data tbody tr.row-due-danger > td:first-child::before { background: var(--
 
 /* Token chống giả mạo: chỉ để script đọc, không chiếm chỗ trên giao diện. */
 .timelog-token { display: none; }
+
+/* ===== Todolist con trong hộp chi tiết công việc (xem AppTaskTodo trong app.js) ===== */
+
+.todo-section { margin-top: 4px; }
+.todo-token { display: none; }
+.todo-empty { font-size: 13px; margin: 6px 0 10px; }
+
+.todo-list { display: flex; flex-direction: column; gap: 2px; margin-bottom: 8px; }
+
+.todo-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 4px;
+    border-radius: var(--radius-xs);
+}
+
+.todo-item:hover { background: var(--bg-soft); }
+
+.todo-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1 1 auto;
+    min-width: 0;
+    cursor: pointer;
+}
+
+.todo-check input[type="checkbox"] { margin: 0; flex: 0 0 auto; }
+
+.todo-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-wrap: break-word;
+    font-size: 13.5px;
+}
+
+.todo-item.done .todo-text { text-decoration: line-through; color: var(--text-muted); }
+
+.todo-edit-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 13.5px;
+    padding: 2px 6px;
+}
+
+.todo-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex: 0 0 auto;
+    opacity: 0;
+}
+
+.todo-item:hover .todo-actions,
+.todo-item.editing .todo-actions { opacity: 1; }
+
+.todo-edit,
+.todo-del {
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1;
+    padding: 4px 6px;
+    border-radius: 6px;
+}
+
+.todo-edit:hover,
+.todo-del:hover { background: var(--bg-soft); color: var(--text); }
+
+.todo-add-row { display: flex; gap: 6px; }
+.todo-add-input { flex: 1 1 auto; min-width: 0; }
+.todo-add-btn { flex: 0 0 auto; }
 
 /* ===== Trình soạn thảo WYSIWYG gọn (textarea[data-rich], xem AppRichText trong app.js) ===== */
 

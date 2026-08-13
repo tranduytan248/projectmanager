@@ -33,12 +33,18 @@ else
             var icon = n.Type == NotificationTypes.ProjectAdded ? "&#43;"
                 : n.Type == NotificationTypes.ProjectRemoved ? "&#8722;"
                 : n.Type == NotificationTypes.Mentioned ? "&#64;"
+                : n.Type == NotificationTypes.CommentAdded ? "&#128172;"
                 : n.Type == NotificationTypes.TaskAssigned || n.Type == NotificationTypes.ProjectTaskAssigned ? "&#9733;"
                 : "&#9200;";
 
+            var iconClass = n.Type == NotificationTypes.DueSoon ? "due"
+                : n.Type == NotificationTypes.Mentioned ? "mention"
+                : n.Type == NotificationTypes.CommentAdded ? "comment"
+                : "project";
+
             <a class="notif-item @(n.IsRead ? "" : "unread")"
                href="@Url.Action("Open", "UserNotifications", new { id = n.Id })">
-                <span class="notif-icon notif-icon-@(n.Type == NotificationTypes.DueSoon ? "due" : n.Type == NotificationTypes.Mentioned ? "mention" : "project")">@Html.Raw(icon)</span>
+                <span class="notif-icon notif-icon-@iconClass">@Html.Raw(icon)</span>
                 <span class="notif-body">
                     <span class="notif-message">@n.Message</span>
                     <span class="notif-time">@n.CreatedAt.ToString("HH:mm dd/MM/yyyy")</span>

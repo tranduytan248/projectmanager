@@ -97,6 +97,20 @@ namespace TTKDGP.ProjectManager.Controllers
         }
 
         /// <summary>
+        /// Được thêm/sửa/xoá/tick dòng trong todolist con của đầu việc này không: người được giao
+        /// việc, người đã tạo/giao việc, hoặc PM dự án / Quản lý Tổ (giống mọi quyền can thiệp
+        /// khác trong hệ thống — xem <see cref="CanEditProject"/>).
+        /// </summary>
+        protected bool CanManageTodos(WorkTask task)
+        {
+            if (task == null) return false;
+            if (CanEditProject(task.ProjectId)) return true;
+
+            return CurrentUserId > 0 &&
+                (task.AssigneeUserId == CurrentUserId || task.AssignedByUserId == CurrentUserId);
+        }
+
+        /// <summary>
         /// Được nhìn thấy đầu việc này không. Trả về false thì nơi gọi phải trả 404 chứ không phải
         /// 403 — để không lộ ra là đầu việc đó có tồn tại.
         ///

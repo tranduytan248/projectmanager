@@ -310,6 +310,7 @@ namespace TTKDGP.ProjectManager.Controllers
             ViewBag.Project = Repository.WorkProjects.Find(task.ProjectId);
             ViewBag.CommentsModel = BuildComments(task);
             ViewBag.TimeLogModel = BuildTimeLogs(task);
+            ViewBag.TodoModel = BuildTodos(task);
 
             var parent = task.ParentId > 0 ? Repository.WorkTasks.Find(task.ParentId) : null;
             ViewBag.ParentTitle = parent == null
@@ -444,6 +445,123 @@ namespace TTKDGP.ProjectManager.Controllers
             return Content(message);
         }
 
+        // ---------- Todolist con ----------
+
+        private TaskTodoViewModel BuildTodos(WorkTask task)
+        {
+            return new TaskTodoViewModel
+            {
+                TaskId = task.Id,
+                CanManage = CanManageTodos(task),
+                Items = Repository.WorkTaskTodos.All()
+                    .Where(t => t.TaskId == task.Id)
+                    .OrderBy(t => t.SortOrder)
+                    .ToList()
+            };
+        }
+
+        /// <summary>Trả lỗi dạng chữ kèm mã 400 cho todolist, cùng khuôn với <see cref="LogTimeError"/>.</summary>
+        private ActionResult TodoError(string message)
+        {
+            Response.StatusCode = 400;
+            Response.TrySkipIisCustomErrors = true;
+            return Content(message);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "wtasks.view")]
+        public ActionResult AddTodo(int id, string content)
+        {
+            var task = Repository.WorkTasks.Find(id);
+            if (task == null || !CanSeeTask(task)) return HttpNotFound();
+            if (!CanManageTodos(task)) return TodoError("Bạn không có quyền sửa todolist của việc này.");
+
+            var text = (content ?? string.Empty).Trim();
+            if (text.Length == 0) return TodoError("Vui lòng nhập nội dung.");
+            if (text.Length > 300) return TodoError("Nội dung tối đa 300 ký tự.");
+
+            var nextOrder = Repository.WorkTaskTodos.All().Count(t => t.TaskId == id);
+
+            Repository.WorkTaskTodos.Insert(new WorkTaskTodo
+            {
+                TaskId = id,
+                Content = text,
+                SortOrder = nextOrder,
+                CreatedByUserId = CurrentUserId,
+                CreatedByName = CurrentUser == null ? null : CurrentUser.FullName,
+                CreatedAt = DateTime.Now
+            });
+
+            return PartialView("_Todos", BuildTodos(task));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "wtasks.view")]
+        public ActionResult ToggleTodo(int id, int todoId)
+        {
+            var task = Repository.WorkTasks.Find(id);
+            if (task == null || !CanSeeTask(task)) return HttpNotFound();
+            if (!CanManageTodos(task)) return TodoError("Bạn không có quyền sửa todolist của việc này.");
+
+            var todo = Repository.WorkTaskTodos.Find(todoId);
+            if (todo == null || todo.TaskId != id) return HttpNotFound();
+
+            todo.IsDone = !todo.IsDone;
+            if (todo.IsDone)
+            {
+                todo.DoneAt = DateTime.Now;
+                todo.DoneByUserId = CurrentUserId;
+            }
+            else
+            {
+                todo.DoneAt = null;
+                todo.DoneByUserId = 0;
+            }
+
+            Repository.WorkTaskTodos.Update(todo);
+            return PartialView("_Todos", BuildTodos(task));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "wtasks.view")]
+        public ActionResult EditTodo(int id, int todoId, string content)
+        {
+            var task = Repository.WorkTasks.Find(id);
+            if (task == null || !CanSeeTask(task)) return HttpNotFound();
+            if (!CanManageTodos(task)) return TodoError("Bạn không có quyền sửa todolist của việc này.");
+
+            var todo = Repository.WorkTaskTodos.Find(todoId);
+            if (todo == null || todo.TaskId != id) return HttpNotFound();
+
+            var text = (content ?? string.Empty).Trim();
+            if (text.Length == 0) return TodoError("Vui lòng nhập nội dung.");
+            if (text.Length > 300) return TodoError("Nội dung tối đa 300 ký tự.");
+
+            todo.Content = text;
+            Repository.WorkTaskTodos.Update(todo);
+
+            return PartialView("_Todos", BuildTodos(task));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "wtasks.view")]
+        public ActionResult DeleteTodo(int id, int todoId)
+        {
+            var task = Repository.WorkTasks.Find(id);
+            if (task == null || !CanSeeTask(task)) return HttpNotFound();
+            if (!CanManageTodos(task)) return TodoError("Bạn không có quyền sửa todolist của việc này.");
+
+            var todo = Repository.WorkTaskTodos.Find(todoId);
+            if (todo == null || todo.TaskId != id) return HttpNotFound();
+
+            Repository.WorkTaskTodos.Delete(todoId);
+            return PartialView("_Todos", BuildTodos(task));
+        }
+
         /// <summary>
         /// Gửi một lượt trao đổi, kèm được một file đính kèm. Trả lại partial danh sách để hộp
         /// thoại tự vẽ lại; file bị từ chối thì trả 400 kèm lý do để chỗ gửi hiện thông báo.
@@ -491,6 +609,10 @@ namespace TTKDGP.ProjectManager.Controllers
 
                 // Báo cho những người bị nhắc tên bằng @ trong nội dung (web + email).
                 NotificationService.Mentions(task, comment, CurrentUserId,
+                    CurrentUser == null ? null : CurrentUser.FullName);
+
+                // Báo cho người tạo việc và người được giao việc là có trao đổi mới.
+                NotificationService.CommentAdded(task, comment, CurrentUserId,
                     CurrentUser == null ? null : CurrentUser.FullName);
             }
 

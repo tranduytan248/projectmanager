@@ -347,4 +347,30 @@ namespace TTKDGP.ProjectManager.Models
         /// <summary>Đã thu hồi. Không xoá cứng để các trả lời bên dưới không mất ngữ cảnh.</summary>
         public bool IsDeleted { get; set; }
     }
+
+    /// <summary>
+    /// Một dòng trong todolist con của một đầu việc — thuần UI để chẻ nhỏ việc thành các bước có
+    /// thể tick xong, KHÔNG tính điểm KPI và không phải một <see cref="WorkTask"/> con.
+    /// </summary>
+    public class WorkTaskTodo : IEntity
+    {
+        public int Id { get; set; }
+
+        public int TaskId { get; set; }
+
+        [Required(ErrorMessage = "Vui lòng nhập nội dung")]
+        [StringLength(300, ErrorMessage = "Nội dung tối đa 300 ký tự")]
+        public string Content { get; set; }
+
+        public bool IsDone { get; set; }
+
+        public int SortOrder { get; set; }
+
+        public int CreatedByUserId { get; set; }
+        public string CreatedByName { get; set; }
+        public DateTime CreatedAt { get; set; }
+
+        public DateTime? DoneAt { get; set; }
+        public int DoneByUserId { get; set; }
+    }
 }

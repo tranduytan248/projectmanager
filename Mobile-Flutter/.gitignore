@@ -1,0 +1,29 @@
+*.iml
+*.class
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/pubspec.lock
+
+# Platform folders: sinh ra bang lenh `flutter create .` (xem README.md), khong commit build output
+android/.gradle/
+android/app/build/
+android/.kotlin/
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.podspec
+**/Flutter/ephemeral/
+**/Flutter/Generated.xcconfig
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Secrets/env
+.env
+*.g.dart

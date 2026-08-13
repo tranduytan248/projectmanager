@@ -357,6 +357,10 @@ namespace TTKDGP.ProjectManager.Controllers
             NotificationService.Mentions(task, comment, CurrentUserId,
                 CurrentUser == null ? null : CurrentUser.FullName);
 
+            // Báo cho người tạo việc và người được giao việc là có trao đổi mới.
+            NotificationService.CommentAdded(task, comment, CurrentUserId,
+                CurrentUser == null ? null : CurrentUser.FullName);
+
             Notify("Đã gửi trao đổi.");
             return RedirectToAction("Detail", new { id = id });
         }
