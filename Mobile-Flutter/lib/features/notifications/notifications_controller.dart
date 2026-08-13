@@ -12,5 +12,5 @@ class NotificationsController extends StatelessController {
 
   @override
   Display view(BuildContext context) =>
-      const Display(title: 'Thong bao', mobile: NotificationsScreen());
+      const Display(title: 'Thông báo', mobile: NotificationsScreen());
 }

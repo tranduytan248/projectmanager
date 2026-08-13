@@ -14,11 +14,11 @@ class ChecklistBoardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Checklist du an #$projectId')),
+      appBar: AppBar(title: Text('Checklist dự án #$projectId')),
       body: PlaceholderBody(
         message:
-            'TODO: GET /api/checklist?projectId=$projectId (tuong ung ChecklistController)\n'
-            'Goi y dung package kanban_board de dung board keo-tha.',
+            'TODO: GET /api/checklist?projectId=$projectId (tương ứng ChecklistController)\n'
+            'Gợi ý dùng package kanban_board để dựng board kéo-thả.',
       ),
     );
   }

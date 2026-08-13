@@ -24,6 +24,19 @@ class AppTheme {
   /// = --primary-soft. Nen nhat cho khoi/badge lien quan toi thao tac chinh.
   static const brandBlueSoft = Color(0xFFEAF1FB);
 
+  /// = --success/--st-ok. Trang thai "hoan thanh/dung han" — KHONG dung brandBlue cho y nghia
+  /// nay, theo dung quy uoc site.css (mau thuong hieu chi danh cho thao tac).
+  static const statusSuccess = Color(0xFF1A7F52);
+  static const statusSuccessSoft = Color(0xFFE6F5EE);
+
+  /// = --warn/--st-warn. Trang thai "sap den han/canh bao".
+  static const statusWarning = Color(0xFF9A6700);
+  static const statusWarningSoft = Color(0xFFFDF5E2);
+
+  /// = --danger/--st-late. Trang thai "qua han/loi".
+  static const statusDanger = Color(0xFFB3261E);
+  static const statusDangerSoft = Color(0xFFFBEAE9);
+
   static const _seedColor = brandBlue;
 
   static ThemeData get light => ThemeData(

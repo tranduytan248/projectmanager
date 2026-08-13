@@ -1,52 +1,54 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_icons/phosphor_icons.dart';
 
-import '../../core/classes/route_manager.dart';
+import '../../config/app_routes.dart' show Routes;
+import '../../config/app_theme.dart';
 import '../../features/app_routes.dart';
 
 class _NavTab {
   const _NavTab({
     required this.routeName,
     required this.icon,
-    required this.selectedIcon,
+    required this.filledIcon,
     required this.label,
   });
 
   final String routeName;
+
+  /// Net mong khi chua chon, dac (fill) khi dang chon — doc ro tab nao dang mo thay vi chi
+  /// doi mau, giong cach iOS/cac app cao cap lam.
   final IconData icon;
-  final IconData selectedIcon;
+  final IconData filledIcon;
   final String label;
 }
 
 // 4 tab duy nhat: Dashboard, Du an, Cong viec, Cai dat. Khong con tab "To" (Quan ly To) —
 // TeamDashboard van con route, chi khong gan vao thanh dieu huong duoi nua. "Thong bao" cung
 // khong o day, mo qua chuong thong bao tren man Home (xem dashboard_screen.dart).
-//
-// Moi tab co hai icon: net (chua chon) va dac (dang chon) — dung NavigationDestination.
-// selectedIcon, giong cach iOS/Material lam de nhin ro tab nao dang mo thay vi chi doi mau.
 const _tabs = [
   _NavTab(
     routeName: AppRoutes.dashboard,
-    icon: Icons.dashboard_outlined,
-    selectedIcon: Icons.dashboard_rounded,
+    icon: PhosphorIconsRegular.squaresFour,
+    filledIcon: PhosphorIconsFill.squaresFour,
     label: 'Dashboard',
   ),
   _NavTab(
     routeName: AppRoutes.projects,
-    icon: Icons.folder_outlined,
-    selectedIcon: Icons.folder_rounded,
-    label: 'Du an',
+    icon: PhosphorIconsRegular.folders,
+    filledIcon: PhosphorIconsFill.folders,
+    label: 'Dự án',
   ),
   _NavTab(
     routeName: AppRoutes.myWork,
-    icon: Icons.checklist_outlined,
-    selectedIcon: Icons.checklist_rounded,
-    label: 'Cong viec',
+    icon: PhosphorIconsRegular.listChecks,
+    filledIcon: PhosphorIconsFill.listChecks,
+    label: 'Công việc',
   ),
   _NavTab(
     routeName: AppRoutes.profile,
-    icon: Icons.settings_outlined,
-    selectedIcon: Icons.settings_rounded,
-    label: 'Cai dat',
+    icon: PhosphorIconsRegular.gearSix,
+    filledIcon: PhosphorIconsFill.gearSix,
+    label: 'Cài đặt',
   ),
 ];
 
@@ -55,6 +57,10 @@ const _tabs = [
 /// go_router bang mot Scaffold rieng cho tung tab (dung tinh than "route phang, khong nested
 /// navigator" cua CLAUDE.md). Bam tab khac se pushReplacement (Nav.to) sang route do, thay vi
 /// giu chung mot Navigator con.
+///
+/// Thanh dieu huong tu ve rieng (khong dung Material NavigationBar mac dinh) de duoc dung kieu
+/// "flat": nen trang phang, vien tren mong thay vi do bong day, muc dang chon la mot khoi bo
+/// tron mau nhat cua thuong hieu quanh icon+nhan thay vi cham indicator o giua.
 class AppBottomNav extends StatelessWidget {
   const AppBottomNav({
     super.key,
@@ -79,19 +85,108 @@ class AppBottomNav extends StatelessWidget {
       appBar: appBar,
       body: body,
       floatingActionButton: floatingActionButton,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: selectedIndex ?? 0,
-        onDestinationSelected: (index) {
+      bottomNavigationBar: _FlatBottomBar(
+        selectedIndex: selectedIndex ?? -1,
+        onSelect: (index) {
           if (index == selectedIndex) return;
-          Nav.to(context, _tabs[index].routeName);
+          _switchTab(context, _tabs[index].routeName);
         },
-        destinations: [
-          for (final tab in _tabs)
-            NavigationDestination(
-              icon: Icon(tab.icon),
-              selectedIcon: Icon(tab.selectedIcon),
-              label: tab.label,
+      ),
+    );
+  }
+
+  /// Doi tab bang PageRouteBuilder thoi gian chuyen canh = 0 thay vi Nav.to (dung
+  /// pushReplacementNamed, ke thua hieu ung truot/mo mac dinh cua MaterialPageRoute). Chuyen tab
+  /// duoi phai la MOT KHOI thay man hinh tuc thi, khong phai "day man moi" nhu dieu huong sau
+  /// (ví dụ mo chi tiet) — hai dieu do khac nghia nen khong dung chung Nav.to.
+  static void _switchTab(BuildContext context, String routeName) {
+    final builder = Routes().routes[routeName];
+    if (builder == null) return;
+
+    Navigator.of(context).pushReplacement<void, void>(
+      PageRouteBuilder<void>(
+        settings: RouteSettings(name: routeName),
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+        pageBuilder: (context, animation, secondaryAnimation) => builder(context),
+      ),
+    );
+  }
+}
+
+class _FlatBottomBar extends StatelessWidget {
+  const _FlatBottomBar({required this.selectedIndex, required this.onSelect});
+
+  final int selectedIndex;
+  final ValueChanged<int> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Colors.black.withValues(alpha: 0.06))),
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 62,
+          child: Row(
+            children: [
+              for (var i = 0; i < _tabs.length; i++)
+                Expanded(
+                  child: _NavItem(
+                    tab: _tabs[i],
+                    selected: i == selectedIndex,
+                    onTap: () => onSelect(i),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  const _NavItem({required this.tab, required this.selected, required this.onTap});
+
+  final _NavTab tab;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selected ? AppTheme.brandBlue : Colors.black45;
+
+    return InkWell(
+      onTap: onTap,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 5),
+            decoration: BoxDecoration(
+              color: selected ? AppTheme.brandBlueSoft : Colors.transparent,
+              borderRadius: BorderRadius.circular(14),
             ),
+            child: PhosphorIcon(
+              selected ? tab.filledIcon : tab.icon,
+              size: 22,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            tab.label,
+            style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              color: color,
+            ),
+          ),
         ],
       ),
     );

@@ -12,5 +12,5 @@ class LeaveListController extends StatelessController {
 
   @override
   Display view(BuildContext context) =>
-      const Display(title: 'Nghi phep cua toi', mobile: LeaveListScreen());
+      const Display(title: 'Nghỉ phép của tôi', mobile: LeaveListScreen());
 }

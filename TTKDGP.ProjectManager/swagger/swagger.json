@@ -1,0 +1,208 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "TTKDGP ProjectManager - Mobile API",
+    "description": "API danh cho app mobile (BrewTask). Dang nhap tra ve Bearer token (khong dung Forms Auth cookie nhu web); cac endpoint con lai doc header Authorization: Bearer <token>.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    { "url": "/", "description": "Server hien tai" }
+  ],
+  "tags": [
+    { "name": "Auth", "description": "Dang nhap mobile" },
+    { "name": "Dashboard", "description": "Tong quan man Home" },
+    { "name": "MyWork", "description": "Cong viec cua toi" },
+    { "name": "MyProjects", "description": "Du an cua toi" }
+  ],
+  "paths": {
+    "/AuthApi/Login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Dang nhap, tra ve Bearer token",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": { "type": "string" },
+                  "password": { "type": "string", "format": "password" }
+                },
+                "required": ["username", "password"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Dang nhap thanh cong",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LoginResultDto" }
+              }
+            }
+          },
+          "400": {
+            "description": "Sai tai khoan hoac mat khau",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorDto" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/DashboardApi/Index": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Tong quan: so du an + cac viec dang can lam",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/DashboardDto" }
+              }
+            }
+          },
+          "401": {
+            "description": "Thieu token hoac token het han",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorDto" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/MyWorkApi/Index": {
+      "get": {
+        "tags": ["MyWork"],
+        "summary": "Toan bo cong viec cua nguoi dang nhap",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/TaskDto" }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Thieu token hoac token het han",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorDto" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/MyProjectsApi/Index": {
+      "get": {
+        "tags": ["MyProjects"],
+        "summary": "Du an dang tham gia hoac lam PM",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/ProjectSummaryDto" }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Thieu token hoac token het han",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorDto" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Guid (N)",
+        "description": "Token lay tu AuthApi/Login, gui header 'Authorization: Bearer <token>'"
+      }
+    },
+    "schemas": {
+      "ErrorDto": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" }
+        }
+      },
+      "LoginResultDto": {
+        "type": "object",
+        "properties": {
+          "Token": { "type": "string" },
+          "DisplayName": { "type": "string" },
+          "Role": { "type": "string" }
+        }
+      },
+      "TaskDto": {
+        "type": "object",
+        "properties": {
+          "Id": { "type": "integer" },
+          "Code": { "type": "string" },
+          "Title": { "type": "string" },
+          "ProjectName": { "type": "string" },
+          "State": { "type": "string", "description": "Gia tri tho cua TaskStates, vi du DangLam" },
+          "Priority": { "type": "string", "description": "Gia tri tho cua TaskPriorities, vi du Cao" },
+          "DueDate": {
+            "type": "string",
+            "nullable": true,
+            "description": "Dinh dang JSON date cua ASP.NET MVC: /Date(1785949200000)/ — KHONG phai ISO 8601"
+          },
+          "IsOverdue": { "type": "boolean" },
+          "IsDueToday": { "type": "boolean" }
+        }
+      },
+      "ProjectSummaryDto": {
+        "type": "object",
+        "properties": {
+          "Id": { "type": "integer" },
+          "Name": { "type": "string" },
+          "Description": { "type": "string", "nullable": true },
+          "ProgressPercent": { "type": "integer" },
+          "MemberCount": { "type": "integer" }
+        }
+      },
+      "DashboardDto": {
+        "type": "object",
+        "properties": {
+          "ProjectCount": { "type": "integer" },
+          "TodayTaskCount": { "type": "integer" },
+          "Projects": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ProjectSummaryDto" }
+          },
+          "Tasks": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/TaskDto" }
+          }
+        }
+      }
+    }
+  }
+}

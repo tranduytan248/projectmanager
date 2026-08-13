@@ -53,7 +53,7 @@ class HttpManager {
     } else if (statusCode != null &&
         {403, 404, 500, 502, 503}.contains(statusCode)) {
       await DialogService.showWarning(
-        'May chu tra ve loi ($statusCode). Vui long thu lai sau.',
+        'Máy chủ trả về lỗi ($statusCode). Vui lòng thử lại sau.',
       );
     }
 
@@ -74,7 +74,7 @@ class HttpManager {
     _groupLocks[group] = completer;
     try {
       await DialogService.showWarning(
-          'Mat ket noi mang. Vui long kiem tra va thu lai.');
+          'Mất kết nối mạng. Vui lòng kiểm tra và thử lại.');
     } finally {
       _groupLocks.remove(group);
       completer.complete(false);
@@ -88,7 +88,7 @@ class HttpManager {
       await onUnauthorized?.call();
       await Nav.toAndClearStack(loginRouteName);
       await DialogService.showWarning(
-          'Phien dang nhap da het han, vui long dang nhap lai.');
+          'Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.');
     } finally {
       _isLoggingOut = false;
     }

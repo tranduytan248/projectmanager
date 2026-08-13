@@ -8,10 +8,10 @@ class KpiScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('KPI cua toi')),
+      appBar: AppBar(title: const Text('KPI của tôi')),
       body: const PlaceholderBody(
-        message: 'TODO: GET /api/kpi/mine (tuong ung KpiController)\n'
-            'Diem KPI theo thang, chi tiet tung tieu chi.',
+        message: 'TODO: GET /api/kpi/mine (tương ứng KpiController)\n'
+            'Điểm KPI theo tháng, chi tiết từng tiêu chí.',
       ),
     );
   }

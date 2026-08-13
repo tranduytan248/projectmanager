@@ -17,7 +17,7 @@ class TaskDetailController extends StatelessController {
     final taskId = args?['taskId'] as String? ?? '';
 
     return Display(
-      title: 'Chi tiet cong viec',
+      title: 'Chi tiết công việc',
       mobile: TaskDetailScreen(taskId: taskId),
     );
   }

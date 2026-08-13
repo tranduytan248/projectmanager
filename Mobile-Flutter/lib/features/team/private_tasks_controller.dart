@@ -12,5 +12,5 @@ class PrivateTasksController extends StatelessController {
 
   @override
   Display view(BuildContext context) =>
-      const Display(title: 'Giao viec rieng', mobile: PrivateTasksScreen());
+      const Display(title: 'Giao việc riêng', mobile: PrivateTasksScreen());
 }

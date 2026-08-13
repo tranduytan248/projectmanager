@@ -69,6 +69,9 @@ namespace TTKDGP.ProjectManager.Data
         private static readonly Lazy<SqlStore<WorkTimeLog>> _workTimeLogs =
             new Lazy<SqlStore<WorkTimeLog>>(() => new SqlStore<WorkTimeLog>("WorkTimeLogs"));
 
+        private static readonly Lazy<SqlStore<ApiToken>> _apiTokens =
+            new Lazy<SqlStore<ApiToken>>(() => new SqlStore<ApiToken>("ApiTokens"));
+
         private static readonly Lazy<SqlStore<WorkTaskTodo>> _workTaskTodos =
             new Lazy<SqlStore<WorkTaskTodo>>(() => new SqlStore<WorkTaskTodo>("WorkTaskTodos"));
 
@@ -119,6 +122,9 @@ namespace TTKDGP.ProjectManager.Data
 
         /// <summary>Giờ công người thực hiện tự khai vào từng đầu việc (logtime).</summary>
         public static SqlStore<WorkTimeLog> WorkTimeLogs { get { return _workTimeLogs.Value; } }
+
+        /// <summary>Vé đăng nhập của API mobile (Bearer token), tách khỏi Forms Auth cookie của web.</summary>
+        public static SqlStore<ApiToken> ApiTokens { get { return _apiTokens.Value; } }
 
         /// <summary>Todolist con của từng đầu việc — thuần UI, không tính KPI.</summary>
         public static SqlStore<WorkTaskTodo> WorkTaskTodos { get { return _workTaskTodos.Value; } }

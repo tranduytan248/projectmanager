@@ -12,5 +12,5 @@ class MyWorkController extends StatelessController {
 
   @override
   Display view(BuildContext context) =>
-      const Display(title: 'Viec cua toi', mobile: MyWorkScreen());
+      const Display(title: 'Việc của tôi', mobile: MyWorkScreen());
 }

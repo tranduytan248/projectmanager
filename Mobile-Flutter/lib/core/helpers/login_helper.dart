@@ -3,20 +3,27 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../config/app_cache.dart';
 import '../../config/token_storage.dart';
+import '../../features/auth/auth_service.dart';
 import '../classes/route_manager.dart';
 
 final _appCache = AppCache();
 final _tokenStorage = TokenStorage(const FlutterSecureStorage());
+final _authService = AuthService();
 
-/// Dang nhap. TODO: thay bang goi that qua AppHttp/ApiEndpoint.login khi backend co API tra JWT.
-/// Hien tai luon thanh cong (dung de dung khung UI/dieu huong) — tra 1 = thanh cong, khop quy
-/// uoc "1 thanh cong / 0 sai tai khoan / -1 loi server" cua CLAUDE.md du chua co nhanh 0/-1 that.
+/// Dang nhap that qua AuthApi/Login. Tra 1 = thanh cong / 0 sai tai khoan / -1 loi he thong,
+/// khop quy uoc cua CLAUDE.md.
 Future<int> doAuth(
     BuildContext context, String username, String password) async {
-  await _tokenStorage.saveTokens(accessToken: 'fake-token-for-scaffold');
+  final result = await _authService.login(username, password);
+  if (result.code != 1) return result.code;
+
+  await _tokenStorage.saveTokens(accessToken: result.token!);
   await _appCache.doLogin();
-  await _appCache
-      .saveLoginInfo(displayName: username, permissions: const ['*']);
+  // AuthApi/Login chi tra Role (chuoi don), chua co danh sach quyen chi tiet nhu web — de trong
+  // permissions cho toi khi backend tra them, man "Quan ly To" se tu an vi AuthProvider.isTeamManager
+  // doc rong.
+  await _appCache.saveLoginInfo(
+      displayName: result.displayName ?? username, permissions: const []);
   return 1;
 }
 

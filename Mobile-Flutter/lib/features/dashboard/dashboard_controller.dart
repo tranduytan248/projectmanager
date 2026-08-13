@@ -12,5 +12,5 @@ class DashboardController extends StatelessController {
 
   @override
   Display view(BuildContext context) =>
-      const Display(title: 'Tong quan', mobile: DashboardScreen());
+      const Display(title: 'Tổng quan', mobile: DashboardScreen());
 }

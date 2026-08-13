@@ -12,5 +12,5 @@ class KpiController extends StatelessController {
 
   @override
   Display view(BuildContext context) =>
-      const Display(title: 'KPI cua toi', mobile: KpiScreen());
+      const Display(title: 'KPI của tôi', mobile: KpiScreen());
 }
