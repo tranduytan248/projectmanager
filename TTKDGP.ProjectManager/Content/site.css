@@ -1057,7 +1057,7 @@ table.data tbody tr .row-menu-items .danger:hover { background: var(--st-late-so
 
 /* Hộp hẹp cho form ít ô, hộp rộng cho form nhiều ô hoặc có bảng bên trong. */
 .modal.modal-sm { max-width: 460px; }
-.modal.modal-lg { max-width: 980px; }
+.modal.modal-lg { max-width: 1140px; }
 
 @keyframes modal-in {
     from { opacity: 0; transform: translateY(-8px); }
@@ -2684,7 +2684,10 @@ table.data tbody tr.row-due-danger > td:first-child::before { background: var(--
 .timelog-field input { margin: 0; }
 
 .timelog-field-hours { width: 92px; flex: 0 0 92px; }
-.timelog-field-note { flex: 1 1 180px; }
+/* min-width chan flex-shrink ep o nay hep hon nhan cua no (nhan "Noi dung da lam" khong xuong
+   dong, dat white-space: nowrap) — thieu dong nay thi o co the co lai qua nho, chu nhan tran ra
+   ngoai de len o ben canh thay vi tu xuong dong nhu flex-wrap du dinh. */
+.timelog-field-note { flex: 1 1 180px; min-width: 140px; }
 .timelog-row #logDate { width: 152px; }
 .timelog-submit { flex: 0 0 auto; }
 
