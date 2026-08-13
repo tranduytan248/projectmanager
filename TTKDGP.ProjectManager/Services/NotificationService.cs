@@ -169,6 +169,43 @@ namespace TTKDGP.ProjectManager.Services
         }
 
         /// <summary>
+        /// Báo cho người tạo việc và người đang được giao việc khi một việc con trong todolist
+        /// vừa được tick xong hoặc bỏ tick (web + email). Không báo cho chính người vừa bấm;
+        /// người tạo trùng người được giao thì chỉ báo một lần — cùng khuôn với
+        /// <see cref="CommentAdded"/>.
+        /// </summary>
+        public static void TodoToggled(WorkTask task, WorkTaskTodo todo, int actorUserId, string actorName)
+        {
+            if (task == null || todo == null) return;
+
+            var actor = string.IsNullOrWhiteSpace(actorName) ? "Một người" : actorName;
+            var action = todo.IsDone ? "đã hoàn thành" : "bỏ đánh dấu hoàn thành";
+
+            var recipients = new[] { task.AssignedByUserId, task.AssigneeUserId }
+                .Where(userId => userId > 0 && userId != actorUserId)
+                .Distinct();
+
+            foreach (var userId in recipients)
+            {
+                var n = Add(userId, NotificationTypes.TodoToggled,
+                    string.Format("{0} {1} việc con \"{2}\" trong công việc \"{3}\".",
+                        actor, action, todo.Content, task.Title),
+                    task.ProjectId, task.Id);
+
+                EmailTemplateService.Send(userId, NotificationTypes.TodoToggled,
+                    new Dictionary<string, string>
+                    {
+                        { "NguoiThucHien", actor },
+                        { "HanhDong", action },
+                        { "TenViecCon", todo.Content },
+                        { "TenCongViec", task.Title },
+                        { "TenDuAn", string.IsNullOrWhiteSpace(task.ProjectName) ? "(ngoài dự án)" : task.ProjectName },
+                        { "LienKet", OpenLink(n) }
+                    });
+            }
+        }
+
+        /// <summary>
         /// Báo cho người vừa được giao một việc riêng (web + email). Mail kèm liên kết file đính
         /// kèm của việc nếu có — liên kết đi qua action có kiểm quyền nên phải đăng nhập mới tải.
         /// </summary>

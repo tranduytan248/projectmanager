@@ -34,6 +34,12 @@ namespace TTKDGP.ProjectManager.Models
         /// giao việc (nếu khác người vừa viết). Bấm vào mở trao đổi của công việc.
         /// </summary>
         public const string CommentAdded = "TraoDoiMoi";
+
+        /// <summary>
+        /// Một việc con trong todolist vừa được tick xong hoặc bỏ tick — báo cho người tạo việc
+        /// và người đang được giao việc (nếu khác người vừa bấm). Bấm vào mở chi tiết công việc.
+        /// </summary>
+        public const string TodoToggled = "ViecConThayDoi";
     }
 
     /// <summary>

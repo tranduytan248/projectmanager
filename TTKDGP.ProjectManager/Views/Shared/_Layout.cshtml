@@ -30,6 +30,27 @@
        thuong cung khong thay gi thay doi. Query truy theo gio sua file tren dia nen tu doi moi
        lan publish, khong can nho tay tang so. *@
     <link rel="stylesheet" href="@Url.Content("~/Content/site.css")?v=@System.IO.File.GetLastWriteTimeUtc(Server.MapPath("~/Content/site.css")).Ticks" />
+
+    @* Firebase Analytics (GA4) — cung du an "brewtask-99719" voi ban mobile. MVC nay tai lai
+       toan bo trang cho moi man hinh (khong phai SPA) nen Analytics tu ghi nhan page_view cho
+       tung man ma khong can goi logEvent tay o tung noi. *@
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAUT7WwXd7bwCb8HlWBOaZC_UqGZBiEYaw",
+            authDomain: "brewtask-99719.firebaseapp.com",
+            projectId: "brewtask-99719",
+            storageBucket: "brewtask-99719.firebasestorage.app",
+            messagingSenderId: "810388374826",
+            appId: "1:810388374826:web:1cb79b77d3d246d1f40a53",
+            measurementId: "G-S94R27X1G6"
+        };
+
+        const firebaseApp = initializeApp(firebaseConfig);
+        getAnalytics(firebaseApp);
+    </script>
 </head>
 @* Chưa đăng nhập thì không dựng menu dọc — trang Đăng nhập dùng trọn bề ngang *@
 <body class="@(currentUser != null ? "has-sidebar" : "")">

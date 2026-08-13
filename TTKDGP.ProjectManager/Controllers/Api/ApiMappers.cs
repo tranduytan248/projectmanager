@@ -75,5 +75,65 @@ namespace TTKDGP.ProjectManager.Controllers.Api
                 MemberCount = memberCount
             };
         }
+
+        /// <summary>
+        /// Rut gon KpiMonth (day du cot cho bang chi tiet ben web) thanh vai con so chinh cho man
+        /// dien thoai. Cong thuc ScorePercent/HoursPercent/HoursShort lay Y HET
+        /// DashboardViewModel ben web (Controllers/DashboardController.cs) de hai noi khong bao
+        /// gio le%ch nhau ve cung mot thang diem.
+        /// </summary>
+        public static KpiSummaryDto ToDto(KpiMonth kpi)
+        {
+            if (kpi == null) return null;
+
+            var scoreMax = KpiService.MaxQualityPoint > 0 ? KpiService.MaxQualityPoint : 100;
+            var scorePercent = (int)Math.Round(kpi.FinalPoint * 100 / scoreMax);
+            scorePercent = scorePercent < 0 ? 0 : (scorePercent > 100 ? 100 : scorePercent);
+
+            var hoursPercent = 100;
+            if (kpi.RequiredHours > 0)
+            {
+                var p = (int)Math.Round(kpi.WorkedHours * 100 / kpi.RequiredHours);
+                hoursPercent = p > 100 ? 100 : p;
+            }
+
+            var missing = kpi.RequiredHours - kpi.WorkedHours;
+
+            return new KpiSummaryDto
+            {
+                FinalPoint = kpi.FinalPoint,
+                Rank = kpi.Rank,
+                ScoreMax = scoreMax,
+                ScorePercent = scorePercent,
+                WorkedHours = kpi.WorkedHours,
+                RequiredHours = kpi.RequiredHours,
+                HoursPercent = hoursPercent,
+                HoursShort = missing > 0 ? Math.Round(missing, 1) : 0
+            };
+        }
+
+        public static UpcomingLeaveDto ToDto(LeaveRequest leave)
+        {
+            return new UpcomingLeaveDto
+            {
+                FromDate = leave.FromDate,
+                ToDate = leave.ToDate,
+                Days = leave.Days,
+                Kind = leave.Kind
+            };
+        }
+
+        public static ProjectAttentionDto ToAttentionDto(WorkProject project, TaskStat stat, int overdueCount)
+        {
+            return new ProjectAttentionDto
+            {
+                Id = project.Id,
+                Name = project.Name,
+                Customer = project.Customer,
+                PmName = project.PmName,
+                ProgressPercent = stat != null ? stat.Percent : 0,
+                OverdueCount = overdueCount
+            };
+        }
     }
 }
