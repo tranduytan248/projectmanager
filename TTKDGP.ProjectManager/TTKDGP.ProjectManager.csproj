@@ -300,6 +300,7 @@
     <Content Include="Views\Checklist\_Detail.cshtml" />
     <Content Include="Views\Checklist\_Comments.cshtml" />
     <Content Include="Views\Checklist\_TimeLogs.cshtml" />
+    <Content Include="Views\Checklist\_Todos.cshtml" />
     <Content Include="Views\Checklist\_Kanban.cshtml" />
     <Content Include="Views\Checklist\_Workload.cshtml" />
     <Content Include="Views\Checklist\Index.cshtml" />

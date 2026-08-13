@@ -25,7 +25,11 @@
     <meta name="theme-color" content="#1a56a8" />
 
     <link rel="stylesheet" href="@Url.Content("~/Content/lib/select2.min.css")" />
-    <link rel="stylesheet" href="@Url.Content("~/Content/site.css")" />
+    @* Ghep them ?v=<thoi diem sua file> — deploy xong ma khong doi ten file thi trinh duyet cu
+       (va CDN neu co) van giu ban site.css cache tu truoc do, sua CSS xong nguoi dung refresh
+       thuong cung khong thay gi thay doi. Query truy theo gio sua file tren dia nen tu doi moi
+       lan publish, khong can nho tay tang so. *@
+    <link rel="stylesheet" href="@Url.Content("~/Content/site.css")?v=@System.IO.File.GetLastWriteTimeUtc(Server.MapPath("~/Content/site.css")).Ticks" />
 </head>
 @* Chưa đăng nhập thì không dựng menu dọc — trang Đăng nhập dùng trọn bề ngang *@
 <body class="@(currentUser != null ? "has-sidebar" : "")">
