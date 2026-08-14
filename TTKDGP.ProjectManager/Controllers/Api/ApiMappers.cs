@@ -60,7 +60,11 @@ namespace TTKDGP.ProjectManager.Controllers.Api
                 Priority = task.Priority,
                 DueDate = task.DueDate,
                 IsOverdue = task.IsOverdue,
-                IsDueToday = task.DueDate.HasValue && task.DueDate.Value.Date == DateTime.Today
+                IsDueToday = task.DueDate.HasValue && task.DueDate.Value.Date == DateTime.Today,
+                AssigneeName = task.AssigneeName,
+                Progress = task.Progress,
+                Kind = task.Kind,
+                ParentId = task.ParentId
             };
         }
 
@@ -133,6 +137,48 @@ namespace TTKDGP.ProjectManager.Controllers.Api
                 PmName = project.PmName,
                 ProgressPercent = stat != null ? stat.Percent : 0,
                 OverdueCount = overdueCount
+            };
+        }
+
+        public static ProjectMemberDto ToDto(WorkAssignment assignment)
+        {
+            return new ProjectMemberDto
+            {
+                UserFullName = assignment.UserFullName,
+                IsPm = assignment.IsPm,
+                Role = assignment.Role,
+                Phase = assignment.Phase,
+                JoinedAt = assignment.JoinedAt,
+                LeftAt = assignment.LeftAt,
+                IsActive = assignment.IsActive
+            };
+        }
+
+        public static WeekReportSummaryDto ToDto(WorkWeekReport report)
+        {
+            return new WeekReportSummaryDto
+            {
+                Year = report.Year,
+                Week = report.Week,
+                SubmittedAt = report.SubmittedAt,
+                IsSubmitted = report.IsSubmitted,
+                IsOnTime = report.IsOnTime
+            };
+        }
+
+        /// <summary>Ban ghi tuan hien tai co the chua ton tai (chua ai nop) — van tra ve mot DTO
+        /// "chua nop" thay vi null, de mobile khong phai tu suy dien nam/tuan dang xem.</summary>
+        public static WeekReportSummaryDto ToDto(WorkWeekReport report, int year, int week)
+        {
+            if (report != null) return ToDto(report);
+
+            return new WeekReportSummaryDto
+            {
+                Year = year,
+                Week = week,
+                SubmittedAt = null,
+                IsSubmitted = false,
+                IsOnTime = false
             };
         }
     }

@@ -40,6 +40,12 @@ namespace TTKDGP.ProjectManager.Models
         /// và người đang được giao việc (nếu khác người vừa bấm). Bấm vào mở chi tiết công việc.
         /// </summary>
         public const string TodoToggled = "ViecConThayDoi";
+
+        /// <summary>
+        /// Một việc con MỚI vừa được thêm vào todolist — báo cho người tạo việc và người đang
+        /// được giao việc (nếu khác người vừa thêm). Bấm vào mở chi tiết công việc.
+        /// </summary>
+        public const string TodoAdded = "ViecConMoi";
     }
 
     /// <summary>

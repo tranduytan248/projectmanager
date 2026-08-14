@@ -31,6 +31,57 @@ namespace TTKDGP.ProjectManager.Models.Api
         public DateTime? DueDate { get; set; }
         public bool IsOverdue { get; set; }
         public bool IsDueToday { get; set; }
+
+        public string AssigneeName { get; set; }
+        public int Progress { get; set; }
+
+        /// <summary>Gia tri tho cua TaskKinds (vi du "Checklist", "HoTro", "NgoaiDuAn").</summary>
+        public string Kind { get; set; }
+
+        /// <summary>0 = muc goc, khac 0 = viec con cua muc co Id do.</summary>
+        public int ParentId { get; set; }
+    }
+
+    /// <summary>Mot nguoi co the giao viec — dropdown "Nguoi thuc hien" khi tao dau viec moi,
+    /// CHI gom thanh vien dang hoat dong cua du an (khop ProjectMembers ben web).</summary>
+    public class AssigneeOptionDto
+    {
+        public int UserId { get; set; }
+        public string FullName { get; set; }
+    }
+
+    /// <summary>Danh sach dau viec cua mot du an — man "Checklist" cua mobile, tuong duong
+    /// ChecklistController.Index ben web nhung KHONG dung cay cha/con (BuildTree) — tra danh
+    /// sach phang, sap xep qua han truoc nhu WorkService.Sort, mobile tu loc theo tu khoa/trang
+    /// thai/han o client vi so luong dau viec moi du an thuong khong lon.</summary>
+    public class ChecklistDto
+    {
+        public int ProjectId { get; set; }
+        public string ProjectName { get; set; }
+        public string PmName { get; set; }
+
+        /// <summary>Nguoi nay co sua duoc TOAN BO dau viec cua du an khong (PM/Quan ly To) — quyet
+        /// dinh co hien nut "Them muc" hay khong. Tung dau viec van co the tu sua duoc du co la
+        /// false (neu la nguoi duoc giao chinh viec do) — xem TaskDto rieng khong mang co nay,
+        /// mobile ban dau chi doc/them, chua co sua/xoa ngay tren danh sach.</summary>
+        public bool CanEdit { get; set; }
+
+        public int TotalCount { get; set; }
+        public int DoneCount { get; set; }
+        public int OverdueCount { get; set; }
+        public int DonePercent { get; set; }
+
+        public List<TaskDto> Tasks { get; set; }
+
+        /// <summary>Danh sach cho dropdown "Nguoi thuc hien" — luon tra du CanEdit hay khong, don
+        /// gian hoa phia mobile (khong phai goi rieng khi mo form).</summary>
+        public List<AssigneeOptionDto> Assignees { get; set; }
+
+        public ChecklistDto()
+        {
+            Tasks = new List<TaskDto>();
+            Assignees = new List<AssigneeOptionDto>();
+        }
     }
 
     public class ProjectSummaryDto
@@ -119,6 +170,129 @@ namespace TTKDGP.ProjectManager.Models.Api
         public TeamSummaryDto()
         {
             Projects = new List<ProjectAttentionDto>();
+        }
+    }
+
+    public class ProjectMemberDto
+    {
+        public string UserFullName { get; set; }
+        public bool IsPm { get; set; }
+        public string Role { get; set; }
+
+        /// <summary>Gia tri tho cua AssignmentPhases.</summary>
+        public string Phase { get; set; }
+        public DateTime JoinedAt { get; set; }
+        public DateTime? LeftAt { get; set; }
+        public bool IsActive { get; set; }
+    }
+
+    public class WeekReportSummaryDto
+    {
+        public int Year { get; set; }
+        public int Week { get; set; }
+        public DateTime? SubmittedAt { get; set; }
+        public bool IsSubmitted { get; set; }
+        public bool IsOnTime { get; set; }
+    }
+
+    /// <summary>
+    /// Chi tiet mot du an — tuong duong ProjectDetailsViewModel ben web
+    /// (Controllers/WorkProjectsController.cs) nhung CO CHU DICH BO phan "Thong tin trien khai"
+    /// (Github/SVN/FTP/DB — ca mat khau) va tai lieu dinh kem: day la du lieu nhay cam, chua nen
+    /// dua len thiet bi di dong truoc khi ra soat rieng ve ATTT (xem FileMoTa/Backlog-Mobile.md).
+    /// </summary>
+    public class ProjectDetailDto
+    {
+        public int Id { get; set; }
+        public string Code { get; set; }
+        public string Name { get; set; }
+        public string Customer { get; set; }
+        public string ProjectType { get; set; }
+        public string Phase { get; set; }
+        public string State { get; set; }
+        public bool IsOpen { get; set; }
+        public string PmName { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+
+        /// <summary>Da chuyen ve van ban thuan (HtmlSanitizer.ToPlainText) — mobile chua co trinh
+        /// hien thi HTML rieng.</summary>
+        public string Description { get; set; }
+        public bool CanEdit { get; set; }
+
+        public int ActiveMemberCount { get; set; }
+        public int PastMemberCount { get; set; }
+        public int ChecklistDone { get; set; }
+        public int ChecklistTotal { get; set; }
+        public int ChecklistOverdue { get; set; }
+        public int SupportThisWeek { get; set; }
+
+        public List<ProjectMemberDto> Members { get; set; }
+        public List<TaskDto> OverdueTasks { get; set; }
+        public WeekReportSummaryDto CurrentReport { get; set; }
+        public List<WeekReportSummaryDto> RecentReports { get; set; }
+
+        public ProjectDetailDto()
+        {
+            Members = new List<ProjectMemberDto>();
+            OverdueTasks = new List<TaskDto>();
+            RecentReports = new List<WeekReportSummaryDto>();
+        }
+    }
+
+    /// <summary>
+    /// Mot dong trong "Du an cua toi" — khop MyProjectRow ben web (Controllers/MyWorkController.cs)
+    /// de doi chieu, nhung khong mang PagedList/ViewBag.
+    /// </summary>
+    public class MyProjectRowDto
+    {
+        public int Id { get; set; }
+        public string Code { get; set; }
+        public string Name { get; set; }
+        public string Customer { get; set; }
+        public string PmName { get; set; }
+
+        /// <summary>Gia tri tho cua ProjectPhases.</summary>
+        public string Phase { get; set; }
+
+        /// <summary>Gia tri tho cua ProjectStates.</summary>
+        public string State { get; set; }
+        public bool IsOpen { get; set; }
+
+        public bool IsPm { get; set; }
+        public bool IsActiveMember { get; set; }
+
+        /// <summary>Vai tro tu do (vi du "Dev", "Tester") — rong neu chi la PM khong co phan cong.</summary>
+        public string Role { get; set; }
+        public DateTime? JoinedAt { get; set; }
+
+        /// <summary>Chi co gia tri khi da roi (khong con la thanh vien dang hoat dong).</summary>
+        public DateTime? LeftAt { get; set; }
+
+        public int ChecklistDone { get; set; }
+        public int ChecklistTotal { get; set; }
+        public int ChecklistPercent { get; set; }
+
+        public int MyOpenCount { get; set; }
+        public int MyOverdueCount { get; set; }
+
+        /// <summary>"DaNopDungHan" | "DaNopTreHan" | "ConBanNhap" | "ChuaNop" | "KhongApDung"
+        /// (KhongApDung = khong phai PM va chua co ban nao) — khop dung logic hien badge ben web
+        /// (Views/MyWork/Projects.cshtml).</summary>
+        public string ReportStatus { get; set; }
+    }
+
+    public class MyProjectsDto
+    {
+        /// <summary>Tong so du an cua nguoi nay, KHONG theo bo loc (de biet dang giau bao nhieu).</summary>
+        public int TotalCount { get; set; }
+        public int PmCount { get; set; }
+        public int ClosedCount { get; set; }
+        public List<MyProjectRowDto> Projects { get; set; }
+
+        public MyProjectsDto()
+        {
+            Projects = new List<MyProjectRowDto>();
         }
     }
 

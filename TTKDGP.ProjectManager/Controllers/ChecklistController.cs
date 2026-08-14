@@ -483,7 +483,7 @@ namespace TTKDGP.ProjectManager.Controllers
 
             var nextOrder = Repository.WorkTaskTodos.All().Count(t => t.TaskId == id);
 
-            Repository.WorkTaskTodos.Insert(new WorkTaskTodo
+            var todo = Repository.WorkTaskTodos.Insert(new WorkTaskTodo
             {
                 TaskId = id,
                 Content = text,
@@ -492,6 +492,10 @@ namespace TTKDGP.ProjectManager.Controllers
                 CreatedByName = CurrentUser == null ? null : CurrentUser.FullName,
                 CreatedAt = DateTime.Now
             });
+
+            // Bao cho nguoi tao viec va nguoi duoc giao viec la vua co viec con moi.
+            NotificationService.TodoAdded(task, todo, CurrentUserId,
+                CurrentUser == null ? null : CurrentUser.FullName);
 
             return PartialView("_Todos", BuildTodos(task));
         }
