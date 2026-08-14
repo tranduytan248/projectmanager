@@ -47,6 +47,10 @@ class TaskItem {
     required this.dueDate,
     required this.isOverdue,
     required this.isDueToday,
+    required this.assigneeName,
+    required this.progress,
+    required this.kind,
+    required this.parentId,
   });
 
   final int id;
@@ -58,6 +62,14 @@ class TaskItem {
   final DateTime? dueDate;
   final bool isOverdue;
   final bool isDueToday;
+  final String? assigneeName;
+  final int progress;
+
+  /// Gia tri tho cua TaskKinds (vi du "Checklist", "HoTro", "NgoaiDuAn").
+  final String kind;
+
+  /// 0 = muc goc, khac 0 = viec con cua muc co Id do.
+  final int parentId;
 
   factory TaskItem.fromJson(Map<String, dynamic> json) => TaskItem(
         id: json['Id'] as int,
@@ -69,6 +81,10 @@ class TaskItem {
         dueDate: parseAspNetDate(json['DueDate'] as String?),
         isOverdue: json['IsOverdue'] as bool? ?? false,
         isDueToday: json['IsDueToday'] as bool? ?? false,
+        assigneeName: json['AssigneeName'] as String?,
+        progress: json['Progress'] as int? ?? 0,
+        kind: json['Kind'] as String? ?? '',
+        parentId: json['ParentId'] as int? ?? 0,
       );
 }
 

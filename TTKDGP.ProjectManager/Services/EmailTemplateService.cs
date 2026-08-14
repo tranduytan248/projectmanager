@@ -131,6 +131,28 @@ namespace TTKDGP.ProjectManager.Services
             },
             new EmailTemplateDefinition
             {
+                Code = NotificationTypes.TodoAdded,
+                Name = "Việc con mới trong todolist",
+                Description = "Gửi cho người tạo việc và người đang được giao việc khi có việc "
+                    + "con MỚI được thêm vào todolist (trừ chính người vừa thêm).",
+                Params =
+                {
+                    new EmailTemplateParam("HoTen", "Họ tên người nhận"),
+                    new EmailTemplateParam("NguoiThucHien", "Người vừa thêm việc con"),
+                    new EmailTemplateParam("TenViecCon", "Nội dung việc con"),
+                    new EmailTemplateParam("TenCongViec", "Tên công việc"),
+                    new EmailTemplateParam("TenDuAn", "Tên dự án"),
+                    new EmailTemplateParam("LienKet", "Liên kết mở công việc (cần đăng nhập)")
+                },
+                DefaultSubject = "[NCPT] {{NguoiThucHien}} vừa thêm việc con mới trong {{TenCongViec}}",
+                DefaultBody = "<p>Chào {{HoTen}},</p>"
+                    + "<p><strong>{{NguoiThucHien}}</strong> vừa thêm việc con mới "
+                    + "<strong>{{TenViecCon}}</strong> trong công việc <strong>{{TenCongViec}}</strong> "
+                    + "(dự án {{TenDuAn}}).</p>"
+                    + "<p><a href=\"{{LienKet}}\">Mở công việc trong hệ thống</a> (cần đăng nhập).</p>"
+            },
+            new EmailTemplateDefinition
+            {
                 Code = NotificationTypes.TaskAssigned,
                 Name = "Được giao việc riêng",
                 Description = "Gửi khi Quản lý Tổ giao thẳng một việc riêng (ngoài dự án) cho bạn.",

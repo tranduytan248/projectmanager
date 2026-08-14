@@ -9,6 +9,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # Dich cac chuoi co san cua Flutter (date picker, "OK"/"Huy"...) sang tieng Viet.
+  flutter_localizations:
+    sdk: flutter
   cupertino_icons: ^1.0.6
 
   # State management + DI
@@ -28,7 +31,7 @@ dependencies:
   hive_flutter: ^1.1.0
 
   # Dinh dang ngay/gio, so
-  intl: ^0.19.0
+  intl: ^0.20.3
 
   # Cache anh (avatar, file dinh kem)
   cached_network_image: ^3.3.1
@@ -64,12 +67,31 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+  fonts:
+    - family: Be Vietnam Pro
+      fonts:
+        - asset: assets/fonts/BeVietnamPro-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/BeVietnamPro-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/BeVietnamPro-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/BeVietnamPro-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/BeVietnamPro-ExtraBold.ttf
+          weight: 800
 
 flutter_launcher_icons:
   android: true
   ios: true
   image_path: "icon_app.png"
   remove_alpha_ios: true
+  # Chua khai bao adaptive icon (Android 8+) thi he thong tu boc icon bang nen trang mac dinh,
+  # lo mot vet trang quanh icon du anh goc da dung thiet ke. icon_app.png da san co vong tron
+  # brandBlue + coc trang, goc trong suot (xem ghi chu AppTheme.brandBlue) — dung lai chinh no
+  # lam ca hai lop la du, khong can dung anh rieng.
+  adaptive_icon_background: "#1A56A8"
+  adaptive_icon_foreground: "icon_app.png"
 
 # Splash nguyen sinh cua he dieu hanh (truoc khi Flutter engine ve khung hinh dau tien) — CHI mot
 # mau nen xanh, KHONG kem icon. Icon Android 12 co luc khong ve ra (tuy thiet bi), tao cam giac

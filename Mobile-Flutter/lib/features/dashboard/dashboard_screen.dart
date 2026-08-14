@@ -5,6 +5,13 @@ import 'package:provider/provider.dart';
 
 import '../../config/app_theme.dart';
 import '../../core/classes/route_manager.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
+import '../../core/widgets/app_button.dart';
+import '../../core/widgets/app_card.dart';
+import '../../core/widgets/app_icon_button.dart';
+import '../../core/widgets/app_loading.dart';
+import '../../core/widgets/app_text.dart';
 import '../../shared/widgets/app_bottom_nav.dart';
 import '../app_routes.dart';
 import '../auth/auth_provider.dart';
@@ -63,7 +70,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           builder: (context, snapshot) {
             if (snapshot.connectionState != ConnectionState.done) {
               return const Center(
-                child: CircularProgressIndicator(color: AppTheme.brandBlue),
+                child: AppLoading(),
               );
             }
 
@@ -156,10 +163,13 @@ class _ErrorState extends StatelessWidget {
             const PhosphorIcon(PhosphorIconsRegular.warningCircle,
                 color: AppTheme.statusDanger, size: 32),
             const SizedBox(height: 12),
-            const Text('Không tải được dữ liệu tổng quan.',
-                textAlign: TextAlign.center),
+            const AppText('Không tải được dữ liệu tổng quan.',
+                variant: AppTextVariant.body, align: TextAlign.center),
             const SizedBox(height: 12),
-            FilledButton(onPressed: onRetry, child: const Text('Thử lại')),
+            AppButton(
+              label: 'Thử lại',
+              onPressed: onRetry,
+            ),
           ],
         ),
       ),
@@ -174,11 +184,7 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(
-          fontSize: 17, fontWeight: FontWeight.w700, color: Colors.black87),
-    );
+    return AppText(text, variant: AppTextVariant.heading, fontSize: 17);
   }
 }
 
@@ -191,7 +197,7 @@ class _EmptyHint extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Text(text, style: const TextStyle(color: Colors.black45)),
+      child: AppText(text, variant: AppTextVariant.body, color: AppColors.textSecondary),
     );
   }
 }
@@ -211,53 +217,30 @@ class _Header extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              AppText(
                 'Chào, $displayName!',
-                style: const TextStyle(
-                    fontSize: 13,
-                    color: Colors.black54,
-                    fontWeight: FontWeight.w500),
+                variant: AppTextVariant.caption,
+                fontSize: 13,
+                weight: FontWeight.w500,
+                color: AppColors.textSecondary,
               ),
               const SizedBox(height: 4),
-              Text(
+              AppText(
                 'Bạn có $todayTaskCount công việc cần hoàn thành trong ngày',
-                style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.black87),
+                variant: AppTextVariant.display,
+                fontSize: 20,
               ),
             ],
           ),
         ),
-        _CircleIconButton(
+        AppIconButton(
           icon: PhosphorIconsRegular.bellSimple,
-          onTap: () => Nav.toNamed(context, AppRoutes.notifications),
+          onPressed: () => Nav.toNamed(context, AppRoutes.notifications),
+          color: AppTheme.brandBlue,
+          size: 22,
+          background: AppTheme.brandBlue.withValues(alpha: 0.08),
         ),
       ],
-    );
-  }
-}
-
-class _CircleIconButton extends StatelessWidget {
-  const _CircleIconButton({required this.icon, required this.onTap});
-
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(24),
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: AppTheme.brandBlue.withValues(alpha: 0.08),
-          shape: BoxShape.circle,
-        ),
-        child: PhosphorIcon(icon, color: AppTheme.brandBlue, size: 22),
-      ),
     );
   }
 }
@@ -279,25 +262,22 @@ class _TodayBanner extends StatelessWidget {
       child: Row(
         children: [
           const PhosphorIcon(PhosphorIconsRegular.calendarCheck,
-              color: Colors.white, size: 20),
+              color: AppColors.textOnPrimary, size: 20),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
+            child: AppText(
               'Bạn có $count công việc hôm nay',
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13.5),
+              variant: AppTextVariant.body,
+              color: AppColors.textOnPrimary,
+              weight: FontWeight.w600,
+              fontSize: 13.5,
             ),
           ),
-          InkWell(
-            onTap: onClose,
-            borderRadius: BorderRadius.circular(12),
-            child: const Padding(
-              padding: EdgeInsets.all(4),
-              child: PhosphorIcon(PhosphorIconsRegular.x,
-                  color: Colors.white70, size: 18),
-            ),
+          AppIconButton(
+            icon: PhosphorIconsRegular.x,
+            onPressed: onClose,
+            color: AppColors.textOnPrimary,
+            size: 18,
           ),
         ],
       ),
@@ -329,7 +309,8 @@ class _KpiCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final rankColor = _kpiRankColor(kpi.rank);
 
-    return _Card(
+    return AppCard(
+      padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -347,10 +328,12 @@ class _KpiCard extends StatelessWidget {
                       backgroundColor: rankColor.withValues(alpha: 0.12),
                       valueColor: AlwaysStoppedAnimation(rankColor),
                     ),
-                    Text(
+                    AppText(
                       kpi.finalPoint.toStringAsFixed(1),
-                      style: TextStyle(
-                          fontSize: 15, fontWeight: FontWeight.w800, color: rankColor),
+                      variant: AppTextVariant.body,
+                      fontSize: 15,
+                      weight: FontWeight.w800,
+                      color: rankColor,
                     ),
                   ],
                 ),
@@ -360,9 +343,8 @@ class _KpiCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Điểm KPI tháng này',
-                        style: TextStyle(
-                            fontSize: 13, fontWeight: FontWeight.w600, color: Colors.black87)),
+                    const AppText('Điểm KPI tháng này',
+                        variant: AppTextVariant.body, fontSize: 13, weight: FontWeight.w600),
                     const SizedBox(height: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -370,10 +352,12 @@ class _KpiCard extends StatelessWidget {
                         color: rankColor.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: Text(
+                      child: AppText(
                         kpi.rank,
-                        style: TextStyle(
-                            fontSize: 11.5, fontWeight: FontWeight.w700, color: rankColor),
+                        variant: AppTextVariant.caption,
+                        fontSize: 11.5,
+                        weight: FontWeight.w700,
+                        color: rankColor,
                       ),
                     ),
                   ],
@@ -384,12 +368,14 @@ class _KpiCard extends StatelessWidget {
           const SizedBox(height: 14),
           Row(
             children: [
-              const Text('Giờ làm', style: TextStyle(fontSize: 12, color: Colors.black54)),
+              const AppText('Giờ làm',
+                  variant: AppTextVariant.caption, fontSize: 12, color: AppColors.textSecondary),
               const Spacer(),
-              Text(
+              AppText(
                 '${kpi.workedHours.toStringAsFixed(0)}/${kpi.requiredHours.toStringAsFixed(0)} giờ',
-                style: const TextStyle(
-                    fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black87),
+                variant: AppTextVariant.body,
+                fontSize: 12,
+                weight: FontWeight.w600,
               ),
             ],
           ),
@@ -406,9 +392,11 @@ class _KpiCard extends StatelessWidget {
           ),
           if (kpi.hoursShort > 0) ...[
             const SizedBox(height: 6),
-            Text(
+            AppText(
               'Còn thiếu ${kpi.hoursShort.toStringAsFixed(1)} giờ so với yêu cầu tháng.',
-              style: const TextStyle(fontSize: 11.5, color: AppTheme.statusWarning),
+              variant: AppTextVariant.caption,
+              fontSize: 11.5,
+              color: AppTheme.statusWarning,
             ),
           ],
         ],
@@ -424,12 +412,13 @@ class _LeaveCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _Card(
+    return AppCard(
+      padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Nghỉ phép tháng này',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.black87)),
+          const AppText('Nghỉ phép tháng này',
+              variant: AppTextVariant.body, fontSize: 13, weight: FontWeight.w600),
           const SizedBox(height: 10),
           Row(
             children: [
@@ -467,11 +456,10 @@ class _LeaveStat extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 11.5, color: Colors.black45)),
+        AppText(label,
+            variant: AppTextVariant.caption, fontSize: 11.5, color: AppColors.textSecondary),
         const SizedBox(height: 2),
-        Text(value,
-            style: const TextStyle(
-                fontSize: 14, fontWeight: FontWeight.w700, color: Colors.black87)),
+        AppText(value, variant: AppTextVariant.body, fontSize: 14, weight: FontWeight.w700),
       ],
     );
   }
@@ -499,34 +487,16 @@ class _LeaveRow extends StatelessWidget {
               size: 15, color: AppTheme.brandBlue),
           const SizedBox(width: 8),
           Expanded(
-            child: Text('$range · ${leaveKindLabel(item.kind)}',
-                style: const TextStyle(fontSize: 12.5, color: Colors.black87)),
+            child: AppText('$range · ${leaveKindLabel(item.kind)}',
+                variant: AppTextVariant.caption, fontSize: 12.5, color: AppColors.textPrimary),
           ),
-          Text('${item.days.toStringAsFixed(1)} ngày',
-              style: const TextStyle(
-                  fontSize: 11.5, fontWeight: FontWeight.w600, color: Colors.black54)),
+          AppText('${item.days.toStringAsFixed(1)} ngày',
+              variant: AppTextVariant.caption,
+              fontSize: 11.5,
+              weight: FontWeight.w600,
+              color: AppColors.textSecondary),
         ],
       ),
-    );
-  }
-}
-
-class _Card extends StatelessWidget {
-  const _Card({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
-      ),
-      child: child,
     );
   }
 }
@@ -588,13 +558,12 @@ class _FilterChip extends StatelessWidget {
           border:
               Border.all(color: selected ? AppTheme.brandBlue : Colors.black12),
         ),
-        child: Text(
+        child: AppText(
           label,
-          style: TextStyle(
-            fontSize: 12.5,
-            fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : Colors.black54,
-          ),
+          variant: AppTextVariant.caption,
+          fontSize: 12.5,
+          weight: FontWeight.w600,
+          color: selected ? Colors.white : AppColors.textSecondary,
         ),
       ),
     );
@@ -610,70 +579,63 @@ class _ProjectCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final progress = project.progressPercent / 100;
 
-    return InkWell(
+    return AppCard(
       onTap: () => Nav.toNamed(context, AppRoutes.projects),
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: AppTheme.brandBlueDark,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const PhosphorIcon(PhosphorIconsRegular.folder,
-                  color: Colors.white, size: 16),
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: AppTheme.brandBlueDark,
+              borderRadius: BorderRadius.circular(8),
             ),
-            const SizedBox(height: 8),
-            Text(
-              project.name,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black87),
+            child: const PhosphorIcon(PhosphorIconsRegular.folder,
+                color: AppColors.textOnPrimary, size: 16),
+          ),
+          const SizedBox(height: 8),
+          AppText(
+            project.name,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            variant: AppTextVariant.body,
+            fontSize: 13,
+            weight: FontWeight.w700,
+          ),
+          const SizedBox(height: 3),
+          AppText(
+            project.description?.isNotEmpty == true ? project.description! : '—',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            variant: AppTextVariant.caption,
+            fontSize: 11,
+            color: AppColors.textSecondary,
+          ),
+          const SizedBox(height: 8),
+          _AvatarStack(count: project.memberCount),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 6,
+              backgroundColor: AppTheme.brandBlue.withValues(alpha: 0.1),
+              valueColor:
+                  const AlwaysStoppedAnimation(AppTheme.brandBlueDark),
             ),
-            const SizedBox(height: 3),
-            Text(
-              project.description?.isNotEmpty == true ? project.description! : '—',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 11, color: Colors.black45),
-            ),
-            const SizedBox(height: 8),
-            _AvatarStack(count: project.memberCount),
-            const SizedBox(height: 8),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: LinearProgressIndicator(
-                value: progress,
-                minHeight: 6,
-                backgroundColor: AppTheme.brandBlue.withValues(alpha: 0.1),
-                valueColor:
-                    const AlwaysStoppedAnimation(AppTheme.brandBlueDark),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '${project.progressPercent}%',
-              style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.brandBlue),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 4),
+          AppText(
+            '${project.progressPercent}%',
+            variant: AppTextVariant.caption,
+            fontSize: 11,
+            weight: FontWeight.w700,
+            color: AppTheme.brandBlue,
+          ),
+        ],
       ),
     );
   }
@@ -724,12 +686,13 @@ class _AvatarStack extends StatelessWidget {
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 1.5),
                 ),
-                child: Text(
+                child: AppText(
                   '+${count - 3}',
-                  style: const TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black54),
+                  variant: AppTextVariant.overline,
+                  fontSize: 9,
+                  weight: FontWeight.w700,
+                  color: AppColors.textSecondary,
+                  letterSpacing: 0,
                 ),
               ),
             ),
@@ -755,7 +718,7 @@ class _DueInfo {
       return const _DueInfo('Hôm nay', AppTheme.statusWarning);
     }
     if (task.dueDate == null) {
-      return const _DueInfo('—', Colors.black45);
+      return const _DueInfo('—', AppColors.textSecondary);
     }
     return _DueInfo(DateFormat('dd/MM').format(task.dueDate!), AppTheme.brandBlue);
   }
@@ -771,87 +734,83 @@ class _TaskRow extends StatelessWidget {
     final highPriority = task.priority == 'Cao';
     final due = _DueInfo.of(task);
 
-    return InkWell(
+    return AppCard(
       onTap: () => Nav.toNamed(context, AppRoutes.taskDetail,
           arguments: {'taskId': task.id.toString()}),
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 8,
-              height: 40,
-              decoration: BoxDecoration(
-                color: highPriority
-                    ? AppTheme.brandBlue
-                    : AppTheme.brandBlue.withValues(alpha: 0.25),
-                borderRadius: BorderRadius.circular(4),
-              ),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      radius: 14,
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 40,
+            decoration: BoxDecoration(
+              color: highPriority
+                  ? AppTheme.brandBlue
+                  : AppTheme.brandBlue.withValues(alpha: 0.25),
+              borderRadius: BorderRadius.circular(4),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    task.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    task.projectName?.isNotEmpty == true
-                        ? task.projectName!
-                        : 'Việc riêng',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11.5, color: Colors.black45),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  due.label,
-                  style: TextStyle(
-                      fontSize: 11.5, fontWeight: FontWeight.w600, color: due.color),
+                AppText(
+                  task.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  variant: AppTextVariant.body,
+                  fontSize: 13.5,
+                  weight: FontWeight.w600,
                 ),
-                if (highPriority) ...[
-                  const SizedBox(height: 4),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppTheme.brandBlue.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Text(
-                      'Ưu tiên cao',
-                      style: TextStyle(
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.brandBlue),
-                    ),
-                  ),
-                ],
+                const SizedBox(height: 3),
+                AppText(
+                  task.projectName?.isNotEmpty == true
+                      ? task.projectName!
+                      : 'Việc riêng',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  variant: AppTextVariant.caption,
+                  fontSize: 11.5,
+                  color: AppColors.textSecondary,
+                ),
               ],
             ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              AppText(
+                due.label,
+                variant: AppTextVariant.caption,
+                fontSize: 11.5,
+                weight: FontWeight.w600,
+                color: due.color,
+              ),
+              if (highPriority) ...[
+                const SizedBox(height: 4),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppTheme.brandBlue.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const AppText(
+                    'Ưu tiên cao',
+                    variant: AppTextVariant.overline,
+                    fontSize: 9.5,
+                    color: AppTheme.brandBlue,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -912,12 +871,12 @@ class _TeamSection extends StatelessWidget {
                     size: 16, color: AppTheme.statusWarning),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
+                  child: AppText(
                     '$pendingLeaveApprovalCount đơn nghỉ phép đang chờ bạn duyệt',
-                    style: const TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.statusWarning),
+                    variant: AppTextVariant.caption,
+                    fontSize: 12.5,
+                    weight: FontWeight.w600,
+                    color: AppTheme.statusWarning,
                   ),
                 ),
               ],
@@ -926,9 +885,8 @@ class _TeamSection extends StatelessWidget {
         ],
         if (team.projects.isNotEmpty) ...[
           const SizedBox(height: 16),
-          const Text('Dự án cần chú ý',
-              style: TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.w700, color: Colors.black87)),
+          const AppText('Dự án cần chú ý',
+              variant: AppTextVariant.body, fontSize: 13, weight: FontWeight.w700),
           const SizedBox(height: 8),
           for (final project in team.projects) _ProjectAttentionRow(project: project),
         ],
@@ -946,24 +904,22 @@ class _StatTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AppCard(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
-      ),
+      radius: 14,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(value,
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: color)),
+          AppText(value,
+              variant: AppTextVariant.title, fontSize: 20, weight: FontWeight.w800, color: color),
           const SizedBox(height: 2),
-          Text(label,
+          AppText(label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 11, color: Colors.black54)),
+              variant: AppTextVariant.caption,
+              fontSize: 11,
+              color: AppColors.textSecondary),
         ],
       ),
     );
@@ -977,34 +933,33 @@ class _ProjectAttentionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AppCard(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
-      ),
+      radius: 14,
       child: Row(
         children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(project.name,
+                AppText(project.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w700, color: Colors.black87)),
+                    variant: AppTextVariant.body,
+                    fontSize: 13,
+                    weight: FontWeight.w700),
                 const SizedBox(height: 2),
-                Text(
+                AppText(
                   [
                     if (project.customer?.isNotEmpty == true) project.customer!,
                     if (project.pmName?.isNotEmpty == true) 'PM: ${project.pmName}',
                   ].join(' · '),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 11.5, color: Colors.black45),
+                  variant: AppTextVariant.caption,
+                  fontSize: 11.5,
+                  color: AppColors.textSecondary,
                 ),
               ],
             ),
@@ -1013,9 +968,11 @@ class _ProjectAttentionRow extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text('${project.progressPercent}%',
-                  style: const TextStyle(
-                      fontSize: 12.5, fontWeight: FontWeight.w700, color: AppTheme.brandBlue)),
+              AppText('${project.progressPercent}%',
+                  variant: AppTextVariant.caption,
+                  fontSize: 12.5,
+                  weight: FontWeight.w700,
+                  color: AppTheme.brandBlue),
               if (project.overdueCount > 0) ...[
                 const SizedBox(height: 4),
                 Container(
@@ -1024,12 +981,12 @@ class _ProjectAttentionRow extends StatelessWidget {
                     color: AppTheme.statusDangerSoft,
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: Text(
+                  child: AppText(
                     'Quá hạn ${project.overdueCount}',
-                    style: const TextStyle(
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.statusDanger),
+                    variant: AppTextVariant.overline,
+                    fontSize: 9.5,
+                    color: AppTheme.statusDanger,
+                    letterSpacing: 0,
                   ),
                 ),
               ],

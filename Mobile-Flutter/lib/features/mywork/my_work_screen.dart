@@ -4,7 +4,11 @@ import 'package:phosphor_icons/phosphor_icons.dart';
 
 import '../../config/app_theme.dart';
 import '../../core/classes/route_manager.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/toast_service.dart';
+import '../../core/widgets/app_app_bar.dart';
+import '../../core/widgets/app_text.dart';
 import '../../shared/widgets/app_bottom_nav.dart';
 import '../app_routes.dart';
 
@@ -81,7 +85,7 @@ class MyWorkScreen extends StatelessWidget {
       currentIndex: 2,
       // Tieu de luon mau den (quy uoc chung toan app) — nen trang mac dinh cua AppBar thay vi
       // to xanh + chu trang nhu truoc, khop voi cach Dashboard khong dung AppBar mau.
-      appBar: AppBar(title: const Text('Việc của tôi')),
+      appBar: const AppAppBar(title: 'Việc của tôi'),
       body: ListView.separated(
         itemCount: _demoTasks.length,
         separatorBuilder: (context, index) =>
@@ -147,13 +151,11 @@ class _TaskRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    AppText(
                       task.title,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black87,
-                      ),
+                      variant: AppTextVariant.body,
+                      fontSize: 15,
+                      weight: FontWeight.w500,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -163,19 +165,19 @@ class _TaskRow extends StatelessWidget {
                       runSpacing: 4,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        Text(
+                        AppText(
                           task.code,
-                          style: const TextStyle(
-                              fontSize: 12.5, color: Colors.black54),
+                          variant: AppTextVariant.caption,
+                          fontSize: 12.5,
+                          color: AppColors.textSecondary,
                         ),
                         _StateBadge(state: task.state),
-                        Text(
+                        AppText(
                           task.dueLabel,
-                          style: const TextStyle(
-                            fontSize: 12.5,
-                            color: AppTheme.brandBlueDark,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          variant: AppTextVariant.caption,
+                          fontSize: 12.5,
+                          color: AppTheme.brandBlueDark,
+                          weight: FontWeight.w600,
                         ),
                       ],
                     ),
@@ -205,7 +207,7 @@ class _StateBadge extends StatelessWidget {
       case 'Chờ duyệt':
         return AppTheme.statusWarning;
       default:
-        return AppTheme.brandBlueDark;
+        return AppColors.textSecondary;
     }
   }
 
@@ -219,14 +221,13 @@ class _StateBadge extends StatelessWidget {
         border: Border.all(color: color.withValues(alpha: 0.5)),
         borderRadius: BorderRadius.circular(4),
       ),
-      child: Text(
+      child: AppText(
         state.toUpperCase(),
-        style: TextStyle(
-          fontSize: 10.5,
-          fontWeight: FontWeight.w700,
-          color: color,
-          letterSpacing: 0.3,
-        ),
+        variant: AppTextVariant.overline,
+        fontSize: 10.5,
+        weight: FontWeight.w700,
+        color: color,
+        letterSpacing: 0.3,
       ),
     );
   }

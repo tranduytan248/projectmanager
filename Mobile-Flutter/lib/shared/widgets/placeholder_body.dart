@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_text_styles.dart';
+import '../../core/widgets/app_text.dart';
+
 /// Body dung tam cho cac man hinh chua noi API that.
 /// Thay noi dung nay bang danh sach/form thuc te khi da co backend API.
 class PlaceholderBody extends StatelessWidget {
@@ -12,10 +15,10 @@ class PlaceholderBody extends StatelessWidget {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
-        child: Text(
+        child: AppText(
           message,
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyLarge,
+          variant: AppTextVariant.body,
+          align: TextAlign.center,
         ),
       ),
     );

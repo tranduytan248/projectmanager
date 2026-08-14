@@ -120,10 +120,17 @@ namespace TTKDGP.ProjectManager.Services
                         { "NguoiNhac", actor },
                         { "TenCongViec", task.Title },
                         { "TenDuAn", string.IsNullOrWhiteSpace(task.ProjectName) ? "(ngoài dự án)" : task.ProjectName },
-                        { "NoiDung", content },
                         { "LienKet", OpenLink(n) }
                     },
-                    new Dictionary<string, string> { { "TepDinhKem", attachmentHtml } });
+                    // NoiDung o day: du HtmlSanitizer.Clean roi (xem "content" o dau ham), la
+                    // HTML that — dua vao textValues se bi RenderHtml ma hoa THEM MOT LAN, hien
+                    // ra the tho (&lt;div&gt;...) trong mail thay vi dinh dang that. Phai o
+                    // htmlValues (khong ma hoa) giong TepDinhKem.
+                    new Dictionary<string, string>
+                    {
+                        { "TepDinhKem", attachmentHtml },
+                        { "NoiDung", content }
+                    });
             }
         }
 
@@ -161,10 +168,15 @@ namespace TTKDGP.ProjectManager.Services
                         { "NguoiTraoDoi", actor },
                         { "TenCongViec", task.Title },
                         { "TenDuAn", string.IsNullOrWhiteSpace(task.ProjectName) ? "(ngoài dự án)" : task.ProjectName },
-                        { "NoiDung", comment.Content ?? string.Empty },
                         { "LienKet", OpenLink(n) }
                     },
-                    new Dictionary<string, string> { { "TepDinhKem", attachmentHtml } });
+                    // Xem ghi chu tuong tu trong Mentions() o tren: NoiDung da la HTML sach roi,
+                    // phai o htmlValues chu khong phai textValues, khong thi mail hien the tho.
+                    new Dictionary<string, string>
+                    {
+                        { "TepDinhKem", attachmentHtml },
+                        { "NoiDung", comment.Content ?? string.Empty }
+                    });
             }
         }
 
@@ -197,6 +209,39 @@ namespace TTKDGP.ProjectManager.Services
                     {
                         { "NguoiThucHien", actor },
                         { "HanhDong", action },
+                        { "TenViecCon", todo.Content },
+                        { "TenCongViec", task.Title },
+                        { "TenDuAn", string.IsNullOrWhiteSpace(task.ProjectName) ? "(ngoài dự án)" : task.ProjectName },
+                        { "LienKet", OpenLink(n) }
+                    });
+            }
+        }
+
+        /// <summary>
+        /// Báo cho người tạo việc và người đang được giao việc khi một việc con MỚI vừa được
+        /// thêm vào todolist (web + email). Cùng khuôn với <see cref="TodoToggled"/>.
+        /// </summary>
+        public static void TodoAdded(WorkTask task, WorkTaskTodo todo, int actorUserId, string actorName)
+        {
+            if (task == null || todo == null) return;
+
+            var actor = string.IsNullOrWhiteSpace(actorName) ? "Một người" : actorName;
+
+            var recipients = new[] { task.AssignedByUserId, task.AssigneeUserId }
+                .Where(userId => userId > 0 && userId != actorUserId)
+                .Distinct();
+
+            foreach (var userId in recipients)
+            {
+                var n = Add(userId, NotificationTypes.TodoAdded,
+                    string.Format("{0} vừa thêm việc con mới \"{1}\" trong công việc \"{2}\".",
+                        actor, todo.Content, task.Title),
+                    task.ProjectId, task.Id);
+
+                EmailTemplateService.Send(userId, NotificationTypes.TodoAdded,
+                    new Dictionary<string, string>
+                    {
+                        { "NguoiThucHien", actor },
                         { "TenViecCon", todo.Content },
                         { "TenCongViec", task.Title },
                         { "TenDuAn", string.IsNullOrWhiteSpace(task.ProjectName) ? "(ngoài dự án)" : task.ProjectName },

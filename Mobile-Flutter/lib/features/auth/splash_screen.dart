@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../../config/app_cache.dart';
 import '../../config/app_theme.dart';
 import '../../core/classes/route_manager.dart';
+import '../../core/widgets/app_scaffold.dart';
 import '../app_routes.dart';
 import 'auth_routes.dart';
 
@@ -70,31 +71,37 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.brandBlue,
-      body: Center(
-        child: SizedBox(
-          width: 220,
-          height: 250,
-          child: Stack(
-            alignment: Alignment.bottomCenter,
-            clipBehavior: Clip.none,
-            children: [
-              Positioned(
-                  top: 0, child: _RisingSteam(controller: _steamController)),
-              ScaleTransition(
-                scale: Tween(begin: 0.88, end: 1.0).animate(
-                  CurvedAnimation(
-                      parent: _cupController, curve: Curves.easeOutCubic),
+    return AppScaffold(
+      // AppScaffold khong co tham so backgroundColor rieng (chi boc Scaffold mac dinh nen
+      // trang) — to mau bang Container tran man hinh thay vi truyen thang vao Scaffold.
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        color: AppTheme.brandBlue,
+        child: Center(
+          child: SizedBox(
+            width: 220,
+            height: 250,
+            child: Stack(
+              alignment: Alignment.bottomCenter,
+              clipBehavior: Clip.none,
+              children: [
+                Positioned(
+                    top: 0, child: _RisingSteam(controller: _steamController)),
+                ScaleTransition(
+                  scale: Tween(begin: 0.88, end: 1.0).animate(
+                    CurvedAnimation(
+                        parent: _cupController, curve: Curves.easeOutCubic),
+                  ),
+                  child: FadeTransition(
+                    opacity: CurvedAnimation(
+                        parent: _cupController, curve: Curves.easeOut),
+                    child: Image.asset('assets/images/splash_cup.png',
+                        width: 190),
+                  ),
                 ),
-                child: FadeTransition(
-                  opacity: CurvedAnimation(
-                      parent: _cupController, curve: Curves.easeOut),
-                  child:
-                      Image.asset('assets/images/splash_cup.png', width: 190),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

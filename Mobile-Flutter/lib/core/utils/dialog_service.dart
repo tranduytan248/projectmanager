@@ -2,11 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:phosphor_icons/phosphor_icons.dart';
 
 import '../../config/app_theme.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
+import '../../core/widgets/app_text.dart';
 import '../classes/app_keys.dart';
 
 /// Dialog không cần BuildContext của màn hình hiện tại — dùng navigatorKey toàn cục, nên gọi
 /// được từ bất kỳ đâu (ví dụ interceptor lỗi của HttpManager). Trả Future<bool>: true = người
 /// dùng bấm nút xác nhận, false = bấm Hủy/đóng ra ngoài.
+///
+/// Đây chính là nơi DUY NHẤT được gọi `showDialog`/`AlertDialog` của app — đóng vai trò
+/// `AppDialog.show(...)` theo `.claude/rules/FLUTTER_RULES.md`. Màn hình KHÔNG được tự gọi
+/// showDialog/AlertDialog, luôn qua DialogService.
 class DialogService {
   DialogService._();
 
@@ -35,20 +42,24 @@ class DialogService {
             PhosphorIcon(icon, color: accentColor, size: 22),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(title, style: const TextStyle(color: Colors.black87)),
+              child: AppText(title, variant: AppTextVariant.heading, color: AppColors.textPrimary),
             ),
           ],
         ),
-        content: Text(message),
+        content: AppText(message, variant: AppTextVariant.body),
         actions: [
           if (cancelText != null)
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(cancelText),
+              // TextButton mac dinh to chu theo mau primary cua theme — giu nguyen hanh vi do
+              // bang cach truyen thang AppColors.primary (AppText tu no khong tu suy ra mau nay).
+              child: AppText(cancelText,
+                  variant: AppTextVariant.body, weight: FontWeight.w600, color: AppColors.primary),
             ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(confirmText),
+            child: AppText(confirmText,
+                variant: AppTextVariant.body, weight: FontWeight.w600, color: Colors.white),
           ),
         ],
       ),

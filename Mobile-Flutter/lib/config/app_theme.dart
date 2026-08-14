@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../core/theme/app_dimens.dart';
+
 class AppTheme {
   AppTheme._();
 
@@ -37,24 +39,83 @@ class AppTheme {
   static const statusDanger = Color(0xFFB3261E);
   static const statusDangerSoft = Color(0xFFFBEAE9);
 
+  /// = --text-muted. Mau chu phu (nhan, ghi chu) — dung thay Colors.black45/black54: hai mau do
+  /// la den trong suot, tren nen trang doc mo/kho chiu; day la mot mau dac (khong trong suot)
+  /// da duoc web dung san, tuong phan tot hon nhieu du cung "xam".
+  static const textMuted = Color(0xFF667289);
+
+  /// = --text-faint. Nhat hon textMuted mot chut, dung cho chu tren nen da mau (badge, chip).
+  static const textFaint = Color(0xFF8B96A9);
+
   static const _seedColor = brandBlue;
+
+  /// Font chu mac dinh toan app — khai bao trong pubspec.yaml (assets/fonts/BeVietnamPro-*.ttf).
+  static const fontFamily = 'Be Vietnam Pro';
+
+  // Vung cham toi thieu 48dp cho moi nut — Material3 mac dinh chi 40dp cho FilledButton/
+  // OutlinedButton, duoi chuan AppDimens.minTapTarget. Khai bao 1 lan o day de moi nut trong app
+  // (ke ca truoc khi kip doi het sang AppButton) deu tu dong dat chuan, khong phai sua tung noi.
+  static const _minButtonSize = Size.fromHeight(AppDimens.minTapTarget);
 
   static ThemeData get light => ThemeData(
         useMaterial3: true,
+        fontFamily: fontFamily,
         colorScheme: ColorScheme.fromSeed(seedColor: _seedColor),
         // Mac dinh Material3 lay mau "surface" tu seed (hoi ngar xanh), khong phai trang tuyet
         // doi — ep trang de khop dung voi cac the trong app deu dung Colors.white, va de status
         // bar trong suot (xem app_bottom_nav.dart) hoa lien mach vao nen thay vi lo mot vet mau.
         scaffoldBackgroundColor: Colors.white,
-        appBarTheme: const AppBarTheme(centerTitle: true, backgroundColor: Colors.white),
+        // Flat design: khong do bong AppBar khi noi dung cuon qua (Material3 mac dinh
+        // scrolledUnderElevation:3 tu ve mot dai bong/tint duoi AppBar — trai tinh than flat).
+        appBarTheme: const AppBarTheme(
+          centerTitle: true,
+          backgroundColor: Colors.white,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          surfaceTintColor: Colors.transparent,
+        ),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(minimumSize: _minButtonSize, elevation: 0),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(minimumSize: _minButtonSize),
+        ),
+        iconButtonTheme: IconButtonThemeData(
+          style: IconButton.styleFrom(minimumSize: const Size.square(AppDimens.minTapTarget)),
+        ),
+        bottomSheetTheme: const BottomSheetThemeData(
+          elevation: 0,
+          modalElevation: 0,
+          surfaceTintColor: Colors.transparent,
+        ),
       );
 
   static ThemeData get dark => ThemeData(
         useMaterial3: true,
+        fontFamily: fontFamily,
         colorScheme: ColorScheme.fromSeed(
           seedColor: _seedColor,
           brightness: Brightness.dark,
         ),
-        appBarTheme: const AppBarTheme(centerTitle: true),
+        appBarTheme: const AppBarTheme(
+          centerTitle: true,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          surfaceTintColor: Colors.transparent,
+        ),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(minimumSize: _minButtonSize, elevation: 0),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(minimumSize: _minButtonSize),
+        ),
+        iconButtonTheme: IconButtonThemeData(
+          style: IconButton.styleFrom(minimumSize: const Size.square(AppDimens.minTapTarget)),
+        ),
+        bottomSheetTheme: const BottomSheetThemeData(
+          elevation: 0,
+          modalElevation: 0,
+          surfaceTintColor: Colors.transparent,
+        ),
       );
 }
