@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_text_styles.dart';
+import '../../core/widgets/app_app_bar.dart';
+import '../../core/widgets/app_scaffold.dart';
+import '../../core/widgets/app_text.dart';
+
 /// Man tinh dung chung cho "Chinh sach bao mat" va "Dieu khoan su dung" — noi dung noi bo,
 /// chua co API rieng nen viet thang trong app thay vi tai tu server.
 class PolicyScreen extends StatelessWidget {
@@ -10,14 +15,14 @@ class PolicyScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
+    return AppScaffold(
+      appBar: AppAppBar(title: title),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
             for (final p in paragraphs) ...[
-              Text(p, style: const TextStyle(fontSize: 14, height: 1.6, color: Colors.black87)),
+              AppText(p, variant: AppTextVariant.body, fontSize: 14, height: 1.6),
               const SizedBox(height: 14),
             ],
           ],

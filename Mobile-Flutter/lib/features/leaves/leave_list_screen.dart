@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:phosphor_icons/phosphor_icons.dart';
 
 import '../../core/classes/route_manager.dart';
+import '../../core/widgets/app_app_bar.dart';
+import '../../core/widgets/app_fab.dart';
+import '../../core/widgets/app_scaffold.dart';
 import '../../shared/widgets/placeholder_body.dart';
 import '../app_routes.dart';
 
@@ -10,16 +13,16 @@ class LeaveListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Nghỉ phép của tôi')),
+    return AppScaffold(
+      appBar: const AppAppBar(title: 'Nghỉ phép của tôi'),
+      // GET /api/leaves/mine (tương ứng LeavesController) - lịch sử đăng ký nghỉ phép.
       body: const PlaceholderBody(
-        message: 'TODO: GET /api/leaves/mine (tương ứng LeavesController)\n'
-            'Lịch sử đăng ký nghỉ phép.',
+        message: 'Tính năng đang được phát triển, vui lòng quay lại sau.',
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: AppFab(
+        label: 'Đăng ký',
+        icon: PhosphorIconsRegular.plus,
         onPressed: () => Nav.toNamed(context, AppRoutes.leaveNew),
-        icon: const PhosphorIcon(PhosphorIconsRegular.plus),
-        label: const Text('Đăng ký'),
       ),
     );
   }

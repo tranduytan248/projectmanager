@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 import 'config/app_analytics.dart';
@@ -23,6 +24,15 @@ class TtkdgpApp extends StatelessWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: themeMode,
+      // Dich cac widget he thong (date picker, time picker...) sang tieng Viet — man hinh tu viet
+      // vẫn tự dịch qua AppStrings/AppText nhu binh thuong, day chi anh huong widget cua Flutter.
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [Locale('vi', 'VN')],
+      locale: const Locale('vi', 'VN'),
       initialRoute: AuthRoutes.splash,
       routes: Routes().routes,
       navigatorObservers: AppAnalytics.observers,

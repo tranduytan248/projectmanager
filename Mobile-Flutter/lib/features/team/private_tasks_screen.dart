@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/widgets/app_app_bar.dart';
+import '../../core/widgets/app_scaffold.dart';
 import '../../shared/widgets/placeholder_body.dart';
 
 class PrivateTasksScreen extends StatelessWidget {
@@ -7,12 +9,12 @@ class PrivateTasksScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Giao việc riêng')),
-      body: const PlaceholderBody(
-        message:
-            'TODO: GET/POST /api/team/private-tasks (tương ứng PrivateTasksController)\n'
-            'Tạo/giao task ngoài dự án cho thành viên tổ.',
+    return const AppScaffold(
+      appBar: AppAppBar(title: 'Giao việc riêng'),
+      // API GET/POST /api/team/private-tasks (PrivateTasksController): tao/giao task ngoai du an
+      // cho thanh vien to — chua co, dang cho backend.
+      body: PlaceholderBody(
+        message: 'Tính năng đang được phát triển, vui lòng quay lại sau.',
       ),
     );
   }

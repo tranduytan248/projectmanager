@@ -5,7 +5,7 @@
          im lang that bai tren ban release/production. -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="BrewTask"
+        android:label="BrewTask - Quản Lý Công Việc"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

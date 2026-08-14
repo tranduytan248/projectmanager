@@ -4,7 +4,12 @@ import 'package:provider/provider.dart';
 
 import '../../config/app_theme.dart';
 import '../../core/classes/route_manager.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/dialog_service.dart';
+import '../../core/widgets/app_app_bar.dart';
+import '../../core/widgets/app_card.dart';
+import '../../core/widgets/app_text.dart';
 import '../../shared/widgets/app_bottom_nav.dart';
 import '../app_routes.dart';
 import '../auth/auth_provider.dart';
@@ -36,8 +41,8 @@ class ProfileScreen extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Thông tin cá nhân',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+              const AppText('Thông tin cá nhân',
+                  variant: AppTextVariant.body, fontSize: 16, weight: FontWeight.w700),
               const SizedBox(height: 16),
               _InfoRow(label: 'Họ tên', value: auth.displayName ?? '—'),
               const SizedBox(height: 10),
@@ -60,7 +65,7 @@ class ProfileScreen extends StatelessWidget {
 
     return AppBottomNav(
       currentIndex: 3,
-      appBar: AppBar(title: const Text('Cài đặt')),
+      appBar: const AppAppBar(title: 'Cài đặt'),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(20),
@@ -70,23 +75,24 @@ class ProfileScreen extends StatelessWidget {
                 CircleAvatar(
                   radius: 28,
                   backgroundColor: AppTheme.brandBlueSoft,
-                  child: Text(initial,
-                      style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          color: AppTheme.brandBlue)),
+                  child: AppText(initial,
+                      variant: AppTextVariant.title,
+                      fontSize: 22,
+                      weight: FontWeight.w800,
+                      color: AppTheme.brandBlue),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(auth.displayName ?? '',
-                          style: const TextStyle(
-                              fontSize: 17, fontWeight: FontWeight.w700, color: Colors.black87)),
+                      AppText(auth.displayName ?? '—',
+                          variant: AppTextVariant.body, fontSize: 17, weight: FontWeight.w700),
                       const SizedBox(height: 2),
-                      Text(auth.isTeamManager ? 'Quản lý Tổ' : 'Nhân viên',
-                          style: const TextStyle(fontSize: 12.5, color: Colors.black45)),
+                      AppText(auth.isTeamManager ? 'Quản lý Tổ' : 'Nhân viên',
+                          variant: AppTextVariant.caption,
+                          fontSize: 12.5,
+                          color: AppColors.textSecondary),
                     ],
                   ),
                 ),
@@ -157,12 +163,11 @@ class _InfoRow extends StatelessWidget {
       children: [
         SizedBox(
           width: 80,
-          child: Text(label, style: const TextStyle(fontSize: 13, color: Colors.black45)),
+          child: AppText(label,
+              variant: AppTextVariant.caption, fontSize: 13, color: AppColors.textSecondary),
         ),
         Expanded(
-          child: Text(value,
-              style: const TextStyle(
-                  fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87)),
+          child: AppText(value, variant: AppTextVariant.body, fontSize: 14, weight: FontWeight.w600),
         ),
       ],
     );
@@ -178,12 +183,8 @@ class _SettingsGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
-      ),
+    return AppCard(
+      padding: EdgeInsets.zero,
       child: Column(
         children: [
           for (var i = 0; i < children.length; i++) ...[
@@ -212,7 +213,7 @@ class _SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = danger ? AppTheme.statusDanger : Colors.black87;
+    final color = danger ? AppTheme.statusDanger : AppColors.textPrimary;
 
     return InkWell(
       onTap: onTap,
@@ -223,11 +224,11 @@ class _SettingsTile extends StatelessWidget {
             PhosphorIcon(icon, size: 20, color: danger ? AppTheme.statusDanger : AppTheme.brandBlue),
             const SizedBox(width: 16),
             Expanded(
-              child: Text(label,
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: color)),
+              child: AppText(label,
+                  variant: AppTextVariant.body, fontSize: 14, weight: FontWeight.w600, color: color),
             ),
             if (!danger)
-              const PhosphorIcon(PhosphorIconsRegular.caretRight, size: 16, color: Colors.black26),
+              const PhosphorIcon(PhosphorIconsRegular.caretRight, size: 16, color: AppColors.textFaint),
           ],
         ),
       ),

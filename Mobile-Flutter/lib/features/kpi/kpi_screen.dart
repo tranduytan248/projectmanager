@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/widgets/app_app_bar.dart';
+import '../../core/widgets/app_scaffold.dart';
 import '../../shared/widgets/placeholder_body.dart';
 
 class KpiScreen extends StatelessWidget {
@@ -7,11 +9,11 @@ class KpiScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('KPI của tôi')),
-      body: const PlaceholderBody(
-        message: 'TODO: GET /api/kpi/mine (tương ứng KpiController)\n'
-            'Điểm KPI theo tháng, chi tiết từng tiêu chí.',
+    return const AppScaffold(
+      appBar: AppAppBar(title: 'KPI của tôi'),
+      // GET /api/kpi/mine (tương ứng KpiController) - điểm KPI theo tháng, chi tiết từng tiêu chí.
+      body: PlaceholderBody(
+        message: 'Tính năng đang được phát triển, vui lòng quay lại sau.',
       ),
     );
   }

@@ -1,19 +1,504 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:phosphor_icons/phosphor_icons.dart';
 
-import '../../shared/widgets/placeholder_body.dart';
+import '../../config/app_theme.dart';
+import '../../core/classes/route_manager.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
+import '../../core/utils/toast_service.dart';
+import '../../core/widgets/app_app_bar.dart';
+import '../../core/widgets/app_button.dart';
+import '../../core/widgets/app_card.dart';
+import '../../core/widgets/app_loading.dart';
+import '../../core/widgets/app_scaffold.dart';
+import '../../core/widgets/app_text.dart';
+import '../app_routes.dart';
+import '../dashboard/dashboard_models.dart';
+import 'my_projects_models.dart';
+import 'project_detail_models.dart';
+import 'project_detail_service.dart';
 
-class ProjectDetailScreen extends StatelessWidget {
+class ProjectDetailScreen extends StatefulWidget {
   const ProjectDetailScreen({super.key, required this.projectId});
 
   final String projectId;
 
   @override
+  State<ProjectDetailScreen> createState() => _ProjectDetailScreenState();
+}
+
+class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
+  final _service = ProjectDetailService();
+  late Future<ProjectDetail> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _service.fetch(widget.projectId);
+  }
+
+  void _reload() {
+    setState(() => _future = _service.fetch(widget.projectId));
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Dự án #$projectId')),
-      body: PlaceholderBody(
-        message: 'TODO: GET /api/projects/$projectId\n'
-            'Thành viên, tiến độ, file đính kèm. Dẫn sang ChecklistBoardScreen.',
+    return AppScaffold(
+      appBar: const AppAppBar(title: 'Chi tiết dự án'),
+      body: SafeArea(
+        child: FutureBuilder<ProjectDetail>(
+          future: _future,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const Center(
+                child: AppLoading(),
+              );
+            }
+
+            if (snapshot.hasError) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const PhosphorIcon(PhosphorIconsRegular.warningCircle,
+                          color: AppTheme.statusDanger, size: 32),
+                      const SizedBox(height: 12),
+                      const AppText('Không tải được thông tin dự án.', variant: AppTextVariant.body),
+                      const SizedBox(height: 12),
+                      AppButton(
+                        label: 'Thử lại',
+                        onPressed: _reload,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            final p = snapshot.data!;
+
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+              children: [
+                _Header(project: p),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: AppButton(
+                        label: 'Checklist',
+                        icon: PhosphorIconsRegular.listChecks,
+                        onPressed: () => Nav.toNamed(context, AppRoutes.checklist,
+                            arguments: {'projectId': p.id.toString()}),
+                      ),
+                    ),
+                    // Chi PM hoac Quan ly To moi sua duoc du an (p.canEdit = CanEditProject ben
+                    // backend) — thanh vien thuong khong thay nut nay, khop dung quyen web.
+                    if (p.canEdit) ...[
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: AppButton(
+                          type: AppButtonType.outline,
+                          label: 'Nhân sự',
+                          icon: PhosphorIconsRegular.usersThree,
+                          onPressed: () => ToastService.show(
+                              'Cập nhật nhân sự — tính năng đang được phát triển.'),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _StatsStrip(project: p),
+                const SizedBox(height: 16),
+                _SectionCard(
+                  title: 'Thông tin chung',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _InfoRow(label: 'Khách hàng', value: p.customer ?? '—'),
+                      _InfoRow(label: 'Loại dự án', value: p.projectType ?? '—'),
+                      _InfoRow(label: 'Giai đoạn', value: projectPhaseLabel(p.phase)),
+                      _InfoRow(label: 'Trạng thái', value: projectStateLabel(p.state)),
+                      _InfoRow(
+                        label: 'Thời gian',
+                        value: p.startDate == null
+                            ? '—'
+                            : '${DateFormat('dd/MM/yyyy').format(p.startDate!)}'
+                                ' – ${p.endDate == null ? "nay" : DateFormat('dd/MM/yyyy').format(p.endDate!)}',
+                      ),
+                      _InfoRow(label: 'PM', value: p.pmName ?? '(chưa có PM)'),
+                      if (p.description.trim().isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        AppText(p.description, variant: AppTextVariant.body, fontSize: 13, height: 1.5),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _SectionCard(
+                  title: 'Nhân sự dự án (${p.members.length})',
+                  child: Column(
+                    children: [
+                      for (final m in p.members) _MemberRow(member: m),
+                    ],
+                  ),
+                ),
+                if (p.overdueTasks.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  _SectionCard(
+                    title: 'Đầu việc quá hạn',
+                    child: Column(
+                      children: [
+                        for (final t in p.overdueTasks) _OverdueTaskRow(task: t),
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                _SectionCard(
+                  title: 'Báo cáo tuần',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (p.currentReport != null)
+                        _ReportStatusLine(report: p.currentReport!, isCurrent: true),
+                      if (p.recentReports.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        const Divider(height: 1),
+                        const SizedBox(height: 10),
+                        for (final r in p.recentReports) _ReportStatusLine(report: r),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _Header extends StatelessWidget {
+  const _Header({required this.project});
+
+  final ProjectDetail project;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: AppText(project.name,
+                        variant: AppTextVariant.title, fontSize: 19, weight: FontWeight.w800),
+                  ),
+                  if (!project.isOpen)
+                    Container(
+                      margin: const EdgeInsets.only(left: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const AppText('Đã đóng',
+                          variant: AppTextVariant.overline,
+                          fontSize: 10.5,
+                          color: AppColors.textSecondary,
+                          letterSpacing: 0),
+                    ),
+                ],
+              ),
+              if (project.code?.isNotEmpty == true) ...[
+                const SizedBox(height: 2),
+                AppText(project.code!,
+                    variant: AppTextVariant.caption, fontSize: 12.5, color: AppColors.textSecondary),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatsStrip extends StatelessWidget {
+  const _StatsStrip({required this.project});
+
+  final ProjectDetail project;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+            child: _StatTile(
+                value: '${project.activeMemberCount}',
+                label: 'Thành viên',
+                color: AppTheme.brandBlue)),
+        const SizedBox(width: 10),
+        Expanded(
+            child: _StatTile(
+                value: '${project.checklistDone}/${project.checklistTotal}',
+                label: 'Checklist',
+                color: AppTheme.brandBlue)),
+        const SizedBox(width: 10),
+        Expanded(
+            child: _StatTile(
+                value: '${project.checklistOverdue}',
+                label: 'Quá hạn',
+                color: project.checklistOverdue > 0
+                    ? AppTheme.statusDanger
+                    : AppTheme.brandBlue)),
+        const SizedBox(width: 10),
+        Expanded(
+            child: _StatTile(
+                value: '${project.supportThisWeek}',
+                label: 'CV Hỗ trợ',
+                color: AppTheme.brandBlue)),
+      ],
+    );
+  }
+}
+
+class _StatTile extends StatelessWidget {
+  const _StatTile({required this.value, required this.label, required this.color});
+
+  final String value;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+      radius: 12,
+      child: Column(
+        children: [
+          AppText(value, variant: AppTextVariant.body, fontSize: 16, weight: FontWeight.w800, color: color),
+          const SizedBox(height: 2),
+          AppText(label,
+              align: TextAlign.center,
+              maxLines: 2,
+              variant: AppTextVariant.overline,
+              fontSize: 10,
+              color: AppColors.textSecondary,
+              letterSpacing: 0),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionCard extends StatelessWidget {
+  const _SectionCard({required this.title, required this.child});
+
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppText(title, variant: AppTextVariant.body, fontSize: 13, weight: FontWeight.w700),
+          const SizedBox(height: 10),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 92,
+            child: AppText(label,
+                variant: AppTextVariant.caption, fontSize: 12.5, color: AppColors.textSecondary),
+          ),
+          Expanded(
+            child: AppText(value, variant: AppTextVariant.body, fontSize: 13, weight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MemberRow extends StatelessWidget {
+  const _MemberRow({required this.member});
+
+  final ProjectMember member;
+
+  @override
+  Widget build(BuildContext context) {
+    final format = DateFormat('dd/MM/yyyy');
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 7),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: AppText(member.userFullName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          variant: AppTextVariant.body,
+                          fontSize: 13,
+                          weight: FontWeight.w600),
+                    ),
+                    if (member.isPm) ...[
+                      const SizedBox(width: 6),
+                      const _SmallTag(label: 'PM', color: AppTheme.brandBlue),
+                    ] else if (member.role?.isNotEmpty == true) ...[
+                      const SizedBox(width: 6),
+                      _SmallTag(label: member.role!, color: AppTheme.brandBlueDark),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 2),
+                AppText(
+                  'Từ ${format.format(member.joinedAt ?? DateTime.now())}'
+                  '${member.leftAt != null ? " đến ${format.format(member.leftAt!)}" : ""}',
+                  variant: AppTextVariant.overline,
+                  fontSize: 11,
+                  color: AppColors.textSecondary,
+                  letterSpacing: 0,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          _SmallTag(
+            label: member.isActive ? 'Đang tham gia' : 'Đã rời',
+            color: member.isActive ? AppTheme.statusSuccess : AppColors.textSecondary,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SmallTag extends StatelessWidget {
+  const _SmallTag({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: AppText(label,
+          variant: AppTextVariant.overline, fontSize: 9.5, weight: FontWeight.w700, color: color, letterSpacing: 0),
+    );
+  }
+}
+
+class _OverdueTaskRow extends StatelessWidget {
+  const _OverdueTaskRow({required this.task});
+
+  final TaskItem task;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          const PhosphorIcon(PhosphorIconsRegular.warningCircle,
+              size: 15, color: AppTheme.statusDanger),
+          const SizedBox(width: 8),
+          Expanded(
+            child: AppText(task.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                variant: AppTextVariant.caption,
+                fontSize: 12.5,
+                color: AppColors.textPrimary),
+          ),
+          if (task.dueDate != null)
+            AppText(DateFormat('dd/MM').format(task.dueDate!),
+                variant: AppTextVariant.overline,
+                fontSize: 11,
+                weight: FontWeight.w600,
+                color: AppTheme.statusDanger,
+                letterSpacing: 0),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReportStatusLine extends StatelessWidget {
+  const _ReportStatusLine({required this.report, this.isCurrent = false});
+
+  final WeekReportSummary report;
+  final bool isCurrent;
+
+  @override
+  Widget build(BuildContext context) {
+    late final String label;
+    late final Color color;
+
+    if (report.isSubmitted) {
+      label = 'Đã nộp ${report.isOnTime ? "đúng hạn" : "trễ hạn"}';
+      color = report.isOnTime ? AppTheme.statusSuccess : AppTheme.statusWarning;
+    } else {
+      label = 'Chưa nộp';
+      color = AppTheme.statusDanger;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: AppText(
+              isCurrent ? 'Tuần này (${report.week}/${report.year})' : 'Tuần ${report.week}/${report.year}',
+              variant: AppTextVariant.caption,
+              fontSize: 12.5,
+              weight: isCurrent ? FontWeight.w700 : FontWeight.w500,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          _SmallTag(label: label, color: color),
+        ],
       ),
     );
   }

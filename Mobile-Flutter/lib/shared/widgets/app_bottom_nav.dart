@@ -4,6 +4,9 @@ import 'package:phosphor_icons/phosphor_icons.dart';
 
 import '../../config/app_routes.dart' show Routes;
 import '../../config/app_theme.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
+import '../../core/widgets/app_text.dart';
 import '../../features/app_routes.dart';
 
 class _NavTab {
@@ -167,7 +170,9 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppTheme.brandBlue : Colors.black45;
+    // Tab chua chon dung textSecondary (mau dac, tuong phan tot) thay vi Colors.black45 (den
+    // trong suot, doc mo tren nen trang) — xem AppColors.textSecondary.
+    final color = selected ? AppTheme.brandBlue : AppColors.textSecondary;
 
     return InkWell(
       onTap: onTap,
@@ -188,13 +193,12 @@ class _NavItem extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
+          AppText(
             tab.label,
-            style: TextStyle(
-              fontSize: 10.5,
-              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-              color: color,
-            ),
+            variant: AppTextVariant.caption,
+            fontSize: 10.5,
+            weight: selected ? FontWeight.w700 : FontWeight.w500,
+            color: color,
           ),
         ],
       ),
