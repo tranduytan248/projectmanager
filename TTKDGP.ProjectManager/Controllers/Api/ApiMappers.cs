@@ -62,6 +62,7 @@ namespace TTKDGP.ProjectManager.Controllers.Api
                 IsOverdue = task.IsOverdue,
                 IsDueToday = task.DueDate.HasValue && task.DueDate.Value.Date == DateTime.Today,
                 AssigneeName = task.AssigneeName,
+                AssigneeUserId = task.AssigneeUserId,
                 Progress = task.Progress,
                 Kind = task.Kind,
                 ParentId = task.ParentId
@@ -85,6 +86,7 @@ namespace TTKDGP.ProjectManager.Controllers.Api
                 IsOverdue = task.IsOverdue,
                 IsDueToday = task.DueDate.HasValue && task.DueDate.Value.Date == DateTime.Today,
                 AssigneeName = task.AssigneeName,
+                AssigneeUserId = task.AssigneeUserId,
                 Progress = task.Progress,
                 Kind = task.Kind,
                 ParentId = task.ParentId,
@@ -319,13 +321,15 @@ namespace TTKDGP.ProjectManager.Controllers.Api
         {
             return new ProjectMemberDto
             {
+                Id = assignment.Id,
                 UserFullName = assignment.UserFullName,
                 IsPm = assignment.IsPm,
                 Role = assignment.Role,
                 Phase = assignment.Phase,
                 JoinedAt = assignment.JoinedAt,
                 LeftAt = assignment.LeftAt,
-                IsActive = assignment.IsActive
+                IsActive = assignment.IsActive,
+                Note = assignment.Note
             };
         }
 

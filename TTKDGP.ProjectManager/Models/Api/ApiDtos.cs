@@ -73,6 +73,7 @@ namespace TTKDGP.ProjectManager.Models.Api
         public bool IsDueToday { get; set; }
 
         public string AssigneeName { get; set; }
+        public int AssigneeUserId { get; set; }
         public int Progress { get; set; }
 
         /// <summary>Gia tri tho cua TaskKinds (vi du "Checklist", "HoTro", "NgoaiDuAn").</summary>
@@ -373,6 +374,8 @@ namespace TTKDGP.ProjectManager.Models.Api
 
     public class ProjectMemberDto
     {
+        /// <summary>Id cua WorkAssignment — can de goi SetPm/EndMember/RemoveMember.</summary>
+        public int Id { get; set; }
         public string UserFullName { get; set; }
         public bool IsPm { get; set; }
         public string Role { get; set; }
@@ -382,6 +385,21 @@ namespace TTKDGP.ProjectManager.Models.Api
         public DateTime JoinedAt { get; set; }
         public DateTime? LeftAt { get; set; }
         public bool IsActive { get; set; }
+        public string Note { get; set; }
+    }
+
+    /// <summary>Danh sach chon san cho form "Them nhan su vao du an" — khop ViewBag.UserOptions/
+    /// ViewBag.Roles cua WorkProjectsController.AddMemberForm ben web.</summary>
+    public class ProjectMemberFormOptionsDto
+    {
+        public List<AssigneeOptionDto> Users { get; set; }
+        public List<string> Roles { get; set; }
+
+        public ProjectMemberFormOptionsDto()
+        {
+            Users = new List<AssigneeOptionDto>();
+            Roles = new List<string>();
+        }
     }
 
     public class WeekReportSummaryDto

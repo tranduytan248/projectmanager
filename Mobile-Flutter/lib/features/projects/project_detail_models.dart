@@ -1,7 +1,11 @@
 import '../dashboard/dashboard_models.dart' show TaskItem, parseAspNetDate;
 
+/// Mot giai doan tham gia du an cua mot nguoi — khop ProjectMemberDto. [id] la Id cua
+/// WorkAssignment, can de goi SetPm/EndMember/RemoveMember (man "Nhan su du an", xem
+/// project_members_screen.dart).
 class ProjectMember {
   const ProjectMember({
+    required this.id,
     required this.userFullName,
     required this.isPm,
     required this.role,
@@ -9,8 +13,10 @@ class ProjectMember {
     required this.joinedAt,
     required this.leftAt,
     required this.isActive,
+    required this.note,
   });
 
+  final int id;
   final String userFullName;
   final bool isPm;
   final String? role;
@@ -18,8 +24,10 @@ class ProjectMember {
   final DateTime? joinedAt;
   final DateTime? leftAt;
   final bool isActive;
+  final String? note;
 
   factory ProjectMember.fromJson(Map<String, dynamic> json) => ProjectMember(
+        id: json['Id'] as int? ?? 0,
         userFullName: json['UserFullName'] as String? ?? '',
         isPm: json['IsPm'] as bool? ?? false,
         role: json['Role'] as String?,
@@ -27,6 +35,38 @@ class ProjectMember {
         joinedAt: parseAspNetDate(json['JoinedAt'] as String?),
         leftAt: parseAspNetDate(json['LeftAt'] as String?),
         isActive: json['IsActive'] as bool? ?? false,
+        note: json['Note'] as String?,
+      );
+}
+
+/// Mot lua chon nguoi dung cho o "Nguoi dung" khi them nhan su — khop AssigneeOptionDto.
+class UserOption {
+  const UserOption({required this.userId, required this.fullName});
+
+  final int userId;
+  final String fullName;
+
+  factory UserOption.fromJson(Map<String, dynamic> json) => UserOption(
+        userId: json['UserId'] as int? ?? 0,
+        fullName: json['FullName'] as String? ?? '',
+      );
+}
+
+/// Du lieu can de mo form "Them nhan su vao du an" — khop ProjectMemberFormOptionsDto.
+class ProjectMemberFormOptions {
+  const ProjectMemberFormOptions({required this.users, required this.roles});
+
+  final List<UserOption> users;
+  final List<String> roles;
+
+  factory ProjectMemberFormOptions.fromJson(Map<String, dynamic> json) =>
+      ProjectMemberFormOptions(
+        users: (json['Users'] as List<dynamic>? ?? [])
+            .map((e) => UserOption.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        roles: (json['Roles'] as List<dynamic>? ?? [])
+            .map((e) => e as String)
+            .toList(),
       );
 }
 

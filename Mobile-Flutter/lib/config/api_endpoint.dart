@@ -57,6 +57,16 @@ class ApiEndpoint {
       '/ChecklistApi/Attachment?commentId=$commentId';
   static const taskUpdateStatus = '/ChecklistApi/UpdateStatus';
   static String taskActivityLog(String id) => '/ChecklistApi/ActivityLog/$id';
+  static String taskAssigneeOptions(String id) =>
+      '/ChecklistApi/AssigneeOptions/$id';
+  static const taskUpdateAssignee = '/ChecklistApi/UpdateAssignee';
+
+  static const projectMembers = '/ProjectMembersApi/Index';
+  static const projectAddMemberForm = '/ProjectMembersApi/AddMemberForm';
+  static const projectAddMember = '/ProjectMembersApi/AddMember';
+  static const projectSetPm = '/ProjectMembersApi/SetPm';
+  static const projectEndMember = '/ProjectMembersApi/EndMember';
+  static const projectRemoveMember = '/ProjectMembersApi/RemoveMember';
 
   // Nhom "Quan ly To" (can quyen wteam.manage)
   static const teamDashboard = '/team/dashboard';

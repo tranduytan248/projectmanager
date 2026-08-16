@@ -157,6 +157,7 @@
     <Compile Include="Controllers\Api\NotificationsApiController.cs" />
     <Compile Include="Controllers\Api\MyWorkApiController.cs" />
     <Compile Include="Controllers\Api\MyProjectsApiController.cs" />
+    <Compile Include="Controllers\Api\ProjectMembersApiController.cs" />
     <Compile Include="Controllers\Api\ChecklistApiController.cs" />
     <Compile Include="Controllers\Api\ApiMappers.cs" />
     <Compile Include="Models\Api\ApiDtos.cs" />
@@ -234,6 +235,7 @@
     <Content Include="swagger\swagger.json" />
     <Content Include="favicon.ico" />
     <Content Include="site.webmanifest" />
+    <Content Include="Content\img\brand-mark.png" />
     <Content Include="Content\img\favicon-16x16.png" />
     <Content Include="Content\img\favicon-32x32.png" />
     <Content Include="Content\img\favicon-48x48.png" />

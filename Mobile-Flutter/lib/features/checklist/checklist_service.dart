@@ -29,6 +29,9 @@ class ChecklistService {
     return ChecklistData.fromJson(response.data as Map<String, dynamic>);
   }
 
+  /// [todos] la danh sach "Viec can lam" nhap ngay luc tao — dung FormData (nhu sendComment) thay
+  /// vi x-www-form-urlencoded de gui duoc nhieu field "todos" cung ten, ASP.NET MVC tu bind vao
+  /// string[] todos ben ChecklistApiController.Create.
   Future<CreateTaskResult> create({
     required int projectId,
     required String title,
@@ -36,13 +39,15 @@ class ChecklistService {
     required String kind,
     required String priority,
     int assigneeUserId = 0,
+    DateTime? startDate,
     required DateTime dueDate,
     String? description,
+    List<String> todos = const [],
   }) async {
     try {
       final response = await _http.post(
         ApiEndpoint.checklistCreate,
-        data: {
+        data: FormData.fromMap({
           'projectId': projectId,
           'title': title,
           'code': code ?? '',
@@ -51,10 +56,11 @@ class ChecklistService {
           'assigneeUserId': assigneeUserId,
           // Cung khuon "yyyy-MM-dd" nhu input type=date ben web gui, tranh nham lan dinh dang
           // ngay/thang theo van hoa (culture) cua may chu.
+          if (startDate != null) 'startDate': DateFormat('yyyy-MM-dd').format(startDate),
           'dueDate': DateFormat('yyyy-MM-dd').format(dueDate),
           'description': description ?? '',
-        },
-        options: Options(contentType: Headers.formUrlEncodedContentType),
+          'todos': todos,
+        }),
       );
       return CreateTaskResult._(task: TaskItem.fromJson(response.data as Map<String, dynamic>));
     } on DioException catch (e) {

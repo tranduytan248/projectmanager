@@ -89,6 +89,11 @@ class AppTextField extends StatelessWidget {
     final resolvedFocusedBorderColor = focusedBorderColor ?? AppColors.primary;
     final resolvedErrorColor =
         errorColor ?? Theme.of(context).colorScheme.error;
+    // Truong bat buoc thi doi nhan sang mau do — bao hieu ngay tu cai nhin dau, khong doi nguoi
+    // dung phai bam thu moi biet thieu truong nao. labelColor tuong minh (vi du man nen mau)
+    // van duoc uu tien hon, tranh vo giao dien cac man da tuy chinh mau rieng.
+    final resolvedLabelColor =
+        labelColor ?? (required ? AppColors.danger : null);
 
     return TextFormField(
       controller: controller,
@@ -108,9 +113,12 @@ class AppTextField extends StatelessWidget {
       cursorColor: textColor,
       decoration: InputDecoration(
         labelText: required ? '$label *' : label,
-        labelStyle: labelColor == null ? null : TextStyle(color: labelColor),
-        floatingLabelStyle:
-            labelColor == null ? null : TextStyle(color: labelColor),
+        labelStyle: resolvedLabelColor == null
+            ? null
+            : TextStyle(color: resolvedLabelColor),
+        floatingLabelStyle: resolvedLabelColor == null
+            ? null
+            : TextStyle(color: resolvedLabelColor),
         hintText: hint,
         hintStyle: textColor == null
             ? null

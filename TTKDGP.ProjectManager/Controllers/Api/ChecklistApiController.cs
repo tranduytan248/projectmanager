@@ -441,23 +441,100 @@ namespace TTKDGP.ProjectManager.Controllers.Api
             return Json(items, JsonRequestBehavior.AllowGet);
         }
 
+        /// <summary>Danh sach thanh vien dang hoat dong cua du an chua dau viec nay — do form "Doi
+        /// nguoi thuc hien" tren mobile can truoc khi mo. Chi PM du an hoac Quan ly To moi xem duoc
+        /// (CanEditAllOfTask) — nguoi thuc hien thuong khong duoc doi truong nay, xem quy dinh o
+        /// BaseController.CanEditAllOfTask.</summary>
+        [HttpGet]
+        public ActionResult AssigneeOptions(int id)
+        {
+            var task = Repository.WorkTasks.Find(id);
+            if (task == null || !CanSeeTask(task)) return HttpNotFound();
+            if (!CanEditAllOfTask(task)) return HttpNotFound();
+
+            var options = ActiveMemberIds(task.ProjectId)
+                .Select(uid => Repository.Users.Find(uid))
+                .Where(u => u != null)
+                .OrderBy(u => u.FullName, System.StringComparer.CurrentCulture)
+                .Select(u => new AssigneeOptionDto { UserId = u.Id, FullName = u.FullName })
+                .ToList();
+
+            return Json(options, JsonRequestBehavior.AllowGet);
+        }
+
+        /// <summary>Doi nguoi thuc hien cua mot dau viec da co — chi PM du an hoac Quan ly To
+        /// (CanEditAllOfTask), y het luat "sua MOI truong" da ap dung cho web (ChecklistController.
+        /// Edit, nhanh canEditAll). assigneeUserId=0 nghia la go giao (chua giao lai cho ai).</summary>
+        [HttpPost]
+        public ActionResult UpdateAssignee(int id, int assigneeUserId)
+        {
+            var task = Repository.WorkTasks.Find(id);
+            if (task == null || !CanSeeTask(task)) return HttpNotFound();
+            if (!CanEditAllOfTask(task))
+            {
+                return BadRequest("Chỉ PM dự án hoặc Quản lý Tổ mới đổi được người thực hiện.");
+            }
+
+            if (assigneeUserId > 0 && !ActiveMemberIds(task.ProjectId).Contains(assigneeUserId))
+            {
+                return BadRequest("Người thực hiện phải đang tham gia dự án này.");
+            }
+
+            var before = TaskActivityLogService.Snapshot(task);
+            var previousAssignee = task.AssigneeUserId;
+
+            task.AssigneeUserId = assigneeUserId;
+            WorkService.FillNames(task);
+            task.UpdatedAt = DateTime.Now;
+            task.UpdatedBy = CurrentUser == null ? null : CurrentUser.FullName;
+            Repository.WorkTasks.Update(task);
+            TaskActivityLogService.RecordFieldChanges(before, task, CurrentUserId,
+                CurrentUser == null ? null : CurrentUser.FullName);
+
+            // Bao cho nguoi MOI duoc giao (tru khi tu giao cho minh) — y het Create/Edit ben web.
+            if (assigneeUserId > 0 && assigneeUserId != previousAssignee && assigneeUserId != CurrentUserId)
+            {
+                NotificationService.ProjectTaskAssigned(task, CurrentUser == null ? null : CurrentUser.FullName);
+            }
+
+            return Json(BuildFullDetail(task));
+        }
+
         /// <summary>
         /// Them mot dau viec moi — chi PM du an hoac Quan ly To (CanEditProject). Form rut gon:
         /// khong nhan ParentId/StartDate/Week/Year/State tu client, tu gan gia tri mac dinh y het
         /// quyet dinh trong Memory.md. Ma viec (Code) KHONG bat buoc va KHONG kiem trung — dung
         /// dung thuc te ben web (WorkTask.Code chi co [StringLength], khong co [Required] hay
         /// kiem trung, du _EditForm.cshtml co ghi chu "chi can duy nhat" nhu mot quy uoc, khong
-        /// phai rang buoc thuc su).
+        /// phai rang buoc thuc su). [todos] la danh sach "Viec can lam" nhap ngay luc tao (man
+        /// mobile moi gop todo-list vao form Them cong viec) — tao het trong CUNG mot request thay
+        /// vi bat client goi AddTodo nhieu lan noi tiep, tranh nua chung lam nua bo do loi mang.
+        /// [ValidateInput(false)] bat buoc vi description gio la HTML that tu AppRichEditor (truoc
+        /// day luon la chu thuong nen chua can) — giong het ly do action Comment/Edit da tat.
         /// </summary>
         [HttpPost]
+        [ValidateInput(false)]
         public ActionResult Create(int projectId, string title, string code, string kind,
-            string priority, int assigneeUserId, DateTime? dueDate, string description)
+            string priority, int assigneeUserId, DateTime? startDate, DateTime? dueDate,
+            string description, string[] todos)
         {
             var project = Repository.WorkProjects.Find(projectId);
             if (project == null || !CanEditProject(projectId)) return HttpNotFound();
 
             if (string.IsNullOrWhiteSpace(title)) return BadRequest("Vui lòng nhập tên công việc.");
             if (!dueDate.HasValue) return BadRequest("Vui lòng nhập hạn hoàn thành.");
+
+            // Loc bo dong rong TRUOC khi tao task — kiem tra do dai ngay tai day de khong bao gio
+            // roi vao canh "task da tao nhung todo loi", giong tinh than validate-truoc-khi-luu
+            // dang dung cho Ten/Han hoan thanh o tren.
+            var todoLines = (todos ?? new string[0])
+                .Select(t => (t ?? string.Empty).Trim())
+                .Where(t => t.Length > 0)
+                .ToList();
+            if (todoLines.Any(t => t.Length > 300))
+            {
+                return BadRequest("Mỗi việc cần làm tối đa 300 ký tự.");
+            }
 
             var memberIds = ActiveMemberIds(projectId);
             if (assigneeUserId > 0 && !memberIds.Contains(assigneeUserId))
@@ -475,7 +552,7 @@ namespace TTKDGP.ProjectManager.Controllers.Api
                 Title = title.Trim(),
                 Code = string.IsNullOrWhiteSpace(code) ? null : code.Trim(),
                 AssigneeUserId = assigneeUserId,
-                StartDate = DateTime.Today,
+                StartDate = startDate ?? DateTime.Today,
                 DueDate = due,
                 Week = WeekHelper.GetWeek(due),
                 Year = WeekHelper.GetYear(due),
@@ -501,6 +578,27 @@ namespace TTKDGP.ProjectManager.Controllers.Api
             if (task.AssigneeUserId > 0 && task.AssigneeUserId != CurrentUserId)
             {
                 NotificationService.ProjectTaskAssigned(task, CurrentUser == null ? null : CurrentUser.FullName);
+            }
+
+            // Tao san "Viec can lam" nhap luc tao — mirror dung hanh vi AddTodo (thong bao + ghi
+            // log) cho TUNG dong, de lich su thao tac nhat quan du todo duoc them luc tao hay sau.
+            var actorName = CurrentUser == null ? null : CurrentUser.FullName;
+            for (var i = 0; i < todoLines.Count; i++)
+            {
+                var todo = Repository.WorkTaskTodos.Insert(new WorkTaskTodo
+                {
+                    TaskId = task.Id,
+                    Content = todoLines[i],
+                    SortOrder = i,
+                    CreatedByUserId = CurrentUserId,
+                    CreatedByName = actorName,
+                    CreatedAt = DateTime.Now
+                });
+
+                NotificationService.TodoAdded(task, todo, CurrentUserId, actorName);
+                TaskActivityLogService.Record(task.Id, CurrentUserId, actorName,
+                    TaskActivityActions.TodoAdded,
+                    string.Format("Đã thêm việc cần làm \"{0}\"", todoLines[i]));
             }
 
             return Json(ApiMappers.ToDto(task));

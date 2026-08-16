@@ -16,6 +16,7 @@ class TaskDetail {
     required this.isOverdue,
     required this.isDueToday,
     required this.assigneeName,
+    required this.assigneeUserId,
     required this.progress,
     required this.kind,
     required this.parentId,
@@ -45,6 +46,7 @@ class TaskDetail {
   final bool isOverdue;
   final bool isDueToday;
   final String? assigneeName;
+  final int assigneeUserId;
   final int progress;
   final String kind;
   final int parentId;
@@ -77,6 +79,7 @@ class TaskDetail {
         isOverdue: json['IsOverdue'] as bool? ?? false,
         isDueToday: json['IsDueToday'] as bool? ?? false,
         assigneeName: json['AssigneeName'] as String?,
+        assigneeUserId: json['AssigneeUserId'] as int? ?? 0,
         progress: json['Progress'] as int? ?? 0,
         kind: json['Kind'] as String? ?? '',
         parentId: json['ParentId'] as int? ?? 0,

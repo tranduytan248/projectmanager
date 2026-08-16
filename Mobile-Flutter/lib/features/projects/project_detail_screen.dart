@@ -5,8 +5,8 @@ import 'package:phosphor_icons/phosphor_icons.dart';
 import '../../config/app_theme.dart';
 import '../../core/classes/route_manager.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_dimens.dart';
 import '../../core/theme/app_text_styles.dart';
-import '../../core/utils/toast_service.dart';
 import '../../core/widgets/app_app_bar.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_card.dart';
@@ -90,15 +90,49 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                           type: AppButtonType.outline,
                           label: 'Nhân sự',
                           icon: PhosphorIconsRegular.usersThree,
-                          onPressed: () => ToastService.show(
-                              'Cập nhật nhân sự — tính năng đang được phát triển.'),
+                          onPressed: () async {
+                            await Nav.toNamed(
+                              context,
+                              AppRoutes.projectMembers,
+                              arguments: {
+                                'projectId': p.id.toString(),
+                                'projectName': p.name,
+                                'canEdit': p.canEdit,
+                              },
+                            );
+                            _reload();
+                          },
                         ),
                       ),
                     ],
                   ],
                 ),
                 const SizedBox(height: 16),
-                _StatsStrip(project: p),
+                _StatsStrip(
+                  project: p,
+                  onOpenMembers: () async {
+                    await Nav.toNamed(
+                      context,
+                      AppRoutes.projectMembers,
+                      arguments: {
+                        'projectId': p.id.toString(),
+                        'projectName': p.name,
+                        'canEdit': p.canEdit,
+                      },
+                    );
+                    _reload();
+                  },
+                  onOpenChecklist: ({String? kindFilter, String? dueFilter}) =>
+                      Nav.toNamed(
+                    context,
+                    AppRoutes.checklist,
+                    arguments: {
+                      'projectId': p.id.toString(),
+                      if (kindFilter != null) 'kindFilter': kindFilter,
+                      if (dueFilter != null) 'dueFilter': dueFilter,
+                    },
+                  ),
+                ),
                 const SizedBox(height: 16),
                 AppDetailSection(
                   title: 'Thông tin chung',
@@ -246,10 +280,18 @@ class _Header extends StatelessWidget {
   }
 }
 
+/// [onOpenChecklist] nhan kem bo loc tuy chon — Qua han/CV Ho tro truyen dueFilter/kindFilter de
+/// man Checklist mo san dung bo loc, Thanh vien/Checklist thi khong loc gi (xem qua het).
 class _StatsStrip extends StatelessWidget {
-  const _StatsStrip({required this.project});
+  const _StatsStrip({
+    required this.project,
+    required this.onOpenMembers,
+    required this.onOpenChecklist,
+  });
 
   final ProjectDetail project;
+  final VoidCallback onOpenMembers;
+  final void Function({String? kindFilter, String? dueFilter}) onOpenChecklist;
 
   @override
   Widget build(BuildContext context) {
@@ -259,13 +301,15 @@ class _StatsStrip extends StatelessWidget {
             child: _StatTile(
                 value: '${project.activeMemberCount}',
                 label: 'Thành viên',
-                color: AppTheme.brandBlue)),
+                color: AppTheme.brandBlue,
+                onTap: onOpenMembers)),
         const SizedBox(width: 10),
         Expanded(
             child: _StatTile(
                 value: '${project.checklistDone}/${project.checklistTotal}',
                 label: 'Checklist',
-                color: AppTheme.brandBlue)),
+                color: AppTheme.brandBlue,
+                onTap: () => onOpenChecklist())),
         const SizedBox(width: 10),
         Expanded(
             child: _StatTile(
@@ -273,47 +317,61 @@ class _StatsStrip extends StatelessWidget {
                 label: 'Quá hạn',
                 color: project.checklistOverdue > 0
                     ? AppTheme.statusDanger
-                    : AppTheme.brandBlue)),
+                    : AppTheme.brandBlue,
+                onTap: () => onOpenChecklist(dueFilter: 'quahan'))),
         const SizedBox(width: 10),
         Expanded(
             child: _StatTile(
                 value: '${project.supportThisWeek}',
                 label: 'CV Hỗ trợ',
-                color: AppTheme.brandBlue)),
+                color: AppTheme.brandBlue,
+                onTap: () => onOpenChecklist(kindFilter: 'HoTro'))),
       ],
     );
   }
 }
 
 class _StatTile extends StatelessWidget {
-  const _StatTile(
-      {required this.value, required this.label, required this.color});
+  const _StatTile({
+    required this.value,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
 
   final String value;
   final String label;
   final Color color;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-      radius: 12,
-      child: Column(
-        children: [
-          AppText(value,
-              variant: AppTextVariant.body,
-              fontSize: 16,
-              weight: FontWeight.w800,
-              color: color),
-          const SizedBox(height: 2),
-          AppText(label,
-              align: TextAlign.center,
-              maxLines: 2,
-              variant: AppTextVariant.overline,
-              fontSize: 10,
-              color: AppColors.textSecondary,
-              letterSpacing: 0),
-        ],
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: AppDimens.minTapTarget),
+        child: AppCard(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+          radius: 12,
+          child: Column(
+            children: [
+              AppText(value,
+                  variant: AppTextVariant.body,
+                  fontSize: 16,
+                  weight: FontWeight.w800,
+                  color: color),
+              const SizedBox(height: 2),
+              AppText(label,
+                  align: TextAlign.center,
+                  maxLines: 2,
+                  variant: AppTextVariant.overline,
+                  fontSize: 10,
+                  color: AppColors.textSecondary,
+                  letterSpacing: 0),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -18,7 +18,11 @@ class ChecklistBoardController extends StatelessController {
 
     return Display(
       title: 'Checklist dự án',
-      mobile: ChecklistBoardScreen(projectId: projectId),
+      mobile: ChecklistBoardScreen(
+        projectId: projectId,
+        initialKindFilter: args?['kindFilter'] as String?,
+        initialDueFilter: args?['dueFilter'] as String?,
+      ),
     );
   }
 }
