@@ -220,6 +220,7 @@ class AppRichEditor extends StatelessWidget {
   const AppRichEditor({
     super.key,
     required this.controller,
+    this.label = 'Trao đổi',
     this.hint = 'Nhập nội dung trao đổi...',
     this.minLines = 4,
     this.maxLines = 10,
@@ -227,6 +228,11 @@ class AppRichEditor extends StatelessWidget {
   });
 
   final AppRichEditorController controller;
+
+  /// Nhan hien phia tren o soan thao — mac dinh "Trao đổi" (dung ban dau, giu nguyen de khong
+  /// doi hanh vi cac noi da dung), doi lai khi tai su dung cho ngu canh khac (vi du "Mô tả" o
+  /// form Them cong viec moi).
+  final String label;
   final String hint;
   final int minLines;
   final int maxLines;
@@ -240,7 +246,7 @@ class AppRichEditor extends StatelessWidget {
         _RichToolbar(controller: controller),
         const SizedBox(height: AppDimens.space4),
         AppTextField(
-          label: 'Trao đổi',
+          label: label,
           hint: hint,
           controller: controller,
           maxLines: maxLines,

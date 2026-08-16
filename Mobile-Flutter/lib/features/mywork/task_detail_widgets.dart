@@ -358,9 +358,13 @@ class TaskProgressRow extends StatelessWidget {
 /// Dong "Nguoi thuc hien" co avatar tron chua chu cai dau ten — thay cho chu suong, giup nhan
 /// dien nguoi phu trach nhanh hon (dung mau brand nhat, dong bo voi bang mau primary cua app).
 class TaskAssigneeRow extends StatelessWidget {
-  const TaskAssigneeRow({super.key, required this.name});
+  const TaskAssigneeRow({super.key, required this.name, this.onEdit});
 
   final String name;
+
+  /// Chi truyen khi nguoi dang xem co quyen doi nguoi thuc hien (canEditAll — PM du an hoac
+  /// Quan ly To), hien nut but chi cuoi dong. Null thi an nut, dong chi doc nhu cu.
+  final VoidCallback? onEdit;
 
   String get _initials {
     final parts =
@@ -408,6 +412,13 @@ class TaskAssigneeRow extends StatelessWidget {
               ],
             ),
           ),
+          if (onEdit != null)
+            AppIconButton(
+              icon: PhosphorIconsRegular.pencilSimple,
+              tooltip: 'Đổi người thực hiện',
+              size: 18,
+              onPressed: onEdit,
+            ),
         ],
       ),
     );

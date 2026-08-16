@@ -9,6 +9,7 @@ import 'notifications/notifications_controller.dart';
 import 'profile/profile_controller.dart';
 import 'projects/my_projects_controller.dart';
 import 'projects/project_detail_controller.dart';
+import 'projects/project_members_controller.dart';
 import 'team/leave_approval_controller.dart';
 import 'team/private_tasks_controller.dart';
 import 'team/team_dashboard_controller.dart';
@@ -26,6 +27,7 @@ class AppRoutes extends RouteManager {
   static const String projects = '$name/projects';
   static const String projectDetail = '$name/projects/detail';
   static const String checklist = '$name/projects/checklist';
+  static const String projectMembers = '$name/projects/members';
   static const String leaves = '$name/leaves';
   static const String leaveNew = '$name/leaves/new';
   static const String kpi = '$name/kpi';
@@ -42,6 +44,7 @@ class AppRoutes extends RouteManager {
     addRoute(projects, (context) => const MyProjectsController());
     addRoute(projectDetail, (context) => const ProjectDetailController());
     addRoute(checklist, (context) => const ChecklistBoardController());
+    addRoute(projectMembers, (context) => const ProjectMembersController());
     addRoute(leaves, (context) => const LeaveListController());
     addRoute(leaveNew, (context) => const LeaveRequestFormController());
     addRoute(kpi, (context) => const KpiController());

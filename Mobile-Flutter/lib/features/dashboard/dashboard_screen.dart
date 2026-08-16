@@ -15,6 +15,7 @@ import '../../core/widgets/app_text.dart';
 import '../../shared/widgets/app_bottom_nav.dart';
 import '../app_routes.dart';
 import '../auth/auth_provider.dart';
+import '../notifications/notifications_service.dart';
 import 'dashboard_models.dart';
 import 'dashboard_service.dart';
 
@@ -238,14 +239,81 @@ class _Header extends StatelessWidget {
             ],
           ),
         ),
-        AppIconButton(
-          icon: PhosphorIconsRegular.bellSimple,
-          onPressed: () => Nav.toNamed(context, AppRoutes.notifications),
-          color: AppTheme.brandBlue,
-          size: 22,
-          background: AppTheme.brandBlue.withValues(alpha: 0.08),
-        ),
+        const _NotificationBell(),
       ],
+    );
+  }
+}
+
+/// Chuong thong bao + so tin chua doc — StatefulWidget rieng de CHI goi API dem tin 1 lan (giu
+/// nguyen State qua moi lan Dashboard build lai theo FutureBuilder cha), khong lam theo
+/// DashboardData vi backend Dashboard hien chua tra kem so nay.
+class _NotificationBell extends StatefulWidget {
+  const _NotificationBell();
+
+  @override
+  State<_NotificationBell> createState() => _NotificationBellState();
+}
+
+class _NotificationBellState extends State<_NotificationBell> {
+  final _service = NotificationsService();
+  late final Future<int> _unreadFuture = _fetchUnread();
+
+  Future<int> _fetchUnread() async {
+    try {
+      final page = await _service.fetch();
+      return page.unreadCount;
+    } catch (_) {
+      // Loi tai dem tin khong nen chan ca man Dashboard — im lang coi nhu 0, chuong van
+      // bam mo man Thong bao duoc binh thuong.
+      return 0;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<int>(
+      future: _unreadFuture,
+      builder: (context, snapshot) {
+        final unread = snapshot.data ?? 0;
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            AppIconButton(
+              icon: PhosphorIconsRegular.bellSimple,
+              onPressed: () => Nav.toNamed(context, AppRoutes.notifications),
+              color: AppTheme.brandBlue,
+              size: 22,
+              background: AppTheme.brandBlue.withValues(alpha: 0.08),
+            ),
+            if (unread > 0)
+              Positioned(
+                right: 2,
+                top: 2,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                  constraints:
+                      const BoxConstraints(minWidth: 18, minHeight: 18),
+                  decoration: BoxDecoration(
+                    color: AppTheme.statusDanger,
+                    borderRadius: BorderRadius.circular(9),
+                    border: Border.all(color: AppColors.surface, width: 1.5),
+                  ),
+                  alignment: Alignment.center,
+                  child: AppText(
+                    unread > 99 ? '99+' : '$unread',
+                    variant: AppTextVariant.overline,
+                    fontSize: 10,
+                    weight: FontWeight.w800,
+                    color: AppColors.textOnPrimary,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }

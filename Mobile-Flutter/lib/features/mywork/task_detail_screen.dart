@@ -19,6 +19,7 @@ import '../dashboard/dashboard_models.dart'
     show taskStateLabel, taskPriorityLabel;
 import 'comment_html.dart';
 import 'task_activity_log_screen.dart';
+import 'task_assignee_sheet.dart';
 import 'task_comments_screen.dart';
 import 'task_detail_models.dart';
 import 'task_detail_service.dart';
@@ -143,6 +144,23 @@ class _TaskDetailBodyState extends State<_TaskDetailBody> {
     if (result != null) setState(() => _todo = result);
   }
 
+  Future<void> _openAssigneeSheet() async {
+    final result = await showTaskAssigneeSheet(
+      context,
+      service: widget.service,
+      taskId: _taskId,
+      initial: _task,
+    );
+    if (result != null) {
+      setState(() {
+        _task = result.task;
+        _timeLog = result.timeLog;
+        _todo = result.todo;
+        _comments = result.comments;
+      });
+    }
+  }
+
   Future<void> _openStatusSheet() async {
     final result = await showTaskStatusSheet(
       context,
@@ -236,6 +254,7 @@ class _TaskDetailBodyState extends State<_TaskDetailBody> {
           name: t.assigneeName?.isNotEmpty == true
               ? t.assigneeName!
               : '(chưa giao)',
+          onEdit: t.canEditAll ? _openAssigneeSheet : null,
         ),
         TaskInfoIconRow(
             icon: PhosphorIconsRegular.buildings,

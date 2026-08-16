@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../config/api_endpoint.dart';
 import '../../config/app_http.dart';
+import '../checklist/checklist_models.dart' show AssigneeOption;
 import 'task_detail_models.dart';
 
 /// Ket qua mot thao tac tren man Chi tiet cong viec (ghi/xoa gio, them/sua/xoa/tick viec can lam,
@@ -232,6 +233,36 @@ class TaskDetailService {
     return (response.data as List<dynamic>)
         .map((e) => TaskActivityLogEntry.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  /// Danh sach thanh vien du an de chon "Nguoi thuc hien" moi — chi goi duoc khi
+  /// TaskDetail.canEditAll = true (server tu kiem lai, 404 neu khong co quyen).
+  Future<List<AssigneeOption>> fetchAssigneeOptions(int taskId) async {
+    final response =
+        await _http.get(ApiEndpoint.taskAssigneeOptions('$taskId'));
+    return (response.data as List<dynamic>)
+        .map((e) => AssigneeOption.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Doi nguoi thuc hien — chi PM du an hoac Quan ly To (CanEditAllOfTask ben backend).
+  /// assigneeUserId = 0 nghia la go giao.
+  Future<TaskDetailActionResult<TaskFullDetail>> updateAssignee({
+    required int taskId,
+    required int assigneeUserId,
+  }) async {
+    try {
+      final response = await _http.post(
+        ApiEndpoint.taskUpdateAssignee,
+        data: {'id': taskId, 'assigneeUserId': assigneeUserId},
+        options: Options(contentType: Headers.formUrlEncodedContentType),
+      );
+      return TaskDetailActionResult._(
+          data: TaskFullDetail.fromJson(response.data as Map<String, dynamic>));
+    } on DioException catch (e) {
+      return TaskDetailActionResult._(
+          error: _errorOf(e, 'Không đổi được người thực hiện. Hãy thử lại.'));
+    }
   }
 
   String _errorOf(DioException e, String fallback) {

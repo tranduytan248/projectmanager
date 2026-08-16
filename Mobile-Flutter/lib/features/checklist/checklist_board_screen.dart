@@ -11,7 +11,6 @@ import '../../core/utils/toast_service.dart';
 import '../../core/widgets/app_app_bar.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_dropdown.dart';
-import '../../core/widgets/app_fab.dart';
 import '../../core/widgets/app_icon_button.dart';
 import '../../core/widgets/app_loading.dart';
 import '../../core/widgets/app_scaffold.dart';
@@ -19,6 +18,7 @@ import '../../core/widgets/app_text.dart';
 import '../../core/widgets/app_text_field.dart';
 import '../app_routes.dart';
 import '../dashboard/dashboard_models.dart';
+import 'add_task_screen.dart';
 import 'checklist_models.dart';
 import 'checklist_service.dart';
 
@@ -38,9 +38,21 @@ String _kindLabel(String kind) => kind == 'HoTro' ? 'Hỗ trợ' : 'Checklist';
 /// khong hop voi dien thoai), loc theo tu khoa + trang thai/loai viec/nguoi thuc hien/han o
 /// client — cung mau bo loc voi man "Du an cua toi" (nut loc mo bottom sheet + chip dieu kien).
 class ChecklistBoardScreen extends StatefulWidget {
-  const ChecklistBoardScreen({super.key, required this.projectId});
+  const ChecklistBoardScreen({
+    super.key,
+    required this.projectId,
+    this.initialKindFilter,
+    this.initialDueFilter,
+  });
 
   final String projectId;
+
+  /// Loc san theo loai viec (vi du "HoTro") khi mo tu the "CV Hỗ trợ" tren man Chi tiet du an —
+  /// nguoi dung van doi/xoa duoc binh thuong sau khi mo, chi la gia tri KHOI TAO.
+  final String? initialKindFilter;
+
+  /// Loc san theo han (vi du "quahan") khi mo tu the "Quá hạn" tren man Chi tiet du an.
+  final String? initialDueFilter;
 
   @override
   State<ChecklistBoardScreen> createState() => _ChecklistBoardScreenState();
@@ -54,9 +66,9 @@ class _ChecklistBoardScreenState extends State<ChecklistBoardScreen> {
   String _query = '';
 
   String? _stateFilter;
-  String? _kindFilter;
+  late String? _kindFilter = widget.initialKindFilter;
   String? _assigneeFilter;
-  String? _dueFilter;
+  late String? _dueFilter = widget.initialDueFilter;
 
   @override
   void initState() {
@@ -179,18 +191,11 @@ class _ChecklistBoardScreenState extends State<ChecklistBoardScreen> {
   }
 
   Future<void> _openAddTaskSheet(ChecklistData data) async {
-    final created = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      elevation: 0,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => _AddTaskSheet(
-        service: _service,
-        projectId: data.projectId,
-        assignees: data.assignees,
-      ),
+    final created = await pushAddTaskScreen(
+      context,
+      service: _service,
+      projectId: data.projectId,
+      assignees: data.assignees,
     );
 
     if (created == true) {
@@ -202,17 +207,23 @@ class _ChecklistBoardScreenState extends State<ChecklistBoardScreen> {
   @override
   Widget build(BuildContext context) {
     return AppScaffold(
-      appBar: const AppAppBar(title: 'Checklist'),
-      floatingActionButton: FutureBuilder<ChecklistData>(
-        future: _future,
-        builder: (context, snapshot) {
-          if (!snapshot.hasData || !snapshot.data!.canEdit) return const SizedBox.shrink();
-          return AppFab(
-            icon: PhosphorIconsRegular.plus,
-            label: 'Thêm mới',
-            onPressed: () => _openAddTaskSheet(snapshot.data!),
-          );
-        },
+      appBar: AppAppBar(
+        title: 'Checklist',
+        actions: [
+          FutureBuilder<ChecklistData>(
+            future: _future,
+            builder: (context, snapshot) {
+              if (!snapshot.hasData || !snapshot.data!.canEdit) {
+                return const SizedBox.shrink();
+              }
+              return AppIconButton(
+                icon: PhosphorIconsRegular.plus,
+                tooltip: 'Thêm mới',
+                onPressed: () => _openAddTaskSheet(snapshot.data!),
+              );
+            },
+          ),
+        ],
       ),
       body: SafeArea(
         child: FutureBuilder<ChecklistData>(
@@ -679,176 +690,6 @@ class _TaskRow extends StatelessWidget {
               ),
             ],
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Form "Them moi" rut gon (7 truong) so voi web (10 truong) — quyet dinh ghi trong Memory.md
-/// o goc repo. Khong co Muc cha/Ngay bat dau/Tuan-Nam/Trang thai luc tao — backend tu gan gia
-/// tri mac dinh.
-class _AddTaskSheet extends StatefulWidget {
-  const _AddTaskSheet({required this.service, required this.projectId, required this.assignees});
-
-  final ChecklistService service;
-  final int projectId;
-  final List<AssigneeOption> assignees;
-
-  @override
-  State<_AddTaskSheet> createState() => _AddTaskSheetState();
-}
-
-class _AddTaskSheetState extends State<_AddTaskSheet> {
-  final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _codeController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _dueDateController = TextEditingController();
-
-  String _kind = 'Checklist';
-  String _priority = 'TrungBinh';
-  int _assigneeUserId = 0;
-  DateTime? _dueDate;
-  bool _submitting = false;
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _codeController.dispose();
-    _descriptionController.dispose();
-    _dueDateController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _pickDueDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _dueDate ?? DateTime.now().add(const Duration(days: 7)),
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 3)),
-    );
-    if (picked != null) {
-      setState(() {
-        _dueDate = picked;
-        _dueDateController.text = DateFormat('dd/MM/yyyy').format(picked);
-      });
-    }
-  }
-
-  Future<void> _submit() async {
-    // Validator cua o "Han hoan thanh" (duoi day) da bao dam _dueDate != null khi validate()
-    // tra ve true, nen khong can kiem tra rieng bang ToastService nhu truoc.
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-
-    setState(() => _submitting = true);
-    final result = await widget.service.create(
-      projectId: widget.projectId,
-      title: _titleController.text.trim(),
-      code: _codeController.text.trim(),
-      kind: _kind,
-      priority: _priority,
-      assigneeUserId: _assigneeUserId,
-      dueDate: _dueDate!,
-      description: _descriptionController.text.trim(),
-    );
-    if (!mounted) return;
-    setState(() => _submitting = false);
-
-    if (result.isSuccess) {
-      Navigator.of(context).pop(true);
-    } else {
-      ToastService.show(result.error!);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 20),
-        child: SingleChildScrollView(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const AppText('Thêm công việc mới',
-                    variant: AppTextVariant.body, fontSize: 16, weight: FontWeight.w700),
-                const SizedBox(height: 18),
-                AppTextField(
-                  label: 'Tên công việc',
-                  required: true,
-                  controller: _titleController,
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Vui lòng nhập tên công việc' : null,
-                ),
-                const SizedBox(height: 12),
-                AppTextField(
-                  label: 'Mã việc (không bắt buộc)',
-                  controller: _codeController,
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppDropdown<String>(
-                        label: 'Loại việc',
-                        value: _kind,
-                        items: const {'Checklist': 'Checklist', 'HoTro': 'Hỗ trợ'},
-                        onChanged: (v) => setState(() => _kind = v!),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: AppDropdown<String>(
-                        label: 'Ưu tiên',
-                        value: _priority,
-                        items: const {'Cao': 'Cao', 'TrungBinh': 'Trung bình', 'Thap': 'Thấp'},
-                        onChanged: (v) => setState(() => _priority = v!),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                AppDropdown<int>(
-                  label: 'Người thực hiện',
-                  value: _assigneeUserId,
-                  items: {
-                    0: '— Chưa giao —',
-                    for (final a in widget.assignees) a.userId: a.fullName,
-                  },
-                  onChanged: (v) => setState(() => _assigneeUserId = v ?? 0),
-                ),
-                const SizedBox(height: 12),
-                AppTextField(
-                  label: 'Hạn hoàn thành',
-                  required: true,
-                  controller: _dueDateController,
-                  hint: 'Chọn ngày',
-                  readOnly: true,
-                  onTap: _pickDueDate,
-                  suffixIcon: PhosphorIconsRegular.calendarCheck,
-                  validator: (v) =>
-                      (v == null || v.isEmpty) ? 'Vui lòng chọn hạn hoàn thành' : null,
-                ),
-                const SizedBox(height: 12),
-                AppTextField(
-                  label: 'Mô tả (không bắt buộc)',
-                  controller: _descriptionController,
-                  maxLines: 3,
-                ),
-                const SizedBox(height: 20),
-                AppButton(
-                  label: 'Thêm mục',
-                  fullWidth: true,
-                  isLoading: _submitting,
-                  onPressed: _submitting ? null : _submit,
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );

@@ -399,3 +399,112 @@ Nguyên văn (2 yêu cầu liên tiếp cùng lúc):
   luận", không duplicate nội dung.
 - Chưa làm `Views/MyWork/Detail.cshtml` và chưa dựng test harness backend — 2 việc còn treo, xem
   các mục chưa tick ở trên.
+
+---
+
+# [2026-08-16] Vấn đề: "Nhân sự dự án" mobile + 2 tinh chỉnh (thẻ thống kê điều hướng, "Thêm công việc mới" full-screen kèm todo-list)
+
+## 1. Mô tả vấn đề
+Ba việc liên tiếp trong cùng phiên:
+1. Xây tính năng "Nhân sự dự án" cho mobile (list + Thêm/Đặt PM/Kết thúc tham gia/Xoá khỏi lịch
+   sử), mirror `WorkProjectsController` bên web — theo 2 ảnh chụp web người dùng gửi.
+2. "Các thông tin này điều hướng đến màn hình tương ứng" — 4 thẻ thống kê (Thành viên/Checklist/
+   Quá hạn/CV Hỗ trợ) trên màn Chi tiết dự án mobile hiện chỉ hiển thị, chưa bấm được.
+3. "Màn hình này xây dựng thành 1 screen ko làm hiển thị như này. Có thể đưa phần todo-list vào
+   lun." — form "Thêm công việc mới" (đang là bottom sheet trong `checklist_board_screen.dart`)
+   cần chuyển thành full-screen riêng + gộp thêm khối "Việc cần làm" ngay lúc tạo.
+
+## 2. Phân tích ban đầu (việc 2 + 3, việc 1 đã làm xong+kiểm thử OK trước khi phát sinh việc 2/3)
+- **Việc 2** — Bối cảnh: `project_detail_screen.dart` có `_StatsStrip` 4 ô tĩnh. "Thành viên" →
+  đích rõ (màn Nhân sự dự án vừa xây). "Checklist" → đích rõ (đã có nút Checklist làm y hệt).
+  "Quá hạn" → Checklist có `_dueFilter='quahan'` sẵn, khớp đúng. "CV Hỗ trợ" → con số backend là
+  `supportThisWeek` (đếm theo TUẦN NÀY) nhưng Checklist mobile chỉ lọc được theo Loại việc, không
+  có khái niệm tuần — rủi ro lệch ngữ nghĩa nếu không thêm bộ lọc mới.
+- **Việc 3** — Bối cảnh: `_AddTaskSheet` (7 trường) đang là bottom sheet, gọi thẳng
+  `ChecklistApiController.Create` (không nhận todo). "Việc cần làm" vốn là tính năng tách riêng,
+  chỉ tạo được sau khi đã có `taskId` (qua `AddTodo`). Gộp vào lúc tạo nghĩa là nhập nhiều dòng
+  "Việc cần làm" NGAY trong màn tạo mới, trước khi task tồn tại.
+
+## 3. Câu hỏi làm rõ (dùng AskUserQuestion)
+1. "CV Hỗ trợ" điều hướng theo bộ lọc nào — thêm bộ lọc "Tuần này" mới, hay chấp nhận chỉ lọc
+   theo Loại việc (không khớp tuyệt đối con số)?
+2. Tạo task kèm todo — mở rộng API `Create` nhận luôn danh sách todo trong 1 request, hay tạo
+   task trước rồi tự động gọi `AddTodo` nối tiếp nhiều lần?
+3. Full-screen "Thêm công việc mới" có cần thay đổi gì khác ngoài đổi khung hiển thị + thêm khối
+   todo-list không?
+
+## 4. Câu trả lời & Quyết định
+1. → **Chỉ lọc theo Loại việc = Hỗ trợ** (đơn giản, chấp nhận không khớp tuyệt đối với con số
+   "tuần này" trên thẻ — không thêm bộ lọc mới).
+2. → **Mở rộng API `Create`** nhận kèm danh sách todo trong CÙNG một request (gọn, an toàn hơn
+   thay vì nhiều lượt gọi nối tiếp có thể lỗi giữa chừng).
+3. → **Có thêm 1 thay đổi ngoài dự tính**: "Chuyển thành 1 screen riêng khi bấm vào nút Thêm mới,
+   đưa phần todolist khi thêm mới công việc luôn. Phần nội dung [Mô tả] là sẽ dùng
+   app_rich_editor" — tức trường "Mô tả" đổi từ `AppTextField` 3 dòng sang `AppRichEditor` (rich
+   text editor đã xây cho khối Trao đổi), giữ nguyên 6 trường còn lại.
+
+## 5. Checklist: Nhân sự dự án + thẻ thống kê điều hướng + Thêm công việc full-screen kèm todo
+
+### Việc 1 — Nhân sự dự án (ĐÃ XONG, đã build + kiểm thử OK trên emulator)
+- [x] Backend: `ProjectMemberDto` thêm `Id`/`Note`, `ProjectMemberFormOptionsDto` mới.
+- [x] Backend: `ProjectMembersApiController.cs` mới (Index/AddMemberForm/AddMember/SetPm/
+      EndMember/RemoveMember) — mirror đúng `WorkProjectsController` (OpenAssignment check,
+      EndCurrentPm, SyncCurrentPm).
+- [x] Backend: build sạch.
+- [x] Mobile: `ProjectMember` model thêm `id`/`note`, model mới `ProjectMemberFormOptions`/
+      `UserOption`.
+- [x] Mobile: `project_members_service.dart` — dùng `yyyy-MM-dd` cho mọi tham số ngày (KHÔNG
+      dùng `toIso8601String()` — app ép culture vi-VN toàn cục, không có DateTime ModelBinder
+      riêng, chỉ có `DecimalModelBinder`; lỗi này tự phát hiện được trước khi test nhờ nhớ lại bài
+      học cũ của `TimeLogService`).
+- [x] Mobile: `project_members_screen.dart` (danh sách + menu Thao tác dạng bottom sheet),
+      `add_project_member_sheet.dart`, sheet Kết thúc tham gia inline trong cùng file.
+- [x] Mobile: route `AppRoutes.projectMembers` + `ProjectMembersController`, nối nút "Nhân sự"
+      trên `project_detail_screen.dart` (trước đó chỉ là Toast placeholder).
+- [x] `flutter analyze` sạch, build APK release, kiểm thử trên emulator: mở màn Nhân sự dự án của
+      dự án "Báo cáo KHA" (5 giai đoạn, đúng khớp dữ liệu ảnh chụp web người dùng gửi).
+
+### Việc 2 — Thẻ thống kê điều hướng
+- [x] `[Bắt buộc]` Thêm `initialKindFilter`/`initialDueFilter` vào `ChecklistBoardScreen` +
+      `ChecklistBoardController` (đọc từ route arguments).
+- [ ] `[Bắt buộc]` Sửa `project_detail_screen.dart`: bọc 4 ô trong `_StatsStrip` bằng `InkWell`,
+      điều hướng: Thành viên → `AppRoutes.projectMembers`; Checklist → `AppRoutes.checklist`
+      (không lọc); Quá hạn → `AppRoutes.checklist` kèm `dueFilter: 'quahan'`; CV Hỗ trợ →
+      `AppRoutes.checklist` kèm `kindFilter: 'HoTro'`.
+- [ ] `[Nên có]` `flutter analyze` + build lại xác nhận không vỡ layout `_StatTile` khi bọc thêm
+      `InkWell` (vùng chạm tối thiểu 48dp).
+
+### Việc 3 — "Thêm công việc mới" full-screen kèm todo-list
+- [ ] `[Bắt buộc]` Backend: `ChecklistApiController.Create` thêm tham số `string[] todos`, sau khi
+      tạo `WorkTask` thành công thì lặp tạo `WorkTaskTodo` cho từng dòng (trim, bỏ dòng rỗng, giới
+      hạn 300 ký tự như `AddTodo`), gọi `NotificationService.TodoAdded` +
+      `TaskActivityLogService.Record(..., TodoAdded, ...)` cho TỪNG dòng — mirror đúng hành vi
+      `AddTodo` để lịch sử thao tác nhất quán dù todo được thêm lúc tạo hay thêm sau.
+- [ ] `[Bắt buộc]` Backend: thêm `[ValidateInput(false)]` vào `Create` — trường `description` giờ
+      chứa HTML thật từ `AppRichEditor` (trước đây luôn là chữ thường nên chưa cần), thiếu
+      attribute này sẽ vỡ với lỗi "potentially dangerous Request.Form value" y hệt bài học cũ ở
+      action `Comment`/`Edit`.
+- [ ] `[Bắt buộc]` Backend: build sạch.
+- [ ] `[Bắt buộc]` Mobile: `checklist_service.dart.create()` đổi sang `FormData` (như
+      `sendComment`) để gửi được `List<String> todos` dạng nhiều field cùng tên, ASP.NET MVC tự
+      bind vào `string[] todos`.
+- [ ] `[Bắt buộc]` Mobile: tạo `add_task_screen.dart` (file mới, full-screen, push trực tiếp qua
+      `Navigator` — không qua route đặt tên, cùng pattern với `task_comments_screen.dart`): giữ
+      nguyên 6/7 trường, đổi "Mô tả" sang `AppRichEditor` (`AppRichEditorController.toHtml()` lúc
+      gửi), thêm khối "Việc cần làm" (ô nhập + nút "Thêm" bọc `ConstrainedBox` — ĐÚNG bài học cũ
+      tránh `AppButton` trần trong `Row`, danh sách các dòng đã thêm kèm nút xoá từng dòng).
+- [ ] `[Bắt buộc]` Mobile: `checklist_board_screen.dart` — xoá hẳn `_AddTaskSheet` (không còn
+      dùng), đổi `_openAddTaskSheet` thành push `add_task_screen.dart`.
+- [ ] `[Nên có]` `flutter analyze` sạch.
+
+### Kiểm tra / Nghiệm thu
+- [ ] Build APK release, cài lên emulator, kiểm thử: bấm 4 thẻ thống kê đều điều hướng đúng màn +
+      đúng bộ lọc; mở "Thêm công việc mới" thấy full-screen (không phải sheet), nhập Mô tả có định
+      dạng đậm/nghiêng qua `AppRichEditor`, thêm 2-3 dòng "Việc cần làm", gửi thành công → mở lại
+      công việc vừa tạo thấy đúng todo đã nhập + khối Lịch sử có đủ dòng "Đã thêm việc cần làm"
+      cho từng dòng.
+
+### Ghi chú
+- Việc 2 (CV Hỗ trợ) CHẤP NHẬN lệch nhẹ ngữ nghĩa so với con số "tuần này" trên thẻ — nếu sau này
+  cần khớp tuyệt đối, phải thêm bộ lọc "Tuần này" mới vào `checklist_board_screen.dart` (mở vấn đề
+  riêng, không tự ý làm thêm ở đây).
