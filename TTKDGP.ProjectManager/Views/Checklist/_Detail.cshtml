@@ -22,6 +22,7 @@
     var comments = ViewBag.CommentsModel as TaskCommentsViewModel ?? new TaskCommentsViewModel { TaskId = Model.Id };
     var timeLogs = ViewBag.TimeLogModel as TaskTimeLogViewModel ?? new TaskTimeLogViewModel { TaskId = Model.Id };
     var todos = ViewBag.TodoModel as TaskTodoViewModel ?? new TaskTodoViewModel { TaskId = Model.Id };
+    var activityLog = ViewBag.ActivityLog as List<TaskActivityLog> ?? new List<TaskActivityLog>();
 }
 
 <div class="task-detail-split">
@@ -175,6 +176,31 @@
          data-delete-url="@Url.Action("DeleteTodo", "Checklist")">
         @Html.Partial("_Todos", todos)
     </div>
+</div>
+
+@* Lịch sử thao tác: chỉ đọc, không tự vẽ lại như 3 khối trên — dựng một lần lúc mở hộp thoại là
+   đủ, vì đóng/mở lại hộp thoại (sau khi Cập nhật/Ghi giờ/...) đã tự nạp lại toàn bộ view này. *@
+<div class="form-section activitylog-section">
+    <div class="form-section-title">Lịch sử thao tác</div>
+    @if (activityLog.Count == 0)
+    {
+        <span class="muted">Chưa có thao tác nào được ghi nhận.</span>
+    }
+    else
+    {
+        <ul class="activitylog-list">
+            @foreach (var log in activityLog)
+            {
+                <li class="activitylog-item">
+                    <div class="activitylog-head">
+                        <strong>@log.ActorName</strong>
+                        <span class="muted">@log.CreatedAt.ToString("HH:mm dd/MM/yyyy")</span>
+                    </div>
+                    <div class="activitylog-desc">@log.Description</div>
+                </li>
+            }
+        </ul>
+    }
 </div>
 
 <div class="form-actions">

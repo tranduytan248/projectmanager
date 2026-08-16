@@ -84,7 +84,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             return ListView(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
               children: [
-                _Header(displayName: displayName, todayTaskCount: data.todayTaskCount),
+                _Header(
+                    displayName: displayName,
+                    todayTaskCount: data.todayTaskCount),
                 if (_showTodayBanner && data.todayTaskCount > 0) ...[
                   const SizedBox(height: 16),
                   _TodayBanner(
@@ -109,7 +111,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       itemCount: data.projects.length,
-                      separatorBuilder: (context, index) => const SizedBox(width: 12),
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(width: 12),
                       itemBuilder: (context, index) => SizedBox(
                         width: 150,
                         child: _ProjectCard(project: data.projects[index]),
@@ -134,8 +137,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(height: 10),
                   _TeamSection(
                     team: data.team!,
-                    pendingLeaveApprovalCount:
-                        data.canApproveLeave ? data.pendingLeaveApprovalCount : null,
+                    pendingLeaveApprovalCount: data.canApproveLeave
+                        ? data.pendingLeaveApprovalCount
+                        : null,
                   ),
                 ],
               ],
@@ -197,7 +201,8 @@ class _EmptyHint extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: AppText(text, variant: AppTextVariant.body, color: AppColors.textSecondary),
+      child: AppText(text,
+          variant: AppTextVariant.body, color: AppColors.textSecondary),
     );
   }
 }
@@ -344,10 +349,13 @@ class _KpiCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const AppText('Điểm KPI tháng này',
-                        variant: AppTextVariant.body, fontSize: 13, weight: FontWeight.w600),
+                        variant: AppTextVariant.body,
+                        fontSize: 13,
+                        weight: FontWeight.w600),
                     const SizedBox(height: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: rankColor.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(4),
@@ -369,7 +377,9 @@ class _KpiCard extends StatelessWidget {
           Row(
             children: [
               const AppText('Giờ làm',
-                  variant: AppTextVariant.caption, fontSize: 12, color: AppColors.textSecondary),
+                  variant: AppTextVariant.caption,
+                  fontSize: 12,
+                  color: AppColors.textSecondary),
               const Spacer(),
               AppText(
                 '${kpi.workedHours.toStringAsFixed(0)}/${kpi.requiredHours.toStringAsFixed(0)} giờ',
@@ -386,8 +396,9 @@ class _KpiCard extends StatelessWidget {
               value: kpi.hoursPercent / 100,
               minHeight: 6,
               backgroundColor: AppTheme.brandBlue.withValues(alpha: 0.1),
-              valueColor: AlwaysStoppedAnimation(
-                  kpi.hoursShort > 0 ? AppTheme.statusWarning : AppTheme.statusSuccess),
+              valueColor: AlwaysStoppedAnimation(kpi.hoursShort > 0
+                  ? AppTheme.statusWarning
+                  : AppTheme.statusSuccess),
             ),
           ),
           if (kpi.hoursShort > 0) ...[
@@ -418,7 +429,9 @@ class _LeaveCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const AppText('Nghỉ phép tháng này',
-              variant: AppTextVariant.body, fontSize: 13, weight: FontWeight.w600),
+              variant: AppTextVariant.body,
+              fontSize: 13,
+              weight: FontWeight.w600),
           const SizedBox(height: 10),
           Row(
             children: [
@@ -457,9 +470,14 @@ class _LeaveStat extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText(label,
-            variant: AppTextVariant.caption, fontSize: 11.5, color: AppColors.textSecondary),
+            variant: AppTextVariant.caption,
+            fontSize: 11.5,
+            color: AppColors.textSecondary),
         const SizedBox(height: 2),
-        AppText(value, variant: AppTextVariant.body, fontSize: 14, weight: FontWeight.w700),
+        AppText(value,
+            variant: AppTextVariant.body,
+            fontSize: 14,
+            weight: FontWeight.w700),
       ],
     );
   }
@@ -488,7 +506,9 @@ class _LeaveRow extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: AppText('$range · ${leaveKindLabel(item.kind)}',
-                variant: AppTextVariant.caption, fontSize: 12.5, color: AppColors.textPrimary),
+                variant: AppTextVariant.caption,
+                fontSize: 12.5,
+                color: AppColors.textPrimary),
           ),
           AppText('${item.days.toStringAsFixed(1)} ngày',
               variant: AppTextVariant.caption,
@@ -580,7 +600,8 @@ class _ProjectCard extends StatelessWidget {
     final progress = project.progressPercent / 100;
 
     return AppCard(
-      onTap: () => Nav.toNamed(context, AppRoutes.projects),
+      onTap: () => Nav.toNamed(context, AppRoutes.projectDetail,
+          arguments: {'projectId': project.id.toString()}),
       padding: const EdgeInsets.all(12),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -607,7 +628,9 @@ class _ProjectCard extends StatelessWidget {
           ),
           const SizedBox(height: 3),
           AppText(
-            project.description?.isNotEmpty == true ? project.description! : '—',
+            project.description?.isNotEmpty == true
+                ? project.description!
+                : '—',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             variant: AppTextVariant.caption,
@@ -623,8 +646,7 @@ class _ProjectCard extends StatelessWidget {
               value: progress,
               minHeight: 6,
               backgroundColor: AppTheme.brandBlue.withValues(alpha: 0.1),
-              valueColor:
-                  const AlwaysStoppedAnimation(AppTheme.brandBlueDark),
+              valueColor: const AlwaysStoppedAnimation(AppTheme.brandBlueDark),
             ),
           ),
           const SizedBox(height: 4),
@@ -720,7 +742,8 @@ class _DueInfo {
     if (task.dueDate == null) {
       return const _DueInfo('—', AppColors.textSecondary);
     }
-    return _DueInfo(DateFormat('dd/MM').format(task.dueDate!), AppTheme.brandBlue);
+    return _DueInfo(
+        DateFormat('dd/MM').format(task.dueDate!), AppTheme.brandBlue);
   }
 }
 
@@ -817,7 +840,8 @@ class _TaskRow extends StatelessWidget {
 }
 
 class _TeamSection extends StatelessWidget {
-  const _TeamSection({required this.team, required this.pendingLeaveApprovalCount});
+  const _TeamSection(
+      {required this.team, required this.pendingLeaveApprovalCount});
 
   final TeamSummary team;
 
@@ -840,24 +864,33 @@ class _TeamSection extends StatelessWidget {
             _StatTile(
                 label: 'Dự án đang chạy',
                 value: '${team.openProjectCount}',
-                color: AppTheme.brandBlue),
+                color: AppTheme.brandBlue,
+                onTap: () => Nav.toNamed(context, AppRoutes.projects,
+                    arguments: {'scope': 'team'})),
             _StatTile(
                 label: 'Dự án tôi làm PM',
                 value: '${team.myPmCount}',
-                color: AppTheme.brandBlue),
+                color: AppTheme.brandBlue,
+                onTap: () => Nav.toNamed(context, AppRoutes.projects,
+                    arguments: {'roleFilter': 'pm'})),
             _StatTile(
                 label: 'Việc chưa xong',
                 value: '${team.openTaskCount}',
-                color: AppTheme.brandBlue),
+                color: AppTheme.brandBlue,
+                onTap: () => Nav.toNamed(context, AppRoutes.myWork,
+                    arguments: {'scope': 'team', 'filter': 'open'})),
             _StatTile(
                 label: 'Quá hạn',
                 value: '${team.overdueTaskCount}',
                 color: team.overdueTaskCount > 0
                     ? AppTheme.statusDanger
-                    : AppTheme.brandBlue),
+                    : AppTheme.brandBlue,
+                onTap: () => Nav.toNamed(context, AppRoutes.myWork,
+                    arguments: {'scope': 'team', 'filter': 'overdue'})),
           ],
         ),
-        if (pendingLeaveApprovalCount != null && pendingLeaveApprovalCount! > 0) ...[
+        if (pendingLeaveApprovalCount != null &&
+            pendingLeaveApprovalCount! > 0) ...[
           const SizedBox(height: 10),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -886,9 +919,12 @@ class _TeamSection extends StatelessWidget {
         if (team.projects.isNotEmpty) ...[
           const SizedBox(height: 16),
           const AppText('Dự án cần chú ý',
-              variant: AppTextVariant.body, fontSize: 13, weight: FontWeight.w700),
+              variant: AppTextVariant.body,
+              fontSize: 13,
+              weight: FontWeight.w700),
           const SizedBox(height: 8),
-          for (final project in team.projects) _ProjectAttentionRow(project: project),
+          for (final project in team.projects)
+            _ProjectAttentionRow(project: project),
         ],
       ],
     );
@@ -896,15 +932,21 @@ class _TeamSection extends StatelessWidget {
 }
 
 class _StatTile extends StatelessWidget {
-  const _StatTile({required this.label, required this.value, required this.color});
+  const _StatTile(
+      {required this.label,
+      required this.value,
+      required this.color,
+      this.onTap});
 
   final String label;
   final String value;
   final Color color;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return AppCard(
+      onTap: onTap,
       padding: const EdgeInsets.all(12),
       radius: 14,
       child: Column(
@@ -912,7 +954,10 @@ class _StatTile extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           AppText(value,
-              variant: AppTextVariant.title, fontSize: 20, weight: FontWeight.w800, color: color),
+              variant: AppTextVariant.title,
+              fontSize: 20,
+              weight: FontWeight.w800,
+              color: color),
           const SizedBox(height: 2),
           AppText(label,
               maxLines: 1,
@@ -934,6 +979,8 @@ class _ProjectAttentionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppCard(
+      onTap: () => Nav.toNamed(context, AppRoutes.projectDetail,
+          arguments: {'projectId': project.id.toString()}),
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       radius: 14,
@@ -953,7 +1000,8 @@ class _ProjectAttentionRow extends StatelessWidget {
                 AppText(
                   [
                     if (project.customer?.isNotEmpty == true) project.customer!,
-                    if (project.pmName?.isNotEmpty == true) 'PM: ${project.pmName}',
+                    if (project.pmName?.isNotEmpty == true)
+                      'PM: ${project.pmName}',
                   ].join(' · '),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -976,7 +1024,8 @@ class _ProjectAttentionRow extends StatelessWidget {
               if (project.overdueCount > 0) ...[
                 const SizedBox(height: 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: AppTheme.statusDangerSoft,
                     borderRadius: BorderRadius.circular(4),

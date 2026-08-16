@@ -1,6 +1,6 @@
 {
-  "name": "Quản lý dự án & nhân sự — Tổ NCPT",
-  "short_name": "Dự án NCPT",
+  "name": "BrewTask - Quản Lý Công Việc",
+  "short_name": "BrewTask",
   "icons": [
     {
       "src": "/Content/img/favicon-192x192.png",

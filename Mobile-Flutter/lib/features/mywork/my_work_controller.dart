@@ -11,6 +11,15 @@ class MyWorkController extends StatelessController {
   bool get auth => true;
 
   @override
-  Display view(BuildContext context) =>
-      const Display(title: 'Việc của tôi', mobile: MyWorkScreen());
+  Display view(BuildContext context) {
+    final args =
+        ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+    final scope = args?['scope'] as String? ?? 'mine';
+    final filter = args?['filter'] as String?;
+
+    return Display(
+      title: 'Việc của tôi',
+      mobile: MyWorkScreen(scope: scope, filter: filter),
+    );
+  }
 }

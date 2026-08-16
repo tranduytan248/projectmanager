@@ -68,6 +68,167 @@ namespace TTKDGP.ProjectManager.Controllers.Api
             };
         }
 
+        /// <summary>Chi tiet mot dau viec — TaskDetailDto ke thua het truong cua TaskDto, chi
+        /// them Description (qua ToPlainText, cung cach ProjectDetailDto dang lam) + StartDate +
+        /// CompletedAt.</summary>
+        public static TaskDetailDto ToDetailDto(WorkTask task)
+        {
+            return new TaskDetailDto
+            {
+                Id = task.Id,
+                Code = task.Code,
+                Title = task.Title,
+                ProjectName = task.ProjectName,
+                State = task.State,
+                Priority = task.Priority,
+                DueDate = task.DueDate,
+                IsOverdue = task.IsOverdue,
+                IsDueToday = task.DueDate.HasValue && task.DueDate.Value.Date == DateTime.Today,
+                AssigneeName = task.AssigneeName,
+                Progress = task.Progress,
+                Kind = task.Kind,
+                ParentId = task.ParentId,
+                Description = Infrastructure.HtmlSanitizer.ToPlainText(task.Description),
+                StartDate = task.StartDate,
+                CompletedAt = task.CompletedAt
+            };
+        }
+
+        /// <summary>Chi tiet day du mot dau viec cho man "Chi tiet cong viec" tren mobile — them
+        /// het cac truong tinh ma TaskDetailDto rut gon truoc day chua co, y het du lieu
+        /// ChecklistController.Detail dang dua vao ViewBag/_Detail.cshtml.</summary>
+        public static TaskDetailDto ToFullTaskDto(WorkTask task, string parentTitle, bool canEdit, bool canEditAll)
+        {
+            var dto = ToDetailDto(task);
+            dto.ProjectId = task.ProjectId;
+            dto.Week = task.Week;
+            dto.Year = task.Year;
+            dto.DaysLeft = task.DaysLeft;
+            dto.IsOnTime = task.IsOnTime;
+            dto.ParentTitle = parentTitle;
+            dto.BonusPercent = task.BonusPercent;
+            dto.HasAttachment = task.HasAttachment;
+            dto.AttachmentName = task.AttachmentName;
+            dto.CanEdit = canEdit;
+            dto.CanEditAll = canEditAll;
+            return dto;
+        }
+
+        /// <summary>Mot luot ghi gio cong — CanDelete tinh san o server: dung cua chinh nguoi dang
+        /// xem VA viec chua dong, y het dieu kien ChecklistController.DeleteTimeLog dang gac.</summary>
+        public static TimeLogEntryDto ToDto(WorkTimeLog log, int currentUserId, bool taskOpen)
+        {
+            return new TimeLogEntryDto
+            {
+                Id = log.Id,
+                WorkDate = log.WorkDate,
+                Hours = log.Hours,
+                Note = log.Note,
+                UserId = log.UserId,
+                UserName = log.UserName,
+                CanDelete = taskOpen && log.UserId == currentUserId
+            };
+        }
+
+        /// <summary>Boc TaskTimeLogViewModel (dung chung voi web qua TimeLogService.BuildViewModel)
+        /// sang DTO JSON cho mobile.</summary>
+        public static TimeLogSummaryDto ToDto(TaskTimeLogViewModel model, bool taskOpen)
+        {
+            return new TimeLogSummaryDto
+            {
+                TaskCap = model.TaskCap,
+                TaskTotal = model.TaskTotal,
+                TaskRemaining = model.TaskRemaining,
+                TodayTotal = model.TodayTotal,
+                TodayRemaining = model.TodayRemaining,
+                MaxPerDay = model.MaxPerDay,
+                CanLog = model.CanLog,
+                BlockedReason = model.BlockedReason,
+                Logs = model.Logs.Select(l => ToDto(l, model.CurrentUserId, taskOpen)).ToList()
+            };
+        }
+
+        public static TodoItemDto ToDto(WorkTaskTodo todo)
+        {
+            return new TodoItemDto
+            {
+                Id = todo.Id,
+                Content = todo.Content,
+                IsDone = todo.IsDone,
+                CreatedByName = todo.CreatedByName,
+                CreatedAt = todo.CreatedAt
+            };
+        }
+
+        public static TodoSummaryDto ToDto(TaskTodoViewModel model)
+        {
+            return new TodoSummaryDto
+            {
+                CanManage = model.CanManage,
+                DoneCount = model.DoneCount,
+                TotalCount = model.TotalCount,
+                Items = model.Items.Select(ToDto).ToList()
+            };
+        }
+
+        /// <summary>Mot luot trao doi — Content tra HTML da qua HtmlSanitizer.Clean, mobile gio tu
+        /// render dinh dang qua bo doc rieng thay vi phang ve chu thuong. Content da duoc loc luc
+        /// luu, nhung o day Clean lai LAN NUA truoc khi tra ra API — cung nguyen tac "phong thu
+        /// hai lop" ma web dang lam qua HtmlSanitizer.ToDisplay ngay truoc Html.Raw (_Comments.cshtml):
+        /// neu mot luong ghi nao khac trong tuong lai lam sot buoc Clean() luc luu (import hang
+        /// loat, cong cu quan tri...), API mobile van khong dua thang HTML chua loc ra ngoai.
+        /// Noi dung da thu hoi thi khong tra Content.</summary>
+        public static TaskCommentDto ToDto(WorkComment comment, int currentUserId, bool canModerate)
+        {
+            return new TaskCommentDto
+            {
+                Id = comment.Id,
+                AuthorName = comment.AuthorName,
+                Content = comment.IsDeleted ? null : Infrastructure.HtmlSanitizer.Clean(comment.Content),
+                CreatedAt = comment.CreatedAt,
+                IsDeleted = comment.IsDeleted,
+                HasAttachment = !comment.IsDeleted && comment.HasAttachment,
+                AttachmentName = comment.IsDeleted ? null : comment.AttachmentName,
+                CanRecall = !comment.IsDeleted && (comment.UserId == currentUserId || canModerate)
+            };
+        }
+
+        /// <summary>Nguoi co the bi @nhac — y het cach ChecklistController.BuildComments dung
+        /// WorkService.TaskParticipants(task) (tra List&lt;User&gt;) roi tu rut gon sang
+        /// TaskMentionOption ben web.</summary>
+        public static TaskMentionOptionDto ToMentionOptionDto(User user)
+        {
+            return new TaskMentionOptionDto
+            {
+                UserId = user.Id,
+                FullName = user.FullName,
+                UserName = user.UserName
+            };
+        }
+
+        public static CommentsSummaryDto ToCommentsDto(System.Collections.Generic.List<WorkComment> comments,
+            System.Collections.Generic.List<User> participants,
+            int currentUserId, bool canModerate)
+        {
+            return new CommentsSummaryDto
+            {
+                Comments = comments.Select(c => ToDto(c, currentUserId, canModerate)).ToList(),
+                Participants = participants.Select(ToMentionOptionDto).ToList()
+            };
+        }
+
+        public static TaskActivityLogDto ToDto(TaskActivityLog log)
+        {
+            return new TaskActivityLogDto
+            {
+                Id = log.Id,
+                ActorName = string.IsNullOrWhiteSpace(log.ActorName) ? "(không rõ)" : log.ActorName,
+                Action = log.Action,
+                Description = log.Description,
+                CreatedAt = log.CreatedAt
+            };
+        }
+
         public static ProjectSummaryDto ToDto(WorkProject project, TaskStat stat, int memberCount)
         {
             return new ProjectSummaryDto
@@ -113,6 +274,20 @@ namespace TTKDGP.ProjectManager.Controllers.Api
                 RequiredHours = kpi.RequiredHours,
                 HoursPercent = hoursPercent,
                 HoursShort = missing > 0 ? Math.Round(missing, 1) : 0
+            };
+        }
+
+        public static NotificationDto ToDto(UserNotification notification)
+        {
+            return new NotificationDto
+            {
+                Id = notification.Id,
+                Type = notification.Type,
+                Message = notification.Message,
+                ProjectId = notification.ProjectId,
+                TaskId = notification.TaskId,
+                IsRead = notification.IsRead,
+                CreatedAt = notification.CreatedAt
             };
         }
 

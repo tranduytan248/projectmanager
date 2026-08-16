@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
@@ -16,6 +17,7 @@ class AppTextField extends StatelessWidget {
     this.maxLines = 1,
     this.minLines,
     this.keyboardType,
+    this.inputFormatters,
     this.textInputAction,
     this.onChanged,
     this.onFieldSubmitted,
@@ -44,6 +46,12 @@ class AppTextField extends StatelessWidget {
   final int? maxLines;
   final int? minLines;
   final TextInputType? keyboardType;
+
+  /// Rang buoc dinh dang ky tu go vao (vi du chi cho so, gioi han so ky tu) — dung khi validator
+  /// (chi bao loi SAU khi go) khong du, can CHAN truoc khi ky tu sai xuat hien trong o (vi du o
+  /// nhap ma OTP 6 so).
+  final List<TextInputFormatter>? inputFormatters;
+
   final TextInputAction? textInputAction;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onFieldSubmitted;
@@ -79,7 +87,8 @@ class AppTextField extends StatelessWidget {
     final radius = borderRadius ?? AppDimens.radiusMd;
     final resolvedBorderColor = borderColor ?? AppColors.border;
     final resolvedFocusedBorderColor = focusedBorderColor ?? AppColors.primary;
-    final resolvedErrorColor = errorColor ?? Theme.of(context).colorScheme.error;
+    final resolvedErrorColor =
+        errorColor ?? Theme.of(context).colorScheme.error;
 
     return TextFormField(
       controller: controller,
@@ -87,6 +96,7 @@ class AppTextField extends StatelessWidget {
       maxLines: obscureText ? 1 : maxLines,
       minLines: minLines,
       keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
       textInputAction: textInputAction,
       onChanged: onChanged,
       onFieldSubmitted: onFieldSubmitted,
@@ -99,12 +109,21 @@ class AppTextField extends StatelessWidget {
       decoration: InputDecoration(
         labelText: required ? '$label *' : label,
         labelStyle: labelColor == null ? null : TextStyle(color: labelColor),
-        floatingLabelStyle: labelColor == null ? null : TextStyle(color: labelColor),
+        floatingLabelStyle:
+            labelColor == null ? null : TextStyle(color: labelColor),
         hintText: hint,
-        hintStyle: textColor == null ? null : TextStyle(color: textColor!.withValues(alpha: 0.7)),
-        prefixIcon: prefixIcon == null ? null : Icon(prefixIcon, size: 20, color: iconColor ?? AppColors.textFaint),
+        hintStyle: textColor == null
+            ? null
+            : TextStyle(color: textColor!.withValues(alpha: 0.7)),
+        prefixIcon: prefixIcon == null
+            ? null
+            : Icon(prefixIcon,
+                size: 20, color: iconColor ?? AppColors.textFaint),
         suffixIcon: suffixIconWidget ??
-            (suffixIcon == null ? null : Icon(suffixIcon, size: 20, color: iconColor ?? AppColors.textFaint)),
+            (suffixIcon == null
+                ? null
+                : Icon(suffixIcon,
+                    size: 20, color: iconColor ?? AppColors.textFaint)),
         filled: fillColor != null,
         fillColor: fillColor,
         border: OutlineInputBorder(

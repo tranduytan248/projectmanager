@@ -22,23 +22,41 @@ class ApiEndpoint {
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
   static const login = '/AuthApi/Login';
+  static const forgotPasswordRequestOtp = '/AuthApi/RequestPasswordResetOtp';
+  static const forgotPasswordReset = '/AuthApi/ResetPasswordWithOtp';
+  static const profileMe = '/AccountApi/Me';
+  static const profileUpdate = '/AccountApi/UpdateProfile';
+  static const profileChangePassword = '/AccountApi/ChangePassword';
   static const dashboard = '/DashboardApi/Index';
   static const myWork = '/MyWorkApi/Index';
   static const myProjects = '/MyProjectsApi/Index';
   static const checklist = '/ChecklistApi/Index';
   static const checklistCreate = '/ChecklistApi/Create';
+  static const notifications = '/NotificationsApi/Index';
+  static const notificationMarkRead = '/NotificationsApi/MarkRead';
+  static const notificationMarkAllRead = '/NotificationsApi/MarkAllRead';
 
   // Cac endpoint duoi day CHUA co controller tuong ung ben backend — giu lam danh sach du kien,
   // dung toi dau them controller toi do (xem Checklist-Thiet-ke-Giao-dien-Mobile.md, muc A).
   static const refreshToken = '/auth/refresh';
-  static const me = '/auth/me';
-  static const notifications = '/notifications';
   static const myReports = '/reports/mine';
   static const leaves = '/leaves/mine';
   static const kpiMine = '/kpi/mine';
 
   static String projectDetail(String id) => '/MyProjectsApi/Detail/$id';
-  static String taskDetail(String id) => '/checklist/$id';
+  static String taskDetail(String id) => '/ChecklistApi/Detail/$id';
+  static const taskLogTime = '/ChecklistApi/LogTime';
+  static const taskDeleteTimeLog = '/ChecklistApi/DeleteTimeLog';
+  static const taskAddTodo = '/ChecklistApi/AddTodo';
+  static const taskToggleTodo = '/ChecklistApi/ToggleTodo';
+  static const taskEditTodo = '/ChecklistApi/EditTodo';
+  static const taskDeleteTodo = '/ChecklistApi/DeleteTodo';
+  static const taskComment = '/ChecklistApi/Comment';
+  static const taskRecallComment = '/ChecklistApi/RecallComment';
+  static String taskAttachment(int commentId) =>
+      '/ChecklistApi/Attachment?commentId=$commentId';
+  static const taskUpdateStatus = '/ChecklistApi/UpdateStatus';
+  static String taskActivityLog(String id) => '/ChecklistApi/ActivityLog/$id';
 
   // Nhom "Quan ly To" (can quyen wteam.manage)
   static const teamDashboard = '/team/dashboard';

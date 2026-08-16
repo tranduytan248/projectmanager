@@ -330,7 +330,7 @@ namespace TTKDGP.ProjectManager.Services
 
             var weekFrom = WeekHelper.FirstDayOfWeek(year, week);
             var weekTo = WeekHelper.LastDayOfWeek(year, week);
-            var subject = string.Format("[NCPT] Nhắc báo cáo tuần {0}/{1}", week, year);
+            var subject = string.Format("[BrewTask] Nhắc báo cáo tuần {0}/{1}", week, year);
 
             var failures = new List<string>();
             var summary = new StringBuilder();

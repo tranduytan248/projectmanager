@@ -232,6 +232,7 @@ namespace TTKDGP.ProjectManager.Controllers
             ViewBag.CanReport = CanEditTask(task);
             ViewBag.Comments = WorkService.CommentsOfTask(id);
             ViewBag.TimeLogModel = TimeLogService.BuildViewModel(task, CurrentUserId);
+            ViewBag.TodoModel = BuildTaskTodos(task);
 
             return View(task);
         }
@@ -263,6 +264,7 @@ namespace TTKDGP.ProjectManager.Controllers
                 return RedirectToAction("Detail", new { id = id });
             }
 
+            var before = TaskActivityLogService.Snapshot(task);
             WorkService.ApplyState(task, state, progress);
 
             if (!string.IsNullOrWhiteSpace(note))
@@ -278,6 +280,8 @@ namespace TTKDGP.ProjectManager.Controllers
             task.UpdatedAt = DateTime.Now;
             task.UpdatedBy = CurrentUser == null ? null : CurrentUser.FullName;
             Repository.WorkTasks.Update(task);
+            TaskActivityLogService.RecordFieldChanges(before, task, CurrentUserId,
+                CurrentUser == null ? null : CurrentUser.FullName);
 
             // Nói thẳng ảnh hưởng tới điểm để người dùng biết ngay, khỏi chờ tới cuối tháng.
             if (task.State == TaskStates.Done)
@@ -326,7 +330,11 @@ namespace TTKDGP.ProjectManager.Controllers
             var task = Repository.WorkTasks.Find(id);
             if (task == null || !CanSeeTask(task)) return HttpNotFound();
 
-            var hasText = !string.IsNullOrWhiteSpace(content);
+            // Lọc về tập thẻ an toàn TRƯỚC khi lưu, vì chỗ hiển thị dùng Html.Raw. Clean trả null
+            // khi chỉ có thẻ rỗng, nên kiểm "có chữ hay không" phải xét SAU khi lọc — cùng khuôn
+            // với ChecklistController.Comment.
+            var cleaned = HtmlSanitizer.Clean(content);
+            var hasText = !string.IsNullOrWhiteSpace(cleaned);
             var hasFile = file != null && file.ContentLength > 0;
 
             if (!hasText && !hasFile)
@@ -340,7 +348,7 @@ namespace TTKDGP.ProjectManager.Controllers
                 TaskId = id,
                 UserId = CurrentUserId,
                 AuthorName = CurrentUser == null ? "(không rõ)" : CurrentUser.FullName,
-                Content = hasText ? content.Trim() : null,
+                Content = hasText ? cleaned : null,
                 CreatedAt = DateTime.Now
             };
 
@@ -360,6 +368,10 @@ namespace TTKDGP.ProjectManager.Controllers
             // Báo cho người tạo việc và người được giao việc là có trao đổi mới.
             NotificationService.CommentAdded(task, comment, CurrentUserId,
                 CurrentUser == null ? null : CurrentUser.FullName);
+
+            TaskActivityLogService.Record(task.Id, CurrentUserId,
+                CurrentUser == null ? null : CurrentUser.FullName, TaskActivityActions.CommentAdded,
+                "Đã thêm bình luận");
 
             Notify("Đã gửi trao đổi.");
             return RedirectToAction("Detail", new { id = id });
@@ -385,6 +397,10 @@ namespace TTKDGP.ProjectManager.Controllers
             comment.IsDeleted = true;
             comment.UpdatedAt = DateTime.Now;
             Repository.WorkComments.Update(comment);
+
+            TaskActivityLogService.Record(task.Id, CurrentUserId,
+                CurrentUser == null ? null : CurrentUser.FullName, TaskActivityActions.CommentRecalled,
+                "Đã thu hồi bình luận");
 
             Notify("Đã thu hồi nội dung trao đổi.");
             return RedirectToAction("Detail", new { id = id });

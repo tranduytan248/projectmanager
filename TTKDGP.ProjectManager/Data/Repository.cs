@@ -72,8 +72,14 @@ namespace TTKDGP.ProjectManager.Data
         private static readonly Lazy<SqlStore<ApiToken>> _apiTokens =
             new Lazy<SqlStore<ApiToken>>(() => new SqlStore<ApiToken>("ApiTokens"));
 
+        private static readonly Lazy<SqlStore<PasswordResetOtp>> _passwordResetOtps =
+            new Lazy<SqlStore<PasswordResetOtp>>(() => new SqlStore<PasswordResetOtp>("PasswordResetOtps"));
+
         private static readonly Lazy<SqlStore<WorkTaskTodo>> _workTaskTodos =
             new Lazy<SqlStore<WorkTaskTodo>>(() => new SqlStore<WorkTaskTodo>("WorkTaskTodos"));
+
+        private static readonly Lazy<SqlStore<TaskActivityLog>> _taskActivityLogs =
+            new Lazy<SqlStore<TaskActivityLog>>(() => new SqlStore<TaskActivityLog>("TaskActivityLogs"));
 
         private static readonly Lazy<SqlStore<WorkProjectFile>> _workProjectFiles =
             new Lazy<SqlStore<WorkProjectFile>>(() => new SqlStore<WorkProjectFile>("WorkProjectFiles"));
@@ -126,8 +132,14 @@ namespace TTKDGP.ProjectManager.Data
         /// <summary>Vé đăng nhập của API mobile (Bearer token), tách khỏi Forms Auth cookie của web.</summary>
         public static SqlStore<ApiToken> ApiTokens { get { return _apiTokens.Value; } }
 
+        /// <summary>Các lượt xin mã OTP để đặt lại mật khẩu qua số điện thoại (màn "Quên mật khẩu" mobile).</summary>
+        public static SqlStore<PasswordResetOtp> PasswordResetOtps { get { return _passwordResetOtps.Value; } }
+
         /// <summary>Todolist con của từng đầu việc — thuần UI, không tính KPI.</summary>
         public static SqlStore<WorkTaskTodo> WorkTaskTodos { get { return _workTaskTodos.Value; } }
+
+        /// <summary>Nhật ký thao tác của từng đầu việc — xem <see cref="TaskActivityLog"/>.</summary>
+        public static SqlStore<TaskActivityLog> TaskActivityLogs { get { return _taskActivityLogs.Value; } }
 
         /// <summary>File tài liệu đính kèm vào từng dự án.</summary>
         public static SqlStore<WorkProjectFile> WorkProjectFiles { get { return _workProjectFiles.Value; } }

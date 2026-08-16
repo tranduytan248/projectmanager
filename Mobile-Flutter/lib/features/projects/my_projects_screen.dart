@@ -22,7 +22,15 @@ import 'my_projects_models.dart';
 import 'my_projects_service.dart';
 
 class MyProjectsScreen extends StatefulWidget {
-  const MyProjectsScreen({super.key});
+  const MyProjectsScreen(
+      {super.key, this.scope = 'mine', this.initialRoleFilter});
+
+  /// "team": toan bo du an cua Ca To (dung khi mo tu the "Du an dang chay" tren Dashboard) thay
+  /// vi chi du an cua rieng minh — server tu am tham tra ve "mine" cho tai khoan khong co quyen.
+  final String scope;
+
+  /// Gia tri 'pm' de loc san "Toi lam PM" khi mo tu the "Du an toi lam PM" tren Dashboard.
+  final String? initialRoleFilter;
 
   @override
   State<MyProjectsScreen> createState() => _MyProjectsScreenState();
@@ -42,22 +50,27 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
 
   String? _phaseFilter;
   String? _stateFilter;
-  String? _roleFilter;
+  late String? _roleFilter = widget.initialRoleFilter == 'pm'
+      ? _rolePmSentinel
+      : widget.initialRoleFilter;
 
   @override
   void initState() {
     super.initState();
-    _future = _service.fetch();
+    _future = _service.fetch(scope: widget.scope);
   }
 
   void _reload() {
     setState(() {
-      _future = _service.fetch(showClosed: _showClosed);
+      _future = _service.fetch(showClosed: _showClosed, scope: widget.scope);
     });
   }
 
   bool get _hasActiveFilter =>
-      _query.isNotEmpty || _phaseFilter != null || _stateFilter != null || _roleFilter != null;
+      _query.isNotEmpty ||
+      _phaseFilter != null ||
+      _stateFilter != null ||
+      _roleFilter != null;
 
   void _clearAllFilters() {
     setState(() {
@@ -105,8 +118,16 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
   }
 
   Future<void> _openFilterSheet(MyProjectsData data) async {
-    final phases = data.projects.map((r) => r.phase).where((p) => p.isNotEmpty).toSet().toList();
-    final states = data.projects.map((r) => r.state).where((s) => s.isNotEmpty).toSet().toList();
+    final phases = data.projects
+        .map((r) => r.phase)
+        .where((p) => p.isNotEmpty)
+        .toSet()
+        .toList();
+    final states = data.projects
+        .map((r) => r.state)
+        .where((s) => s.isNotEmpty)
+        .toSet()
+        .toList();
     final roles = data.projects
         .map((r) => r.role)
         .where((r) => r != null && r.isNotEmpty)
@@ -146,7 +167,8 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
   Widget build(BuildContext context) {
     return AppBottomNav(
       currentIndex: 1,
-      appBar: const AppAppBar(title: 'Dự án của tôi'),
+      appBar: AppAppBar(
+          title: widget.scope == 'team' ? 'Dự án — Toàn Tổ' : 'Dự án của tôi'),
       body: SafeArea(
         child: FutureBuilder<MyProjectsData>(
           future: _future,
@@ -167,7 +189,8 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
                       const PhosphorIcon(PhosphorIconsRegular.warningCircle,
                           color: AppTheme.statusDanger, size: 32),
                       const SizedBox(height: 12),
-                      const AppText('Không tải được danh sách dự án.', variant: AppTextVariant.body),
+                      const AppText('Không tải được danh sách dự án.',
+                          variant: AppTextVariant.body),
                       const SizedBox(height: 12),
                       AppButton(
                         label: 'Thử lại',
@@ -186,8 +209,10 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
               children: [
                 AppText(
-                  'Bạn có ${data.totalCount} dự án'
-                  '${data.pmCount > 0 ? ' — làm PM ${data.pmCount} dự án' : ''}',
+                  widget.scope == 'team'
+                      ? 'Cả Tổ có ${data.totalCount} dự án'
+                      : 'Bạn có ${data.totalCount} dự án'
+                          '${data.pmCount > 0 ? ' — làm PM ${data.pmCount} dự án' : ''}',
                   variant: AppTextVariant.body,
                   fontSize: 15,
                   weight: FontWeight.w700,
@@ -207,7 +232,9 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
                     ),
                     const SizedBox(width: 8),
                     _FilterButton(
-                      active: _phaseFilter != null || _stateFilter != null || _roleFilter != null,
+                      active: _phaseFilter != null ||
+                          _stateFilter != null ||
+                          _roleFilter != null,
                       onTap: () => _openFilterSheet(data),
                     ),
                   ],
@@ -221,23 +248,27 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
                     children: [
                       if (_phaseFilter != null)
                         _FilterTag(
-                          label: 'Giai đoạn: ${projectPhaseLabel(_phaseFilter!)}',
+                          label:
+                              'Giai đoạn: ${projectPhaseLabel(_phaseFilter!)}',
                           onRemove: () => setState(() => _phaseFilter = null),
                         ),
                       if (_stateFilter != null)
                         _FilterTag(
-                          label: 'Trạng thái: ${projectStateLabel(_stateFilter!)}',
+                          label:
+                              'Trạng thái: ${projectStateLabel(_stateFilter!)}',
                           onRemove: () => setState(() => _stateFilter = null),
                         ),
                       if (_roleFilter != null)
                         _FilterTag(
-                          label: 'Vai trò: ${_roleFilter == _rolePmSentinel ? "Tôi làm PM" : _roleFilter}',
+                          label:
+                              'Vai trò: ${_roleFilter == _rolePmSentinel ? "Tôi làm PM" : _roleFilter}',
                           onRemove: () => setState(() => _roleFilter = null),
                         ),
                       InkWell(
                         onTap: _clearAllFilters,
                         child: ConstrainedBox(
-                          constraints: const BoxConstraints(minHeight: AppDimens.minTapTarget),
+                          constraints: const BoxConstraints(
+                              minHeight: AppDimens.minTapTarget),
                           child: const Padding(
                             padding: EdgeInsets.symmetric(horizontal: 4),
                             child: Center(
@@ -269,7 +300,8 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 24),
                     child: AppText('Không có dự án nào khớp.',
-                        variant: AppTextVariant.body, color: AppColors.textSecondary),
+                        variant: AppTextVariant.body,
+                        color: AppColors.textSecondary),
                   )
                 else
                   for (final row in rows) _ProjectCard(row: row),
@@ -320,7 +352,11 @@ class _ReportBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
       ),
       child: AppText(label,
-          variant: AppTextVariant.overline, fontSize: 10.5, weight: FontWeight.w700, color: color, letterSpacing: 0),
+          variant: AppTextVariant.overline,
+          fontSize: 10.5,
+          weight: FontWeight.w700,
+          color: color,
+          letterSpacing: 0),
     );
   }
 }
@@ -342,132 +378,140 @@ class _ProjectCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: AppText(row.name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                variant: AppTextVariant.body,
-                                fontSize: 14.5,
-                                weight: FontWeight.w700),
-                          ),
-                          if (!row.isOpen) ...[
-                            const SizedBox(width: 6),
-                            Container(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.06),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: const AppText('Đã đóng',
-                                  variant: AppTextVariant.overline,
-                                  fontSize: 9.5,
-                                  color: AppColors.textSecondary,
-                                  letterSpacing: 0),
-                            ),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      AppText(
-                        [
-                          if (row.customer?.isNotEmpty == true) row.customer!,
-                          'PM: ${row.pmName?.isNotEmpty == true ? row.pmName : "(chưa có PM)"}',
-                        ].join(' · '),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        variant: AppTextVariant.caption,
-                        fontSize: 11.5,
-                        color: AppColors.textSecondary,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                if (row.isPm)
-                  const _Chip(label: 'PM', color: AppTheme.brandBlue)
-                else if (row.role?.isNotEmpty == true)
-                  _Chip(label: row.role!, color: AppTheme.brandBlueDark),
-                _Chip(label: projectPhaseLabel(row.phase), color: AppColors.textSecondary),
-                _Chip(label: projectStateLabel(row.state), color: AppColors.textSecondary),
-                _ReportBadge(status: row.reportStatus),
-                if (!row.isActiveMember && !row.isPm && row.leftAt != null)
-                  AppText('Đã rời ${DateFormat('dd/MM/yyyy').format(row.leftAt!)}',
-                      variant: AppTextVariant.overline,
-                      fontSize: 10.5,
-                      color: AppColors.textSecondary,
-                      letterSpacing: 0),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          AppText(
-                            row.checklistTotal == 0
-                                ? 'Chưa có checklist'
-                                : '${row.checklistDone}/${row.checklistTotal} việc (${row.checklistPercent}%)',
-                            variant: AppTextVariant.caption,
-                            fontSize: 11.5,
-                            color: AppColors.textSecondary,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(6),
-                        child: LinearProgressIndicator(
-                          value: progress,
-                          minHeight: 5,
-                          backgroundColor: AppTheme.brandBlue.withValues(alpha: 0.1),
-                          valueColor:
-                              const AlwaysStoppedAnimation(AppTheme.brandBlueDark),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    AppText('${row.myOpenCount} việc của tôi',
-                        variant: AppTextVariant.caption, fontSize: 11.5, weight: FontWeight.w600),
-                    if (row.myOverdueCount > 0) ...[
-                      const SizedBox(height: 3),
-                      AppText('${row.myOverdueCount} quá hạn',
-                          variant: AppTextVariant.overline,
-                          fontSize: 10.5,
-                          weight: FontWeight.w700,
-                          color: AppTheme.statusDanger,
-                          letterSpacing: 0),
-                    ],
+                    Row(
+                      children: [
+                        Expanded(
+                          child: AppText(row.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              variant: AppTextVariant.body,
+                              fontSize: 14.5,
+                              weight: FontWeight.w700),
+                        ),
+                        if (!row.isOpen) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.06),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const AppText('Đã đóng',
+                                variant: AppTextVariant.overline,
+                                fontSize: 9.5,
+                                color: AppColors.textSecondary,
+                                letterSpacing: 0),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    AppText(
+                      [
+                        if (row.customer?.isNotEmpty == true) row.customer!,
+                        'PM: ${row.pmName?.isNotEmpty == true ? row.pmName : "(chưa có PM)"}',
+                      ].join(' · '),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      variant: AppTextVariant.caption,
+                      fontSize: 11.5,
+                      color: AppColors.textSecondary,
+                    ),
                   ],
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              if (row.isPm)
+                const _Chip(label: 'PM', color: AppTheme.brandBlue)
+              else if (row.role?.isNotEmpty == true)
+                _Chip(label: row.role!, color: AppTheme.brandBlueDark),
+              _Chip(
+                  label: projectPhaseLabel(row.phase),
+                  color: AppColors.textSecondary),
+              _Chip(
+                  label: projectStateLabel(row.state),
+                  color: AppColors.textSecondary),
+              _ReportBadge(status: row.reportStatus),
+              if (!row.isActiveMember && !row.isPm && row.leftAt != null)
+                AppText(
+                    'Đã rời ${DateFormat('dd/MM/yyyy').format(row.leftAt!)}',
+                    variant: AppTextVariant.overline,
+                    fontSize: 10.5,
+                    color: AppColors.textSecondary,
+                    letterSpacing: 0),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        AppText(
+                          row.checklistTotal == 0
+                              ? 'Chưa có checklist'
+                              : '${row.checklistDone}/${row.checklistTotal} việc (${row.checklistPercent}%)',
+                          variant: AppTextVariant.caption,
+                          fontSize: 11.5,
+                          color: AppColors.textSecondary,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 5,
+                        backgroundColor:
+                            AppTheme.brandBlue.withValues(alpha: 0.1),
+                        valueColor: const AlwaysStoppedAnimation(
+                            AppTheme.brandBlueDark),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 14),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  AppText('${row.myOpenCount} việc của tôi',
+                      variant: AppTextVariant.caption,
+                      fontSize: 11.5,
+                      weight: FontWeight.w600),
+                  if (row.myOverdueCount > 0) ...[
+                    const SizedBox(height: 3),
+                    AppText('${row.myOverdueCount} quá hạn',
+                        variant: AppTextVariant.overline,
+                        fontSize: 10.5,
+                        weight: FontWeight.w700,
+                        color: AppTheme.statusDanger,
+                        letterSpacing: 0),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -505,7 +549,11 @@ class _Chip extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
       ),
       child: AppText(label,
-          variant: AppTextVariant.overline, fontSize: 10.5, weight: FontWeight.w600, color: color, letterSpacing: 0),
+          variant: AppTextVariant.overline,
+          fontSize: 10.5,
+          weight: FontWeight.w600,
+          color: color,
+          letterSpacing: 0),
     );
   }
 }
@@ -593,13 +641,16 @@ class _FilterSheetState extends State<_FilterSheet> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Padding(
-        padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+        padding: EdgeInsets.fromLTRB(
+            20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const AppText('Bộ lọc dự án',
-                variant: AppTextVariant.body, fontSize: 16, weight: FontWeight.w700),
+                variant: AppTextVariant.body,
+                fontSize: 16,
+                weight: FontWeight.w700),
             const SizedBox(height: 18),
             AppDropdown<String>(
               label: 'Giai đoạn',
@@ -619,7 +670,8 @@ class _FilterSheetState extends State<_FilterSheet> {
               label: 'Vai trò',
               value: _role,
               items: {
-                if (widget.pmCount > 0) _rolePmSentinel: 'Tôi làm PM (${widget.pmCount})',
+                if (widget.pmCount > 0)
+                  _rolePmSentinel: 'Tôi làm PM (${widget.pmCount})',
                 for (final r in widget.roles) r: r,
               },
               onChanged: (v) => setState(() => _role = v),
@@ -632,15 +684,16 @@ class _FilterSheetState extends State<_FilterSheet> {
                     type: AppButtonType.outline,
                     label: 'Bỏ lọc',
                     onPressed: () => Navigator.of(context).pop(
-                        const _FilterResult(phase: null, state: null, role: null)),
+                        const _FilterResult(
+                            phase: null, state: null, role: null)),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: AppButton(
                     label: 'Áp dụng',
-                    onPressed: () => Navigator.of(context)
-                        .pop(_FilterResult(phase: _phase, state: _state, role: _role)),
+                    onPressed: () => Navigator.of(context).pop(_FilterResult(
+                        phase: _phase, state: _state, role: _role)),
                   ),
                 ),
               ],

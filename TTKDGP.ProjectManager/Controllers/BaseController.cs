@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Web.Mvc;
 using TTKDGP.ProjectManager.Data;
 using TTKDGP.ProjectManager.Infrastructure;
@@ -108,6 +109,23 @@ namespace TTKDGP.ProjectManager.Controllers
 
             return CurrentUserId > 0 &&
                 (task.AssigneeUserId == CurrentUserId || task.AssignedByUserId == CurrentUserId);
+        }
+
+        /// <summary>
+        /// Dựng view model todolist con của một đầu việc — dùng chung cho mọi nơi hiển thị (hộp
+        /// chi tiết trong Checklist dự án, màn Chi tiết công việc của tôi...).
+        /// </summary>
+        protected TaskTodoViewModel BuildTaskTodos(WorkTask task)
+        {
+            return new TaskTodoViewModel
+            {
+                TaskId = task.Id,
+                CanManage = CanManageTodos(task),
+                Items = Repository.WorkTaskTodos.All()
+                    .Where(t => t.TaskId == task.Id)
+                    .OrderBy(t => t.SortOrder)
+                    .ToList()
+            };
         }
 
         /// <summary>
@@ -254,6 +272,15 @@ namespace TTKDGP.ProjectManager.Controllers
         protected void NotifyError(string message)
         {
             TempData["FlashError"] = message;
+        }
+
+        /// <summary>Tra loi dang chu kem ma 400 cho cac controller Api — dung chung mot khuon
+        /// JSON ({ error: "..." }) o moi noi tu choi yeu cau tu mobile.</summary>
+        protected ActionResult BadRequest(string message)
+        {
+            Response.StatusCode = 400;
+            Response.TrySkipIisCustomErrors = true;
+            return Json(new { error = message });
         }
     }
 }

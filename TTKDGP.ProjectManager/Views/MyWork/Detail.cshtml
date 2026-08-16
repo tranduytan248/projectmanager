@@ -6,6 +6,7 @@
     var comments = ViewBag.Comments as List<WorkComment> ?? new List<WorkComment>();
     var canReport = (bool)ViewBag.CanReport;
     var timeLogs = ViewBag.TimeLogModel as TaskTimeLogViewModel ?? new TaskTimeLogViewModel { TaskId = Model.Id };
+    var todos = ViewBag.TodoModel as TaskTodoViewModel ?? new TaskTodoViewModel { TaskId = Model.Id };
 
     var detailCrumbs = new List<Crumb>
     {
@@ -180,6 +181,26 @@
     </div>
 </div>
 
+@* Việc cần làm: chẻ nhỏ đầu việc thành các bước tick được. Dùng chung partial/route với hộp
+   chi tiết trong Checklist dự án nên chỉ một nơi định nghĩa cách hiển thị và xử lý. *@
+<div class="card todo-section">
+    <div class="card-head">
+        Việc cần làm <span class="muted" id="todoCount">— @todos.DoneCount/@todos.TotalCount xong</span>
+    </div>
+    <div class="card-body">
+        <div class="todo-token">@Html.AntiForgeryToken()</div>
+        <div id="taskTodoBox"
+             data-todo-box
+             data-task-id="@Model.Id"
+             data-add-url="@Url.Action("AddTodo", "Checklist")"
+             data-toggle-url="@Url.Action("ToggleTodo", "Checklist")"
+             data-edit-url="@Url.Action("EditTodo", "Checklist")"
+             data-delete-url="@Url.Action("DeleteTodo", "Checklist")">
+            @Html.Partial("../Checklist/_Todos", todos)
+        </div>
+    </div>
+</div>
+
 <div class="card">
     <div class="card-head">
         Trao đổi <span class="muted">— @comments.Count(c => !c.IsDeleted) nội dung</span>
@@ -216,8 +237,9 @@
                     {
                         if (!string.IsNullOrWhiteSpace(c.Content))
                         {
-                            @* Nội dung do người dùng nhập — Razor tự HTML-encode nên an toàn. Không dùng Html.Raw ở đây. *@
-                            <div style="white-space:pre-wrap;margin-top:4px">@c.Content</div>
+                            @* Nội dung soạn bằng trình soạn thảo WYSIWYG, đã lọc qua HtmlSanitizer khi
+                               lưu; ToDisplay lọc thêm lần nữa rồi mới Raw, cùng cách với "Mô tả" ở trên. *@
+                            <div class="rich-content" style="margin-top:4px">@Html.Raw(HtmlSanitizer.ToDisplay(c.Content))</div>
                         }
                         if (c.HasAttachment)
                         {
@@ -240,7 +262,7 @@
             <input type="hidden" name="id" value="@Model.Id" />
             <div class="form-field full">
                 <label for="content">Gửi trao đổi</label>
-                <textarea id="content" name="content" rows="3"
+                <textarea id="content" name="content" rows="3" data-rich="true"
                           placeholder="Hỏi PM, báo vướng mắc, thống nhất cách làm..."></textarea>
             </div>
             <div class="form-field">

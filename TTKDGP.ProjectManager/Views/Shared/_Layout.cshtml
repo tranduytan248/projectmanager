@@ -15,7 +15,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>@ViewBag.Title - Quản lý dự án NCPT</title>
+    <title>@ViewBag.Title - BrewTask - Quản Lý Công Việc</title>
 
     <link rel="icon" href="@Url.Content("~/favicon.ico")" sizes="any" />
     <link rel="icon" type="image/png" sizes="32x32" href="@Url.Content("~/Content/img/favicon-32x32.png")" />
@@ -62,8 +62,8 @@
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-head">
                 <a class="brand" href="@Url.Action("Index", "Home")">
-                    <span class="brand-mark">NCPT</span>
-                    <span class="brand-text">Quản lý dự án &amp; nhân sự</span>
+                    <img class="brand-mark" src="@Url.Content("~/Content/img/brand-mark.png")" alt="BrewTask" />
+                    <span class="brand-text">BrewTask - Quản Lý Công Việc</span>
                 </a>
                 <button type="button" class="sidebar-collapse" data-sidebar-toggle
                         aria-label="Thu gọn menu" title="Thu gọn menu">«</button>
@@ -128,14 +128,14 @@
 
                     @* Trên màn hình hẹp menu dọc bị ẩn nên thanh trên phải tự mang tên hệ thống *@
                     <a class="brand brand-compact" href="@Url.Action("Index", "Home")">
-                        <span class="brand-mark">NCPT</span>
+                        <img class="brand-mark" src="@Url.Content("~/Content/img/brand-mark.png")" alt="BrewTask" />
                     </a>
                 }
                 else
                 {
                     <a class="brand" href="@Url.Action("Index", "Home")">
-                        <span class="brand-mark">NCPT</span>
-                        <span class="brand-text">Quản lý dự án &amp; nhân sự</span>
+                        <img class="brand-mark" src="@Url.Content("~/Content/img/brand-mark.png")" alt="BrewTask" />
+                        <span class="brand-text">BrewTask - Quản Lý Công Việc</span>
                     </a>
                 }
 

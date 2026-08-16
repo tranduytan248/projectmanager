@@ -44,6 +44,16 @@ namespace TTKDGP.ProjectManager.Controllers
                 return RedirectToAction("Projects", "MyWork");
             }
 
+            // Xin nghỉ: không gắn ProjectId/TaskId nên phải chặn TRƯỚC hai nhánh chung bên dưới.
+            if (notification.Type == NotificationTypes.LeaveRequested)
+            {
+                return RedirectToAction("Approve", "Leaves");
+            }
+            if (notification.Type == NotificationTypes.LeaveResult)
+            {
+                return RedirectToAction("My", "Leaves");
+            }
+
             if (notification.ProjectId > 0)
             {
                 return RedirectToAction("Index", "Checklist", new { projectId = notification.ProjectId });

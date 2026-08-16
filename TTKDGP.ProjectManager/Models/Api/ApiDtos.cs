@@ -15,6 +15,46 @@ namespace TTKDGP.ProjectManager.Models.Api
         public string Role { get; set; }
     }
 
+    /// <summary>Man "Thong tin ca nhan" cua mobile — tuong duong ProfilePageViewModel ben web
+    /// (Account/Profile), chi giu phan hien thi (chinh sua FullName/doi mat khau la hai action
+    /// rieng tren AccountApiController, khong nam trong DTO nay).</summary>
+    public class ProfileDto
+    {
+        public string UserName { get; set; }
+        public string FullName { get; set; }
+
+        /// <summary>Da qua Roles.Display — ten (cac) nhom quyen, tra san server-side giong het
+        /// ProfilePageViewModel.RoleDisplay, mobile khong can tu tra lai Ma nhom.</summary>
+        public string RoleDisplay { get; set; }
+
+        public bool IsAdmin { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+
+    /// <summary>Mot thong bao ca nhan — khop UserNotification (Models/Work/UserNotification.cs),
+    /// bo truong UserId (ngu y la cua nguoi dang goi). ProjectId/TaskId de mobile tu quyet dinh
+    /// diem den khi bam vao, cung mot bo du lieu UserNotificationsController.Open dung ben web.</summary>
+    public class NotificationDto
+    {
+        public int Id { get; set; }
+        public string Type { get; set; }
+        public string Message { get; set; }
+        public int ProjectId { get; set; }
+        public int TaskId { get; set; }
+        public bool IsRead { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+
+    /// <summary>Man "Thong bao" cua mobile — mot trang du lieu (khong phai panel "Recent" gioi
+    /// han cho khung tha xuong ben web) kem tong so chua doc de hien/an nut "Doc tat ca".</summary>
+    public class NotificationListDto
+    {
+        public List<NotificationDto> Items { get; set; }
+        public int Page { get; set; }
+        public bool HasMore { get; set; }
+        public int UnreadCount { get; set; }
+    }
+
     public class TaskDto
     {
         public int Id { get; set; }
@@ -40,6 +80,164 @@ namespace TTKDGP.ProjectManager.Models.Api
 
         /// <summary>0 = muc goc, khac 0 = viec con cua muc co Id do.</summary>
         public int ParentId { get; set; }
+    }
+
+    /// <summary>Cac truong tinh cua rieng mot dau viec — phan "Task" trong TaskFullDetailDto tra
+    /// ve cho man "Chi tiet cong viec" day du cua mobile (xem TaskFullDetailDto ben duoi cho khoi
+    /// Gio cong/Viec can lam/Trao doi). Ke thua het truong cua TaskDto, cong them cac truong chi
+    /// can khi xem rieng mot dau viec. CanEdit/CanEditAll tra san du man hien chua co form Cap
+    /// nhat rieng (chi doc/ghi Gio cong-Viec can lam-Trao doi), de sau nay man biet co nen dan
+    /// nguoi dung ra web sua cac truong con lai hay khong.</summary>
+    public class TaskDetailDto : TaskDto
+    {
+        /// <summary>Da qua HtmlSanitizer.ToPlainText — cung cach ProjectDetailDto.Description dang
+        /// lam voi WorkProject.Description, khong can them goi hien thi HTML rieng cho mobile.</summary>
+        public string Description { get; set; }
+
+        public DateTime? StartDate { get; set; }
+        public DateTime? CompletedAt { get; set; }
+
+        public int ProjectId { get; set; }
+        public int Week { get; set; }
+        public int Year { get; set; }
+
+        /// <summary>So ngay con lai toi han; am = da tre. Null khi khong co DueDate.</summary>
+        public int? DaysLeft { get; set; }
+        public bool IsOnTime { get; set; }
+        public string ParentTitle { get; set; }
+        public decimal BonusPercent { get; set; }
+        public bool HasAttachment { get; set; }
+        public string AttachmentName { get; set; }
+
+        /// <summary>Nguoi nay co sua duoc cac truong rieng cua minh (trang thai/tien do) khong.</summary>
+        public bool CanEdit { get; set; }
+
+        /// <summary>Nguoi nay co sua duoc TOAN BO truong cua dau viec (PM/Quan ly To) khong.</summary>
+        public bool CanEditAll { get; set; }
+    }
+
+    /// <summary>Mot lan ghi gio cong — khop WorkTimeLog, kem san CanDelete (tinh o server: chi
+    /// chu cua dong va viec chua dong duoc xoa) de mobile khong tu doan quyen.</summary>
+    public class TimeLogEntryDto
+    {
+        public int Id { get; set; }
+        public DateTime WorkDate { get; set; }
+        public decimal Hours { get; set; }
+        public string Note { get; set; }
+        public int UserId { get; set; }
+        public string UserName { get; set; }
+        public bool CanDelete { get; set; }
+    }
+
+    /// <summary>Khoi "Gio cong" cua man chi tiet — gom tran/da dung/con lai theo ca viec lan theo
+    /// ngay (cung cong thuc TimeLogService dang dung ben web), CanLog/BlockedReason de mobile
+    /// biet co nen hien form ghi them hay khong ma khong phai tu suy luan lai luat.</summary>
+    public class TimeLogSummaryDto
+    {
+        /// <summary>Null khi viec thieu ngay bat dau/han nen khong tinh duoc tran.</summary>
+        public decimal? TaskCap { get; set; }
+        public decimal TaskTotal { get; set; }
+        public decimal? TaskRemaining { get; set; }
+        public decimal TodayTotal { get; set; }
+        public decimal TodayRemaining { get; set; }
+        public decimal MaxPerDay { get; set; }
+        public bool CanLog { get; set; }
+        public string BlockedReason { get; set; }
+        public List<TimeLogEntryDto> Logs { get; set; }
+
+        public TimeLogSummaryDto()
+        {
+            Logs = new List<TimeLogEntryDto>();
+        }
+    }
+
+    /// <summary>Mot dong "Viec can lam" (todolist con cua dau viec) — khop WorkTaskTodo.</summary>
+    public class TodoItemDto
+    {
+        public int Id { get; set; }
+        public string Content { get; set; }
+        public bool IsDone { get; set; }
+        public string CreatedByName { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+
+    /// <summary>Khoi "Viec can lam" — CanManage tinh san o server (CanManageTodos) de mobile biet
+    /// co hien nut them/sua/xoa hay khong.</summary>
+    public class TodoSummaryDto
+    {
+        public bool CanManage { get; set; }
+        public int DoneCount { get; set; }
+        public int TotalCount { get; set; }
+        public List<TodoItemDto> Items { get; set; }
+
+        public TodoSummaryDto()
+        {
+            Items = new List<TodoItemDto>();
+        }
+    }
+
+    /// <summary>Mot nguoi co the bi nhac ten bang @ trong Trao doi — khop TaskMentionOption
+    /// (Models/Work/ChecklistModels.cs), nguon tu WorkService.TaskParticipants.</summary>
+    public class TaskMentionOptionDto
+    {
+        public int UserId { get; set; }
+        public string FullName { get; set; }
+        public string UserName { get; set; }
+    }
+
+    /// <summary>Mot dong "Trao doi" (binh luan) — Content la HTML DA QUA HtmlSanitizer.Clean luc
+    /// luu (danh sach the trang p/div/br/b/strong/i/em/u/s/strike/ul/ol/li/blockquote/h3/h4/a),
+    /// mobile tu hien co dinh dang (dam/nghieng/danh sach...) qua bo doc rieng, KHONG con phang
+    /// ve chu thuong nhu truoc — trao doi tren mobile gio cung la rich text giong web. Noi dung da
+    /// thu hoi thi Content la null. CanRecall tinh san o server: dung cua chinh minh, hoac la
+    /// PM/Quan ly To (CanModerate).</summary>
+    public class TaskCommentDto
+    {
+        public int Id { get; set; }
+        public string AuthorName { get; set; }
+        public string Content { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public bool IsDeleted { get; set; }
+        public bool HasAttachment { get; set; }
+        public string AttachmentName { get; set; }
+        public bool CanRecall { get; set; }
+    }
+
+    public class CommentsSummaryDto
+    {
+        public List<TaskCommentDto> Comments { get; set; }
+
+        /// <summary>Danh sach nguoi co the @nhac trong khoi Trao doi nay — y het
+        /// TaskCommentsViewModel.Participants ben web, de mobile dung goi y khi go @.</summary>
+        public List<TaskMentionOptionDto> Participants { get; set; }
+
+        public CommentsSummaryDto()
+        {
+            Comments = new List<TaskCommentDto>();
+            Participants = new List<TaskMentionOptionDto>();
+        }
+    }
+
+    /// <summary>Wrapper tra ve cho man "Chi tiet cong viec" day du tren mobile — gop ca 4 khoi
+    /// (thong tin, gio cong, viec can lam, trao doi) trong MOT lan goi API duy nhat.</summary>
+    public class TaskFullDetailDto
+    {
+        public TaskDetailDto Task { get; set; }
+        public TimeLogSummaryDto TimeLog { get; set; }
+        public TodoSummaryDto Todo { get; set; }
+        public CommentsSummaryDto Comments { get; set; }
+    }
+
+    /// <summary>Mot dong trong "Lich su thao tac" cua mot dau viec — khop TaskActivityLog
+    /// (Models/Work/TaskActivityLog.cs). Description da dung san cau tieng Viet luc ghi, mobile
+    /// chi viec hien thang, khong phai tu ghep chuoi.</summary>
+    public class TaskActivityLogDto
+    {
+        public int Id { get; set; }
+        public string ActorName { get; set; }
+        public string Action { get; set; }
+        public string Description { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 
     /// <summary>Mot nguoi co the giao viec — dropdown "Nguoi thuc hien" khi tao dau viec moi,
