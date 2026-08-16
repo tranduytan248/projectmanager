@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Web;
 using System.Web.Mvc;
 using TTKDGP.ProjectManager.Data;
 using TTKDGP.ProjectManager.Infrastructure;
@@ -52,6 +53,392 @@ namespace TTKDGP.ProjectManager.Controllers.Api
             dto.DonePercent = dto.TotalCount == 0 ? 0 : (int)System.Math.Round(dto.DoneCount * 100.0 / dto.TotalCount);
 
             return Json(dto, JsonRequestBehavior.AllowGet);
+        }
+
+        /// <summary>
+        /// Chi tiet DAY DU mot dau viec — man "Chi tiet cong viec" cua mobile, tuong duong hop
+        /// thoai ChecklistController.Detail/_Detail.cshtml ben web nhung gop LUON ca 3 khoi
+        /// tuong tac (Gio cong/Viec can lam/Trao doi) trong MOT lan goi, thay vi 4 request rieng
+        /// nhu web (Detail tra HTML, 3 khoi con lai nap AJAX rieng khi mo hop thoai). Dung
+        /// CanSeeTask thay vi CanViewProject — y het luat ben web: giao cho minh HOAC thanh vien
+        /// du an HOAC Quan ly To — nen xem duoc ca viec ngoai du an cua chinh minh.
+        /// </summary>
+        [HttpGet]
+        public ActionResult Detail(int id)
+        {
+            var task = Repository.WorkTasks.Find(id);
+            if (task == null || !CanSeeTask(task)) return HttpNotFound();
+
+            return Json(BuildFullDetail(task), JsonRequestBehavior.AllowGet);
+        }
+
+        /// <summary>Dung toan bo goi TaskFullDetailDto — dung lai NGUYEN VEN cac service/quyen da
+        /// co san (TimeLogService.BuildViewModel, BaseController.BuildTaskTodos/CanManageTodos,
+        /// WorkService.CommentsOfTask), khong tinh lai luat o day.</summary>
+        private TaskFullDetailDto BuildFullDetail(WorkTask task)
+        {
+            var parent = task.ParentId > 0 ? Repository.WorkTasks.Find(task.ParentId) : null;
+            var parentTitle = parent == null
+                ? null
+                : (string.IsNullOrWhiteSpace(parent.Code) ? parent.Title : parent.Code + " · " + parent.Title);
+
+            var taskOpen = !TaskStates.IsClosed(task.State);
+
+            return new TaskFullDetailDto
+            {
+                Task = ApiMappers.ToFullTaskDto(task, parentTitle, CanEditTask(task), CanEditAllOfTask(task)),
+                TimeLog = ApiMappers.ToDto(TimeLogService.BuildViewModel(task, CurrentUserId), taskOpen),
+                Todo = ApiMappers.ToDto(BuildTaskTodos(task)),
+                Comments = BuildCommentsDto(task)
+            };
+        }
+
+        /// <summary>Y het ChecklistController.BuildComments — gom ca Participants de mobile dung
+        /// goi y khi go @.</summary>
+        private CommentsSummaryDto BuildCommentsDto(WorkTask task)
+        {
+            return ApiMappers.ToCommentsDto(WorkService.CommentsOfTask(task.Id),
+                WorkService.TaskParticipants(task), CurrentUserId, CanEditProject(task.ProjectId));
+        }
+
+        // ---------- Giờ công ----------
+
+        /// <summary>Mirror ChecklistController.LogTime — cach doc "hours"/"workDate" GIU NGUYEN
+        /// (InvariantCulture, khong de model binder tu suy dien theo culture vi-VN).</summary>
+        [HttpPost]
+        public ActionResult LogTime(int id, string workDate, string hours, string note)
+        {
+            var task = Repository.WorkTasks.Find(id);
+            if (task == null || !CanSeeTask(task)) return HttpNotFound();
+
+            DateTime dateValue;
+            if (!DateTime.TryParseExact((workDate ?? string.Empty).Trim(), "yyyy-MM-dd",
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.None, out dateValue))
+            {
+                return BadRequest("Ngày làm không hợp lệ.");
+            }
+
+            decimal hoursValue;
+            if (!decimal.TryParse((hours ?? string.Empty).Trim().Replace(',', '.'),
+                    System.Globalization.NumberStyles.Number,
+                    System.Globalization.CultureInfo.InvariantCulture, out hoursValue))
+            {
+                return BadRequest("Số giờ không hợp lệ. Nhập ví dụ 2 hoặc 2,5.");
+            }
+
+            if (CurrentUserId <= 0 || task.AssigneeUserId != CurrentUserId)
+            {
+                return BadRequest("Chỉ người được giao việc mới ghi được giờ công.");
+            }
+
+            if (TaskStates.IsClosed(task.State))
+            {
+                return BadRequest("Công việc đã đóng nên không ghi thêm giờ được.");
+            }
+
+            var error = TimeLogService.Add(task, CurrentUserId,
+                CurrentUser == null ? null : CurrentUser.FullName, dateValue, hoursValue, note);
+            if (error != null) return BadRequest(error);
+
+            TaskActivityLogService.Record(task.Id, CurrentUserId,
+                CurrentUser == null ? null : CurrentUser.FullName, TaskActivityActions.TimeLogAdded,
+                string.Format("Đã ghi {0} giờ ({1:dd/MM/yyyy})", hoursValue, dateValue));
+
+            return Json(ApiMappers.ToDto(TimeLogService.BuildViewModel(task, CurrentUserId),
+                !TaskStates.IsClosed(task.State)));
+        }
+
+        /// <summary>Mirror ChecklistController.DeleteTimeLog — chi xoa duoc dong cua chinh minh,
+        /// viec chua dong.</summary>
+        [HttpPost]
+        public ActionResult DeleteTimeLog(int id, int logId)
+        {
+            var task = Repository.WorkTasks.Find(id);
+            if (task == null || !CanSeeTask(task)) return HttpNotFound();
+
+            var log = Repository.WorkTimeLogs.Find(logId);
+            if (log == null || log.TaskId != id) return HttpNotFound();
+
+            if (CurrentUserId <= 0 || log.UserId != CurrentUserId)
+            {
+                return BadRequest("Chỉ xoá được dòng giờ của chính bạn.");
+            }
+
+            if (TaskStates.IsClosed(task.State))
+            {
+                return BadRequest("Công việc đã đóng nên không sửa được giờ đã ghi.");
+            }
+
+            Repository.WorkTimeLogs.Delete(logId);
+            TaskActivityLogService.Record(task.Id, CurrentUserId,
+                CurrentUser == null ? null : CurrentUser.FullName, TaskActivityActions.TimeLogDeleted,
+                string.Format("Đã xoá lượt ghi {0} giờ ({1:dd/MM/yyyy})", log.Hours, log.WorkDate));
+
+            return Json(ApiMappers.ToDto(TimeLogService.BuildViewModel(task, CurrentUserId),
+                !TaskStates.IsClosed(task.State)));
+        }
+
+        // ---------- Việc cần làm ----------
+
+        [HttpPost]
+        public ActionResult AddTodo(int id, string content)
+        {
+            var task = Repository.WorkTasks.Find(id);
+            if (task == null || !CanSeeTask(task)) return HttpNotFound();
+            if (!CanManageTodos(task)) return BadRequest("Bạn không có quyền sửa việc cần làm của việc này.");
+
+            var text = (content ?? string.Empty).Trim();
+            if (text.Length == 0) return BadRequest("Vui lòng nhập nội dung.");
+            if (text.Length > 300) return BadRequest("Nội dung tối đa 300 ký tự.");
+
+            var nextOrder = Repository.WorkTaskTodos.All().Count(t => t.TaskId == id);
+
+            var todo = Repository.WorkTaskTodos.Insert(new WorkTaskTodo
+            {
+                TaskId = id,
+                Content = text,
+                SortOrder = nextOrder,
+                CreatedByUserId = CurrentUserId,
+                CreatedByName = CurrentUser == null ? null : CurrentUser.FullName,
+                CreatedAt = DateTime.Now
+            });
+
+            NotificationService.TodoAdded(task, todo, CurrentUserId,
+                CurrentUser == null ? null : CurrentUser.FullName);
+
+            TaskActivityLogService.Record(task.Id, CurrentUserId,
+                CurrentUser == null ? null : CurrentUser.FullName, TaskActivityActions.TodoAdded,
+                string.Format("Đã thêm việc cần làm \"{0}\"", text));
+
+            return Json(ApiMappers.ToDto(BuildTaskTodos(task)));
+        }
+
+        [HttpPost]
+        public ActionResult ToggleTodo(int id, int todoId)
+        {
+            var task = Repository.WorkTasks.Find(id);
+            if (task == null || !CanSeeTask(task)) return HttpNotFound();
+            if (!CanManageTodos(task)) return BadRequest("Bạn không có quyền sửa việc cần làm của việc này.");
+
+            var todo = Repository.WorkTaskTodos.Find(todoId);
+            if (todo == null || todo.TaskId != id) return HttpNotFound();
+
+            todo.IsDone = !todo.IsDone;
+            if (todo.IsDone)
+            {
+                todo.DoneAt = DateTime.Now;
+                todo.DoneByUserId = CurrentUserId;
+            }
+            else
+            {
+                todo.DoneAt = null;
+                todo.DoneByUserId = 0;
+            }
+
+            Repository.WorkTaskTodos.Update(todo);
+
+            NotificationService.TodoToggled(task, todo, CurrentUserId,
+                CurrentUser == null ? null : CurrentUser.FullName);
+
+            TaskActivityLogService.Record(task.Id, CurrentUserId,
+                CurrentUser == null ? null : CurrentUser.FullName, TaskActivityActions.TodoToggled,
+                string.Format("Đã đánh dấu {0} việc cần làm \"{1}\"",
+                    todo.IsDone ? "xong" : "chưa xong", todo.Content));
+
+            return Json(ApiMappers.ToDto(BuildTaskTodos(task)));
+        }
+
+        [HttpPost]
+        public ActionResult EditTodo(int id, int todoId, string content)
+        {
+            var task = Repository.WorkTasks.Find(id);
+            if (task == null || !CanSeeTask(task)) return HttpNotFound();
+            if (!CanManageTodos(task)) return BadRequest("Bạn không có quyền sửa việc cần làm của việc này.");
+
+            var todo = Repository.WorkTaskTodos.Find(todoId);
+            if (todo == null || todo.TaskId != id) return HttpNotFound();
+
+            var text = (content ?? string.Empty).Trim();
+            if (text.Length == 0) return BadRequest("Vui lòng nhập nội dung.");
+            if (text.Length > 300) return BadRequest("Nội dung tối đa 300 ký tự.");
+
+            var oldContent = todo.Content;
+            todo.Content = text;
+            Repository.WorkTaskTodos.Update(todo);
+
+            if (!string.Equals(oldContent, text, StringComparison.Ordinal))
+            {
+                TaskActivityLogService.Record(task.Id, CurrentUserId,
+                    CurrentUser == null ? null : CurrentUser.FullName, TaskActivityActions.TodoEdited,
+                    string.Format("Đã sửa việc cần làm: \"{0}\" → \"{1}\"", oldContent, text));
+            }
+
+            return Json(ApiMappers.ToDto(BuildTaskTodos(task)));
+        }
+
+        [HttpPost]
+        public ActionResult DeleteTodo(int id, int todoId)
+        {
+            var task = Repository.WorkTasks.Find(id);
+            if (task == null || !CanSeeTask(task)) return HttpNotFound();
+            if (!CanManageTodos(task)) return BadRequest("Bạn không có quyền sửa việc cần làm của việc này.");
+
+            var todo = Repository.WorkTaskTodos.Find(todoId);
+            if (todo == null || todo.TaskId != id) return HttpNotFound();
+
+            Repository.WorkTaskTodos.Delete(todoId);
+            TaskActivityLogService.Record(task.Id, CurrentUserId,
+                CurrentUser == null ? null : CurrentUser.FullName, TaskActivityActions.TodoDeleted,
+                string.Format("Đã xoá việc cần làm \"{0}\"", todo.Content));
+
+            return Json(ApiMappers.ToDto(BuildTaskTodos(task)));
+        }
+
+        // ---------- Trao đổi ----------
+
+        /// <summary>Mirror ChecklistController.Comment — mobile gio co trinh soan thao rich text
+        /// rieng (AppRichEditor) tu xuat dung whitelist the cua HtmlSanitizer, nen lai dung
+        /// Clean() y het web (khac ban truoc: luc do mobile chi gui van ban thuan nen Clean() lam
+        /// mat noi dung co ky tu "&lt;"/"&gt;" ngau nhien — nay dau vao luon la HTML hop le that
+        /// nen khong con mau thuan). [ValidateInput(false)] bat buoc vi content la HTML, giong
+        /// ChecklistController.Comment ben web.</summary>
+        [HttpPost]
+        [ValidateInput(false)]
+        public ActionResult Comment(int id, string content, HttpPostedFileBase file)
+        {
+            var task = Repository.WorkTasks.Find(id);
+            if (task == null || !CanSeeTask(task)) return HttpNotFound();
+
+            var cleaned = HtmlSanitizer.Clean(content);
+            var hasText = !string.IsNullOrWhiteSpace(cleaned);
+            var hasFile = file != null && file.ContentLength > 0;
+
+            if (!hasText && !hasFile) return BadRequest("Vui lòng nhập nội dung.");
+
+            var comment = new WorkComment
+            {
+                TaskId = id,
+                UserId = CurrentUserId,
+                AuthorName = CurrentUser == null ? "(không rõ)" : CurrentUser.FullName,
+                Content = hasText ? cleaned : null,
+                CreatedAt = DateTime.Now
+            };
+
+            string error;
+            if (!CommentAttachments.TrySave(file, comment, out error))
+            {
+                return BadRequest(error);
+            }
+
+            Repository.WorkComments.Insert(comment);
+
+            NotificationService.Mentions(task, comment, CurrentUserId,
+                CurrentUser == null ? null : CurrentUser.FullName);
+            NotificationService.CommentAdded(task, comment, CurrentUserId,
+                CurrentUser == null ? null : CurrentUser.FullName);
+
+            TaskActivityLogService.Record(task.Id, CurrentUserId,
+                CurrentUser == null ? null : CurrentUser.FullName, TaskActivityActions.CommentAdded,
+                "Đã thêm bình luận");
+
+            return Json(BuildCommentsDto(task));
+        }
+
+        /// <summary>Mirror ChecklistController.Attachment — ai xem duoc dau viec chua binh luan
+        /// nay thi tai duoc file. Luon tra octet-stream de trinh duyet/thiet bi TAI VE chu khong
+        /// nhung/thuc thi, dung y het ly do bao mat ben web.</summary>
+        [HttpGet]
+        public ActionResult Attachment(int commentId)
+        {
+            var comment = Repository.WorkComments.Find(commentId);
+            if (comment == null || comment.IsDeleted || !comment.HasAttachment) return HttpNotFound();
+
+            var task = Repository.WorkTasks.Find(comment.TaskId);
+            if (task == null || !CanSeeTask(task)) return HttpNotFound();
+
+            var path = CommentAttachments.FullPath(comment.AttachmentFile);
+            if (path == null) return HttpNotFound();
+
+            return File(path, "application/octet-stream",
+                string.IsNullOrWhiteSpace(comment.AttachmentName) ? "tep-dinh-kem" : comment.AttachmentName);
+        }
+
+        /// <summary>Mirror ChecklistController.RecallComment — chi chinh chu, PM du an hoac Quan
+        /// ly To moi thu hoi duoc.</summary>
+        [HttpPost]
+        public ActionResult RecallComment(int id, int commentId)
+        {
+            var task = Repository.WorkTasks.Find(id);
+            if (task == null || !CanSeeTask(task)) return HttpNotFound();
+
+            var comment = Repository.WorkComments.Find(commentId);
+            if (comment == null || comment.TaskId != id) return HttpNotFound();
+
+            if (comment.UserId != CurrentUserId && !CanEditProject(task.ProjectId)) return HttpNotFound();
+
+            comment.IsDeleted = true;
+            comment.UpdatedAt = DateTime.Now;
+            Repository.WorkComments.Update(comment);
+
+            TaskActivityLogService.Record(task.Id, CurrentUserId,
+                CurrentUser == null ? null : CurrentUser.FullName, TaskActivityActions.CommentRecalled,
+                "Đã thu hồi bình luận");
+
+            return Json(BuildCommentsDto(task));
+        }
+
+        // ---------- Trang thai + Lich su ----------
+
+        /// <summary>
+        /// Doi trang thai + tien do — mirror MyWorkController.Report (chon Trang thai + Tien do% +
+        /// ghi chu tuy chon), GIU NGUYEN luat chan "chua ghi gio thi khong duoc chuyen Dang lam/Hoan
+        /// thanh" (TimeLogService.ValidateStateChange) dung y het web, khong noi long cho mobile.
+        /// </summary>
+        [HttpPost]
+        public ActionResult UpdateStatus(int id, string state, int progress, string note)
+        {
+            var task = Repository.WorkTasks.Find(id);
+            if (task == null || !CanSeeTask(task)) return HttpNotFound();
+            if (!CanEditTask(task)) return BadRequest("Bạn không có quyền cập nhật trạng thái việc này.");
+
+            if (!TaskStates.All.Contains(state)) return BadRequest("Trạng thái không hợp lệ.");
+
+            var logError = TimeLogService.ValidateStateChange(task, state);
+            if (logError != null) return BadRequest(logError);
+
+            var before = TaskActivityLogService.Snapshot(task);
+            WorkService.ApplyState(task, state, progress);
+
+            if (!string.IsNullOrWhiteSpace(note))
+            {
+                var stamp = string.Format("[{0:dd/MM/yyyy HH:mm} — {1}] ",
+                    DateTime.Now, CurrentUser == null ? "?" : CurrentUser.FullName);
+
+                task.Description = string.IsNullOrWhiteSpace(task.Description)
+                    ? stamp + note.Trim()
+                    : task.Description + Environment.NewLine + stamp + note.Trim();
+            }
+
+            task.UpdatedAt = DateTime.Now;
+            task.UpdatedBy = CurrentUser == null ? null : CurrentUser.FullName;
+            Repository.WorkTasks.Update(task);
+            TaskActivityLogService.RecordFieldChanges(before, task, CurrentUserId,
+                CurrentUser == null ? null : CurrentUser.FullName);
+
+            return Json(BuildFullDetail(task));
+        }
+
+        /// <summary>Nhat ky thao tac cua mot dau viec, moi nhat truoc — ai xem duoc cong viec thi
+        /// xem duoc lich su (CanSeeTask), khong thu hep hon.</summary>
+        [HttpGet]
+        public ActionResult ActivityLog(int id)
+        {
+            var task = Repository.WorkTasks.Find(id);
+            if (task == null || !CanSeeTask(task)) return HttpNotFound();
+
+            var items = TaskActivityLogService.GetForTask(id).Select(ApiMappers.ToDto).ToList();
+            return Json(items, JsonRequestBehavior.AllowGet);
         }
 
         /// <summary>
@@ -130,11 +517,5 @@ namespace TTKDGP.ProjectManager.Controllers.Api
                 .ToArray();
         }
 
-        private ActionResult BadRequest(string message)
-        {
-            Response.StatusCode = 400;
-            Response.TrySkipIisCustomErrors = true;
-            return Json(new { error = message });
-        }
     }
 }

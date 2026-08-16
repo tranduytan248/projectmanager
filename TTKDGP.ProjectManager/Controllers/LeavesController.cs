@@ -371,7 +371,7 @@ namespace TTKDGP.ProjectManager.Controllers
                     if (user.Id == leave.UserId) continue;
                     if (!Permissions.UserHas(user.Role, Permissions.Leaves.Perm("approve"))) continue;
 
-                    NotificationService.Add(user.Id, "leave.request", message);
+                    NotificationService.Add(user.Id, NotificationTypes.LeaveRequested, message);
                 }
             }
             catch (Exception)
@@ -391,7 +391,7 @@ namespace TTKDGP.ProjectManager.Controllers
                     : string.Format("Đơn nghỉ {0:dd/MM} – {1:dd/MM/yyyy} bị từ chối: {2}",
                         leave.FromDate, leave.ToDate, leave.ApproverNote);
 
-                NotificationService.Add(leave.UserId, "leave.result", message);
+                NotificationService.Add(leave.UserId, NotificationTypes.LeaveResult, message);
             }
             catch (Exception)
             {

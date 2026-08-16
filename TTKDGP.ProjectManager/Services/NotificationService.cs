@@ -122,14 +122,14 @@ namespace TTKDGP.ProjectManager.Services
                         { "TenDuAn", string.IsNullOrWhiteSpace(task.ProjectName) ? "(ngoài dự án)" : task.ProjectName },
                         { "LienKet", OpenLink(n) }
                     },
-                    // NoiDung o day: du HtmlSanitizer.Clean roi (xem "content" o dau ham), la
-                    // HTML that — dua vao textValues se bi RenderHtml ma hoa THEM MOT LAN, hien
-                    // ra the tho (&lt;div&gt;...) trong mail thay vi dinh dang that. Phai o
-                    // htmlValues (khong ma hoa) giong TepDinhKem.
+                    // NoiDung: dua vao textValues se bi RenderHtml ma hoa THEM MOT LAN, hien ra
+                    // the tho (&lt;div&gt;...) trong mail thay vi dinh dang that. Phai o htmlValues
+                    // (khong ma hoa) giong TepDinhKem; qua ToDisplay truoc — cung ham web dung de
+                    // hien "Trao doi" — de chan luon truong hop noi dung chua duoc loc tu luc luu.
                     new Dictionary<string, string>
                     {
                         { "TepDinhKem", attachmentHtml },
-                        { "NoiDung", content }
+                        { "NoiDung", Infrastructure.HtmlSanitizer.ToDisplay(content) }
                     });
             }
         }
@@ -170,12 +170,12 @@ namespace TTKDGP.ProjectManager.Services
                         { "TenDuAn", string.IsNullOrWhiteSpace(task.ProjectName) ? "(ngoài dự án)" : task.ProjectName },
                         { "LienKet", OpenLink(n) }
                     },
-                    // Xem ghi chu tuong tu trong Mentions() o tren: NoiDung da la HTML sach roi,
-                    // phai o htmlValues chu khong phai textValues, khong thi mail hien the tho.
+                    // Xem ghi chu tuong tu trong Mentions() o tren: NoiDung phai o htmlValues va
+                    // qua ToDisplay, khong thi mail hien the tho.
                     new Dictionary<string, string>
                     {
                         { "TepDinhKem", attachmentHtml },
-                        { "NoiDung", comment.Content ?? string.Empty }
+                        { "NoiDung", Infrastructure.HtmlSanitizer.ToDisplay(comment.Content) }
                     });
             }
         }
@@ -277,12 +277,17 @@ namespace TTKDGP.ProjectManager.Services
                 {
                     { "NguoiGiao", assigner },
                     { "TenCongViec", task.Title },
-                    { "NoiDung", task.Description ?? string.Empty },
                     { "HanHoanThanh", due },
                     { "DiemCong", task.BonusPercent.ToString("0.#") + "%" },
                     { "LienKet", OpenLink(n) }
                 },
-                new Dictionary<string, string> { { "TepDinhKem", attachmentHtml } });
+                // Xem ghi chu tuong tu trong CommentAdded() o tren: NoiDung phai o htmlValues va
+                // qua ToDisplay, khong thi mail hien the tho.
+                new Dictionary<string, string>
+                {
+                    { "TepDinhKem", attachmentHtml },
+                    { "NoiDung", Infrastructure.HtmlSanitizer.ToDisplay(task.Description) }
+                });
         }
 
         /// <summary>
@@ -311,9 +316,14 @@ namespace TTKDGP.ProjectManager.Services
                     { "TenCongViec", task.Title },
                     { "TenDuAn", project },
                     { "LoaiViec", TaskKinds.Display(task.Kind) },
-                    { "NoiDung", task.Description ?? string.Empty },
                     { "HanHoanThanh", due },
                     { "LienKet", OpenLink(n) }
+                },
+                // Xem ghi chu tuong tu trong CommentAdded() o tren: NoiDung phai o htmlValues va
+                // qua ToDisplay, khong thi mail hien the tho.
+                new Dictionary<string, string>
+                {
+                    { "NoiDung", Infrastructure.HtmlSanitizer.ToDisplay(task.Description) }
                 });
         }
 

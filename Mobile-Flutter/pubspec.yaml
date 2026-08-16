@@ -53,6 +53,19 @@ dependencies:
   # bien dich. phosphor_icons la ban ke thua duoc bao tuong thich Flutter 3.43+, cung API.
   phosphor_icons: ^3.0.1
 
+  # Chon anh/tai lieu dinh kem khi gui Trao doi (man Chi tiet cong viec)
+  file_picker: ^8.1.4
+  # Thu muc tam de luu file dinh kem tai ve truoc khi mo bang ung dung ngoai
+  path_provider: ^2.1.5
+  # Mo file da tai ve bang ung dung ngoai dung theo loai file (pdf/doc/zip...)
+  open_filex: ^4.5.0
+
+dependency_overrides:
+  # file_picker (AAR bien dich san o API 34) keo theo flutter_plugin_android_lifecycle ban moi
+  # nhat doi consumer phai compileSdk >= 36 — ghim ve ban cu hon, van tuong thich API 34, cho
+  # toi khi file_picker tu phat hanh ban moi khop dung.
+  flutter_plugin_android_lifecycle: 2.0.24
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

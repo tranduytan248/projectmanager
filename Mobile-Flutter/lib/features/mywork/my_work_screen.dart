@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:intl/intl.dart';
 import 'package:phosphor_icons/phosphor_icons.dart';
 
 import '../../config/app_theme.dart';
@@ -8,89 +9,87 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/toast_service.dart';
 import '../../core/widgets/app_app_bar.dart';
+import '../../core/widgets/app_error_state.dart';
+import '../../core/widgets/app_loading.dart';
 import '../../core/widgets/app_text.dart';
 import '../../shared/widgets/app_bottom_nav.dart';
 import '../app_routes.dart';
+import '../dashboard/dashboard_models.dart' show TaskItem, taskStateLabel;
+import 'my_work_service.dart';
 
-/// Mot dong cong viec hien thi tam thoi, cho toi khi noi that API GET /api/mywork. Cau truc
-/// khop voi WorkTask ben web (Code/Title/State/DueDate...) de sau nay thay bang model that chi
-/// can doi nguon du lieu, khong can doi lai UI.
-class _DemoTask {
-  const _DemoTask({
-    required this.id,
-    required this.code,
-    required this.title,
-    required this.state,
-    required this.dueLabel,
-    required this.icon,
-  });
+/// Man "Cong viec": mac dinh la viec cua rieng minh (tab duoi), nhung cung dung lai duoc lam
+/// dich den cho cac the "Viec chua xong"/"Qua han" toan To tren Dashboard qua tham so scope/
+/// filter — xem MyWorkController.
+class MyWorkScreen extends StatefulWidget {
+  const MyWorkScreen({super.key, this.scope = 'mine', this.filter});
 
-  final String id;
-  final String code;
-  final String title;
-  final String state;
-  final String dueLabel;
-  final IconData icon;
+  final String scope;
+  final String? filter;
+
+  @override
+  State<MyWorkScreen> createState() => _MyWorkScreenState();
 }
 
-const _demoTasks = [
-  _DemoTask(
-    id: 'CV-101',
-    code: 'CV-101',
-    title: 'Dựng màn hình đăng nhập cho ứng dụng di động',
-    state: 'Đang làm',
-    dueLabel: 'Còn 2 ngày',
-    icon: PhosphorIconsRegular.plusCircle,
-  ),
-  _DemoTask(
-    id: 'CV-102',
-    code: 'CV-102',
-    title: 'Sửa lỗi không tải được danh sách dự án trên mạng chậm',
-    state: 'Chờ duyệt',
-    dueLabel: 'Còn 5 giờ',
-    icon: PhosphorIconsRegular.warningCircle,
-  ),
-  _DemoTask(
-    id: 'CV-098',
-    code: 'CV-098',
-    title: 'Vì sao không xem được file đính kèm trên iOS?',
-    state: 'Đang làm',
-    dueLabel: 'Quá hạn 1 ngày',
-    icon: PhosphorIconsRegular.question,
-  ),
-  _DemoTask(
-    id: 'CV-095',
-    code: 'CV-095',
-    title: 'Kết nối API chấm công với máy quét vân tay',
-    state: 'Chờ duyệt',
-    dueLabel: 'Còn 3 ngày',
-    icon: PhosphorIconsRegular.warningCircle,
-  ),
-  _DemoTask(
-    id: 'CV-090',
-    code: 'CV-090',
-    title: 'Báo giá gói triển khai thêm cho chi nhánh mới',
-    state: 'Hoàn thành',
-    dueLabel: 'Đã xong',
-    icon: PhosphorIconsRegular.plusCircle,
-  ),
-];
+class _MyWorkScreenState extends State<MyWorkScreen> {
+  final _service = MyWorkService();
+  late Future<List<TaskItem>> _future;
 
-class MyWorkScreen extends StatelessWidget {
-  const MyWorkScreen({super.key});
+  @override
+  void initState() {
+    super.initState();
+    _future = _service.fetch(scope: widget.scope, filter: widget.filter);
+  }
+
+  void _reload() {
+    setState(() =>
+        _future = _service.fetch(scope: widget.scope, filter: widget.filter));
+  }
+
+  String get _title {
+    if (widget.scope != 'team') return 'Việc của tôi';
+    if (widget.filter == 'overdue') return 'Quá hạn — Toàn Tổ';
+    if (widget.filter == 'open') return 'Việc chưa xong — Toàn Tổ';
+    return 'Công việc — Toàn Tổ';
+  }
 
   @override
   Widget build(BuildContext context) {
     return AppBottomNav(
       currentIndex: 2,
-      // Tieu de luon mau den (quy uoc chung toan app) — nen trang mac dinh cua AppBar thay vi
-      // to xanh + chu trang nhu truoc, khop voi cach Dashboard khong dung AppBar mau.
-      appBar: const AppAppBar(title: 'Việc của tôi'),
-      body: ListView.separated(
-        itemCount: _demoTasks.length,
-        separatorBuilder: (context, index) =>
-            const Divider(height: 1, indent: 68),
-        itemBuilder: (context, index) => _TaskRow(task: _demoTasks[index]),
+      appBar: AppAppBar(title: _title),
+      body: FutureBuilder<List<TaskItem>>(
+        future: _future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(child: AppLoading());
+          }
+
+          if (snapshot.hasError) {
+            return AppErrorState(
+                message: 'Không tải được danh sách công việc.',
+                onRetry: _reload);
+          }
+
+          final tasks = snapshot.data!;
+          if (tasks.isEmpty) {
+            return Center(
+              child: AppText(
+                widget.scope == 'team'
+                    ? 'Không có việc nào khớp.'
+                    : 'Bạn chưa có việc nào.',
+                variant: AppTextVariant.body,
+                color: AppColors.textSecondary,
+              ),
+            );
+          }
+
+          return ListView.separated(
+            itemCount: tasks.length,
+            separatorBuilder: (context, index) =>
+                const Divider(height: 1, indent: 68),
+            itemBuilder: (context, index) => _TaskRow(task: tasks[index]),
+          );
+        },
       ),
     );
   }
@@ -101,7 +100,7 @@ class MyWorkScreen extends StatelessWidget {
 class _TaskRow extends StatelessWidget {
   const _TaskRow({required this.task});
 
-  final _DemoTask task;
+  final TaskItem task;
 
   @override
   Widget build(BuildContext context) {
@@ -131,7 +130,7 @@ class _TaskRow extends StatelessWidget {
       ),
       child: InkWell(
         onTap: () => Nav.toNamed(context, AppRoutes.taskDetail,
-            arguments: {'taskId': task.id}),
+            arguments: {'taskId': task.id.toString()}),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
@@ -144,7 +143,13 @@ class _TaskRow extends StatelessWidget {
                   color: AppTheme.brandBlueDark,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: PhosphorIcon(task.icon, color: Colors.white, size: 20),
+                child: PhosphorIcon(
+                  task.isOverdue
+                      ? PhosphorIconsRegular.warningCircle
+                      : PhosphorIconsRegular.plusCircle,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -165,18 +170,26 @@ class _TaskRow extends StatelessWidget {
                       runSpacing: 4,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        AppText(
-                          task.code,
-                          variant: AppTextVariant.caption,
-                          fontSize: 12.5,
-                          color: AppColors.textSecondary,
-                        ),
+                        if (task.code.isNotEmpty)
+                          AppText(
+                            task.code,
+                            variant: AppTextVariant.caption,
+                            fontSize: 12.5,
+                            color: AppColors.textSecondary,
+                          ),
+                        if (task.projectName?.isNotEmpty == true)
+                          AppText(
+                            task.projectName!,
+                            variant: AppTextVariant.caption,
+                            fontSize: 12.5,
+                            color: AppColors.textSecondary,
+                          ),
                         _StateBadge(state: task.state),
                         AppText(
-                          task.dueLabel,
+                          _dueLabel(task),
                           variant: AppTextVariant.caption,
                           fontSize: 12.5,
-                          color: AppTheme.brandBlueDark,
+                          color: _dueColor(task),
                           weight: FontWeight.w600,
                         ),
                       ],
@@ -190,11 +203,27 @@ class _TaskRow extends StatelessWidget {
       ),
     );
   }
+
+  String _dueLabel(TaskItem task) {
+    if (task.isOverdue) return 'Quá hạn';
+    if (task.isDueToday) return 'Hôm nay';
+    if (task.dueDate == null) return '—';
+    return DateFormat('dd/MM').format(task.dueDate!);
+  }
+
+  // Cung 3 muc mau voi _DueInfo cua dashboard_screen.dart va _StatsStrip cua task_detail_screen.dart
+  // (qua han = do, hom nay = vang canh bao, con lai = xanh thuong hieu) — truoc day thieu muc
+  // "Hom nay" nen hien nham mau xanh giong ngay thuong.
+  Color _dueColor(TaskItem task) {
+    if (task.isOverdue) return AppTheme.statusDanger;
+    if (task.isDueToday) return AppTheme.statusWarning;
+    return AppTheme.brandBlueDark;
+  }
 }
 
 /// Nhan trang thai kieu vien mo — mau theo dung ngu nghia (xong = xanh la, cho duyet = vang
-/// canh bao), thay vi to mot mau brand cho moi trang thai nhu truoc, theo quy uoc site.css
-/// (mau thuong hieu CHI danh cho thao tac, khong dung cho du lieu).
+/// canh bao), thay vi to mot mau brand cho moi trang thai, theo quy uoc site.css (mau thuong
+/// hieu CHI danh cho thao tac, khong dung cho du lieu).
 class _StateBadge extends StatelessWidget {
   const _StateBadge({required this.state});
 
@@ -202,9 +231,9 @@ class _StateBadge extends StatelessWidget {
 
   Color get _color {
     switch (state) {
-      case 'Hoàn thành':
+      case 'HoanThanh':
         return AppTheme.statusSuccess;
-      case 'Chờ duyệt':
+      case 'TamDung':
         return AppTheme.statusWarning;
       default:
         return AppColors.textSecondary;
@@ -222,7 +251,7 @@ class _StateBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
       child: AppText(
-        state.toUpperCase(),
+        taskStateLabel(state).toUpperCase(),
         variant: AppTextVariant.overline,
         fontSize: 10.5,
         weight: FontWeight.w700,

@@ -216,3 +216,186 @@ Checklist của app mobile, chỉ hiện cho người có quyền (PM dự án h
 - Không làm Sửa/Xoá mục có sẵn trong lần này — chỉ Thêm mới, theo đúng phạm vi yêu cầu.
 - Nếu sau này cần "Mục cha"/đổi Trạng thái lúc tạo/chọn Tuần-Năm tay, quay lại mục này bổ sung
   thay vì mở vấn đề mới.
+
+---
+
+# [2026-08-16] Vấn đề: Tính năng "Log công việc" (nhật ký thao tác) + "Cập nhật trạng thái" trên mobile
+
+## 1. Mô tả vấn đề
+Nguyên văn (2 yêu cầu liên tiếp cùng lúc):
+1. "Xây dựng 1 tính năng log công việc. Trong này lưu vết lại, ai đã thao tác gì? thay đổi/cập
+   nhật thông tin gì? Mọi thứ phải rõ ràng, theo dòng lịch sử từ mới nhất đến cũ." — kèm ảnh
+   khoanh đỏ góc trên phải AppBar màn "Chi tiết công việc" mobile (hiện trống).
+2. "Bổ sung thêm phần cập nhật trạng thái công việc trên này nữa." — kèm ảnh khoanh đỏ khối
+   "Thông tin chung" (đang chỉ hiển thị Trạng thái dạng chữ tĩnh, không đổi được).
+
+## 2. Phân tích ban đầu
+- **Bối cảnh**: Vừa hoàn thành tính năng "Chi tiết công việc" mobile view-only + 3 hành động
+  tách riêng (Ghi giờ, Cập nhật danh sách việc cần làm, Trao đổi — xem mục
+  [2026-08-14]/[2026-08-15] các vấn đề trước, task_detail_screen.dart). Khối "Thông tin chung"
+  hiện hiển thị Trạng thái tĩnh, không có hành động đổi.
+- **Nghiên cứu xác nhận** (Explore agent, không cần khảo sát lại):
+  - Web ĐÃ có 2 luồng đổi trạng thái: `ChecklistController.SetState` (Kanban kéo-thả, chỉ đổi
+    State) và `MyWorkController.Report` (form tự báo cáo: State + Progress% + ghi chú, có validate
+    `TimeLogService.ValidateStateChange` — chặn chuyển "Đang làm"/"Hoàn thành" nếu công việc CHƯA
+    được ghi giờ nào). Cả hai gọi chung `WorkService.ApplyState(task, state, progress)`.
+  - Enum trạng thái `TaskStates` (`Models/Work/WorkTask.cs`): ChuaBatDau (Chưa bắt đầu), DangLam
+    (Đang làm), TamDung (Tạm dừng), HoanThanh (Hoàn thành), Huy (Huỷ). Không có state-machine cứng
+    (mọi trạng thái → mọi trạng thái được), chỉ có 2 ràng buộc mềm: (a) validate giờ đã ghi ở
+    trên; (b) `ApplyState` tự set/xoá `CompletedAt` và ép `Progress=100` khi vào Hoàn thành.
+  - Mobile API (`ChecklistApiController.cs`, `MyWorkApiController.cs`) CHƯA có action đổi trạng
+    thái nào — phải xây mới hoàn toàn.
+  - KHÔNG tồn tại cơ chế audit-log/history nào trong hệ thống (đã tìm `Log`/`History`/`Activity`/
+    `NhatKy` — chỉ có `WorkLog` là báo cáo tuần theo dự án, khác hoàn toàn mục đích). Phải xây từ
+    đầu, theo đúng kiến trúc lưu trữ hiện có (`Data/Repository.cs`, `SqlStore<T>`, KHÔNG dùng EF
+    Migrations vì dự án không theo hướng đó).
+  - Danh sách đầy đủ các điểm MUTATE dữ liệu công việc cần gắn log (cả web lẫn API, xem báo cáo
+    Explore agent gốc để tra lại nếu cần): `ChecklistController.SetState/Report(MyWork)/Edit`,
+    `Services/WorkService.ApplyState`, `LogTime/DeleteTimeLog` (web + API), `AddTodo/ToggleTodo/
+    EditTodo/DeleteTodo` (web + API), `Comment/RecallComment` (web + API, cả ChecklistController
+    lẫn MyWorkController).
+- **Mục tiêu bề mặt**: xem lịch sử ai làm gì trên 1 công việc; đổi trạng thái ngay trên mobile.
+- **Mục tiêu sâu xa**: minh bạch hoá thao tác (trace được trách nhiệm), và các hành động sẵn có
+  (ghi giờ/todo/bình luận/đổi trạng thái) tự sinh log — không cần người dùng tự khai.
+
+## 3. Câu hỏi làm rõ (dùng AskUserQuestion)
+1. Phạm vi ghi log: chỉ 4 nhóm hành động đã có action riêng, hay rộng hơn (cả sửa thông tin chung
+   như tiêu đề/người thực hiện/độ ưu tiên/ngày hạn)?
+2. Luồng "Cập nhật trạng thái" mobile: giống `MyWork.Report` (state+progress%+note, giữ luật chặn
+   theo giờ đã ghi) hay giống Kanban `SetState` (chỉ đổi state, không luật)?
+3. Ai được xem log của 1 công việc: ai xem được công việc (CanSeeTask) hay chỉ PM/người thực
+   hiện (CanEditTask)?
+4. Làm luôn cả web hay trước mắt chỉ mobile?
+
+## 4. Câu trả lời & Quyết định
+1. → **Rộng hơn**: log cả khi sửa thông tin chung (Tiêu đề, Người thực hiện, Độ ưu tiên, Ngày bắt
+   đầu, Hạn hoàn thành, Loại việc) NGOÀI 4 nhóm hành động sẵn có.
+2. → **Giống `MyWork.Report`**: chọn Trạng thái + nhập Tiến độ % + Ghi chú tuỳ chọn; GIỮ NGUYÊN
+   luật chặn "chưa ghi giờ thì không được chuyển Đang làm/Hoàn thành" (gọi lại
+   `TimeLogService.ValidateStateChange` y hệt web, không nới lỏng cho mobile).
+3. → **CanSeeTask** (PM dự án, người thực hiện, thành viên dự án đang hoạt động — đúng điều kiện
+   xem công việc hiện có, không thu hẹp thêm).
+4. → **Làm cả web** — thêm khối "Lịch sử" vào trang Chi tiết công việc web (`Views/Checklist/
+   _Detail.cshtml` và/hoặc `Views/MyWork/Detail.cshtml`) cùng đợt, không để lại sau.
+
+### Giả định tự quyết định (chưa hỏi lại, nêu rõ để điều chỉnh nếu sai)
+- **Định dạng hiển thị**: hành động có giá trị cũ/mới rõ ràng (trạng thái, tiến độ, người thực
+  hiện, độ ưu tiên, ngày hạn, tiêu đề) hiện dạng "Tên trường: giá trị cũ → giá trị mới". Hành động
+  không có cặp cũ/mới rõ ràng (thêm bình luận, thu hồi bình luận, ghi giờ, xoá giờ, thêm/tick/sửa/
+  xoá việc cần làm) hiện 1 câu mô tả hành động (vd "đã ghi 2.5 giờ", "đã thêm việc cần làm 'Kiểm
+  tra lại API'").
+- **Không lọc/tìm kiếm** trong log ở bản đầu — danh sách cuộn đơn giản, mới nhất trên đầu, không
+  phân trang (lịch sử 1 công việc thường không quá dài); có thể bổ sung sau nếu cần.
+- **Không log việc XOÁ công việc** (`ChecklistController.Delete`) — xoá làm mất luôn task nên
+  không còn chỗ xem log của nó; nằm ngoài phạm vi "log công việc" (log gắn theo 1 task còn tồn
+  tại). Có thể mở vấn đề riêng sau nếu cần log cấp dự án/toàn hệ thống.
+- **Không log việc TẠO MỚI công việc** riêng — coi việc tạo là điểm bắt đầu, không phải "thay
+  đổi"; log chỉ bắt đầu tính từ sau khi task đã tồn tại. (Có thể thêm entry "Tạo công việc" sau
+  nếu người dùng muốn thấy cả mốc tạo trong dòng lịch sử.)
+- **Lưu actor dạng chụp nhanh** (denormalized `ActorUserId` + `ActorName`) giống cách
+  `WorkComment.AuthorName` đang làm — tránh phải join bảng User mỗi lần hiển thị, và giữ đúng tên
+  tại thời điểm thao tác kể cả nếu người dùng đổi tên sau này.
+- **Nút "Cập nhật trạng thái"** đặt cuối khối "Thông tin chung" trên mobile (đúng vị trí ảnh
+  khoanh đỏ), theo đúng pattern 3 nút hành động đã có (Ghi giờ/Cập nhật danh sách/Phản hồi) — mở
+  bottom sheet `task_status_sheet.dart`, không sửa trực tiếp trên trang chính (giữ nguyên tinh
+  thần "trang chính chỉ xem, thao tác tách riêng" đã chốt trước đó).
+- **Icon mở màn Lịch sử** đặt ở góc phải AppBar màn Chi tiết công việc (đúng vị trí ảnh khoanh đỏ
+  thứ nhất), cạnh hoặc thay vị trí nút back — dùng `AppIconButton` icon đồng hồ/lịch sử
+  (`ClockCounterClockwise` hoặc tương đương trong `phosphor_icons`).
+
+## 5. Checklist: Log công việc + Cập nhật trạng thái
+
+### Chuẩn bị
+- [x] Khảo sát enum trạng thái, luồng đổi trạng thái web hiện có, và toàn bộ điểm mutate dữ liệu
+      công việc cần gắn log (Explore agent).
+- [x] Xác nhận KHÔNG có cơ chế audit-log nào sẵn có để tận dụng — xây từ đầu.
+
+### Thực hiện — Backend nền tảng
+- [x] `[Bắt buộc]` Tạo `Models/Work/TaskActivityLog.cs`: Id, TaskId, ActorUserId, ActorName,
+      Action (enum thực tế: FieldChanged, TimeLogAdded, TimeLogDeleted, TodoAdded, TodoToggled,
+      TodoEdited, TodoDeleted, CommentAdded, CommentRecalled — gộp mọi thay đổi trường vào MỘT
+      Action `FieldChanged` thay vì tách TrangThaiThayDoi/TienDoThayDoi/TruongThongTinThayDoi như
+      dự tính ban đầu, vì `RecordFieldChanges` diff chung một lượt nên không cần phân biệt loại
+      trường ở tầng Action), FieldName/OldValue/NewValue (nullable), Description, CreatedAt.
+- [x] `[Bắt buộc]` Đăng ký bảng `TaskActivityLogs` trong `Data/Repository.cs` theo đúng pattern
+      `SqlStore<T>` hiện có.
+- [x] `[Bắt buộc]` Tạo `Services/TaskActivityLogService.cs`: `Record(...)`, `Snapshot(WorkTask)`
+      (chụp nhanh trước khi sửa), `RecordFieldChanges(before, after, actorUserId, actorName)` diff
+      CẢ Title/AssigneeUserId/Priority/Kind/StartDate/DueDate LẪN State/Progress trong cùng một
+      hàm (đơn giản hơn thiết kế ban đầu — không cần tách riêng "đổi trạng thái" vs "sửa thông tin
+      chung" thành hai luồng, tránh nguy cơ ghi trùng/ghi thiếu), `GetForTask(taskId)` giảm dần
+      theo CreatedAt.
+- [x] `[Bắt buộc]` Thêm `TaskActivityLogDto` vào `Models/Api/ApiDtos.cs` + `ApiMappers.ToDto`.
+
+### Thực hiện — Gắn log vào các điểm mutate (web + API)
+- [x] `[Bắt buộc]` `ChecklistController.SetState` + `MyWorkController.Report` + `ChecklistApiController.
+      UpdateStatus` (mới) — chụp snapshot trước `WorkService.ApplyState`, gọi `RecordFieldChanges`
+      sau khi `Repository.WorkTasks.Update` thành công.
+- [x] `[Bắt buộc]` `ChecklistController.Edit` (POST, nhánh cập nhật) — dùng `current` (đã có sẵn,
+      tải trước khi sửa) làm snapshot, `RecordFieldChanges(current, model, ...)` sau khi Update.
+- [x] `[Nên có]` `LogTime`/`DeleteTimeLog` (web `ChecklistController` + API `ChecklistApiController`).
+- [x] `[Nên có]` `AddTodo`/`ToggleTodo`/`EditTodo`/`DeleteTodo` (web + API).
+- [x] `[Nên có]` `Comment`/`RecallComment` — web `ChecklistController` + API `ChecklistApiController`
+      từ đầu; **`MyWorkController.Comment`/`DeleteComment` bị BỎ SÓT ở lượt đầu** (phát hiện qua
+      code-review agent), đã bổ sung ngay sau đó — xem mục Kiểm tra/Nghiệm thu.
+
+### Thực hiện — API mới cho mobile
+- [x] `[Bắt buộc]` `ChecklistApiController.UpdateStatus(id, state, progress, note)` — mirror
+      `MyWorkController.Report` (CanEditTask + `TimeLogService.ValidateStateChange` + append note
+      vào Description), trả về `TaskFullDetailDto` (không phải `TaskDetailDto` đơn — trả cả 4 khối
+      để mobile cập nhật state một lần, khớp cách `TaskFullDetail` đã dùng ở `Detail`).
+- [x] `[Bắt buộc]` `ChecklistApiController.ActivityLog(id)` — CanSeeTask, trả `List<TaskActivityLogDto>`.
+- [x] `[Bắt buộc]` Build backend sạch (`msbuild`). Smoke-test qua curl bị giới hạn (không có sẵn
+      token tài khoản thật để test end-to-end như lượt trước) — chỉ xác nhận hành vi 404/411 khớp
+      với action `LogTime` hiện có dưới cùng điều kiện thiếu xác thực; xác nhận thật sự đến từ
+      kiểm thử trên emulator (xem cuối file).
+
+### Thực hiện — Mobile
+- [x] `[Bắt buộc]` `task_detail_models.dart`: thêm `TaskActivityLogEntry`.
+- [x] `[Bắt buộc]` `task_detail_service.dart`: `updateStatus(...)`, `fetchActivityLog(taskId)`.
+      `api_endpoint.dart`: `taskUpdateStatus`, `taskActivityLog(id)`.
+- [x] `[Bắt buộc]` `task_status_sheet.dart` — dropdown Trạng thái (`AppDropdown`, 5 giá trị), ô
+      Tiến độ %, ô Ghi chú tuỳ chọn; lỗi từ backend (kể cả luật chặn "chưa ghi giờ") hiện nguyên văn
+      qua `ToastService`.
+- [x] `[Bắt buộc]` `task_activity_log_screen.dart` — danh sách timeline mới→cũ, đủ trạng thái
+      loading/rỗng/lỗi+thử lại.
+- [x] `[Bắt buộc]` `task_detail_screen.dart` — icon Lịch sử (`clockCounterClockwise`) ở AppBar, nút
+      "Cập nhật trạng thái" cuối khối "Thông tin chung"; `_task` đổi từ `late final` sang `late` để
+      cập nhật lại được sau khi sheet trả kết quả.
+- [x] `[Nên có]` `flutter analyze` sạch (chỉ còn info-level lint có sẵn từ trước, không liên quan).
+
+### Thực hiện — Web
+- [x] `[Bắt buộc]` Thêm khối "Lịch sử thao tác" vào `Views/Checklist/_Detail.cshtml` (đọc 1 lần lúc
+      mở hộp thoại, không tự vẽ lại như 3 khối kia — vì đóng/mở lại hộp thoại đã nạp lại toàn view)
+      + CSS `.activitylog-*` trong `site.css`. **CHƯA làm** `Views/MyWork/Detail.cshtml` (view tách
+      riêng, không dùng chung `_Detail.cshtml`) — để ngỏ, mở lại nếu cần.
+
+### Kiểm tra / Nghiệm thu
+- [ ] `chuyen-gia-nghiem-thu-design` — CHƯA chạy skill nghiệm thu chính thức cho
+      `task_status_sheet.dart`/`task_activity_log_screen.dart` (khác với đợt tính năng Trao đổi
+      trước, đợt này bỏ qua bước này do khối lượng công việc lớn trong 1 lượt — nên chạy nghiệm thu
+      riêng nếu có thời gian).
+- [x] `code-review` + `security-review` (2 agent riêng, chạy song song). Security: sạch, không có
+      lỗ hổng. Code-review: phát hiện 1 lỗi thật — `MyWorkController.Comment`/`DeleteComment` thiếu
+      log hook — đã sửa ngay (xem mục "Gắn log" ở trên).
+- [ ] `test-engineer`: **CHƯA làm** — dự án backend không có sẵn project test nào (`*Tests.csproj`
+      không tồn tại), dựng cả bộ khung xUnit/NUnit mới nằm ngoài phạm vi hợp lý của lượt này. Xác
+      nhận đúng đắn của `RecordFieldChanges` dựa trên đọc code + code-review agent thay vì test tự
+      động — nên cân nhắc dựng test harness backend trong một vấn đề riêng.
+- [x] Build APK debug, cài lên `emulator-5554`, tự kiểm thử: mở nút "Cập nhật trạng thái" → sheet
+      hiện đúng dropdown/tiến độ/ghi chú → bấm Cập nhật → toast "Đã cập nhật trạng thái." xác nhận
+      backend nhận và lưu thành công → mở icon Lịch sử → màn hiện đúng trạng thái rỗng ("Chưa có
+      thao tác nào") vì các hành động trước đó (giờ công/todo/bình luận trên task này) đều xảy ra
+      TRƯỚC khi build này có code ghi log, và lượt cập nhật trạng thái vừa test không đổi giá trị
+      nào (State/Progress giữ nguyên) nên đúng đắn không sinh entry — chưa kiểm thử được một hành
+      động THẬT SỰ đổi giá trị sinh ra đúng 1 dòng log do gặp trục trặc ADB input (tap không tới
+      field nhập, không phải lỗi code) khi thử thêm việc cần làm mới; nên xác nhận lại ở phiên sau
+      bằng một đổi Tiến độ/Trạng thái thực sự khác giá trị cũ.
+
+### Ghi chú
+- Không log XOÁ công việc, không log TẠO MỚI công việc, không lọc/tìm kiếm trong log — xem mục
+  "Giả định tự quyết định" ở trên nếu cần mở lại phạm vi này.
+- Log không thay thế lịch sử bình luận (khối Trao đổi) — chỉ ghi 1 dòng "đã thêm/thu hồi bình
+  luận", không duplicate nội dung.
+- Chưa làm `Views/MyWork/Detail.cshtml` và chưa dựng test harness backend — 2 việc còn treo, xem
+  các mục chưa tick ở trên.

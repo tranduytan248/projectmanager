@@ -46,6 +46,12 @@ namespace TTKDGP.ProjectManager.Models
         /// được giao việc (nếu khác người vừa thêm). Bấm vào mở chi tiết công việc.
         /// </summary>
         public const string TodoAdded = "ViecConMoi";
+
+        /// <summary>Có đơn xin nghỉ mới cần duyệt — báo cho người có quyền duyệt. Bấm vào mở "Duyệt nghỉ phép".</summary>
+        public const string LeaveRequested = "leave.request";
+
+        /// <summary>Đơn xin nghỉ của mình đã được duyệt/từ chối — báo cho người xin nghỉ. Bấm vào mở "Nghỉ phép của tôi".</summary>
+        public const string LeaveResult = "leave.result";
     }
 
     /// <summary>

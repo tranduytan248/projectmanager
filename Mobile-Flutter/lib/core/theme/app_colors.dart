@@ -54,7 +54,16 @@ class AppColors {
   static const danger = Color(0xFFB3261E);
   static const dangerSoft = Color(0xFFFBEAE9);
 
+  /// Chu loi tren nen mau dam (man Dang nhap/Quen mat khau, nen brandBlue toi) — danger qua chim
+  /// tren nen do, can sac do nhat hon rieng cho hai man nay de van doc ro chu "loi".
+  static const errorOnDark = Color(0xFFFF8A80);
+
   /// Vien mong dung khap app (the/card, o nhap, chip).
   static const border = Color(0x14000000);
   static const borderStrong = Color(0x1F000000);
+
+  /// Nen den cho trinh xem media toan man hinh (vi du xem anh dinh kem trong Trao doi) — quy uoc
+  /// rieng cho lop phu toan man, khac voi background/surface (luon trang) dung cho noi dung
+  /// thuong.
+  static const mediaViewerBackground = Colors.black;
 }

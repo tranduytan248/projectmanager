@@ -8,7 +8,11 @@ plugins {
 
 android {
     namespace = "vnptkha.kdgp.brewtask"
-    compileSdk = flutter.compileSdkVersion
+    // file_picker keo theo flutter_plugin_android_lifecycle ban moi doi compileSdk >= 36 — Flutter
+    // SDK dang cai dat van tra flutter.compileSdkVersion = 34 (chua cap nhat kip cac plugin moi),
+    // nen ghi de thang gia tri thay vi dung mac dinh. Chi anh huong luc BIEN DICH (API nao dung
+    // duoc trong code), khong doi minSdk/targetSdk nen khong doi hanh vi runtime/thiet bi ho tro.
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

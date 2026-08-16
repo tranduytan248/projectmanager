@@ -10,6 +10,8 @@ import '../../core/utils/toast_service.dart';
 import '../../core/widgets/app_app_bar.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_card.dart';
+import '../../core/widgets/app_detail_section.dart';
+import '../../core/widgets/app_error_state.dart';
 import '../../core/widgets/app_loading.dart';
 import '../../core/widgets/app_scaffold.dart';
 import '../../core/widgets/app_text.dart';
@@ -57,25 +59,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             }
 
             if (snapshot.hasError) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const PhosphorIcon(PhosphorIconsRegular.warningCircle,
-                          color: AppTheme.statusDanger, size: 32),
-                      const SizedBox(height: 12),
-                      const AppText('Không tải được thông tin dự án.', variant: AppTextVariant.body),
-                      const SizedBox(height: 12),
-                      AppButton(
-                        label: 'Thử lại',
-                        onPressed: _reload,
-                      ),
-                    ],
-                  ),
-                ),
-              );
+              return AppErrorState(
+                  message: 'Không tải được thông tin dự án.', onRetry: _reload);
             }
 
             final p = snapshot.data!;
@@ -91,7 +76,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                       child: AppButton(
                         label: 'Checklist',
                         icon: PhosphorIconsRegular.listChecks,
-                        onPressed: () => Nav.toNamed(context, AppRoutes.checklist,
+                        onPressed: () => Nav.toNamed(
+                            context, AppRoutes.checklist,
                             arguments: {'projectId': p.id.toString()}),
                       ),
                     ),
@@ -114,32 +100,51 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 const SizedBox(height: 16),
                 _StatsStrip(project: p),
                 const SizedBox(height: 16),
-                _SectionCard(
+                AppDetailSection(
                   title: 'Thông tin chung',
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _InfoRow(label: 'Khách hàng', value: p.customer ?? '—'),
-                      _InfoRow(label: 'Loại dự án', value: p.projectType ?? '—'),
-                      _InfoRow(label: 'Giai đoạn', value: projectPhaseLabel(p.phase)),
-                      _InfoRow(label: 'Trạng thái', value: projectStateLabel(p.state)),
-                      _InfoRow(
+                      AppDetailInfoRow(
+                          label: 'Khách hàng',
+                          value: p.customer ?? '—',
+                          labelWidth: 92),
+                      AppDetailInfoRow(
+                          label: 'Loại dự án',
+                          value: p.projectType ?? '—',
+                          labelWidth: 92),
+                      AppDetailInfoRow(
+                          label: 'Giai đoạn',
+                          value: projectPhaseLabel(p.phase),
+                          labelWidth: 92),
+                      AppDetailInfoRow(
+                          label: 'Trạng thái',
+                          value: projectStateLabel(p.state),
+                          labelWidth: 92),
+                      AppDetailInfoRow(
                         label: 'Thời gian',
                         value: p.startDate == null
                             ? '—'
                             : '${DateFormat('dd/MM/yyyy').format(p.startDate!)}'
                                 ' – ${p.endDate == null ? "nay" : DateFormat('dd/MM/yyyy').format(p.endDate!)}',
+                        labelWidth: 92,
                       ),
-                      _InfoRow(label: 'PM', value: p.pmName ?? '(chưa có PM)'),
+                      AppDetailInfoRow(
+                          label: 'PM',
+                          value: p.pmName ?? '(chưa có PM)',
+                          labelWidth: 92),
                       if (p.description.trim().isNotEmpty) ...[
                         const SizedBox(height: 8),
-                        AppText(p.description, variant: AppTextVariant.body, fontSize: 13, height: 1.5),
+                        AppText(p.description,
+                            variant: AppTextVariant.body,
+                            fontSize: 13,
+                            height: 1.5),
                       ],
                     ],
                   ),
                 ),
                 const SizedBox(height: 16),
-                _SectionCard(
+                AppDetailSection(
                   title: 'Nhân sự dự án (${p.members.length})',
                   child: Column(
                     children: [
@@ -149,28 +154,31 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 ),
                 if (p.overdueTasks.isNotEmpty) ...[
                   const SizedBox(height: 16),
-                  _SectionCard(
+                  AppDetailSection(
                     title: 'Đầu việc quá hạn',
                     child: Column(
                       children: [
-                        for (final t in p.overdueTasks) _OverdueTaskRow(task: t),
+                        for (final t in p.overdueTasks)
+                          _OverdueTaskRow(task: t),
                       ],
                     ),
                   ),
                 ],
                 const SizedBox(height: 16),
-                _SectionCard(
+                AppDetailSection(
                   title: 'Báo cáo tuần',
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (p.currentReport != null)
-                        _ReportStatusLine(report: p.currentReport!, isCurrent: true),
+                        _ReportStatusLine(
+                            report: p.currentReport!, isCurrent: true),
                       if (p.recentReports.isNotEmpty) ...[
                         const SizedBox(height: 10),
                         const Divider(height: 1),
                         const SizedBox(height: 10),
-                        for (final r in p.recentReports) _ReportStatusLine(report: r),
+                        for (final r in p.recentReports)
+                          _ReportStatusLine(report: r),
                       ],
                     ],
                   ),
@@ -202,12 +210,15 @@ class _Header extends StatelessWidget {
                 children: [
                   Expanded(
                     child: AppText(project.name,
-                        variant: AppTextVariant.title, fontSize: 19, weight: FontWeight.w800),
+                        variant: AppTextVariant.title,
+                        fontSize: 19,
+                        weight: FontWeight.w800),
                   ),
                   if (!project.isOpen)
                     Container(
                       margin: const EdgeInsets.only(left: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.06),
                         borderRadius: BorderRadius.circular(6),
@@ -223,7 +234,9 @@ class _Header extends StatelessWidget {
               if (project.code?.isNotEmpty == true) ...[
                 const SizedBox(height: 2),
                 AppText(project.code!,
-                    variant: AppTextVariant.caption, fontSize: 12.5, color: AppColors.textSecondary),
+                    variant: AppTextVariant.caption,
+                    fontSize: 12.5,
+                    color: AppColors.textSecondary),
               ],
             ],
           ),
@@ -273,7 +286,8 @@ class _StatsStrip extends StatelessWidget {
 }
 
 class _StatTile extends StatelessWidget {
-  const _StatTile({required this.value, required this.label, required this.color});
+  const _StatTile(
+      {required this.value, required this.label, required this.color});
 
   final String value;
   final String label;
@@ -286,7 +300,11 @@ class _StatTile extends StatelessWidget {
       radius: 12,
       child: Column(
         children: [
-          AppText(value, variant: AppTextVariant.body, fontSize: 16, weight: FontWeight.w800, color: color),
+          AppText(value,
+              variant: AppTextVariant.body,
+              fontSize: 16,
+              weight: FontWeight.w800,
+              color: color),
           const SizedBox(height: 2),
           AppText(label,
               align: TextAlign.center,
@@ -295,55 +313,6 @@ class _StatTile extends StatelessWidget {
               fontSize: 10,
               color: AppColors.textSecondary,
               letterSpacing: 0),
-        ],
-      ),
-    );
-  }
-}
-
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.title, required this.child});
-
-  final String title;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppText(title, variant: AppTextVariant.body, fontSize: 13, weight: FontWeight.w700),
-          const SizedBox(height: 10),
-          child,
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 92,
-            child: AppText(label,
-                variant: AppTextVariant.caption, fontSize: 12.5, color: AppColors.textSecondary),
-          ),
-          Expanded(
-            child: AppText(value, variant: AppTextVariant.body, fontSize: 13, weight: FontWeight.w600),
-          ),
         ],
       ),
     );
@@ -383,7 +352,8 @@ class _MemberRow extends StatelessWidget {
                       const _SmallTag(label: 'PM', color: AppTheme.brandBlue),
                     ] else if (member.role?.isNotEmpty == true) ...[
                       const SizedBox(width: 6),
-                      _SmallTag(label: member.role!, color: AppTheme.brandBlueDark),
+                      _SmallTag(
+                          label: member.role!, color: AppTheme.brandBlueDark),
                     ],
                   ],
                 ),
@@ -402,7 +372,9 @@ class _MemberRow extends StatelessWidget {
           const SizedBox(width: 8),
           _SmallTag(
             label: member.isActive ? 'Đang tham gia' : 'Đã rời',
-            color: member.isActive ? AppTheme.statusSuccess : AppColors.textSecondary,
+            color: member.isActive
+                ? AppTheme.statusSuccess
+                : AppColors.textSecondary,
           ),
         ],
       ),
@@ -425,7 +397,11 @@ class _SmallTag extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
       child: AppText(label,
-          variant: AppTextVariant.overline, fontSize: 9.5, weight: FontWeight.w700, color: color, letterSpacing: 0),
+          variant: AppTextVariant.overline,
+          fontSize: 9.5,
+          weight: FontWeight.w700,
+          color: color,
+          letterSpacing: 0),
     );
   }
 }
@@ -490,7 +466,9 @@ class _ReportStatusLine extends StatelessWidget {
         children: [
           Expanded(
             child: AppText(
-              isCurrent ? 'Tuần này (${report.week}/${report.year})' : 'Tuần ${report.week}/${report.year}',
+              isCurrent
+                  ? 'Tuần này (${report.week}/${report.year})'
+                  : 'Tuần ${report.week}/${report.year}',
               variant: AppTextVariant.caption,
               fontSize: 12.5,
               weight: isCurrent ? FontWeight.w700 : FontWeight.w500,

@@ -18,12 +18,18 @@ namespace TTKDGP.ProjectManager.Controllers.Api
     [ApiAuthorize]
     public class MyProjectsApiController : BaseController
     {
+        /// <summary>
+        /// scope="team": liet ke TOAN BO du an cua Ca To (dung cho the "Du an dang chay" tren
+        /// Dashboard) thay vi chi du an cua rieng minh — CHI hieu luc khi IsTeamManager, khong
+        /// co quyen thi am tham coi nhu "mine" (giong nguyen tac o MyWorkApiController.Index).
+        /// </summary>
         [HttpGet]
-        public ActionResult Index(string q = null, bool showClosed = false)
+        public ActionResult Index(string q = null, bool showClosed = false, string scope = "mine")
         {
             var userId = CurrentUserId;
             var year = WeekHelper.CurrentYear;
             var week = WeekHelper.CurrentWeek;
+            var teamScope = scope == "team" && IsTeamManager;
 
             var projects = Repository.WorkProjects.All();
             var myAssignments = Repository.WorkAssignments.All().Where(a => a.UserId == userId).ToList();
@@ -39,7 +45,7 @@ namespace TTKDGP.ProjectManager.Controllers.Api
             {
                 var isPm = project.PmUserId == userId;
                 var terms = myAssignments.Where(a => a.ProjectId == project.Id).ToList();
-                if (!isPm && terms.Count == 0) continue;
+                if (!teamScope && !isPm && terms.Count == 0) continue;
 
                 if (isPm) pmCount++;
                 if (!project.IsOpen) closedCount++;

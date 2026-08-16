@@ -105,6 +105,7 @@
     <Compile Include="Infrastructure\ApiAuthorizeAttribute.cs" />
     <Compile Include="Infrastructure\AppCache.cs" />
     <Compile Include="Infrastructure\PasswordHasher.cs" />
+    <Compile Include="Infrastructure\SecretGenerator.cs" />
     <Compile Include="Infrastructure\ViewHelpers.cs" />
     <Compile Include="Infrastructure\LabelHelpers.cs" />
     <Compile Include="Infrastructure\HtmlSanitizer.cs" />
@@ -132,6 +133,7 @@
     <Compile Include="Models\ReminderModels.cs" />
     <Compile Include="Services\ReminderService.cs" />
     <Compile Include="Services\TaskDueSmsService.cs" />
+    <Compile Include="Services\PasswordResetService.cs" />
     <Compile Include="Services\UserPhoneSyncService.cs" />
     <Compile Include="Services\GoConnectService.cs" />
     <Compile Include="Services\GoConnectSyncService.cs" />
@@ -149,8 +151,10 @@
     <Compile Include="Models\IntegrationSystem.cs" />
     <Compile Include="Models\HrmApiModels.cs" />
     <Compile Include="Controllers\UtilApiController.cs" />
+    <Compile Include="Controllers\Api\AccountApiController.cs" />
     <Compile Include="Controllers\Api\AuthApiController.cs" />
     <Compile Include="Controllers\Api\DashboardApiController.cs" />
+    <Compile Include="Controllers\Api\NotificationsApiController.cs" />
     <Compile Include="Controllers\Api\MyWorkApiController.cs" />
     <Compile Include="Controllers\Api\MyProjectsApiController.cs" />
     <Compile Include="Controllers\Api\ChecklistApiController.cs" />
@@ -167,6 +171,7 @@
     <Compile Include="Models\Work\WorkProjectFile.cs" />
     <Compile Include="Models\Work\WorkTask.cs" />
     <Compile Include="Models\Work\ApiToken.cs" />
+    <Compile Include="Models\Work\PasswordResetOtp.cs" />
     <Compile Include="Models\Work\WorkTimeLog.cs" />
     <Compile Include="Models\Work\TimeLogViewModels.cs" />
     <Compile Include="Models\Work\WorkWeekReport.cs" />
@@ -187,6 +192,7 @@
     <Compile Include="Controllers\KpiConfigController.cs" />
     <Compile Include="Services\WorkService.cs" />
     <Compile Include="Services\TimeLogService.cs" />
+    <Compile Include="Services\TaskActivityLogService.cs" />
     <Compile Include="Services\NotificationService.cs" />
     <Compile Include="Services\EmailTemplateService.cs" />
     <Compile Include="Models\EmailTemplate.cs" />

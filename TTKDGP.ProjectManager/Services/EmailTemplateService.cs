@@ -38,7 +38,7 @@ namespace TTKDGP.ProjectManager.Services
                     new EmailTemplateParam("TenDuAn", "Tên dự án"),
                     new EmailTemplateParam("LienKet", "Liên kết mở hệ thống (cần đăng nhập)")
                 },
-                DefaultSubject = "[NCPT] Bạn được thêm vào dự án {{TenDuAn}}",
+                DefaultSubject = "[BrewTask] Bạn được thêm vào dự án {{TenDuAn}}",
                 DefaultBody = "<p>Chào {{HoTen}},</p>"
                     + "<p>Bạn vừa được thêm vào dự án <strong>{{TenDuAn}}</strong>.</p>"
                     + "<p><a href=\"{{LienKet}}\">Mở \"Dự án của tôi\" để xem chi tiết</a> (cần đăng nhập).</p>"
@@ -54,7 +54,7 @@ namespace TTKDGP.ProjectManager.Services
                     new EmailTemplateParam("TenDuAn", "Tên dự án"),
                     new EmailTemplateParam("LienKet", "Liên kết mở hệ thống (cần đăng nhập)")
                 },
-                DefaultSubject = "[NCPT] Bạn đã được rút khỏi dự án {{TenDuAn}}",
+                DefaultSubject = "[BrewTask] Bạn đã được rút khỏi dự án {{TenDuAn}}",
                 DefaultBody = "<p>Chào {{HoTen}},</p>"
                     + "<p>Bạn đã được rút khỏi dự án <strong>{{TenDuAn}}</strong>.</p>"
                     + "<p><a href=\"{{LienKet}}\">Mở \"Dự án của tôi\" để xem lại</a> (cần đăng nhập).</p>"
@@ -74,7 +74,7 @@ namespace TTKDGP.ProjectManager.Services
                     new EmailTemplateParam("TepDinhKem", "Liên kết file đính kèm (tự trống nếu không có)"),
                     new EmailTemplateParam("LienKet", "Liên kết mở trao đổi (cần đăng nhập)")
                 },
-                DefaultSubject = "[NCPT] {{NguoiNhac}} nhắc bạn trong công việc {{TenCongViec}}",
+                DefaultSubject = "[BrewTask] {{NguoiNhac}} nhắc bạn trong công việc {{TenCongViec}}",
                 DefaultBody = "<p>Chào {{HoTen}},</p>"
                     + "<p><strong>{{NguoiNhac}}</strong> đã nhắc bạn trong trao đổi của công việc "
                     + "<strong>{{TenCongViec}}</strong> (dự án {{TenDuAn}}):</p>"
@@ -98,7 +98,7 @@ namespace TTKDGP.ProjectManager.Services
                     new EmailTemplateParam("TepDinhKem", "Liên kết file đính kèm (tự trống nếu không có)"),
                     new EmailTemplateParam("LienKet", "Liên kết mở trao đổi (cần đăng nhập)")
                 },
-                DefaultSubject = "[NCPT] {{NguoiTraoDoi}} vừa trao đổi trong công việc {{TenCongViec}}",
+                DefaultSubject = "[BrewTask] {{NguoiTraoDoi}} vừa trao đổi trong công việc {{TenCongViec}}",
                 DefaultBody = "<p>Chào {{HoTen}},</p>"
                     + "<p><strong>{{NguoiTraoDoi}}</strong> vừa gửi một lượt trao đổi mới trong công việc "
                     + "<strong>{{TenCongViec}}</strong> (dự án {{TenDuAn}}):</p>"
@@ -122,7 +122,7 @@ namespace TTKDGP.ProjectManager.Services
                     new EmailTemplateParam("TenDuAn", "Tên dự án"),
                     new EmailTemplateParam("LienKet", "Liên kết mở công việc (cần đăng nhập)")
                 },
-                DefaultSubject = "[NCPT] {{NguoiThucHien}} {{HanhDong}} một việc con trong {{TenCongViec}}",
+                DefaultSubject = "[BrewTask] {{NguoiThucHien}} {{HanhDong}} một việc con trong {{TenCongViec}}",
                 DefaultBody = "<p>Chào {{HoTen}},</p>"
                     + "<p><strong>{{NguoiThucHien}}</strong> vừa {{HanhDong}} việc con "
                     + "<strong>{{TenViecCon}}</strong> trong công việc <strong>{{TenCongViec}}</strong> "
@@ -144,7 +144,7 @@ namespace TTKDGP.ProjectManager.Services
                     new EmailTemplateParam("TenDuAn", "Tên dự án"),
                     new EmailTemplateParam("LienKet", "Liên kết mở công việc (cần đăng nhập)")
                 },
-                DefaultSubject = "[NCPT] {{NguoiThucHien}} vừa thêm việc con mới trong {{TenCongViec}}",
+                DefaultSubject = "[BrewTask] {{NguoiThucHien}} vừa thêm việc con mới trong {{TenCongViec}}",
                 DefaultBody = "<p>Chào {{HoTen}},</p>"
                     + "<p><strong>{{NguoiThucHien}}</strong> vừa thêm việc con mới "
                     + "<strong>{{TenViecCon}}</strong> trong công việc <strong>{{TenCongViec}}</strong> "
@@ -167,7 +167,7 @@ namespace TTKDGP.ProjectManager.Services
                     new EmailTemplateParam("TepDinhKem", "Liên kết file đính kèm (tự trống nếu không có)"),
                     new EmailTemplateParam("LienKet", "Liên kết mở công việc (cần đăng nhập)")
                 },
-                DefaultSubject = "[NCPT] Bạn được giao việc riêng: {{TenCongViec}}",
+                DefaultSubject = "[BrewTask] Bạn được giao việc riêng: {{TenCongViec}}",
                 DefaultBody = "<p>Chào {{HoTen}},</p>"
                     + "<p><strong>{{NguoiGiao}}</strong> vừa giao cho bạn việc riêng "
                     + "<strong>{{TenCongViec}}</strong> — hạn hoàn thành <strong>{{HanHoanThanh}}</strong>, "
@@ -193,7 +193,7 @@ namespace TTKDGP.ProjectManager.Services
                     new EmailTemplateParam("HanHoanThanh", "Hạn hoàn thành (dd/MM/yyyy)"),
                     new EmailTemplateParam("LienKet", "Liên kết mở công việc (cần đăng nhập)")
                 },
-                DefaultSubject = "[NCPT] Bạn được giao việc: {{TenCongViec}}",
+                DefaultSubject = "[BrewTask] Bạn được giao việc: {{TenCongViec}}",
                 DefaultBody = "<p>Chào {{HoTen}},</p>"
                     + "<p><strong>{{NguoiGiao}}</strong> vừa giao cho bạn công việc "
                     + "<strong>{{TenCongViec}}</strong> thuộc dự án <strong>{{TenDuAn}}</strong> "
@@ -215,7 +215,7 @@ namespace TTKDGP.ProjectManager.Services
                     new EmailTemplateParam("TinhTrang", "Tình trạng: sắp đến hạn / đã quá hạn"),
                     new EmailTemplateParam("LienKet", "Liên kết mở hệ thống (cần đăng nhập)")
                 },
-                DefaultSubject = "[NCPT] Công việc {{TenCongViec}} {{TinhTrang}}",
+                DefaultSubject = "[BrewTask] Công việc {{TenCongViec}} {{TinhTrang}}",
                 DefaultBody = "<p>Chào {{HoTen}},</p>"
                     + "<p>Công việc <strong>{{TenCongViec}}</strong> (dự án {{TenDuAn}}) "
                     + "<strong>{{TinhTrang}}</strong> — hạn hoàn thành {{HanHoanThanh}}.</p>"
@@ -323,7 +323,7 @@ namespace TTKDGP.ProjectManager.Services
             return "<div style=\"font-family:Segoe UI,Arial,sans-serif;font-size:14px;color:#25324a;line-height:1.6\">"
                 + body
                 + "<hr style=\"border:none;border-top:1px solid #e0e5ee;margin:18px 0 10px\" />"
-                + "<p style=\"font-size:12px;color:#8b94a7\">Mail tự động từ hệ thống Quản lý dự án NCPT — "
+                + "<p style=\"font-size:12px;color:#8b94a7\">Mail tự động từ hệ thống BrewTask - Quản Lý Công Việc — "
                 + HttpUtility.HtmlEncode(AppSettings.PublicUrl) + ". Vui lòng không trả lời mail này.</p>"
                 + "</div>";
         }

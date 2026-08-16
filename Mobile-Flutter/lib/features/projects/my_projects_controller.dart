@@ -11,6 +11,15 @@ class MyProjectsController extends StatelessController {
   bool get auth => true;
 
   @override
-  Display view(BuildContext context) =>
-      const Display(title: 'Dự án của tôi', mobile: MyProjectsScreen());
+  Display view(BuildContext context) {
+    final args =
+        ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+    final scope = args?['scope'] as String? ?? 'mine';
+    final roleFilter = args?['roleFilter'] as String?;
+
+    return Display(
+      title: 'Dự án của tôi',
+      mobile: MyProjectsScreen(scope: scope, initialRoleFilter: roleFilter),
+    );
+  }
 }

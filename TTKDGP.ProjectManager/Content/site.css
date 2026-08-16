@@ -299,13 +299,11 @@ body.has-sidebar .main, body.has-sidebar .topbar-inner, body.has-sidebar .footer
 .brand:hover { text-decoration: none; }
 
 .brand-mark {
-    background: var(--primary);
-    color: #fff;
-    font-weight: 700;
-    letter-spacing: .5px;
-    padding: 5px 9px;
-    border-radius: 6px;
-    font-size: 13px;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: block;
+    object-fit: contain;
 }
 
 .brand-text { color: var(--text); font-weight: 600; white-space: nowrap; }
@@ -2478,6 +2476,16 @@ table.data tbody tr.row-due-danger > td:first-child::before { background: var(--
 }
 
 .chat-empty { color: var(--text-muted); font-size: 13px; padding: 18px 0; }
+
+/* Lịch sử thao tác — danh sách chỉ đọc, cùng nhịp với .chat-item nhưng gọn hơn (không có nút
+   thao tác nào ở đây). Giới hạn chiều cao + cuộn riêng để hộp thoại chi tiết không bị kéo quá dài
+   khi một công việc có nhiều lượt sửa. */
+.activitylog-list { list-style: none; margin: 0; padding: 0; max-height: 260px; overflow-y: auto; }
+.activitylog-item { padding: 7px 0; border-bottom: 1px solid var(--border-soft); font-size: 13px; }
+.activitylog-item:last-child { border-bottom: 0; }
+.activitylog-head { display: flex; align-items: baseline; gap: 8px; }
+.activitylog-head .muted { font-size: 12px; margin-left: auto; white-space: nowrap; }
+.activitylog-desc { color: var(--text-muted); margin-top: 2px; }
 
 .chat-item { padding: 8px 0; border-bottom: 1px solid var(--border-soft); }
 .chat-item:last-child { border-bottom: 0; }

@@ -241,10 +241,13 @@ namespace TTKDGP.ProjectManager.Controllers
                 return Json(new { ok = false, message = logError });
             }
 
+            var before = TaskActivityLogService.Snapshot(task);
             WorkService.ApplyState(task, state);
             task.UpdatedAt = DateTime.Now;
             task.UpdatedBy = CurrentUser == null ? null : CurrentUser.FullName;
             Repository.WorkTasks.Update(task);
+            TaskActivityLogService.RecordFieldChanges(before, task, CurrentUserId,
+                CurrentUser == null ? null : CurrentUser.FullName);
 
             return Json(new
             {
@@ -310,7 +313,8 @@ namespace TTKDGP.ProjectManager.Controllers
             ViewBag.Project = Repository.WorkProjects.Find(task.ProjectId);
             ViewBag.CommentsModel = BuildComments(task);
             ViewBag.TimeLogModel = BuildTimeLogs(task);
-            ViewBag.TodoModel = BuildTodos(task);
+            ViewBag.TodoModel = BuildTaskTodos(task);
+            ViewBag.ActivityLog = TaskActivityLogService.GetForTask(task.Id);
 
             var parent = task.ParentId > 0 ? Repository.WorkTasks.Find(task.ParentId) : null;
             ViewBag.ParentTitle = parent == null
@@ -405,6 +409,10 @@ namespace TTKDGP.ProjectManager.Controllers
 
             if (error != null) return LogTimeError(error);
 
+            TaskActivityLogService.Record(task.Id, CurrentUserId,
+                CurrentUser == null ? null : CurrentUser.FullName, TaskActivityActions.TimeLogAdded,
+                string.Format("Đã ghi {0} giờ ({1:dd/MM/yyyy})", hoursValue, dateValue));
+
             return PartialView("_TimeLogs", BuildTimeLogs(task));
         }
 
@@ -434,6 +442,10 @@ namespace TTKDGP.ProjectManager.Controllers
             }
 
             Repository.WorkTimeLogs.Delete(logId);
+            TaskActivityLogService.Record(task.Id, CurrentUserId,
+                CurrentUser == null ? null : CurrentUser.FullName, TaskActivityActions.TimeLogDeleted,
+                string.Format("Đã xoá lượt ghi {0} giờ ({1:dd/MM/yyyy})", log.Hours, log.WorkDate));
+
             return PartialView("_TimeLogs", BuildTimeLogs(task));
         }
 
@@ -446,19 +458,6 @@ namespace TTKDGP.ProjectManager.Controllers
         }
 
         // ---------- Todolist con ----------
-
-        private TaskTodoViewModel BuildTodos(WorkTask task)
-        {
-            return new TaskTodoViewModel
-            {
-                TaskId = task.Id,
-                CanManage = CanManageTodos(task),
-                Items = Repository.WorkTaskTodos.All()
-                    .Where(t => t.TaskId == task.Id)
-                    .OrderBy(t => t.SortOrder)
-                    .ToList()
-            };
-        }
 
         /// <summary>Trả lỗi dạng chữ kèm mã 400 cho todolist, cùng khuôn với <see cref="LogTimeError"/>.</summary>
         private ActionResult TodoError(string message)
@@ -497,7 +496,11 @@ namespace TTKDGP.ProjectManager.Controllers
             NotificationService.TodoAdded(task, todo, CurrentUserId,
                 CurrentUser == null ? null : CurrentUser.FullName);
 
-            return PartialView("_Todos", BuildTodos(task));
+            TaskActivityLogService.Record(task.Id, CurrentUserId,
+                CurrentUser == null ? null : CurrentUser.FullName, TaskActivityActions.TodoAdded,
+                string.Format("Đã thêm việc cần làm \"{0}\"", text));
+
+            return PartialView("_Todos", BuildTaskTodos(task));
         }
 
         [HttpPost]
@@ -530,7 +533,12 @@ namespace TTKDGP.ProjectManager.Controllers
             NotificationService.TodoToggled(task, todo, CurrentUserId,
                 CurrentUser == null ? null : CurrentUser.FullName);
 
-            return PartialView("_Todos", BuildTodos(task));
+            TaskActivityLogService.Record(task.Id, CurrentUserId,
+                CurrentUser == null ? null : CurrentUser.FullName, TaskActivityActions.TodoToggled,
+                string.Format("Đã đánh dấu {0} việc cần làm \"{1}\"",
+                    todo.IsDone ? "xong" : "chưa xong", todo.Content));
+
+            return PartialView("_Todos", BuildTaskTodos(task));
         }
 
         [HttpPost]
@@ -549,10 +557,18 @@ namespace TTKDGP.ProjectManager.Controllers
             if (text.Length == 0) return TodoError("Vui lòng nhập nội dung.");
             if (text.Length > 300) return TodoError("Nội dung tối đa 300 ký tự.");
 
+            var oldContent = todo.Content;
             todo.Content = text;
             Repository.WorkTaskTodos.Update(todo);
 
-            return PartialView("_Todos", BuildTodos(task));
+            if (!string.Equals(oldContent, text, StringComparison.Ordinal))
+            {
+                TaskActivityLogService.Record(task.Id, CurrentUserId,
+                    CurrentUser == null ? null : CurrentUser.FullName, TaskActivityActions.TodoEdited,
+                    string.Format("Đã sửa việc cần làm: \"{0}\" → \"{1}\"", oldContent, text));
+            }
+
+            return PartialView("_Todos", BuildTaskTodos(task));
         }
 
         [HttpPost]
@@ -568,7 +584,11 @@ namespace TTKDGP.ProjectManager.Controllers
             if (todo == null || todo.TaskId != id) return HttpNotFound();
 
             Repository.WorkTaskTodos.Delete(todoId);
-            return PartialView("_Todos", BuildTodos(task));
+            TaskActivityLogService.Record(task.Id, CurrentUserId,
+                CurrentUser == null ? null : CurrentUser.FullName, TaskActivityActions.TodoDeleted,
+                string.Format("Đã xoá việc cần làm \"{0}\"", todo.Content));
+
+            return PartialView("_Todos", BuildTaskTodos(task));
         }
 
         /// <summary>
@@ -623,6 +643,10 @@ namespace TTKDGP.ProjectManager.Controllers
                 // Báo cho người tạo việc và người được giao việc là có trao đổi mới.
                 NotificationService.CommentAdded(task, comment, CurrentUserId,
                     CurrentUser == null ? null : CurrentUser.FullName);
+
+                TaskActivityLogService.Record(task.Id, CurrentUserId,
+                    CurrentUser == null ? null : CurrentUser.FullName, TaskActivityActions.CommentAdded,
+                    "Đã thêm bình luận");
             }
 
             return PartialView("_Comments", BuildComments(task));
@@ -667,6 +691,10 @@ namespace TTKDGP.ProjectManager.Controllers
             comment.IsDeleted = true;
             comment.UpdatedAt = DateTime.Now;
             Repository.WorkComments.Update(comment);
+
+            TaskActivityLogService.Record(task.Id, CurrentUserId,
+                CurrentUser == null ? null : CurrentUser.FullName, TaskActivityActions.CommentRecalled,
+                "Đã thu hồi bình luận");
 
             return PartialView("_Comments", BuildComments(task));
         }
@@ -842,6 +870,7 @@ namespace TTKDGP.ProjectManager.Controllers
 
                 WorkService.ApplyState(model, model.State, model.Progress);
                 Repository.WorkTasks.Update(model);
+                TaskActivityLogService.RecordFieldChanges(current, model, CurrentUserId, actor);
 
                 // Chuyển việc sang người khác thì báo cho người MỚI như một lần giao việc.
                 if (model.AssigneeUserId > 0

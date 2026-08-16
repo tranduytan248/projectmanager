@@ -373,4 +373,54 @@ namespace TTKDGP.ProjectManager.Models
         public DateTime? DoneAt { get; set; }
         public int DoneByUserId { get; set; }
     }
+
+    /// <summary>Cac loai thao tac duoc ghi vao nhat ky cua mot dau viec — xem <see cref="TaskActivityLog"/>.</summary>
+    public static class TaskActivityActions
+    {
+        /// <summary>Mot truong thong tin chung (ten/nguoi thuc hien/uu tien/loai/ngay/trang thai/tien do) doi gia tri.</summary>
+        public const string FieldChanged = "FieldChanged";
+        public const string TimeLogAdded = "TimeLogAdded";
+        public const string TimeLogDeleted = "TimeLogDeleted";
+        public const string TodoAdded = "TodoAdded";
+        public const string TodoToggled = "TodoToggled";
+        public const string TodoEdited = "TodoEdited";
+        public const string TodoDeleted = "TodoDeleted";
+        public const string CommentAdded = "CommentAdded";
+        public const string CommentRecalled = "CommentRecalled";
+    }
+
+    /// <summary>
+    /// Mot dong trong nhat ky thao tac cua mot dau viec — ai lam gi, luc nao, gia tri cu/moi neu co.
+    ///
+    /// Ghi san Description dang cau tieng Viet hoan chinh luc tao dong log (khong dung lai luc hien
+    /// thi) de sau nay co doi cach dien giai thi cac dong cu van doc dung nhu luc no xay ra.
+    /// ActorName chup nhanh (denormalized) giong WorkComment.AuthorName — giu dung ten tai thoi
+    /// diem thao tac, khong phai ten hien tai cua tai khoan.
+    /// </summary>
+    public class TaskActivityLog : IEntity
+    {
+        public int Id { get; set; }
+
+        public int TaskId { get; set; }
+
+        /// <summary>Tai khoan thao tac (bang Users). 0 nghia la he thong/khong xac dinh duoc.</summary>
+        public int ActorUserId { get; set; }
+
+        public string ActorName { get; set; }
+
+        /// <summary>Loai thao tac, xem <see cref="TaskActivityActions"/>.</summary>
+        public string Action { get; set; }
+
+        /// <summary>Ten truong doi gia tri — chi co voi Action = FieldChanged.</summary>
+        public string FieldName { get; set; }
+
+        public string OldValue { get; set; }
+
+        public string NewValue { get; set; }
+
+        /// <summary>Cau mo ta tieng Viet day du, dung san de hien thi truc tiep.</summary>
+        public string Description { get; set; }
+
+        public DateTime CreatedAt { get; set; }
+    }
 }
