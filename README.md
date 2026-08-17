@@ -1,7 +1,9 @@
 # Hệ thống quản lý dự án & nhân sự — Tổ NCPT
 
-Ứng dụng web ASP.NET MVC 5 (.NET Framework 4.8) quản lý dự án, nhân sự và việc phân công
-tham gia dự án. Dữ liệu lưu dưới dạng file JSON trong `App_Data`, không cần cài đặt CSDL.
+Ứng dụng web ASP.NET MVC 5 (.NET Framework 4.8) quản lý dự án, nhân sự, giao việc, chấm KPI,
+nghỉ phép và tích hợp dữ liệu nhân sự với các hệ thống ngoài. Dữ liệu lưu trong **SQL Server**.
+Repo còn kèm bản **mobile Flutter (BrewTask)** gọi thẳng API của ứng dụng web, xem mục
+[Ứng dụng di động](#ứng-dụng-di-động-brewtask).
 
 ## Chạy ứng dụng
 
@@ -16,20 +18,24 @@ Hoặc chạy bằng dòng lệnh:
 
 Truy cập http://localhost:52341
 
-Lần đầu chạy trên máy mới, `App_Data` chưa có dữ liệu nên hệ thống tự chép từ
-`App_Data/seed` sang — chạy được ngay, không cần thiết lập gì thêm.
+Ứng dụng cần kết nối được tới **SQL Server** — khai báo tại `Web.config` (`appSettings`):
+`Db:Server`, `Db:Name`, `Db:User`, `Db:Password`, `Db:IntegratedSecurity`. Lúc khởi động,
+`JsonToSqlMigration` tự tạo bảng nếu chưa có và nạp dữ liệu mẫu từ `App_Data/seed/*.json` sang
+SQL nếu bảng còn trống — máy mới trỏ được vào một SQL Server rỗng là chạy ngay, không cần tự tay
+tạo schema hay import dữ liệu.
 
 ## Tài khoản
 
 Tài khoản **mẫu** đi kèm mã nguồn:
 
-| Tên đăng nhập | Mật khẩu      | Quyền   |
-|---------------|---------------|---------|
-| `admin`       | `Admin@123`   | Admin   |
-| `manager`     | `Manager@123` | Manager |
+| Tên đăng nhập | Mật khẩu      | Nhóm quyền |
+|---------------|---------------|------------|
+| `admin`       | `Admin@123`   | Quản trị (toàn quyền) |
+| `manager`     | `Manager@123` | Quản lý |
 
-- **Admin** — toàn quyền, bao gồm tạo/sửa/xoá người dùng.
-- **Manager** — cập nhật dự án, danh mục, thành viên, phân công; không vào được mục Người dùng.
+- **Quản trị** — toàn quyền hệ thống (mang mã `*`), gồm cả cấu hình nhóm quyền, người dùng, tích hợp.
+- **Quản lý** — dự án, thành viên, phân công, báo cáo nhân sự, danh mục, và toàn bộ bộ *Quản lý
+  công việc & KPI* (xem [Phân quyền theo nhóm](#phân-quyền-theo-nhóm)).
 
 > **Đổi mật khẩu hai tài khoản này ngay khi triển khai thật.** Đây là mật khẩu công khai
 > trong mã nguồn, ai đọc repo cũng biết.
@@ -37,6 +43,26 @@ Tài khoản **mẫu** đi kèm mã nguồn:
 Mật khẩu được băm bằng PBKDF2-SHA256 (100.000 vòng, muối riêng từng tài khoản), không lưu
 dạng văn bản thường. Đổi mật khẩu tại menu **Thông tin cá nhân**; Admin đặt lại hộ người khác
 tại mục **Người dùng**.
+
+## Phân quyền theo nhóm
+
+Hệ thống dùng **nhóm quyền động** (`RoleGroup`), không còn cố định hai vai Admin/Manager. Mỗi
+chức năng mang một mã `module.action` (ví dụ `wprojects.edit`, `kpi.approve`) được định nghĩa cố
+định trong mã nguồn (`Permission.cs`, 23 module: Tổng hợp, Báo cáo của tôi, Dự án, Thành viên,
+Phân công, Báo cáo nhân sự, Tiến trình công việc, Danh mục, Bảng điều khiển Tổ, Dự án (bộ mới),
+Công việc, Báo cáo tuần dự án, Chấm KPI, Nghỉ phép, Thống kê khối lượng, HRM, CAS VNPT, Thông báo,
+GoConnect, Hệ thống tích hợp, Người dùng, Nhóm quyền, Chức năng hệ thống). Việc **gán** mã chức
+năng cho từng nhóm là dữ liệu cấu hình, sửa tại màn **Nhóm quyền**.
+
+- Cài đặt sẵn ba nhóm gốc: **Quản trị** (`*` — toàn quyền), **Quản lý**, **Báo cáo công việc**
+  (chỉ xem/báo cáo phần việc của chính mình). Có thể tạo thêm nhóm tuỳ ý.
+- Một tài khoản có thể mang **nhiều nhóm** cùng lúc (`User.Role` phân tách bằng dấu phẩy).
+- **Quản lý Tổ** (`wteam.manage`) không phải quyền theo nhóm — đó là ô tích riêng trên từng tài
+  khoản (màn **Người dùng**), vì cấp theo nhóm sẽ biến mọi PM mang nhóm Quản lý thành "Quản lý Tổ"
+  dù họ chỉ tham gia dự án như nhân sự bình thường.
+- Menu trái tự ẩn/hiện theo quyền "xem" của từng mục — không có danh sách menu cứng theo vai trò.
+- Màn **Chức năng hệ thống** cho phép **tắt hẳn** một chức năng khỏi toàn hệ thống, kể cả với
+  tài khoản toàn quyền — khác với việc chỉ gỡ chức năng đó khỏi một nhóm.
 
 ## Chức năng
 
@@ -48,17 +74,65 @@ tại mục **Người dùng**.
   thống kê và biểu đồ khối lượng.
 - `/Home/Project/{id}` Chi tiết một dự án kèm danh sách thành viên.
 
-**Cần đăng nhập**
+**Quản lý công việc & KPI — bộ chính đang dùng, cần đăng nhập**
+
+Bảng dữ liệu riêng (`WorkProject`/`WorkTask`...), người tham gia là tài khoản `User` của hệ thống
+thay vì hồ sơ Thành viên. Đây là các màn hiện có trên menu:
+
+- **Tổng quan / Công việc của tôi / Dự án của tôi / Nghỉ phép của tôi** — ai đăng nhập cũng thấy,
+  xem việc được giao, dự án tham gia, tự đăng ký nghỉ phép.
+- **Checklist dự án** — Kanban rút gọn theo hai loại việc *Triển khai* / *Hỗ trợ*, có trao đổi
+  (rich text), lịch sử thao tác, todo-list, chấm ngày công theo dòng nhật ký; PM tự import
+  checklist cho dự án mình phụ trách.
+- **Bảng điều khiển Tổ** (`wteam.manage`) — hôm nay ai làm gì, KPI tạm tính, tải việc mỗi người
+  trong tổ.
+- **Dự án** (bộ mới) — quản lý dự án, phân công theo giai đoạn.
+- **Giao việc riêng** — giao việc ngoài phạm vi dự án, kèm **điểm cộng KPI 0,2 – 1,5%** khi hoàn
+  thành đúng hạn và có thể đính kèm file.
+- **Duyệt nghỉ phép** — Quản lý Tổ duyệt đơn của nhân sự trong tổ.
+- **KPI theo tháng** — sinh bảng chấm, PM duyệt, duyệt lần cuối, kết xuất, gửi email kết quả.
+  **Cấu hình KPI** (mục Quản trị) chỉnh công thức chấm: trọng số, mức trừ, ngày công, ngưỡng
+  xếp loại.
+- **Báo cáo tuần dự án / Báo cáo nhân sự** — PM lập báo cáo tuần cho dự án mình phụ trách, tổng
+  hợp theo nhân sự.
+
+**Bộ gốc (Dự án / Thành viên / Phân công / Danh mục) — vẫn chạy, đã ẩn khỏi menu**
+
+Các controller này vẫn hoạt động đầy đủ và là nguồn dữ liệu cho trang chủ công khai, nhưng
+không còn xuất hiện trên menu sau đăng nhập (bộ *Quản lý công việc & KPI* đã thay thế cho việc
+quản lý hằng ngày). Truy cập trực tiếp bằng đường dẫn khi cần:
+
 - **Dự án** — khai báo dự án (khách hàng, PM, loại, trạng thái, hợp đồng, Redmine/SVN/Github…).
-- **Thành viên** — nhân sự của tổ.
+- **Thành viên** — nhân sự của tổ (hồ sơ riêng, khác tài khoản `User` đăng nhập).
 - **Phân công** — gán thành viên vào dự án kèm vai trò, nội dung công việc, trạng thái tham gia.
-  Đây là nguồn dữ liệu cho màn hình tổng hợp. Mỗi phân công có nút **Tiến trình** dẫn tới timeline.
-- **Tiến trình thực hiện** (`/WorkLogs/Timeline/{assignmentId}`) — nhật ký công việc **theo tuần**
-  của một thành viên trên một dự án, dựng thành timeline. Xem công khai, ghi thì phải đăng nhập.
-- **Danh mục** — bốn danh mục dùng chung, cùng một khung màn hình:
-  *Loại dự án*, *Trạng thái dự án*, *Trạng thái tham gia*, *Vai trò*.
+  Mỗi phân công có nút **Tiến trình** dẫn tới timeline nhật ký tuần (xem mục kế tiếp).
+- **Danh mục** — bốn danh mục dùng chung: *Loại dự án*, *Trạng thái dự án*, *Trạng thái tham gia*,
+  *Vai trò*.
+
+**Nhân sự (HRM) — chỉ Admin, hai nguồn độc lập nhau**
+- **HRM** — tra cứu nhân sự/đơn vị/chức danh đồng bộ **một chiều, chỉ đọc** từ GoConnect.
+- **CAS VNPT (HRM)** — danh bạ lấy qua cổng CAS VNPT, kích hoạt bằng lệnh `/signin` gõ trong bot
+  Telegram. Hoàn toàn tách biệt với HRM/GoConnect ở trên, không dùng chung dữ liệu.
+
+**Tích hợp / đối tác**
+- **GoConnect** — tự động đăng nhập hệ thống GoConnect bằng trình duyệt điều khiển từ xa, xác
+  thực OTP qua bot Telegram; là nguồn đồng bộ cho màn HRM ở trên.
+- **Hệ thống tích hợp** — quản trị các hệ thống đối tác được phép gọi API vào hệ thống (mã, tên,
+  khoá bí mật riêng từng hệ thống).
+- **API cho đối tác ngoài** (không cần đăng nhập, xác thực bằng checksum + khoá bí mật) —
+  `POST /api/hrm` trả dữ liệu nhân sự, `GET /api/Util/SendSms` gửi SMS qua tổng đài dùng chung.
+  Hướng dẫn tích hợp và Postman collection nằm trong `App_Data/docs/` (bản trong git, không phải
+  dữ liệu vận hành) và `FileMoTa/`.
+
+**Quản trị**
 - **Thông tin cá nhân** — xem tài khoản, sửa họ tên, đổi mật khẩu (bấm vào tên mình ở góc phải).
-- **Người dùng** (chỉ Admin) — tạo/sửa/xoá tài khoản, đặt lại mật khẩu, khoá tài khoản.
+- **Người dùng** — tạo/sửa/xoá tài khoản, đặt lại mật khẩu, khoá tài khoản, gán nhóm quyền và cờ
+  Quản lý Tổ.
+- **Nhóm quyền** — tạo/sửa nhóm, gán mã chức năng (xem [Phân quyền theo nhóm](#phân-quyền-theo-nhóm)).
+- **Chức năng hệ thống** — đổi tên hiển thị và bật/tắt từng chức năng.
+- **Thông báo** — cấu hình/theo dõi nhắc báo cáo (xem mục riêng bên dưới) và gửi mail thủ công.
+- **Mẫu email** — quản trị nội dung mẫu email hệ thống gửi đi.
+- **Tình trạng hệ thống** — việc tồn đọng, trạng thái các luồng chạy nền tự động.
 
 ### Cách danh mục hoạt động
 
@@ -69,29 +143,30 @@ Bản ghi nghiệp vụ tham chiếu tới danh mục bằng **tên** chứ khô
 - **Bỏ đánh dấu "Đang sử dụng"** để ẩn mục khỏi danh sách chọn mà vẫn giữ nguyên bản ghi cũ.
 - Bản ghi đang mang giá trị đã bị ẩn/xoá vẫn giữ được giá trị đó khi mở ra sửa.
 
-Toàn bộ danh sách chọn đều đọc từ danh mục, không có danh sách cứng nào trong mã nguồn.
+Toàn bộ danh sách chọn của bộ gốc đều đọc từ danh mục, không có danh sách cứng nào trong mã nguồn.
 
 Riêng danh mục **Trạng thái dự án** có thêm cột **Độ ưu tiên** (số nhỏ = ưu tiên cao). Giá trị này
 quyết định thứ tự ở màn hình tổng hợp và dự án nào được hiện sẵn trước khi bấm *Xem thêm*.
 
-### Nhật ký công việc theo tuần
+### Nhật ký công việc theo tuần (bộ gốc)
 
-Mỗi phân công có một chuỗi nhật ký, mỗi dòng ứng với **một tuần trong năm**: tuần đó làm gì,
-trạng thái ra sao. Các dòng nối lại thành timeline theo dõi tiến trình.
+Mỗi phân công (bộ gốc) có một chuỗi nhật ký, mỗi dòng ứng với **một tuần trong năm**: tuần đó làm
+gì, trạng thái ra sao. Các dòng nối lại thành timeline theo dõi tiến trình.
 
 - Tuần tính theo chuẩn **ISO 8601** (tuần bắt đầu Thứ Hai, tuần 1 là tuần chứa ngày 4/1).
   .NET Framework 4.8 không có sẵn lớp `ISOWeek` nên phần này tự cài đặt trong `WeekHelper`.
-  Năm có 52 hoặc 53 tuần tuỳ năm — ví dụ 2026 có 53 tuần, 2025 và 2027 có 52.
+  Năm có 52 hoặc 53 tuần tuỳ năm.
 - Dropdown chọn tuần hiển thị kèm khoảng ngày, ví dụ *Tuần 29 (13/07 – 19/07)*.
 - Mỗi tuần chỉ được một dòng cho mỗi phân công; ghi trùng tuần sẽ bị từ chối.
 - **Trạng thái và nội dung công việc của phân công luôn lấy theo dòng nhật ký mới nhất.**
-  Thêm, sửa hay xoá nhật ký đều đồng bộ lại giá trị này, nên màn hình tổng hợp luôn phản ánh
-  tình hình cập nhật nhất mà không phải nhập hai lần.
 - Xoá một phân công hoặc một dự án sẽ xoá luôn nhật ký liên quan.
+
+> Bộ *Quản lý công việc & KPI* có cơ chế báo cáo tuần **riêng** (Checklist theo dòng ngày công,
+> Báo cáo tuần dự án) — không dùng chung bảng với nhật ký tuần của bộ gốc ở trên.
 
 ### Nhân sự luôn tham chiếu bằng Id
 
-Mọi chỗ liên quan đến con người đều lưu **Id thành viên**, không lưu tên dạng chuỗi:
+Mọi chỗ liên quan đến con người ở bộ gốc đều lưu **Id thành viên**, không lưu tên dạng chuỗi:
 
 | Nơi dùng | Trường |
 |----------|--------|
@@ -105,45 +180,58 @@ không bị mất người phụ trách.
 
 ### Quản trị tài khoản
 
-Họ tên và phân quyền được đọc lại từ dữ liệu ở mỗi request, không lấy trong cookie. Nhờ vậy
-việc khoá tài khoản, đổi quyền hay đổi họ tên **có hiệu lực ngay**, kể cả với phiên đang mở.
+Nhóm quyền và họ tên được đọc lại từ dữ liệu ở mỗi request, không lấy trong cookie. Nhờ vậy
+việc khoá tài khoản, đổi quyền hay đổi họ tên **có hiệu lực ngay**, kể cả với phiên đang mở (kết
+quả phân quyền được nhớ tạm trong phạm vi một request để không quét lại bảng nhóm quyền hàng
+chục lần trên cùng một trang).
+
+## Ứng dụng di động (BrewTask)
+
+Thư mục `Mobile-Flutter/` là ứng dụng mobile Flutter, gọi thẳng vào các controller API của web
+app tại `Controllers/Api/` (quy ước route `{controller}/{action}` của MVC, không có tiền tố
+`/api`). **Đã nối API thật**, không còn là bản khung/placeholder.
+
+- Đăng nhập qua `AuthApiController` — cấp bearer token lưu ở bảng `ApiTokens` (GUID, hạn 365
+  ngày, không phải JWT ký số), kèm quên mật khẩu bằng OTP gửi SMS.
+- Các API còn lại (`AccountApi`, `DashboardApi`, `MyWorkApi`, `MyProjectsApi`, `ChecklistApi`,
+  `ProjectMembersApi`, `NotificationsApi`…) đều gắn `[ApiAuthorize]`, dùng lại đúng logic nghiệp
+  vụ của controller web tương ứng qua `ApiMappers`.
+- Tính năng đã có trên mobile: đăng nhập, tổng quan cá nhân, công việc của tôi, dự án của tôi,
+  checklist (Kanban rút gọn, trao đổi rich text, log giờ công, lịch sử thao tác), nhân sự dự án
+  (thêm/đặt PM/kết thúc tham gia), nghỉ phép, KPI, thông báo, hồ sơ cá nhân.
+
+> `Mobile-Flutter/README.md` hiện mô tả **trạng thái cũ** (chưa nối API, dùng Riverpod/go_router)
+> — không còn đúng với mã nguồn thật, xem `lib/config/api_endpoint.dart` và `pubspec.yaml` để có
+> thông tin chính xác nếu cần chỉnh sửa tài liệu đó.
 
 ## Dữ liệu
 
-Mỗi loại bản ghi là một file JSON trong `App_Data`: `projects`, `members`, `projectMembers`,
-`workLogs`, `users` và bốn danh mục `projectTypes` / `projectStatuses` / `workStatuses` /
-`memberRoles`.
+Dữ liệu nghiệp vụ chính lưu ở **SQL Server**. `Data/Repository.cs` dùng `SqlStore<T>` cho toàn
+bộ entity: Dự án, Thành viên, Phân công, Tài khoản, bốn danh mục bộ gốc, nhật ký tuần, nhật ký
+nhắc báo cáo, hệ thống tích hợp, nhóm quyền, và toàn bộ bảng của bộ *Quản lý công việc & KPI*.
+Kết nối khai báo qua `appSettings` trong `Web.config` (`Db:Server`, `Db:Name`, `Db:User`,
+`Db:Password`, `Db:IntegratedSecurity`), không dùng section `<connectionStrings>` cổ điển.
 
-### Dữ liệu thật không nằm trong kho mã nguồn
+`JsonStore<T>` (file JSON trong `App_Data`) vẫn còn dùng cho:
+- **Dữ liệu mẫu** (`App_Data/seed/*.json`) — `JsonToSqlMigration` nạp sang SQL một lần lúc khởi
+  động nếu bảng còn trống, để máy mới trỏ vào SQL Server rỗng vẫn chạy được ngay.
+- Vài kho dữ liệu nhỏ độc lập với SQL: `HrEmployeeStore` (cache dữ liệu GoConnect), thông tin
+  đăng nhập/danh bạ CAS VNPT, `GoConnectTokenStore`.
 
-`App_Data/*.json` được `.gitignore` loại trừ, vì đó là dữ liệu vận hành thật (tên dự án, khách
-hàng, nhân sự, tài khoản). Kho mã chỉ chứa **dữ liệu mẫu** trong `App_Data/seed/`.
+`App_Data/*.json` (ngoài `seed/`) bị `.gitignore` loại trừ vì là dữ liệu vận hành thật; kho mã chỉ
+chứa dữ liệu mẫu. Muốn dựng lại dữ liệu mẫu sạch: xoá bảng tương ứng trong SQL Server (hoặc xoá
+toàn bộ CSDL) rồi chạy lại ứng dụng để `JsonToSqlMigration` nạp lại từ `seed/`.
 
-Khi `JsonStore` nạp một file mà file đó chưa tồn tại, nó tự chép bản mẫu cùng tên từ `seed/`
-sang. Nhờ vậy máy mới clone về là chạy được ngay, còn dữ liệu thật thì không bao giờ bị đẩy
-lên GitHub.
-
-Muốn dựng lại dữ liệu mẫu sạch: xoá các file `.json` trong `App_Data` (giữ nguyên thư mục
-`seed`) rồi chạy lại ứng dụng.
-
-Ứng dụng **không** kết nối tới nguồn dữ liệu bên ngoài lúc chạy — mọi thao tác đọc/ghi đều
-trên các file JSON cục bộ.
-
-### Lưu ý khi thao tác dữ liệu
-
-- Mỗi lần ghi, `JsonStore` ghi ra file tạm rồi thay thế nguyên tử và giữ lại bản `.bak`,
-  nên file không bị hỏng nếu tiến trình dừng giữa chừng.
-- Nên sao lưu thư mục `App_Data` định kỳ.
-- Mô hình file JSON phù hợp ở quy mô vài trăm bản ghi như hiện tại. Nếu dữ liệu lớn lên đáng kể
-  hoặc cần nhiều người ghi đồng thời, nên chuyển sang SQL Server.
+Ứng dụng **không** kết nối tới nguồn dữ liệu bên ngoài nào khác ngoài SQL Server đã cấu hình,
+Telegram (nhắc báo cáo, HRM, GoConnect) và tổng đài SMS dùng chung — không có kết nối CSDL bên
+thứ ba nào khác lúc chạy.
 
 ## Dropdown có tìm kiếm (Select2)
 
 Mọi `<select>` trong hệ thống được `Scripts/app.js` tự khởi tạo Select2, không phải khai báo
 thủ công ở từng view. Quy tắc:
 
-- Dropdown từ **8 lựa chọn trở lên** mới hiện ô tìm kiếm (dự án 51 mục, tuần 53 mục).
-  Ít hơn thì bỏ ô tìm kiếm cho gọn.
+- Dropdown từ **8 lựa chọn trở lên** mới hiện ô tìm kiếm. Ít hơn thì bỏ ô tìm kiếm cho gọn.
 - Lựa chọn đầu tiên có value rỗng (*— Tất cả —*, *— Chọn ... —*) được dùng làm gợi ý,
   kèm nút **×** để bỏ chọn nhanh.
 - Thông báo hiển thị bằng tiếng Việt (*Không tìm thấy kết quả*, *Đang tìm…*).
@@ -155,9 +243,9 @@ server không có internet. Nếu view nào cần script riêng chạy sau jQuer
 
 ## Favicon
 
-Ảnh gốc `FileContents/favicon.png` (1254×1254) được thu nhỏ thành các cỡ chuẩn trong
-`Content/img/`, cộng thêm `favicon.ico` đa kích thước (16/32/48) đặt ở gốc site để trình duyệt
-tự tìm thấy. Các thẻ khai báo nằm trong `_Layout.cshtml` nên mọi trang đều dùng chung.
+Ảnh gốc `FileContents/favicon.png` được thu nhỏ thành các cỡ chuẩn trong `Content/img/`, cộng
+thêm `favicon.ico` đa kích thước đặt ở gốc site để trình duyệt tự tìm thấy. Các thẻ khai báo nằm
+trong `_Layout.cshtml` nên mọi trang đều dùng chung.
 
 Muốn đổi icon: thay `FileContents/favicon.png` rồi chạy lại script xuất ảnh, hoặc tự thay
 trực tiếp các file trong `Content/img/` và `favicon.ico`.
@@ -165,9 +253,12 @@ trực tiếp các file trong `Content/img/` và `favicon.ico`.
 Đuôi `.webmanifest` phải khai báo MIME trong `Web.config` (`application/manifest+json`),
 nếu không IIS trả về 404.
 
-## Nhắc báo cáo qua Telegram
+## Nhắc báo cáo
 
-Hệ thống tự rà soát và nhắn vào nhóm Telegram khi có dự án chưa được báo cáo:
+Hệ thống tự rà soát và nhắc khi có dự án/việc chưa được báo cáo, qua ba kênh cấu hình độc lập
+trong `Web.config`: **Telegram** (`Telegram:*`), **Email** (`Email:*`), và **SMS** cho việc/báo
+cáo trễ (`Reminder:TaskSmsEnabled`, giờ nhắc sáng/chiều riêng). Với nhắc báo cáo tuần qua
+Telegram (bộ gốc):
 
 | Thời điểm | Rà soát | Nội dung |
 |-----------|---------|----------|
@@ -192,7 +283,7 @@ Trịnh Minh Hậu
   **Trạng thái dự án**. Mặc định là *Đang chờ*, *Tạm dừng*, *Hoàn thành* — sửa được trong giao diện.
 - Tin dài quá 4096 ký tự được tự cắt thành nhiều tin, cắt ở ranh giới dòng.
 
-### Thiết lập
+### Thiết lập Telegram
 
 1. Nhắn **@BotFather** trên Telegram, lấy token bot.
 2. **Thêm bot vào nhóm** rồi gửi một tin bất kỳ trong nhóm.
@@ -205,23 +296,21 @@ Màn hình Thông báo cũng hiển thị lịch sử các lần gửi, kèm lý
 
 ### Chạy đúng giờ
 
-Bộ lịch chạy sẵn trong ứng dụng, cứ 5 phút kiểm tra một lần. Nhưng IIS sẽ tắt ứng dụng khi
-không có ai truy cập, lúc đó bộ lịch cũng dừng. Chọn một trong hai cách:
+Bộ lịch chạy sẵn trong ứng dụng. Nhưng IIS sẽ tắt ứng dụng khi không có ai truy cập, lúc đó bộ
+lịch cũng dừng. Chọn một trong hai cách:
 
 **Cách 1 — giữ ứng dụng luôn chạy.** Trong IIS Manager đặt application pool
 *Start Mode* = `AlwaysRunning` và site *Preload Enabled* = `True`.
 
-**Cách 2 — dùng Task Scheduler (chắc chắn hơn).** Tạo tác vụ chạy mỗi 15 phút:
+**Cách 2 — dùng Task Scheduler (chắc chắn hơn).** Tạo tác vụ chạy định kỳ:
 
 ```powershell
 Invoke-WebRequest "http://localhost/Notifications/Trigger?key=<Reminder:TriggerKey>" -UseBasicParsing
 ```
 
 Endpoint này không cần đăng nhập nhưng phải đúng khoá trong `secrets.config`. Nó chỉ gửi khi
-đã tới giờ hẹn và kỳ đó chưa gửi, nên gọi thừa cũng không sinh tin trùng.
-
-Cả hai cách đều an toàn khi chạy song song: mỗi kỳ nhắc chỉ gửi một lần, vì trước khi gửi
-hệ thống kiểm tra nhật ký xem tuần đó đã gửi thành công chưa.
+đã tới giờ hẹn và kỳ đó chưa gửi, nên gọi thừa cũng không sinh tin trùng — an toàn khi chạy
+song song với cách 1.
 
 ## Đóng gói (publish)
 
@@ -248,10 +337,11 @@ Publish cũng dùng được từ Visual Studio: chuột phải project → **Pu
 
 1. Chép toàn bộ `build\app\` vào thư mục site trên IIS.
 2. Cấp quyền **Modify** cho tài khoản application pool trên thư mục `App_Data`
-   (ứng dụng ghi dữ liệu trực tiếp vào đây).
-3. Sinh `machineKey` riêng: IIS Manager → chọn site → **Machine Key** → *Generate Keys* → Apply.
+   (một số kho dữ liệu nhỏ, file đính kèm và `errors.log` vẫn ghi trực tiếp vào đây).
+3. Đảm bảo IIS/server truy cập được SQL Server đã khai báo ở `Db:*` trong `Web.config`.
+4. Sinh `machineKey` riêng: IIS Manager → chọn site → **Machine Key** → *Generate Keys* → Apply.
    Không có bước này thì mỗi lần khởi động lại ứng dụng, mọi người bị đăng xuất.
-4. Đăng nhập bằng `admin` / `Admin@123` rồi **đổi mật khẩu ngay**.
+5. Đăng nhập bằng `admin` / `Admin@123` rồi **đổi mật khẩu ngay**.
 
 ## Lưu ý cho người phát triển
 
@@ -260,27 +350,38 @@ và Razor sẽ đọc theo codepage ANSI của Windows và mọi chữ tiếng V
 sẽ hiển thị sai (kiểu `LÆ°á»£t phÃ¢n cÃ´ng`). Visual Studio mặc định giữ BOM khi lưu; chỉ cần chú ý
 nếu sửa file bằng công cụ khác.
 
+Ứng dụng cố định culture `vi-VN` cho mọi request (`Global.asax.cs`), nhưng `<input type="number">`
+của trình duyệt luôn gửi số dạng dấu chấm — `DecimalModelBinder` xử lý riêng để không bị hiểu
+sai thành 0.
+
 Khi triển khai thật, hãy sinh `machineKey` mới trong `Web.config`
 (IIS Manager → Machine Key → Generate Keys) thay cho giá trị mẫu đang có.
 
 ## Cấu trúc
 
 ```
-TTKDGP.ProjectManager/
-├── App_Data/          Dữ liệu JSON
-├── App_Start/         Cấu hình route, filter
-├── Content/           site.css (CSS tự viết)
-│   ├── img/           Các cỡ favicon đã xuất
-│   └── lib/           select2.min.css
-├── Scripts/           app.js (khởi tạo Select2)
-│   └── lib/           jquery.min.js, select2.min.js, select2.vi.js
-├── FileContents/      Ảnh gốc do người dùng cung cấp (favicon.png 1254×1254)
-├── favicon.ico        Icon đa kích thước 16/32/48 ở gốc site
-├── site.webmanifest   Khai báo icon cho trình duyệt di động
-├── Controllers/       Home, Account, Projects, Members, Assignments, Users
-│                      CatalogControllerBase<T> + 4 danh mục kế thừa (CatalogControllers.cs)
-├── Data/              JsonStore<T> (kho JSON) + Repository (điểm truy cập chung)
-├── Infrastructure/    Xác thực, băm mật khẩu, helper cho view
-├── Models/            Thực thể + ViewModel
-└── Views/
+projectmanager/
+├── TTKDGP.ProjectManager/    Web app ASP.NET MVC 5
+│   ├── App_Data/             seed/ (dữ liệu mẫu), attachments/, docs/ (hướng dẫn tích hợp API)
+│   ├── App_Start/            Cấu hình route, filter
+│   ├── Content/               site.css, img/ (favicon), lib/ (select2, swagger-ui)
+│   ├── Scripts/                app.js (khởi tạo Select2), lib/ (jquery, select2, chart.js)
+│   ├── FileMoTa/                Đặc tả nghiệp vụ, hướng dẫn tích hợp API (Markdown + Postman)
+│   ├── Controllers/              Home, Account, Projects, Members, Assignments, Users…
+│   │   └── Api/                    Auth/Account/Dashboard/MyWork/MyProjects/Checklist/
+│   │                                ProjectMembers/Notifications — API cho mobile
+│   ├── Data/                        Repository (điểm truy cập chung) + SqlStore<T> (chính) +
+│   │                                  JsonStore<T> (seed/kho nhỏ) + JsonToSqlMigration
+│   ├── Infrastructure/                Xác thực, băm mật khẩu, Telegram, scheduler, helper view
+│   ├── Models/                         Thực thể bộ gốc + ViewModel
+│   │   └── Work/                        Entity bộ Quản lý công việc & KPI (WorkProject, WorkTask,
+│   │                                      KpiConfig, LeaveRequest, ApiToken…)
+│   └── Views/
+└── Mobile-Flutter/           App mobile Flutter (BrewTask) — gọi API tại Controllers/Api/
+    └── lib/
+        ├── config/            api_endpoint.dart
+        ├── core/                network, storage, theme dùng chung
+        ├── features/             auth, dashboard, mywork, projects, checklist, leaves, kpi,
+        │                          notifications, profile, team
+        └── shared/                 widget App* dùng chung toàn app
 ```
