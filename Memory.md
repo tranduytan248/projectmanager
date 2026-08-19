@@ -508,3 +508,264 @@ Ba việc liên tiếp trong cùng phiên:
 - Việc 2 (CV Hỗ trợ) CHẤP NHẬN lệch nhẹ ngữ nghĩa so với con số "tuần này" trên thẻ — nếu sau này
   cần khớp tuyệt đối, phải thêm bộ lọc "Tuần này" mới vào `checklist_board_screen.dart` (mở vấn đề
   riêng, không tự ý làm thêm ở đây).
+
+---
+
+# [2026-08-17] Vấn đề: Tốc độ truy vấn chậm khi test mobile (BrewTask) trên emulator
+
+## 1. Mô tả vấn đề
+Người dùng test app mobile trên emulator, nhận thấy "tốc độ truy vấn khá chậm", chưa nói rõ chậm
+ở màn hình/API nào, chậm lần đầu hay mọi lần, hỏi có tối ưu được không.
+
+## 2. Phân tích ban đầu
+- Bối cảnh: Backend `TTKDGP.ProjectManager` (ASP.NET MVC 5, SQL Server) + mobile Flutter
+  (`Mobile-Flutter/`) gọi API qua `Controllers/Api/*`. Cấu hình dev hiện tại
+  (`lib/config/api_endpoint.dart`): emulator Android gọi `http://10.0.2.2:8080` (site IIS local
+  trên máy Windows host qua alias AVD), không phải server thật. `Web.config` khai báo
+  `Db:Server = 10.57.30.10,1433` — SQL Server có thể là máy CHUNG trong mạng nội bộ, không phải
+  localhost, nên ngay cả khi chạy site local, mọi truy vấn vẫn phải đi qua mạng tới `10.57.30.10`.
+- Mục tiêu bề mặt: giảm độ trễ cảm nhận được khi thao tác trên app mobile.
+  Mục tiêu sâu xa (cần xác nhận): tối ưu tổng thể hiệu năng backend, hay chỉ cần app "cảm giác"
+  nhanh hơn (loading tốt hơn) mà chưa cần đụng vào tầng dữ liệu?
+- Phạm vi khả dĩ: (a) tầng mạng (emulator ↔ IIS local ↔ SQL Server 10.57.30.10), (b) tầng backend
+  (`SqlStore<T>`/`Repository`, N+1 giữa nhiều API con trong một màn hình), (c) tầng mobile
+  (`Dio`/`ApiClient`, cache, số lượng request/màn hình, thiếu chỉ báo loading khiến CẢM GIÁC chậm
+  dù thực tế không chậm).
+- Ràng buộc kỹ thuật đã biết từ code:
+  - `Infrastructure/Db.cs`: `Db.Open()` thử lại tối đa 4 lần, mỗi lần nghỉ `400ms * lần thử` khi
+    kết nối SQL trượt — nếu đường tới `10.57.30.10` không ổn định, MỘT request có thể cộng dồn vài
+    giây chờ retry trước khi lỗi hẳn hoặc mới kết nối được.
+  - `Data/SqlStore.cs`: nạp TOÀN BỘ bảng vào bộ nhớ một lần (giống `JsonStore` cũ) rồi thao tác
+    trên đó — nghĩa là sau lần load đầu, đọc dữ liệu (`.All()`) không cần hỏi lại SQL mỗi request;
+    nhưng lần load đầu tiên (khi ứng dụng web vừa khởi động / IIS pool vừa recycle) có thể chậm
+    nếu bảng lớn hoặc mạng tới SQL chậm — và mỗi API mobile gọi lại kích hoạt seed/kiểm tra như
+    `RoleGroupSeeder`, `JsonToSqlMigration.RunIfNeeded()` chạy lúc `Application_Start`.
+  - `Models/Permission.cs` (comment gốc trong code) từng ghi nhận vấn đề tương tự: SQL chập chờn
+    khiến mỗi lượt hỏi quyền tốn "vài giây cho một trang" trước khi có cơ chế nhớ tạm theo request.
+- Rủi ro/giả định: đang giả định "chậm" là do tầng dữ liệu/mạng — có thể sai, có thể do
+  `flutter run` debug build (luôn chậm hơn release), do emulator yếu, hoặc do UI mobile gọi tuần
+  tự nhiều API thay vì song song trong cùng một màn hình.
+- Phương án sơ bộ: (1) đo đạc/khoanh vùng bằng log thời gian (backend + `Dio` interceptor) trước
+  khi sửa bất cứ gì; (2) nếu do IIS pool recycle / cold start → cấu hình `AlwaysRunning`/Preload
+  (đã có sẵn hướng dẫn trong README mục "Chạy đúng giờ", áp dụng tương tự cho dev); (3) nếu do
+  nhiều API gọi tuần tự → gộp endpoint hoặc gọi song song ở mobile; (4) nếu do build debug → so
+  sánh với release build trước khi kết luận backend chậm.
+
+## 3. Câu hỏi làm rõ
+1. Chậm cụ thể ở đâu — màn hình/thao tác nào (ví dụ mở Checklist, tải Dashboard, đăng nhập...),
+   hay chậm đều ở mọi màn hình?
+2. Chậm ở **lần đầu mở app sau khi khởi động lại site/IIS** (cold start), hay chậm ở **mọi lần**
+   kể cả khi đã dùng app một lúc?
+3. App mobile đang chạy bằng `flutter run` (debug) hay đã build bản release (`flutter build apk
+   --release`)? Debug build vốn chậm hơn release đáng kể, cần loại trừ trước.
+4. Site web đang trỏ vào SQL Server ở đâu — `10.57.30.10` (máy chủ chung qua mạng) hay đã đổi
+   sang một SQL Server cài trên chính máy dev (localhost)? Mạng từ máy dev tới `10.57.30.10` có
+   ổn định không (có hay gặp lỗi kết nối SQL chập chờn trong log/`App_Data/errors.log` không)?
+5. "Chậm" là có cảm giác chờ vài giây rõ rệt, hay chỉ hơi giật/lag khi thao tác? Có ước lượng được
+   thời gian chờ gần đúng không (ví dụ ~1s, ~3-5s, >10s)?
+6. Đã thử so sánh chưa — ví dụ mở cùng chức năng đó trên trình duyệt web (`http://pm.vn` hoặc
+   `localhost`) xem có chậm tương tự không, để biết là chậm do riêng mobile hay chậm chung cả hệ
+   thống?
+7. Có sẵn sàng để tôi thêm log đo thời gian (thời gian xử lý ở backend + thời gian gọi API ở
+   mobile) để khoanh vùng chính xác trước khi sửa, hay muốn tôi cứ áp dụng luôn các tối ưu "an
+   toàn, không đổi hành vi" đã biết trước (ví dụ bật `AlwaysRunning`/Preload cho site dev, kiểm
+   tra log lỗi kết nối SQL) rồi xem có cải thiện không?
+
+## 4. Câu trả lời & Quyết định
+1-2-5. Người dùng: "Chậm tầm 3-5s, mỗi khi chuyển screen. Hiện dữ liệu chưa nhiều nhưng tốc độ
+   truy vấn như vậy, tôi sợ sau này dữ liệu lớn thì sẽ bị chậm hơn" → xác nhận chậm ĐỀU mỗi lần
+   chuyển màn hình (không riêng lần đầu), mức ~3-5s, và mối lo thật sự là khả năng mở rộng khi dữ
+   liệu lớn lên, không phải chỉ trải nghiệm hiện tại.
+3. Build type (hỏi qua `AskUserQuestion`) → **Debug (`flutter run`)**.
+4. Vị trí SQL Server (hỏi qua `AskUserQuestion`) → **10.57.30.10, đúng như `Web.config`** — xác
+   nhận mọi truy vấn đi qua mạng nội bộ, không phải localhost.
+6. Không hỏi/không trả lời riêng — bỏ qua, không ảnh hưởng tới quyết định.
+7. Cách tiếp cận (hỏi qua `AskUserQuestion`) → **"Áp dụng luôn các tối ưu phổ biến rồi kiểm tra
+   lại"** (không cần thêm log đo thời gian trước).
+
+**Điều tra thêm (trước khi sửa, để nhắm đúng chỗ thay vì đoán):**
+- Đọc `Infrastructure/Db.cs`: `Open()` thử lại tối đa 4 lần, nghỉ `400ms * lần thử` khi trượt —
+  góp phần vào độ trễ nếu mạng chập chờn, nhưng không phải nguyên nhân chính (không thấy log lỗi
+  SQL nào trong phiên test hôm nay ở `App_Data/errors.log`, chỉ có các lỗi 404 routing cũ và một
+  lỗi "Login failed" từ 12/08 không liên quan).
+- Đọc `Data/SqlStore.cs`: `EnsureLoaded()` nạp TOÀN BỘ một bảng vào bộ nhớ ở lần truy cập ĐẦU TIÊN
+  (kiểm tra schema qua `sys.columns`/`sys.tables` rồi `SELECT * FROM [Bảng] ORDER BY [Id]`), sau
+  đó đọc từ bộ nhớ — mỗi lần nạp đầu tốn ít nhất 2 round-trip mạng tới SQL Server ngoài.
+- Đọc `Data/JsonToSqlMigration.cs`: chỉ gọi `.Count()` (→ trigger nạp sẵn) trên **10 bảng của bộ
+  gốc** (Members/Projects/Assignments/Users/4 danh mục/WorkLogs/ReminderLogs) lúc
+  `Application_Start`. **Không đụng tới bất kỳ bảng nào của bộ "Quản lý công việc & KPI"**
+  (WorkTasks, WorkProjects, Kpi*, Leaves, Notifications...) — đúng những bảng mà API cho mobile
+  dùng (`Data/Repository.cs` liệt kê 32 bảng `SqlStore<T>` tổng cộng, 22 bảng còn lại chưa từng
+  được nạp sẵn).
+- Kiểm tra `dashboard_service.dart`/`http_manager.dart` phía mobile: mỗi màn hình gọi ĐÚNG MỘT
+  API tổng hợp (không phải nhiều request tuần tự), `HttpManager` (Dio) không có logic retry/delay
+  nhân tạo nào → loại trừ nguyên nhân "mobile tự gọi chậm", củng cố kết luận độ trễ nằm ở backend
+  lúc nạp bảng lần đầu.
+
+→ **Kết luận nguyên nhân gốc**: mỗi màn hình mobile mới (Dashboard/MyWork/Checklist/KPI/Leaves...)
+chạm tới một vài bảng SQL của bộ "Quản lý công việc & KPI" **chưa từng được nạp sẵn** lúc khởi
+động — nên lần đầu chạm phải chờ round-trip mạng tới `10.57.30.10` cho TỪNG bảng, cộng dồn thành
+3-5s mỗi lần chuyển sang màn hình có bảng mới. Không liên quan tới khối lượng dữ liệu hiện tại
+(khớp với việc người dùng thấy chậm dù dữ liệu còn ít) — nhưng đúng là sẽ NẶNG HƠN khi bảng lớn
+lên (SELECT * toàn bảng lâu hơn), nên lo ngại của người dùng về sau này là có cơ sở, cần theo dõi
+tiếp (xem mục Ghi chú).
+
+## 5. Checklist: Warm-up toàn bộ bảng SQL lúc khởi động
+
+### Thực hiện
+- [x] `[Bắt buộc]` Thêm `Repository.WarmUpAll()` (`Data/Repository.cs`) — gọi `.All()` song song
+      (`Parallel.ForEach`) trên 22 `SqlStore<T>` chưa được `JsonToSqlMigration` nạp sẵn, mỗi bảng
+      có try/catch riêng (nuốt lỗi CSDL chập chờn, ghi cả `Debug.WriteLine` lẫn `ErrorLog.Write`
+      để còn dấu vết trên build Release — `Debug.WriteLine` bị strip khỏi Release).
+- [x] `[Bắt buộc]` Gọi `Data.Repository.WarmUpAll();` trong `Global.asax.cs` `Application_Start`.
+- [x] `[Bắt buộc]` Đặt ĐÚNG vị trí: SAU `Data.WorkUserMigration.RunIfNeeded()` — phát hiện qua
+      code-review: `WorkUserMigration` ghi thẳng ADO (bỏ qua `SqlStore`) vào 6 bảng cũng nằm trong
+      danh sách warm-up; đặt `WarmUpAll()` trước sẽ làm bộ nhớ cache dữ liệu UserId/tên hiển thị
+      CŨ, không thấy được bản ghi migrate cho tới lần khởi động sau — bug thật, đã sửa (đổi thứ tự
+      hai dòng gọi).
+- [x] `[Nên có]` Build Debug qua MSBuild xác nhận sạch, không lỗi biên dịch (2 lần — trước và sau
+      khi sửa thứ tự).
+
+### Kiểm tra / Nghiệm thu
+- [ ] `[Bắt buộc]` Người dùng chạy lại site (F5/IIS Express), test app mobile trên emulator: xác
+      nhận các lần CHUYỂN MÀN HÌNH sau khi site đã khởi động xong không còn chậm 3-5s (chỉ còn độ
+      trễ mạng bình thường của một request, không phải lần nạp bảng đầu tiên).
+- [ ] `[Nên có]` Quan sát thời gian request ĐẦU TIÊN sau khi khởi động site (sẽ chậm hơn — đang
+      warm-up ~22 bảng song song) để biết tổng chi phí cold-start mới, xem có chấp nhận được không.
+- [ ] `[Nên có]` Xác nhận màn hình liên quan tới `WorkUserMigration` (đầu việc của tôi, KPI, dự án
+      theo PM...) vẫn hiển thị đúng người/tên sau khi sửa thứ tự — phòng hờ bug đã fix ở trên.
+
+### Ghi chú
+- Đây là tối ưu **tầng vận hành** (đổi THỜI ĐIỂM nạp dữ liệu, không đổi logic nghiệp vụ nào) —
+  đúng phạm vi "an toàn, không đổi hành vi" người dùng đã chọn.
+- **Chưa xử lý** rủi ro dài hạn người dùng lo ngại ("dữ liệu lớn thì chậm hơn"): `SqlStore<T>` nạp
+  TOÀN BỘ bảng vào bộ nhớ (không phân trang), nên khi số dòng một bảng lên tới hàng chục nghìn+,
+  cả thời gian nạp lẫn bộ nhớ dùng sẽ tăng theo — đây là giới hạn kiến trúc, không phải bug, và
+  nằm NGOÀI phạm vi việc tối ưu lần này. Nếu dữ liệu thật sự lớn lên đáng kể, cần mở vấn đề riêng
+  để bàn hướng phân trang/lazy-load theo từng truy vấn thay vì nạp cả bảng.
+- Production (không phải máy dev) nên bật IIS *Application Initialization*/*AlwaysRunning* (đã có
+  hướng dẫn ở README mục "Chạy đúng giờ") để chi phí warm-up chỉ xảy ra lúc app pool khởi động lại
+  theo lịch, người dùng thật gần như không bao giờ gặp phải — chưa xác nhận máy dev hiện tại đã
+  bật cấu hình tương đương chưa.
+
+---
+
+# [2026-08-17] Vấn đề: Mobile hiện nút hành động cho người không có quyền ở "Chi tiết công việc"
+
+## 1. Mô tả vấn đề
+Test bằng tài khoản `nhansudemo` (Dev thường trong "Dự án demo", KHÔNG phải PM — PM là "Trần PM",
+không phải Quản lý Tổ) — mở một công việc được giao cho người KHÁC ("Trần Duy Tân"), màn "Chi tiết
+công việc" (`task_detail_screen.dart`, dùng chung cho cả MyWork lẫn Checklist board) vẫn hiện đủ
+3 nút hành động: "Cập nhật trạng thái", "Ghi giờ", "Cập nhật danh sách" (Việc cần làm) — dù người
+này không có quyền với công việc đó. Người dùng yêu cầu chặn ngay.
+
+## 2. Điều tra
+- `TaskFullDetailDto` (trả về từ `ChecklistApi/Detail/{id}`) đã có sẵn 3 cờ quyền tính đúng ở
+  server: `Task.CanEdit` (từ `BaseController.CanEditTask` — assignee/PM/Quản lý Tổ),
+  `TimeLog.CanLog` + `BlockedReason` (từ `TimeLogService.BuildViewModel` — CHỈ đúng assignee, chặt
+  hơn CanEdit, cả PM/Quản lý Tổ cũng không ghi giờ hộ được), `Todo.CanManage` (từ
+  `BaseController.CanManageTodos` — assignee/người giao/PM/Quản lý Tổ).
+- Cả 3 field đều đã được model Dart (`task_detail_models.dart`) parse đúng tên/đúng kiểu từ trước,
+  nhưng **màn hình không hề dùng tới** — 3 nút hiện không điều kiện, khác với nút "Sửa người thực
+  hiện" ngay bên trên đã đúng làm theo `t.canEditAll`.
+- **Xác nhận qua code-review độc lập (agent riêng, tự đọc lại `ChecklistApiController.cs`/
+  `BaseController.cs`/`TimeLogService.cs`, không suy diễn)**: backend đã chặn đúng cả 3 hành động
+  từ trước (`UpdateStatus`/`LogTime`/thao tác Todo đều có kiểm tra quyền tương ứng, trả
+  `BadRequest` nếu sai) — **đây là lỗi hiển thị ở CLIENT, không phải lỗ hổng bypass quyền ở
+  backend**. Không có dữ liệu nào bị sửa trái phép trong lúc test.
+
+## 3. Quyết định & Thực hiện
+Bọc cả 3 nút theo đúng khuôn mẫu `if (...) ...[...]` đã có sẵn trong chính file
+(`task_detail_screen.dart`):
+- [x] "Cập nhật trạng thái" → chỉ hiện khi `t.canEdit`.
+- [x] "Ghi giờ" → chỉ hiện khi `tl.canLog`; khi không, hiện `tl.blockedReason` (tận dụng field đã
+      có sẵn nhưng trước đây không dùng tới — đúng mục đích thiết kế ban đầu của DTO).
+- [x] "Cập nhật danh sách" (todo) → chỉ hiện khi `todo.canManage`.
+- [x] `flutter analyze` sạch trên file đã sửa.
+- [x] Review độc lập bằng agent (đóng vai code-reviewer + security-reviewer): xác nhận bản vá an
+      toàn để merge, không phát hiện nút nào khác còn sót lỗi tương tự trong cùng file.
+
+## 4. Ghi chú / Việc còn treo
+- Rà soát chỉ giới hạn trong `task_detail_screen.dart` (phạm vi báo cáo của người dùng). Chưa rà
+  soát các màn khác có khả năng cùng lớp lỗi (hiện hành động không kiểm tra cờ quyền server trả
+  về) — ví dụ nút thu hồi bình luận (`canRecall`) nằm ở `task_comments_screen.dart`, ngoài phạm vi
+  lần này, có thể cần rà soát riêng nếu muốn chắc chắn toàn app.
+- Câu hỏi trước đó về màn "Cài đặt" hiện tên `—` (nghi cache đăng nhập cũ, xem mục
+  [2026-08-17] Vấn đề: Tốc độ truy vấn chậm) **vẫn chưa có câu trả lời** — cần người dùng xác nhận
+  đã thử đăng xuất/đăng nhập lại chưa.
+- Chưa có xác nhận cuối cùng từ người dùng rằng sau khi sửa, test lại bằng `nhansudemo` không còn
+  thấy 3 nút này nữa.
+
+---
+
+# [2026-08-18] Vấn đề: Build lại + tự test trên emulator bằng 2 tài khoản thật (nhansudemo/pmdemo)
+
+## 1. Mô tả vấn đề
+Người dùng cấp 2 tài khoản test thật (`nhansudemo` — Dev, `pmdemo` — PM, cùng mật khẩu
+`Khoid@umo!248`) và yêu cầu build lại ứng dụng, tự kiểm thử lại các chức năng đã sửa ở 2 vấn đề
+trước (tốc độ chuyển màn hình, 3 nút hành động lộ quyền).
+
+## 2. Cách thực hiện
+Build backend (MSBuild, đã xác nhận IIS site `pm.vn` cổng 8080 tự nhận bản mới không cần khởi
+động lại thủ công), build APK debug Mobile-Flutter, cài lên `emulator-5554` qua `adb`, tự động
+thao tác (tap/nhập liệu/chụp màn hình) qua `adb shell input` + `uiautomator dump` để lấy toạ độ
+chính xác thay vì áng chừng từ ảnh chụp.
+
+## 3. Kết quả xác nhận ĐÚNG như kỳ vọng
+
+- **Tốc độ backend**: request đầu tiên sau khi build lại (site vừa recycle) mất 3.7s — đúng chi
+  phí `Repository.WarmUpAll()` chạy lúc khởi động; các request sau đó (kể cả API cho mobile như
+  `MyWorkApi`, `ChecklistApi`) chỉ còn 1-3ms. Xác nhận bằng `curl` trực tiếp vào
+  `http://127.0.0.1:8080`, không qua mobile.
+- **3 nút hành động ở "Chi tiết công việc"** (việc CV-001 "CV test", người thực hiện Trần Duy Tân,
+  dự án "Dự án demo"):
+  - `nhansudemo` (Dev, không phải PM/assignee): cả 3 nút "Cập nhật trạng thái"/"Ghi giờ"/"Cập nhật
+    danh sách" đều ẨN đúng như sửa; khối Giờ công hiện đúng dòng "Chỉ người được giao việc mới ghi
+    được giờ công." thay cho nút.
+  - `pmdemo` (PM của dự án): "Cập nhật trạng thái" và "Cập nhật danh sách" HIỆN đúng (không bị
+    chặn nhầm); riêng "Ghi giờ" vẫn ẨN cho cả PM — ĐÚNG theo luật nghiệp vụ đã có sẵn từ trước
+    (`TimeLogService`: chỉ chính người thực hiện được ghi giờ, kể cả PM/Quản lý Tổ cũng không ghi
+    hộ được) — không phải lỗi.
+  - Kết luận: bản sửa 2 vấn đề trước hoạt động đúng, không over-restrict PM.
+
+## 4. Phát hiện MỚI phát sinh trong lúc test (chưa sửa)
+
+**Bug: Tên hiển thị (Dashboard "Chào, ...!" và màn Cài đặt) không cập nhật ngay sau khi đăng nhập
+trong cùng phiên chạy app — chỉ đúng lại sau khi khởi động lại app.**
+
+- Tái hiện: đăng xuất `nhansudemo` → đăng nhập `pmdemo` (không thoát app, cùng tiến trình) → Dashboard
+  hiện "Chào, bạn!" (tên rỗng, fallback mặc định), màn Cài đặt hiện avatar "?" và tên "—" — giống
+  hệt triệu chứng đã hỏi ở vấn đề trước, NHƯNG lần này xác nhận được **không phải do cache cũ/lỗi
+  thời** như phỏng đoán ban đầu.
+- Kiểm tra trực tiếp file `shared_prefs/FlutterSharedPreferences.xml` trên thiết bị (qua
+  `adb shell run-as ... cat`): key `flutter.login_info` chứa ĐÚNG
+  `{"displayName":"Trần PM","permissions":[]}` — nghĩa là backend trả đúng tên, `doAuth`/`AppCache`
+  lưu đúng xuống đĩa. Vấn đề chỉ nằm ở việc **UI trong phiên hiện tại không đọc được giá trị vừa
+  lưu** (`AuthProvider._displayName` trong bộ nhớ không được cập nhật đúng dù `notifyListeners()`
+  đã gọi).
+- Xác nhận bằng cách force-stop + mở lại app (không đăng nhập lại, dùng session đã lưu): Dashboard
+  hiện đúng ngay "Chào, Trần PM!" — chứng minh dữ liệu lưu đúng, `_hydrate()` (chạy lúc khởi động
+  app) đọc đúng; chỉ riêng luồng `AuthProvider.login()` (chạy ngay sau khi bấm "Đăng nhập", không
+  qua khởi động lại app) là chỗ bị lỗi.
+- Đã soát code liên quan (`auth_provider.dart`, `login_helper.dart`, `app_cache.dart`,
+  `cache_manager.dart`, `main.dart` — chỉ MỘT `ChangeNotifierProvider(create: (_) => AuthProvider())`
+  ở gốc app, không có nhiều instance) nhưng CHƯA tìm ra dòng code cụ thể gây lỗi — cần điều tra
+  thêm (nghi vấn: thời điểm `notifyListeners()` so với thời điểm widget cây con thực sự lắng nghe,
+  hoặc một race hiếm giữa `logout()` và `login()` gọi liên tiếp trong cùng một thao tác test).
+- **Chưa sửa** — nằm ngoài phạm vi yêu cầu ban đầu (tốc độ + 3 nút quyền), phát sinh giữa lúc test.
+  Ảnh hưởng: người dùng vừa đăng nhập xong sẽ thấy tên/avatar sai cho tới khi thoát hẳn app và mở
+  lại — không ảnh hưởng tới quyền hạn hay dữ liệu (chỉ hiển thị), nhưng gây khó chịu/trông như lỗi
+  nặng. Nên mở vấn đề riêng để điều tra sâu + sửa nếu người dùng xác nhận muốn ưu tiên.
+
+## 5. Checklist
+### Kiểm tra / Nghiệm thu
+- [x] Backend warm-up hoạt động đúng (đo bằng curl).
+- [x] 3 nút quyền: đúng cho cả Dev (ẩn) và PM (hiện, trừ Ghi giờ theo đúng luật cũ).
+- [ ] Vấn đề tên hiển thị sau đăng nhập trong phiên — CHƯA sửa, cần mở vấn đề riêng.
+
+### Ghi chú
+- Công cụ test: `adb` (cài đặt tại `C:\Users\K\AppData\Local\Android\Sdk\platform-tools\adb.exe`),
+  `uiautomator dump` để lấy toạ độ chính xác (không áng chừng theo ảnh chụp — từng bị lệch toạ độ
+  do đọc sai tỉ lệ ảnh hiển thị so với độ phân giải thật của thiết bị 1080×2400).
+- IIS site `pm.vn` (không phải IIS Express) đã chạy sẵn dạng service, tự nhận bản build mới mà
+  không cần thao tác gì thêm — chỉ cần build lại `TTKDGP.ProjectManager.sln`.

@@ -159,6 +159,16 @@ namespace TTKDGP.ProjectManager.Controllers
                 if (!CanEditPrivateTask(current)) return HttpNotFound();
             }
 
+            // Form cũng đổi được Trạng thái qua dropdown — phải qua đúng luật chặn "chưa ghi giờ thì
+            // không được chuyển Đang làm/Hoàn thành" y hệt các nơi khác (TimeLogService.
+            // ValidateStateChange). Chỉ kiểm khi trạng thái THỰC SỰ đổi, để không chặn ngược các việc
+            // cũ đã Hoàn thành từ trước khi có luật này.
+            if (current == null || current.State != model.State)
+            {
+                var stateError = TimeLogService.ValidateStateChange(model, model.State);
+                if (stateError != null) ModelState.AddModelError("State", stateError);
+            }
+
             if (!ModelState.IsValid) return EditFormWithErrors(model);
 
             WorkService.FillNames(model);

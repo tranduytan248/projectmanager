@@ -33,6 +33,13 @@ namespace TTKDGP.ProjectManager
             // bộ nhớ vẫn là dữ liệu cũ cho tới lần khởi động sau.
             Data.WorkUserMigration.RunIfNeeded();
 
+            // Nạp sẵn các bảng còn lại (bộ Quản lý công việc & KPI) vào bộ nhớ ngay lúc khởi động,
+            // thay vì để mỗi bảng tự nạp ở lần đầu có request chạm tới — tránh việc mỗi màn hình
+            // mobile mới mở lần đầu phải chờ round-trip mạng tới SQL Server. Xem Repository.WarmUpAll.
+            // Phải đứng SAU WorkUserMigration ở trên, vì lý do tương tự — WarmUpAll nạp cả các bảng
+            // mà WorkUserMigration ghi thẳng bằng ADO (bỏ qua SqlStore).
+            Data.Repository.WarmUpAll();
+
             // Tạo ba nhóm quyền mặc định (Quản trị / Quản lý / Báo cáo) nếu bảng còn trống.
             Data.RoleGroupSeeder.EnsureDefaults();
 

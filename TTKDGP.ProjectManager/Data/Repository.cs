@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Web.Hosting;
 using TTKDGP.ProjectManager.Models;
 
@@ -192,6 +194,57 @@ namespace TTKDGP.ProjectManager.Data
         public static SqlStore<ProjectStatus> ProjectStatuses { get { return _projectStatuses.Value; } }
         public static SqlStore<WorkStatus> WorkStatuses { get { return _workStatuses.Value; } }
         public static SqlStore<MemberRole> MemberRoles { get { return _memberRoles.Value; } }
+
+        // ---------- Khởi động sẵn (giảm độ trễ mạng của lần đầu chạm bảng) ----------
+
+        /// <summary>
+        /// Nạp trước TOÀN BỘ bảng còn lại vào bộ nhớ ngay lúc khởi động, thay vì để mỗi bảng tự
+        /// nạp ở lần đầu có request chạm tới (<see cref="SqlStore{T}.All"/> gọi
+        /// <c>EnsureLoaded</c>). Gọi ở <c>Application_Start</c>, sau
+        /// <see cref="JsonToSqlMigration.RunIfNeeded"/>.
+        ///
+        /// Vì sao cần: SQL Server nằm ở máy chủ ngoài qua mạng nội bộ (không phải localhost), nên
+        /// lần nạp đầu tiên của MỖI bảng tốn một lượt round-trip mạng (kiểm tra schema + SELECT
+        /// toàn bảng). <see cref="JsonToSqlMigration"/> đã tiện thể nạp sẵn 10 bảng của bộ gốc
+        /// (Members/Projects/Assignments/Users/4 danh mục/WorkLogs/ReminderLogs) vì nó gọi
+        /// <c>Count()</c> trên từng bảng đó — nhưng các bảng của bộ "Quản lý công việc & KPI"
+        /// (WorkTasks, WorkProjects, Kpi*, Leaves...） mà app mobile gọi tới thì KHÔNG, nên mỗi màn
+        /// hình mobile mới chạm tới một vài bảng chưa từng nạp mới thấy độ trễ mạng đó.
+        ///
+        /// Nạp SONG SONG (không tuần tự) để rút ngắn tổng thời gian khởi động — mỗi
+        /// <see cref="SqlStore{T}"/> tự khoá riêng nên nạp đồng thời nhiều bảng khác nhau là an
+        /// toàn. Một bảng lỗi (CSDL chập chờn) không được làm hỏng các bảng còn lại hay sập lúc
+        /// khởi động — request đầu tiên chạm bảng đó sau này sẽ tự nạp lại như cơ chế cũ.
+        /// </summary>
+        public static void WarmUpAll()
+        {
+            var loaders = new Action[]
+            {
+                () => WorkProjects.All(), () => WorkAssignments.All(), () => WorkTasks.All(),
+                () => WorkComments.All(), () => WorkTimeLogs.All(), () => ApiTokens.All(),
+                () => PasswordResetOtps.All(), () => WorkTaskTodos.All(), () => TaskActivityLogs.All(),
+                () => WorkProjectFiles.All(), () => WorkWeekReports.All(), () => WorkPlanItems.All(),
+                () => KpiSheets.All(), () => KpiLines.All(), () => KpiMonths.All(),
+                () => LeaveRequests.All(), () => KpiConfigs.All(), () => PermissionSettings.All(),
+                () => UserNotifications.All(), () => EmailTemplates.All(), () => RoleGroups.All(),
+                () => IntegrationSystems.All()
+            };
+
+            Parallel.ForEach(loaders, load =>
+            {
+                try
+                {
+                    load();
+                }
+                catch (Exception ex)
+                {
+                    // Debug.WriteLine bị strip khỏi build Release — ghi thêm ErrorLog để lỗi CSDL
+                    // chập chờn lúc khởi động không biến mất hoàn toàn trên bản đã deploy.
+                    Debug.WriteLine("Repository.WarmUpAll: một bảng nạp trượt, sẽ tự nạp lại ở request đầu chạm tới — " + ex.Message);
+                    Infrastructure.ErrorLog.Write(ex, (System.Web.HttpContext)null);
+                }
+            });
+        }
 
         // ---------- Danh mục dùng chung ----------
 

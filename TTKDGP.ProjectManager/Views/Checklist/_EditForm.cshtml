@@ -190,6 +190,7 @@
                     Text = TaskStates.Display(s),
                     Selected = Model.State == s
                 }))
+            @Html.ValidationMessageFor(m => m.State, "", new { @class = "field-error" })
         </div>
 
         @if (!isNew)
