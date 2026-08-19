@@ -327,11 +327,13 @@ class _TaskDetailBodyState extends State<_TaskDetailBody> {
                 variant: AppTextVariant.body, fontSize: 13, height: 1.5),
           ),
         ],
-        const SizedBox(height: AppDimens.space12),
-        AppButton(
-            label: 'Cập nhật trạng thái',
-            icon: PhosphorIconsRegular.arrowsClockwise,
-            onPressed: _openStatusSheet),
+        if (t.canEdit) ...[
+          const SizedBox(height: AppDimens.space12),
+          AppButton(
+              label: 'Cập nhật trạng thái',
+              icon: PhosphorIconsRegular.arrowsClockwise,
+              onPressed: _openStatusSheet),
+        ],
       ],
     );
   }
@@ -402,10 +404,14 @@ class _TaskDetailBodyState extends State<_TaskDetailBody> {
         else
           Column(children: [for (final log in tl.logs) TimeLogRow(log: log)]),
         const SizedBox(height: AppDimens.space12),
-        AppButton(
-            label: 'Ghi giờ',
-            icon: PhosphorIconsRegular.clockCountdown,
-            onPressed: _openTimeLogSheet),
+        if (tl.canLog)
+          AppButton(
+              label: 'Ghi giờ',
+              icon: PhosphorIconsRegular.clockCountdown,
+              onPressed: _openTimeLogSheet)
+        else if (tl.blockedReason != null && tl.blockedReason!.isNotEmpty)
+          AppText(tl.blockedReason!,
+              variant: AppTextVariant.caption, color: AppColors.textSecondary),
       ],
     );
   }
@@ -423,11 +429,13 @@ class _TaskDetailBodyState extends State<_TaskDetailBody> {
           Column(children: [
             for (final item in todo.items) TodoReadOnlyRow(item: item)
           ]),
-        const SizedBox(height: AppDimens.space12),
-        AppButton(
-            label: 'Cập nhật danh sách',
-            icon: PhosphorIconsRegular.listChecks,
-            onPressed: _openTodoSheet),
+        if (todo.canManage) ...[
+          const SizedBox(height: AppDimens.space12),
+          AppButton(
+              label: 'Cập nhật danh sách',
+              icon: PhosphorIconsRegular.listChecks,
+              onPressed: _openTodoSheet),
+        ],
       ],
     );
   }

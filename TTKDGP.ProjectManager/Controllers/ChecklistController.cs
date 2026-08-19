@@ -826,6 +826,16 @@ namespace TTKDGP.ProjectManager.Controllers
                 ModelState.AddModelError("AssigneeUserId", "Người thực hiện phải đang tham gia dự án này.");
             }
 
+            // Form sửa toàn phần cũng đổi được Trạng thái qua dropdown — phải qua đúng luật chặn
+            // "chưa ghi giờ thì không được chuyển Đang làm/Hoàn thành" như SetState (Kanban), y hệt
+            // TimeLogService.ValidateStateChange. Chỉ kiểm khi trạng thái THỰC SỰ đổi, để không chặn
+            // ngược các việc cũ đã Hoàn thành từ trước khi có luật này.
+            if (current == null || current.State != model.State)
+            {
+                var stateError = TimeLogService.ValidateStateChange(model, model.State);
+                if (stateError != null) ModelState.AddModelError("State", stateError);
+            }
+
             if (!ModelState.IsValid)
             {
                 PopulateEditLists(model);
