@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Web.Mvc;
 
 namespace TTKDGP.ProjectManager.Models.Api
 {
@@ -426,6 +427,67 @@ namespace TTKDGP.ProjectManager.Models.Api
         public DateTime? SubmittedAt { get; set; }
         public bool IsSubmitted { get; set; }
         public bool IsOnTime { get; set; }
+    }
+
+    /// <summary>
+    /// Tham so form "Them du an" tren mobile (MyProjectsApiController.Create) — bind qua model
+    /// thay vi tham so phang de dung duoc [AllowHtml] rieng cho Description, KHONG can
+    /// [ValidateInput(false)] cho ca action (se tat validate luon ca Github/SVN/FTP/Database, cho
+    /// phep client gui HTML/script vao nhung truong khong can HTML). Y het cach
+    /// WorkProject.Description ben web dung [AllowHtml] — xem Models/Work/WorkProject.cs.
+    /// </summary>
+    public class CreateProjectRequestDto
+    {
+        public string Name { get; set; }
+        public string Customer { get; set; }
+        public string ProjectType { get; set; }
+        public string Phase { get; set; }
+        public string State { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+
+        [AllowHtml]
+        public string Description { get; set; }
+
+        public string GithubLink { get; set; }
+        public string SvnLink { get; set; }
+        public string FtpAccount { get; set; }
+        public string FtpPassword { get; set; }
+        public string DbType { get; set; }
+        public string DbServer { get; set; }
+        public string DbUsername { get; set; }
+        public string DbPassword { get; set; }
+    }
+
+    /// <summary>Danh sach chon san cho form "Them du an" tren mobile — khop ViewBag.ProjectTypes
+    /// cua WorkProjectsController.Edit ben web. Giai doan/Trang thai co dinh trong ma nguon
+    /// (ProjectPhases/ProjectStates) nen mobile tu liet ke, khong can tra qua API.</summary>
+    public class ProjectCreateFormOptionsDto
+    {
+        public List<string> ProjectTypes { get; set; }
+
+        public ProjectCreateFormOptionsDto()
+        {
+            ProjectTypes = new List<string>();
+        }
+    }
+
+    /// <summary>Ket qua tao du an moi — mobile chi can Id/Code/Name de bao thanh cong va tu reload
+    /// lai danh sach qua MyProjectsApiController.Index, khong can tra day du nhu ProjectDetailDto.</summary>
+    public class CreateProjectResultDto
+    {
+        public int Id { get; set; }
+        public string Code { get; set; }
+        public string Name { get; set; }
+
+        /// <summary>Ten cac file gui kem bi tu choi (qua co/sai duoi) kem ly do — rong neu khong
+        /// co file nao hoac tat ca deu luu duoc. Xem MyProjectsApiController.SaveProjectFiles.</summary>
+        public List<string> RejectedFiles { get; set; }
+
+        public CreateProjectResultDto()
+        {
+            RejectedFiles = new List<string>();
+        }
     }
 
     /// <summary>

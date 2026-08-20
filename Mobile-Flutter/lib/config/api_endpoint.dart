@@ -30,6 +30,8 @@ class ApiEndpoint {
   static const dashboard = '/DashboardApi/Index';
   static const myWork = '/MyWorkApi/Index';
   static const myProjects = '/MyProjectsApi/Index';
+  static const myProjectsCreateForm = '/MyProjectsApi/CreateForm';
+  static const myProjectsCreate = '/MyProjectsApi/Create';
   static const checklist = '/ChecklistApi/Index';
   static const checklistCreate = '/ChecklistApi/Create';
   static const notifications = '/NotificationsApi/Index';

@@ -87,6 +87,7 @@
     <Compile Include="Controllers\UsersController.cs" />
     <Compile Include="Controllers\PermissionGroupsController.cs" />
     <Compile Include="Controllers\DashboardController.cs" />
+    <Compile Include="Controllers\CalendarController.cs" />
     <Compile Include="Controllers\TeamDashboardController.cs" />
     <Compile Include="Controllers\WorkQueueController.cs" />
     <Compile Include="Controllers\SystemStatusController.cs" />
@@ -305,6 +306,7 @@
     <Content Include="Views\PermissionGroups\Index.cshtml" />
     <Content Include="Views\PermissionGroups\Edit.cshtml" />
     <Content Include="Views\Dashboard\Index.cshtml" />
+    <Content Include="Views\Calendar\Index.cshtml" />
     <Content Include="Views\TeamDashboard\Index.cshtml" />
     <Content Include="Views\TeamDashboard\_MemberTasks.cshtml" />
     <Content Include="Views\WorkQueue\Index.cshtml" />

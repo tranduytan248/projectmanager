@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Web;
 using System.Web.Mvc;
 using TTKDGP.ProjectManager.Data;
 using TTKDGP.ProjectManager.Infrastructure;
@@ -197,6 +199,142 @@ namespace TTKDGP.ProjectManager.Controllers.Api
             };
 
             return Json(dto, JsonRequestBehavior.AllowGet);
+        }
+
+        /// <summary>
+        /// Duoc phep tao du an moi tren mobile khi la Quan ly To (IsTeamManager — gom ca Quan tri
+        /// vi tai khoan "*" luon qua moi Can(...)). KHONG dung permission "wprojects.create" —
+        /// nham voi "nhom quyen Quan ly", mot nhom quyen co the co wprojects.create nhung nguoi
+        /// dung da xac nhan ro KHONG duoc coi la Quan ly To va khong duoc thay chuc nang nay
+        /// (xem Memory.md muc "Thêm nút Thêm dự án", cap nhat sau khi nguoi dung chi ra man web
+        /// dang cho nhom "Quan ly" thay nham khu vuc "Quan ly To").
+        /// </summary>
+        private bool CanCreateProject()
+        {
+            return IsTeamManager;
+        }
+
+        /// <summary>Danh sach chon san cho form "Them du an" — khop ViewBag.ProjectTypes cua
+        /// WorkProjectsController.Edit ben web.</summary>
+        [HttpGet]
+        public ActionResult CreateForm()
+        {
+            if (!CanCreateProject()) return HttpNotFound();
+
+            var options = new ProjectCreateFormOptionsDto
+            {
+                ProjectTypes = Repository.ActiveNames(Repository.ProjectTypes)
+            };
+
+            return Json(options, JsonRequestBehavior.AllowGet);
+        }
+
+        /// <summary>
+        /// Tao du an moi — day du truong nhu WorkProjectsController.Edit (id == 0) ben web, gom ca
+        /// thong tin trien khai (Github/SVN/FTP/Database) va file dinh kem. KHONG nhan PmUserId —
+        /// PM van gan o man "Nhan su du an" rieng, giong dung hanh vi web (xem ghi chu tai
+        /// WorkProjectsController.Edit dong 229).
+        /// </summary>
+        [HttpPost]
+        public ActionResult Create(CreateProjectRequestDto model, IEnumerable<HttpPostedFileBase> files)
+        {
+            if (!CanCreateProject()) return HttpNotFound();
+
+            if (string.IsNullOrWhiteSpace(model.Name)) return BadRequest("Vui lòng nhập tên dự án.");
+
+            if (model.StartDate.HasValue && model.EndDate.HasValue
+                && model.EndDate.Value.Date < model.StartDate.Value.Date)
+            {
+                return BadRequest("Ngày kết thúc phải sau ngày bắt đầu.");
+            }
+
+            var phase = string.IsNullOrWhiteSpace(model.Phase) ? ProjectPhases.Implement : model.Phase;
+
+            // Kiem o may chu chu khong chi o giao dien — y het WorkProjectsController.Edit.
+            if (!ProjectStates.BelongsTo(model.State, phase))
+            {
+                return BadRequest(string.Format(
+                    "Trạng thái \"{0}\" không thuộc giai đoạn {1}.",
+                    ProjectStates.Display(model.State), ProjectPhases.Display(phase)));
+            }
+
+            var code = WorkService.GenerateProjectCode(model.Name, WorkService.ExistingProjectCodes());
+
+            var project = new WorkProject
+            {
+                Code = code,
+                Name = model.Name.Trim(),
+                Customer = string.IsNullOrWhiteSpace(model.Customer) ? null : model.Customer.Trim(),
+                ProjectType = model.ProjectType,
+                Phase = phase,
+                State = model.State,
+                StartDate = model.StartDate,
+                EndDate = model.EndDate,
+                Description = HtmlSanitizer.Clean(model.Description),
+                GithubLink = TrimOrNull(model.GithubLink),
+                SvnLink = TrimOrNull(model.SvnLink),
+                FtpAccount = TrimOrNull(model.FtpAccount),
+                FtpPassword = TrimOrNull(model.FtpPassword),
+                DbType = TrimOrNull(model.DbType),
+                DbServer = TrimOrNull(model.DbServer),
+                DbUsername = TrimOrNull(model.DbUsername),
+                DbPassword = TrimOrNull(model.DbPassword),
+                CreatedAt = DateTime.Now
+            };
+
+            var saved = Repository.WorkProjects.Insert(project);
+            var rejected = SaveProjectFiles(saved.Id, files);
+
+            return Json(new CreateProjectResultDto
+            {
+                RejectedFiles = rejected,
+                Id = saved.Id,
+                Code = saved.Code,
+                Name = saved.Name
+            });
+        }
+
+        private static string TrimOrNull(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        }
+
+        /// <summary>
+        /// Luu file dinh kem gui kem luc tao du an — y het WorkProjectsController.SaveProjectFiles
+        /// ben web, chi khac o cho tra ve danh sach ten file bi tu choi thay vi NotifyError (API
+        /// khong co TempData) de mobile tu hien thong bao.
+        /// </summary>
+        private List<string> SaveProjectFiles(int projectId, IEnumerable<HttpPostedFileBase> files)
+        {
+            var rejected = new List<string>();
+            if (files == null) return rejected;
+
+            foreach (var file in files)
+            {
+                if (file == null || file.ContentLength <= 0) continue;
+
+                string stored, name, error;
+                long size;
+                if (!CommentAttachments.TrySaveFile(file, out stored, out name, out size, out error))
+                {
+                    rejected.Add(string.Format("{0} ({1})", Path.GetFileName(file.FileName), error));
+                    continue;
+                }
+                if (stored == null) continue;
+
+                Repository.WorkProjectFiles.Insert(new WorkProjectFile
+                {
+                    ProjectId = projectId,
+                    StoredName = stored,
+                    OriginalName = name,
+                    Size = size,
+                    UploadedByUserId = CurrentUserId,
+                    UploadedByName = CurrentUser == null ? null : CurrentUser.FullName,
+                    CreatedAt = DateTime.Now
+                });
+            }
+
+            return rejected;
         }
     }
 }

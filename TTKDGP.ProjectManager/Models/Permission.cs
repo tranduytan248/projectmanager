@@ -332,6 +332,10 @@ namespace TTKDGP.ProjectManager.Models
                 {
                     L("Tổng quan", "Dashboard", WorkTasks.Perm(View)),
                     L("Công việc của tôi", "MyWork", WorkTasks.Perm(View), "Tasks"),
+                    // Lich ca nhan — mo cho MOI tai khoan da dang nhap, khong xet quyen xem cong
+                    // viec rieng (WorkTasks.Perm(View)) nhu 2 muc tren, vi day la du lieu cua
+                    // chinh minh chu khong phai du lieu nghiep vu can duoc cap quyen.
+                    L("Lịch công việc", "Calendar", ""),
                     L("Dự án của tôi", "MyWork", WorkTasks.Perm(View), "Projects"),
                     L("Nghỉ phép của tôi", "Leaves", Leaves.Perm(View), "My")
                 }

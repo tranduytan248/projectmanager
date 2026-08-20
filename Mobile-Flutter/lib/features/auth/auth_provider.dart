@@ -28,6 +28,14 @@ class AuthProvider extends ChangeNotifier {
   bool get isTeamManager =>
       _permissions.contains('*') || _permissions.contains('wteam.manage');
 
+  /// Duoc tao du an moi — CHI Quan tri (toan quyen "*") HOAC tai khoan duoc tich "Là Quản lý Tổ"
+  /// (isTeamManager). KHONG dung rieng permission "wprojects.create" — nham voi "nhom quyen Quan
+  /// ly" (mot nhom quyen co the co wprojects.create nhung KHONG duoc coi la Quan ly To, nguoi
+  /// dung da xac nhan ro nhom "Quan ly" khong duoc thay chuc nang nay). "*" duoc kiem rieng du
+  /// isTeamManager da bao gom no (Can("wteam.manage") luon dung voi "*") — de ro y hon la dua vao
+  /// mot hieu ung phu cua isTeamManager.
+  bool get canCreateProject => _permissions.contains('*') || isTeamManager;
+
   /// Doc lai trang thai da luu (neu co) ngay khi provider duoc tao — de app biet ngay tu dau
   /// nguoi dung da dang nhap tu truoc hay chua, khong phai doi mot vong build.
   Future<void> _hydrate() async {

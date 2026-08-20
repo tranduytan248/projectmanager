@@ -45,21 +45,32 @@ namespace TTKDGP.ProjectManager.Controllers.Api
             };
             Repository.ApiTokens.Insert(token);
 
-            // Gop dung HAI loi cap Quan ly To — o tich rieng tung tai khoan (User.IsTeamManager)
-            // HOAC quyen "wteam.manage" cap theo nhom — y het BaseController.IsTeamManager dang
-            // dung cho web. KHONG goi thang property do o day vi no doc CurrentUserId, ma request
-            // dang xu ly la luc CHUA co token (dang tao token), nen phai tinh truc tiep tu `user`.
-            var isTeamManager = user.IsTeamManager
-                || Permissions.UserHas(user.Role, Permissions.Team.Perm("manage"));
+            // Tra ve DAY DU tap ma quyen cua Role — y het cach web tu kiem (Permissions.UserHas
+            // doc qua ResolvePermissions), khong chi rieng "wteam.manage" nhu truoc day. Thieu
+            // buoc nay thi moi man mobile can kiem quyen theo module (vi du "wprojects.create"
+            // cho nut "+ Them du an") deu khong the phan biet duoc nhom Quan ly/Quan tri voi
+            // nguoi dung thuong, vi client chi thay danh sach quyen rong.
+            var permissions = new System.Collections.Generic.List<string>(
+                Permissions.ResolvePermissions(user.Role));
+
+            // "La Quan ly To" con cap duoc rieng theo tung tai khoan (User.IsTeamManager), doc
+            // lap voi nhom quyen — bo sung thu cong ma "wteam.manage" khi co ma nhom quyen chua
+            // cap, de mobile tinh isTeamManager/canCreateProject dung y het BaseController.
+            // IsTeamManager ben web. KHONG goi thang property do o day vi no doc CurrentUserId,
+            // ma request dang xu ly la luc CHUA co token (dang tao token), nen phai tinh truc
+            // tiep tu `user`.
+            if (user.IsTeamManager && !permissions.Contains("*")
+                && !permissions.Contains(Permissions.Team.Perm("manage")))
+            {
+                permissions.Add(Permissions.Team.Perm("manage"));
+            }
 
             return Json(new LoginResultDto
             {
                 Token = token.Token,
                 DisplayName = user.FullName,
                 Role = user.Role,
-                Permissions = isTeamManager
-                    ? new System.Collections.Generic.List<string> { "wteam.manage" }
-                    : new System.Collections.Generic.List<string>()
+                Permissions = permissions
             });
         }
 
