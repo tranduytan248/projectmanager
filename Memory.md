@@ -1326,3 +1326,426 @@ sẵn `checkLogin` chạy cho mọi màn):
   Chấp nhận được vì: (1) đã điều tra hết mức hợp lý, (2) `ensureFresh()` tái dùng ĐÚNG logic đã
   qua kiểm chứng (`_hydrate()`), (3) rủi ro thấp (chỉ đọc lại dữ liệu đã có, có early-return tránh
   rebuild thừa).
+
+---
+
+# [2026-08-20] Vấn đề: Thêm nút "Thêm dự án" trên màn mobile "Dự án – Toàn Tổ"
+
+## 1. Mô tả vấn đề
+Nguyên văn: "Bổ sung thêm nút Thêm dự án. (Chỉ có quản lý và Quản trị, quản lý tổ). Chuyển qua màn
+hình Thêm mới dự án (Tương tự thêm mới công việc). Màn hình giống với màn hình của nút Thêm dự án
+trên web." Kèm 2 ảnh: mobile khoanh đỏ vị trí nút ở AppBar màn "Dự án – Toàn Tổ"; web mũi tên chỉ
+nút "+ Thêm dự án" trên trang `/WorkProjects`.
+
+## 2. Phân tích ban đầu
+
+- **Bối cảnh**: Module Dự án, cả web (`WorkProjectsController` + `Views/WorkProjects/`) lẫn mobile
+  (`Mobile-Flutter/lib/features/projects/my_projects_screen.dart`, scope=team).
+- **Mục tiêu**: Cho phép Quản trị/Quản lý/Quản lý tổ tạo dự án mới ngay trên mobile, không phải
+  mở web.
+- **Phạm vi xác nhận qua điều tra code**:
+  - Web: nút "+ Thêm dự án" ở `Views/WorkProjects/Index.cshtml` dòng 18-26, bọc điều kiện
+    `can("wprojects.create")`, mở modal AJAX tới `WorkProjectsController.Edit(id:null)`, form thật
+    ở `Views/WorkProjects/_EditForm.cshtml` — RẤT NHIỀU trường: Tên (bắt buộc), Khách hàng, Mã dự
+    án (tự sinh nếu để trống), Loại dự án (dropdown danh mục), Giai đoạn, Trạng thái (lọc theo Giai
+    đoạn), Ngày bắt đầu/kết thúc, Mô tả (rich text HTML), GithubLink, SvnLink, FtpAccount,
+    FtpPassword, DbType, DbServer, DbUsername, DbPassword, file đính kèm nhiều file. KHÔNG có
+    trường chọn PM lúc tạo — PM gán riêng ở màn "Nhân sự dự án" sau khi tạo xong (web tự động
+    redirect sang `Members` sau khi Insert thành công).
+  - `WorkProjectsController.Edit` (POST) dòng 163-251: validate EndDate>=StartDate, State phải
+    thuộc đúng Phase, tự sinh Code nếu trống + check trùng, sanitize HTML mô tả, sau khi Insert thì
+    redirect `Members`.
+  - Quyền: `wprojects.create` là permission module riêng (`Models/Permission.cs` dòng 137-138,
+    nhóm `WorkProjects` CRUD) — KHÔNG phải cờ `IsTeamManager`. Nhóm quyền "Quản lý" có sẵn
+    `wprojects.create` qua `Permissions.ManagerDefaults()`; nhóm "Quản trị" có `Permissions = "*"`
+    nên tự động có mọi quyền. "Quản lý tổ" (`User.IsTeamManager`) là cờ RIÊNG, độc lập với nhóm
+    quyền — một người có thể là "Quản lý tổ" mà không thuộc nhóm quyền "Quản lý".
+  - Mobile: API `Controllers/Api/MyProjectsApiController.cs` hiện CHỈ có `Index` (GET) và `Detail`
+    (GET) — CHƯA CÓ action tạo mới dự án nào, cần bổ sung mới. Pattern tạo mới nên theo mẫu
+    `ChecklistApiController.Create` (dòng 524-614): tham số phẳng, tự dựng entity, validate thủ
+    công trả `BadRequest("...")`, kiểm quyền bằng hàm sẵn có, `Json(ApiMappers.ToDto(...))`.
+  - Màn mobile `my_projects_screen.dart` dòng 168-171: `AppAppBar` hiện chỉ có `title`, chưa có
+    `actions` — cần bổ sung nút tại đây. `AuthProvider` hiện có `permissions` (List<String> đầy đủ
+    mã quyền từ backend) và `isTeamManager` getter — CHƯA có getter tương đương `wprojects.create`,
+    nhưng có thể thêm dễ dàng vì `permissions` đã sẵn đầy đủ (không cần sửa backend thêm để có
+    field mới, `Permissions` đã trả về từ `AuthApiController.Login`).
+  - Màn mẫu để bắt chước kiến trúc: `Mobile-Flutter/lib/features/checklist/add_task_screen.dart` —
+    full-screen `MaterialPageRoute`, `Form` + `AppTextField`/`AppDropdown`/`AppRichEditor`, service
+    gửi `FormData`, trả `bool?` để màn gọi tự `_reload()`.
+- **Rủi ro / Giả định**:
+  - Form đầy đủ như web có nhiều trường kỹ thuật nhạy cảm (FTP/DB password) — cần xác nhận có đưa
+    hết lên mobile hay rút gọn, vì đây là quyết định phạm vi lớn ảnh hưởng effort và UX.
+  - Quyền hiển thị nút trên mobile cần quyết định rõ: theo permission `wprojects.create` thuần
+    (khớp đúng cách web làm), hay OR thêm `isTeamManager` (khớp đúng câu người dùng liệt kê 3 nhóm
+    tách biệt "quản lý VÀ Quản trị, quản lý tổ").
+- **Phương án sơ bộ**:
+  - A. Form mobile đầy đủ như web (mọi trường, kể cả Git/FTP/DB) — trung thành 100% nhưng nặng, ít
+    phù hợp thao tác trên điện thoại.
+  - B. Form mobile rút gọn (Tên, Khách hàng, Loại dự án, Giai đoạn, Trạng thái, Ngày bắt đầu/kết
+    thúc, Mô tả) — các trường kỹ thuật (Git/FTP/DB) bổ sung sau trên web, giữ mobile gọn nhẹ đúng
+    tinh thần "tạo nhanh khi di chuyển".
+
+## 3. Câu hỏi làm rõ
+1. Form "Thêm mới dự án" trên mobile nên đầy đủ như web (gồm cả GithubLink/SvnLink, FTP, Database
+   credentials, file đính kèm) hay rút gọn chỉ các trường nghiệp vụ cơ bản (Tên, Khách hàng, Loại
+   dự án, Giai đoạn, Trạng thái, Ngày bắt đầu/kết thúc dự kiến, Mô tả) — phần kỹ thuật để bổ sung
+   sau trên web?
+2. Quyền hiển thị nút "+ Thêm dự án": dùng đúng permission `wprojects.create` (giống hệt web, tức
+   nhóm Quản lý + Quản trị mặc định có, nhóm khác không có dù có là Quản lý Tổ) — hay OR thêm cờ
+   `isTeamManager` (để một người được đánh dấu "Quản lý Tổ" nhưng không thuộc nhóm quyền Quản lý/
+   Quản trị vẫn thấy nút)?
+3. Sau khi tạo dự án thành công trên mobile: quay lại danh sách "Dự án – Toàn Tổ" luôn, hay điều
+   hướng tiếp sang màn "Thành viên dự án" để gán PM/nhân sự ngay (giống hành vi redirect `Members`
+   của web)?
+4. Mã dự án (Code): ẩn hẳn khỏi form mobile và luôn để backend tự sinh (giống cách web tự sinh khi
+   để trống), hay vẫn hiện ô cho nhập tay như web?
+5. Xác nhận: form tạo mới KHÔNG có trường chọn PM phụ trách (giữ đúng như web — PM gán ở bước
+   riêng sau khi tạo xong), đúng không?
+
+## 4. Câu trả lời & Quyết định
+Người dùng từ chối hộp thoại hỏi lựa chọn, yêu cầu "tiếp tục đánh giá chức năng" — tức tự đưa ra
+quyết định hợp lý và tiếp tục, không dừng lại chờ trả lời từng câu. Áp dụng đúng nhánh "Người dùng
+muốn làm ngay, không muốn hỏi đáp" của skill: chọn phương án khuyến nghị đã nêu ở Giai đoạn 1,
+tiếp tục làm, không hỏi lại thêm.
+
+1. Phạm vi form → **Rút gọn**: Tên (bắt buộc), Khách hàng, Loại dự án (bắt buộc), Giai đoạn (bắt
+   buộc), Trạng thái (bắt buộc, lọc theo Giai đoạn), Ngày bắt đầu, Ngày kết thúc dự kiến, Mô tả.
+   KHÔNG đưa Github/SVN/FTP/Database/file đính kèm lên mobile — bổ sung sau trên web nếu cần.
+2. Quyền hiển thị nút → **`wprojects.create` HOẶC `IsTeamManager`** (theo đúng sát nghĩa đen câu
+   người dùng liệt kê 3 nhóm tách biệt "quản lý VÀ Quản trị, quản lý tổ" — không chỉ dùng đúng
+   permission như web, vì "quản lý tổ" được nêu như một điều kiện độc lập).
+3. Luồng sau khi tạo → **Quay lại danh sách dự án**, tự reload — không điều hướng sang màn Thành
+   viên dự án ở lần này (giữ phạm vi gọn, tránh lấn sang luồng gán PM/nhân sự chưa được yêu cầu).
+4. Mã dự án (Code) → **Ẩn hẳn khỏi form**, gửi rỗng lên server, để backend tự sinh y hệt cơ chế web
+   dùng khi để trống.
+5. Trường PM phụ trách → **Không có trong form tạo**, xác nhận đúng như điều tra — giữ nguyên hành
+   vi web (PM gán ở bước khác).
+
+## 5. Checklist
+
+### Chuẩn bị
+- [ ] Đọc `Controllers/Api/MyProjectsApiController.cs`, `Controllers/Api/ApiMappers.cs`,
+      `Models/Api/ApiDtos.cs` để nắm đúng DTO/pattern hiện có trước khi thêm action mới.
+- [ ] Đọc `Controllers/BaseController.cs` (`Can(string permission)`, `IsTeamManager`) để tái dùng
+      đúng hàm kiểm quyền có sẵn.
+
+### Thực hiện — Backend (web, C#)
+- [ ] [Bắt buộc] Thêm action `Create` (POST) vào `MyProjectsApiController.cs`: tham số phẳng
+      (name, customer, projectType, phase, state, startDate, endDate, description), kiểm quyền
+      `Can("wprojects.create") || IsTeamManager`, validate thủ công (`BadRequest("...")` tiếng
+      Việt) — Tên bắt buộc, EndDate >= StartDate nếu có, State phải thuộc đúng Phase
+      (`ProjectStates.BelongsTo`), tự sinh Code qua `WorkService.GenerateProjectCode` (theo đúng
+      cách `WorkProjectsController.Edit` đang làm), sanitize `Description` bằng `HtmlSanitizer`.
+- [ ] [Bắt buộc] Thêm mapper DTO tương ứng ở `ApiMappers.cs` nếu response tạo mới cần trả về đủ dữ
+      liệu cho mobile tự thêm vào danh sách/điều hướng.
+- [ ] [Bắt buộc] Thêm endpoint danh mục "Loại dự án" cho mobile nếu mobile chưa có cách lấy —
+      kiểm tra `Repository.ActiveNames(Repository.ProjectTypes)` đã có API trả về danh sách này
+      cho mobile chưa (nếu chưa, thêm action GET nhỏ, ví dụ trong `MyProjectsApiController`).
+
+### Thực hiện — Mobile (Flutter)
+- [ ] [Bắt buộc] Dùng agent `designer-mobile-pro` thiết kế màn "Thêm dự án"
+      (`Mobile-Flutter/lib/features/projects/add_project_screen.dart`), theo đúng khung kiến trúc
+      của `add_task_screen.dart` (full-screen `MaterialPageRoute`, `Form` + `AppTextField`/
+      `AppDropdown`, loading/lỗi qua `AppButton(isLoading:)`/`ToastService`), đủ 5 trạng thái theo
+      chuẩn nghiệm thu.
+- [ ] [Bắt buộc] Thêm `AuthProvider.canCreateProject` (getter, dựa trên `permissions` +
+      `isTeamManager` có sẵn — không cần sửa backend thêm vì `Permissions` đã trả đủ).
+- [ ] [Bắt buộc] Thêm nút "+ Thêm dự án" vào AppBar của `my_projects_screen.dart` (chỉ khi
+      `scope == 'team'` và `auth.canCreateProject`), điều hướng sang màn mới, khi trả về `true`
+      thì `_reload()` danh sách.
+- [ ] [Bắt buộc] Thêm `create(...)` vào service dự án tương ứng (`my_projects_service.dart` hoặc
+      tên tương tự), theo mẫu `FormData` + xử lý `DioException`/400 giống `checklist_service.dart`.
+
+### Kiểm tra / Nghiệm thu
+- [x] Gọi agent `code-reviewer` cho cả phần backend lẫn mobile — phát hiện 2 lỗi liên quan (xem
+      "Ghi chú"), đã sửa, build lại sạch.
+- [x] Gọi skill `chuyen-gia-nghiem-thu-design` nghiệm thu màn "Thêm dự án" — kết luận ĐẠT (có bảo
+      lưu 1 điểm không chặn: dùng `PhosphorIcon` trực tiếp ở trạng thái lỗi, là pattern có sẵn
+      toàn dự án chưa từng có `AppIcons`, không phải lỗi riêng của màn này).
+- [x] Build lại app, test tay trên emulator (tài khoản `tantd.kha`, Quản lý Tổ): nút "+" hiện đúng
+      trên "Dự án – Toàn Tổ", mở form, chọn Loại dự án (danh mục tải đúng từ API), đổi Giai đoạn
+      sang "Hỗ trợ" → Trạng thái tự đổi "Đang hỗ trợ" đúng thiết kế, submit thành công → quay lại
+      danh sách (57 → 58 dự án), tìm lại thấy đúng dữ liệu đã nhập, chưa có PM (đúng thiết kế).
+- [x] Phát hiện lỗ hổng điều hướng nghiêm trọng qua đối chiếu code (trước khi test tiếp với tài
+      khoản Quản lý thật): TOÀN BỘ đường vào màn "Dự án – Toàn Tổ" (nơi đặt nút "+ Thêm dự án")
+      đều khoá cứng theo `IsTeamManager`/`isTeamManager` — cả mục "Danh sách dự án" trong nhóm
+      "Quản lý" (Cài đặt, `profile_screen.dart` dòng 101 cũ) lẫn the "Dự án đang chạy" trên
+      Dashboard (`data.canSeeTeam` ← `IsTeamManager` bên `DashboardApiController.cs`). Tài khoản
+      thuộc nhóm quyền "Quản lý"/"Quản trị" nhưng KHÔNG tích "Là Quản lý Tổ" sẽ không có cách nào
+      mở được màn này trên mobile — nút "+" vừa thêm là "chết" với nhóm người dùng này dù quyền
+      bên trong đúng. Đã hỏi người dùng cách xử lý → chọn: thêm mục riêng trong Cài đặt.
+- [x] Đã sửa `profile_screen.dart`: nhánh `if (auth.isTeamManager)` (nhóm Quản lý đầy đủ 5 mục)
+      giữ nguyên; thêm nhánh `else if (auth.canCreateProject)` — nhóm "Quản lý" rút gọn CHỈ có mục
+      "Thêm dự án", mở thẳng `AddProjectScreen` qua `pushAddProjectScreen` (KHÔNG qua danh sách
+      "Toàn Tổ" — tránh lộ dữ liệu toàn tổ cho tài khoản chưa nên thấy). Tạo thành công → toast
+      "Đã tạo dự án mới thành công." (không có danh sách để tự reload như đường vào cũ).
+      `flutter analyze` sạch, build APK debug thành công, test tay: tài khoản Quản lý Tổ
+      (`tantd.kha`) không hồi quy — vẫn thấy đủ nhóm "Quản lý" 5 mục như cũ, không trùng lặp.
+- [x] Đăng nhập `pmdemo`/`Kha@2026` liên tục báo "Sai tài khoản hoặc mật khẩu" dù xác nhận đúng
+      100% qua ảnh chụp plaintext — hoá ra KHÔNG phải lỗi credential: server local (`localhost:8080`,
+      IIS thật, không phải IIS Express) nạp dữ liệu người dùng vào bộ nhớ MỘT LẦN lúc khởi động
+      (`Repository.WarmUpAll()`), không tự làm mới khi ai đó đổi mật khẩu qua tiến trình khác cùng
+      kết nối DB `10.57.30.10,1433`/`pmncpt.cenit.vn` (theo `Web.config`). Người dùng `iisreset`
+      (đã hướng dẫn qua Terminal) → đăng nhập lại thành công ngay. **Ghi nhớ cho các lần sau**:
+      nếu web/API cùng DB nhưng một bên không nhận thay đổi dữ liệu do bên kia vừa lưu, nghi ngay
+      cache in-memory của tiến trình server đang test bị cũ — yêu cầu khởi động lại server trước
+      khi nghi ngờ code.
+- [x] Phản hồi trực tiếp từ người dùng SAU khi đã code+build+test bản đầu (đảo ngược 3 quyết định
+      tôi tự chọn trước đó khi người dùng từ chối hộp thoại hỏi lựa chọn):
+      1. "Sao lại có chức năng thêm dự án trong cài đặt. Nó phải là dấu + nằm ở màn hình Dự án chứ"
+         → gỡ mục "Thêm dự án" khỏi Cài đặt (`profile_screen.dart`, revert về đúng bản gốc chỉ có
+         nhánh `if (auth.isTeamManager)`), sửa `my_projects_screen.dart`: nút "+" hiện theo
+         `canCreateProject` THÔI (bỏ điều kiện `scope == 'team'`) — vì màn "Dự án" (tab dưới cùng)
+         là NƠI DUY NHẤT mọi tài khoản đều tới được (scope='mine' cho tài khoản không phải Quản lý
+         Tổ, scope='team' cho Quản lý Tổ), nút phải theo đúng màn đó chứ không tách riêng đường
+         vào khác.
+      2. "Mô tả trong thêm dự án cũng phải là richtext nhé" → đổi `AppTextField` thường sang
+         `AppRichEditor`/`AppRichEditorController` (đúng mẫu `add_task_screen.dart`), gửi
+         `.toHtml()` lên server (backend đã sẵn `HtmlSanitizer.Clean`, không cần đổi).
+      3. "Trong màn hình thêm dự án đang ko đầy đủ như modal thêm dự án trên web" → HUỶ quyết định
+         "rút gọn" đã tự chọn trước đó (Giai đoạn 4 mục 1 ở trên) — bổ sung ĐẦY ĐỦ các trường còn
+         thiếu: GithubLink/SvnLink/FtpAccount/FtpPassword/DbType/DbServer/DbUsername/DbPassword
+         (khối "Thông tin triển khai", đều optional) + Tài liệu đính kèm (chọn nhiều file qua
+         `FilePicker`, dùng lại `kAllowedAttachmentExtensions` có sẵn ở `task_comments_screen.dart`).
+         Backend (`MyProjectsApiController.Create`) mở rộng nhận đủ tham số trên + `files`
+         (`IEnumerable<HttpPostedFileBase>`), lưu qua `CommentAttachments.TrySaveFile` +
+         `Repository.WorkProjectFiles.Insert` (y hệt `WorkProjectsController.SaveProjectFiles` bên
+         web), trả thêm `RejectedFiles` trong response để mobile toast cảnh báo file bị từ chối mà
+         không chặn việc tạo dự án. Build backend + `flutter analyze` sạch, test tay trên emulator
+         với `pmdemo` (tài khoản Quản lý, không phải Quản lý Tổ): nút "+" đúng vị trí trên "Dự án
+         của tôi", mở form đủ toàn bộ trường + rich text mô tả đúng, submit đủ payload mới (kể cả
+         để trống các trường mở rộng) thành công, không lỗi.
+      **Bài học chung**: khi người dùng từ chối hộp thoại hỏi lựa chọn và nói "tiếp tục đánh giá
+      chức năng", tôi tự chọn phương án khuyến nghị và LÀM XONG rồi mới đưa cho người dùng xem —
+      nhưng vẫn nên hiểu đây là quyết định TẠM, người dùng có thể sửa lại bất cứ lúc nào sau khi
+      thấy kết quả thật; không nên bám chặt quyết định tự chọn ban đầu khi có phản hồi ngược lại
+      rõ ràng, sửa ngay không cần hỏi lại vì ý người dùng đã rất rõ ràng.
+- [x] **Sửa lại LẦN NỮA điều kiện quyền** sau khi người dùng gửi ảnh chụp web (`/DashboardWeb` hay
+      tương đương, sidebar "QUẢN LÝ TỔ") kèm nhận xét: "Nhóm quyền Quản lý không được thấy mục
+      này. Chỉ có quản trị và người được check Là Quản lý tổ mới được thấy." → xác nhận quyết định
+      trước đó (permission `wprojects.create` HOẶC IsTeamManager) SAI — đã nhầm "nhóm quyền Quản
+      lý" (role group, có thể có `wprojects.create`) với "Là Quản lý Tổ" (cờ riêng từng tài khoản
+      HOẶC quyền `wteam.manage`). Sửa `AuthProvider.canCreateProject` (mobile) và
+      `MyProjectsApiController.CanCreateProject()` (backend) về ĐÚNG MỘT điều kiện:
+      `IsTeamManager`/`isTeamManager` (đã tự bao gồm Quản trị vì tài khoản "*" luôn qua mọi
+      `Can(...)`) — KHÔNG còn xét `wprojects.create` riêng nữa. Test lại: `pmdemo` (nhóm "Quản lý",
+      không tích Quản lý Tổ) không còn thấy nút "+" trên "Dự án của tôi" — đúng.
+      **Lưu ý quan trọng chưa xử lý (ngoài phạm vi việc mobile đang làm)**: ảnh người dùng gửi cho
+      thấy TRÊN WEB, `pmdemo` (nhóm "Quản lý") vẫn đang truy cập được thật sự vào "Duyệt nghỉ
+      phép" (dữ liệu thật, nút Duyệt/Từ chối) trong sidebar "QUẢN LÝ TỔ" — tức đây có thể là lỗi
+      cấu hình quyền THẬT trên nhóm "Quản lý" ở hệ thống đang chạy (dữ liệu production thật, DB
+      `pmncpt.cenit.vn`), không phải riêng vấn đề mobile. KHÔNG tự ý sửa quyền nhóm "Quản lý" trên
+      DB thật — đây là thay đổi ảnh hưởng nhiều người dùng khác, cần người dùng xác nhận rõ trước
+      khi đụng vào (có thể cần một phiên phân tích riêng qua skill phan-tich-van-de nếu người dùng
+      muốn xử lý).
+- [x] Xử lý 2 lỗi từ code-reviewer (agent chạy nền) cho bản mở rộng đầy đủ trường:
+      1. Crash tiềm ẩn trên Flutter Web: `Mobile-Flutter/lib/features/projects/my_projects_service.dart`
+         dùng `f.path!` ép non-null trên `PlatformFile` — trên Web, `file_picker` luôn trả
+         `path == null` (chỉ có `bytes`). Đã thêm hàm `_toMultipartFile` tự chọn `fromFile` (có
+         path) hoặc `fromBytes` (path null, dùng bytes — luôn có trên Web).
+      2. `[ValidateInput(false)]` áp cho toàn bộ action `Create` rộng hơn hành vi web thật (web chỉ
+         cho phép HTML riêng ở `WorkProject.Description` qua `[AllowHtml]`, không tắt validate cho
+         Github/SVN/FTP/Database). Đã đổi action `Create` nhận `CreateProjectRequestDto` (model
+         mới trong `ApiDtos.cs`, CHỈ `Description` gắn `[AllowHtml]`) thay vì tham số phẳng, bỏ hẳn
+         `[ValidateInput(false)]` — khớp đúng cách `WorkProjectsController.Edit` ben web làm.
+      Build backend + `flutter analyze` sạch sau cả 2 lần sửa.
+
+### Ghi chú
+- Không đụng tới `WorkProjectsController.Edit`/`_EditForm.cshtml` bên web — chỉ thêm API mới, giữ
+  nguyên hành vi web hiện có.
+- Phạm vi lần này KHÔNG bao gồm màn "Thành viên dự án" (gán PM/nhân sự) — nếu sau này cần luồng
+  khép kín (tạo xong → gán PM ngay), sẽ là một yêu cầu riêng.
+- **Lỗi phát hiện qua code-reviewer, đã sửa**: `AuthApiController.Login` trước đó chỉ trả về
+  `Permissions = ["wteam.manage"]` hoặc `[]` — không bao giờ chứa `"wprojects.create"`/`"*"`, làm
+  điều kiện `AuthProvider.canCreateProject` phía mobile thực chất chỉ còn tương đương
+  `isTeamManager` (nhánh `permissions.contains('wprojects.create')` là code chết). Hậu quả: tài
+  khoản nhóm "Quản lý"/"Quản trị" (có quyền qua Role, không tích cờ Quản lý Tổ) sẽ KHÔNG thấy nút
+  "+ Thêm dự án" trên mobile dù tạo được trên web — sai với quyết định đã chốt. Đã sửa
+  `AuthApiController.Login` trả về ĐẦY ĐỦ `Permissions.ResolvePermissions(user.Role)` (cộng thêm
+  thủ công `wteam.manage` nếu `user.IsTeamManager` mà nhóm quyền chưa có, vì cờ này độc lập với
+  nhóm quyền) — sửa TẬN GỐC, không phải vá riêng cho tính năng này, nên các màn mobile kiểm quyền
+  theo permission code khác trong tương lai cũng tự động đúng.
+- `MyProjectsApiController.CanCreateProject()` CHỦ ĐÍCH rộng hơn web thật (thêm `IsTeamManager`
+  ngoài `wprojects.create`, trong khi `WorkProjectsController.Edit` trên web chỉ xét
+  `wprojects.create,wprojects.edit`) — đúng theo quyết định Giai đoạn 4 mục 2 ở trên, đã sửa lại
+  comment trong code cho khỏi gây hiểu lầm là "giống hệt web".
+
+---
+
+# [2026-08-20] Vấn đề: Màn "Lịch công việc cá nhân" theo tháng trên mobile
+
+## 1. Mô tả vấn đề
+Nguyên văn: "Xây dựng 1 màn hình lịch công việc cá nhân trong tháng, cho phép chọn Tháng để xem.
+Màn hinh Lịch công việc cá nhân thì ở mọi nhóm quyền đều có." Kèm 1 ảnh chụp tham khảo trang web
+"Lịch công việc" — có 4 thẻ thống kê (Công việc trong tháng/Đã hoàn thành/Đang thực hiện/Quá hạn),
+thanh điều hướng tháng + nút "+ Thêm việc", lưới lịch tháng 7 cột (mỗi ô ngày liệt kê vài việc có
+chấm màu theo trạng thái, "+N việc khác" nếu nhiều), sidebar "Công việc sắp tới" (5 card, có badge
+trạng thái + thời gian tương đối). Có 2 dropdown lọc bị khoanh đỏ/gạch trong ảnh — ý nghĩa CHƯA RÕ.
+
+## 2. Phân tích ban đầu
+
+- **Bối cảnh**: Module Công việc cá nhân, mobile BrewTask (`Mobile-Flutter/lib/features/mywork/`)
+  + cần API mới bên web (`TTKDGP.ProjectManager/Controllers/Api/MyWorkApiController.cs`).
+- **PHÁT HIỆN QUAN TRỌNG qua điều tra**: Trang web trong ảnh KHÔNG tồn tại trong repo — grep toàn
+  bộ `Views/`/`Controllers/` cho "Lịch công việc", "Công việc trong tháng", "tiến độ công việc
+  theo thời gian" đều 0 kết quả; menu điều hướng đầy đủ (`Models/Permission.cs` dòng 324-393)
+  không có mục "Lịch công việc" nào. Đây là màn CHƯA TỪNG ĐƯỢC XÂY, không phải màn có sẵn để copy
+  hành vi 1:1 — ảnh chụp nhiều khả năng là mockup/tham khảo ý tưởng, cần xác nhận lại với người
+  dùng trước khi giả định phạm vi.
+- **Mục tiêu**: Người dùng xem nhanh việc của mình phân bố trong 1 tháng dạng lịch, chọn được
+  tháng khác để xem.
+- **Quy tắc nghiệp vụ đã có sẵn, dùng chung toàn hệ thống (tái dùng, không tự bịa mới)**:
+  - "Việc thuộc tháng nào" — `KpiService.TaskInMonth(task, year, month)` (`Services/KpiService.cs`
+    dòng 73-93): ưu tiên `DueDate` nằm trong tháng → không có thì xét `Year`/`Week` (việc gán theo
+    tuần báo cáo) có giao với tháng → cuối cùng xét `CompletedAt`. Dùng cho cả Dashboard, MyWork,
+    chấm KPI.
+  - `IsOverdue` (`Models/Work/WorkTask.cs` dòng 239-246): false nếu việc tạm dừng/đã đóng hoặc
+    không có `DueDate`; true nếu `DateTime.Today > DueDate.Date`.
+  - "Sắp tới hạn" (`DashboardController.cs` dòng 24-30, 106-119): ngưỡng 7 ngày, tối đa 5 item,
+    sắp xếp quá hạn trước rồi theo `DueDate` gần nhất.
+  - 5 trạng thái `TaskStates` (ChuaBatDau/DangLam/TamDung/HoanThanh/Huy) + màu đã dùng ở biểu đồ
+    Dashboard: `#94a3b8`/`#3b82f6`/`#f59e0b`/`#22a06b`/`#ef4444`.
+  - Dữ liệu luôn theo `AssigneeUserId == CurrentUserId` (việc được giao cho mình, không phải
+    người tạo).
+- **Hiện trạng mobile**: `MyWorkApiController.Index(scope, filter)` — CHỈ có action này, trả mảng
+  phẳng `TaskDto` (không `StartDate`, chỉ có ở `TaskDetailDto`), không có tham số tháng/khoảng
+  ngày. `my_work_screen.dart` hiện là danh sách phẳng đơn giản, không có chế độ xem lịch.
+  `core/widgets/` chưa có widget lưới lịch tháng nào; `pubspec.yaml` chưa có package lịch nào
+  (table_calendar, syncfusion...) — cần tự vẽ bằng GridView/Table (đúng phong cách tự viết widget
+  của dự án) hoặc thêm package mới.
+- **Phạm vi**: Cần thêm ít nhất 1 API mới (dữ liệu công việc nhóm theo ngày trong 1 tháng) +
+  model/service Flutter mới + 1 widget lưới lịch tháng mới (`core/widgets/`) + màn hình mới.
+- **Rủi ro/Giả định**: Vì không có trang web gốc, nếu tự suy đoán chi tiết UI (số việc tối đa mỗi
+  ô, hành vi bấm vào việc, có cần 4 thẻ thống kê/sidebar không) mà đoán sai thì phải làm lại — cần
+  hỏi rõ trước khi code, đúng tinh thần "không tự bịa câu trả lời thay người dùng" của CLAUDE.md.
+- **Phương án sơ bộ**:
+  - A. Bản đầy đủ như ảnh: 4 thẻ thống kê + lưới lịch + sidebar "Công việc sắp tới" — nhiều màn
+    hình phụ, phù hợp nếu người dùng muốn đối chiếu sát ảnh.
+  - B. Bản gọn cho mobile: chỉ thanh điều hướng tháng + lưới lịch (bấm ô ngày xem việc trong ngày
+    đó, hoặc bấm thẳng 1 việc mở Chi tiết công việc) — phù hợp màn hình hẹp, đúng tinh thần các
+    màn mobile khác trong dự án (ưu tiên gọn, thao tác nhanh).
+
+## 3. Câu hỏi làm rõ
+1. Xác nhận: trang "Lịch công việc" trong ảnh KHÔNG có trong repo này (đã tìm khắp code lẫn tài
+   liệu thiết kế) — đây là màn CHƯA TỪNG được xây. Bạn dùng ảnh này làm tham khảo Ý TƯỞNG/bố cục
+   cho riêng mobile thôi, đúng không? Hay bạn cho rằng trang này đã có sẵn ở đâu đó (nhánh git
+   khác, dự án khác) và muốn tôi tìm/đối chiếu lại trước khi làm?
+2. Phạm vi hiển thị trên mobile: cần đủ như ảnh (4 thẻ thống kê + lưới lịch + sidebar "Công việc
+   sắp tới") hay chỉ cần gọn — thanh điều hướng tháng + lưới lịch (bỏ 4 thẻ thống kê và sidebar,
+   vì màn hình hẹp)?
+3. Ngày quyết định 1 việc "thuộc" ô nào trên lưới lịch: dùng đúng quy tắc `TaskInMonth` đã có sẵn
+   toàn hệ thống (ưu tiên `DueDate`, hạn hoàn thành) hay bạn muốn khác (ví dụ chỉ theo `StartDate`
+   — ngày bắt đầu)?
+4. Bấm vào 1 việc hiển thị trong ô ngày → mở thẳng màn "Chi tiết công việc" (giống các màn khác
+   đang có), hay mở trước 1 danh sách các việc trong ngày đó (vì ô lịch nhỏ, 1 ngày có thể có
+   nhiều việc)?
+5. Ảnh web có 2 dropdown lọc bị khoanh đỏ/gạch — ý nghĩa của việc khoanh đó là gì: "không cần bộ
+   lọc Trạng thái/Ưu tiên trên mobile" hay chỉ là bạn đánh dấu để tôi chú ý riêng phần đó (còn ý
+   nghĩa khác)?
+6. Xác nhận: đây là dữ liệu CÁ NHÂN thuần tuý (chỉ việc được giao cho chính tài khoản đang đăng
+   nhập — `AssigneeUserId = CurrentUserId`), KHÔNG có chế độ xem "Toàn Tổ" nào khác trên màn lịch
+   này, đúng không?
+7. Vị trí truy cập màn "Lịch công việc" trên mobile: bottom nav hiện đã đủ 4 tab (Dashboard/Dự
+   án/Công việc/Cài đặt) — bạn muốn thêm 1 icon chuyển chế độ xem "Lịch" ngay trên AppBar của màn
+   "Công việc" hiện có (giống cách Checklist có 2 chế độ Dạng lưới/Kanban), hay muốn 1 đường dẫn
+   khác (ví dụ từ Dashboard)?
+
+## 4. Câu trả lời & Quyết định
+Người dùng trả lời ngắn gọn "lịch này chỉ hiển thị công việc của cá nhân thôi. Làm trên web" — xác
+nhận câu hỏi 6 (dữ liệu cá nhân thuần) và làm rõ nền tảng mục tiêu: **WEB**, không phải mobile như
+tôi mặc định ban đầu. Các câu hỏi còn lại (2-5, 7) không được trả lời riêng — áp dụng nhánh "muốn
+làm ngay" của skill: tự chọn phương án hợp lý nhất và làm luôn, không hỏi thêm vòng nữa.
+
+Giả định đã áp dụng (không hỏi lại vì người dùng muốn làm ngay):
+- Phạm vi: đầy đủ như ảnh gốc (4 thẻ thống kê + lưới lịch + sidebar "Công việc sắp tới" + bộ lọc
+  Trạng thái/Ưu tiên) — vì đây là web, đủ chỗ hiển thị, và ảnh chụp vốn là thiết kế web.
+- Ngày quyết định ô lịch: CHỈ đặt việc vào ô có `DueDate` trùng ngày đó (không suy diễn ngày cho
+  việc chỉ tính vào tháng qua Tuần báo cáo/Mốc hoàn thành — các việc đó vẫn được tính vào 4 thẻ
+  thống kê, chỉ không có ô cụ thể để đặt lên lưới).
+- Bấm vào 1 việc → mở modal "Chi tiết công việc" qua `data-modal-url` (đúng quy ước có sẵn toàn hệ
+  thống, không tự bịa hành vi mới).
+- Có bộ lọc Trạng thái + Ưu tiên (2 dropdown, matches ảnh) — áp dụng cho cả lưới lẫn 4 thẻ thống
+  kê lẫn "Công việc sắp tới" (nhất quán, không tách riêng).
+- Vị trí truy cập: thêm mục "Lịch công việc" vào menu web (khối đầu, không tiêu đề — nơi dành cho
+  "màn ai cũng dùng"), permission rỗng (`""`) — nghĩa đen "mọi nhóm quyền đều có" như người dùng
+  yêu cầu, không dùng `wtasks.view` như 2 mục "Công việc của tôi"/"Dự án của tôi" (dù 2 mục đó
+  thực tế cũng được cấp mặc định cho hầu hết mọi người, nhưng vẫn là một mã quyền có thể bị admin
+  gỡ — người dùng muốn màn Lịch KHÔNG BAO GIỜ bị gỡ được).
+- KHÔNG làm nút "+ Thêm việc" (có trong ảnh) — ngoài phạm vi câu hỏi gốc ("xây lịch", "chọn
+  tháng"), và chưa có endpoint tạo việc riêng nào sẵn để tái dùng nhanh gọn.
+- Bỏ 2 dropdown lọc bị khoanh đỏ trong ảnh gốc — thực ra vẫn LÀM ra 2 dropdown đó (Trạng thái +
+  Ưu tiên), coi khoanh đỏ là "người dùng đánh dấu chú ý" chứ không phải "bỏ đi", vì không có tín
+  hiệu rõ ràng nào khác và giữ lại an toàn hơn (dễ bỏ sau nếu sai, khó thêm lại đúng ý nếu đoán
+  nhầm là bỏ).
+
+## 5. Checklist: Màn "Lịch công việc" (web)
+
+### Chuẩn bị
+- [x] Điều tra: xác nhận trang không tồn tại sẵn trong repo, tìm quy tắc nghiệp vụ tái dùng được
+      (KpiService.TaskInMonth, IsOverdue, DueSoonDays=7/ListLimit=5 của DashboardController).
+- [x] Điều tra cấu trúc Menu (`Permission.cs`), mẫu Controller/View (`DashboardController.cs`),
+      quy ước mở modal chi tiết việc (`data-modal-url` → `ChecklistController.Detail`).
+
+### Thực hiện
+- [x] Thêm `Controllers/CalendarController.cs` — action `Index(year, month, state, priority)`,
+      dùng lại đúng `WorkService.TasksOfUser`, `KpiService.TaskInMonth`, logic 4 số liệu + "sắp
+      tới hạn" y hệt `DashboardController.BuildMyTasks`. Việc đặt lên lưới CHỈ theo `DueDate`.
+- [x] Thêm `Views/Calendar/Index.cshtml` — thẻ thống kê (tái dùng `.stats`/`.stat` có sẵn), bộ
+      lọc Trạng thái/Ưu tiên (GET form, giữ `year`/`month` qua hidden input), điều hướng tháng
+      (link đổi query string, không AJAX — đúng quy ước toàn dự án), lưới lịch 7 cột, sidebar
+      "Công việc sắp tới" (tái dùng `.task-feed-item` có sẵn từ Dashboard).
+- [x] Thêm CSS lưới lịch mới vào `Content/site.css` (`.calendar-*`) — dùng token màu ngữ nghĩa có
+      sẵn (`--st-ok`/`--st-warn`/`--st-late`/`--st-idle`/`--primary` + bản "-soft"), không hard-code
+      hex mới.
+- [x] Đăng ký menu "Lịch công việc" vào `Permission.cs` (`Menu`, khối đầu không tiêu đề), permission
+      rỗng — tự động hiện trong `_Layout.cshtml` không cần sửa gì thêm (đã xác nhận qua điều tra
+      cơ chế render menu).
+- [x] **Sự cố phát hiện + đã sửa**: `CalendarController.cs` và `Views/Calendar/Index.cshtml` ban
+      đầu build "thành công" (exit 0) nhưng trang 404 mãi không hết dù rebuild/iisreset nhiều lần
+      — nguyên nhân THẬT: project dùng `.csproj` kiểu cũ (liệt kê rõ từng file qua `<Compile
+      Include>`/`<Content Include>`, KHÔNG tự quét thư mục như SDK-style mới) — file mới tạo
+      KHÔNG tự động được đưa vào biên dịch dù nằm đúng thư mục, MSBuild lặng lẽ bỏ qua (không báo
+      lỗi gì). Đã thêm 2 dòng `<Compile Include="Controllers\CalendarController.cs" />` và
+      `<Content Include="Views\Calendar\Index.cshtml" />` vào `.csproj` — sau đó mới build lại và
+      chạy đúng. **GHI NHỚ CHO CÁC LẦN SAU: bất kỳ khi nào tạo file .cs hoặc .cshtml MỚI (không
+      phải sửa file có sẵn) trong dự án web này, PHẢI thêm dòng khai báo tương ứng vào
+      `TTKDGP.ProjectManager.csproj` NGAY LÚC TẠO FILE, đừng đợi tới lúc test mới phát hiện** — đây
+      là lỗi tốn nhiều thời gian nhất trong toàn phiên làm việc.
+- [x] Nghiệm thu HTTP trực tiếp (đăng nhập qua PowerShell + `Invoke-WebRequest`, không có trình
+      duyệt để chụp ảnh trực quan): status 200, có đủ `stat-value`/`calendar-day`/`task-feed-item`
+      hoặc thông báo rỗng, không có "Server Error", menu có link `/Calendar`.
+- [x] Người dùng phản hồi trực tiếp qua ảnh chụp: "Chỗ này có thể thiết kế nhìn đẹp hơn được ko?"
+      (lưới lịch trông thô — viền mỗi ô cộng dồn, việc hiện dạng chấm+chữ thường, số ngày hôm nay
+      chỉ tô nền nhạt không nổi bật). Đã thiết kế lại: việc hiện dạng CHIP nền màu nhạt theo trạng
+      thái (`--st-*-soft`) thay vì chấm tròn nhỏ, số hôm nay khoanh tròn đặc màu thương hiệu kiểu
+      Google Calendar, khung lưới bọc trong 1 khối bo góc liền thay vì viền từng ô cộng dồn, thêm
+      khoảng thở (cao ô 104px thay 92px), header ngày viết hoa + letter-spacing rõ hơn. Build lại
+      + xác nhận HTTP vẫn render đúng markup mới (`calendar-grid-wrap`, `calendar-task-list`).
+
+### Kiểm tra / Nghiệm thu
+- [ ] Người dùng tự xem trực quan trên trình duyệt (`pm.vn/Calendar`) sau bản thiết kế lại, xác
+      nhận ĐẠT hay cần chỉnh thêm — tôi không có trình duyệt để tự chụp ảnh đối chiếu.
+- [ ] Test tay: đổi tháng (‹/›/Hôm nay), lọc Trạng thái/Ưu tiên, bấm 1 việc trên lưới/sidebar mở
+      đúng modal chi tiết, tài khoản không phải Quản lý Tổ/Quản trị vẫn thấy menu + trang (đúng
+      "mọi nhóm quyền đều có").
+
+### Ghi chú
+- Đây là tính năng WEB thuần — không đụng gì tới mobile Flutter.
+- "+ Thêm việc" trong ảnh gốc CHƯA làm — ngoài phạm vi câu hỏi ban đầu, cần yêu cầu riêng nếu cần.
+- KHÔNG thêm AJAX chuyển tháng — giữ đúng quy ước server-render-lại-toàn-trang của dự án.
+
+### Cập nhật sau khi người dùng xem trực tiếp (2 vòng phản hồi liên tiếp)
+- [x] "Màu sắc này thể hiện theo trạng thái Quá hạn, đúng hạn, Đang thực hiện" — đổi từ tô màu
+  theo ĐỦ 5 TaskStates sang CHỈ 3 sắc thái theo kết quả thực tế: Đỏ (`IsOverdue`), Xanh lá (State
+  == Done — "Đúng hạn/Hoàn thành"), Xanh dương (còn lại — "Đang thực hiện"); state Huỷ tách riêng
+  màu xám (trường hợp hiếm, không thuộc 3 nhóm chính). Thêm dải chú giải màu dưới lưới.
+- [x] "Thiết kế giao diện theo hướng này" (kèm ảnh mẫu) + link thiết kế `claude.ai/design/...`
+  (không fetch được, 403 — trang yêu cầu đăng nhập claude.ai riêng, không phải dạng artifact công
+  khai). Đã tự thiết kế lại theo đúng bố cục ảnh mẫu: tiêu đề "Tháng X" đậm lớn + "năm YYYY" nhạt
+  cùng dòng bên trái, cụm "Hôm nay" + nút ‹› dạng segmented-control bo tròn bên phải; bỏ hẳn viền
+  dọc giữa các cột ngày (chỉ còn viền ngang mảnh giữa các tuần); ngày hôm nay đổi từ tô nền cả ô
+  sang một khối bo góc nổi riêng (dùng `::before` overlay) để không dính liền sang ô cạnh bên khi
+  lưới không còn viền dọc.
+- [x] Build lại 2 lần, xác nhận qua HTTP mỗi lần (đăng nhập + fetch `/Calendar`, kiểm tra có đúng
+  class mới, không "Server Error") — lần này KHÔNG cần iisreset (chỉ sửa file .cs/.cshtml/.css đã
+  có sẵn trong .csproj, không tạo file mới).

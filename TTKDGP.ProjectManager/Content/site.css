@@ -3736,3 +3736,164 @@ summary.rowbtn::marker { content: ""; }
     .rank-seg:last-child { border-bottom: none; }
     .rank-seg em { display: inline; margin-left: 6px; }
 }
+
+/* ===== Lịch công việc cá nhân (CalendarController) =====
+   Lưới lịch tháng riêng, không dùng table.data (bảng dữ liệu hàng-cột thường) vì đây là lưới
+   NGÀY chứ không phải bảng bản ghi — mỗi ô là 1 ngày, chứa 0..n việc thay vì 1 dòng = 1 bản ghi.
+   Bố cục theo đúng mẫu người dùng gửi: tiêu đề tháng lớn + cụm điều hướng bên phải, lưới KHÔNG kẻ
+   viền dọc giữa các cột ngày (chỉ phân tách bằng đường kẻ ngang mảnh giữa các tuần), không tách
+   .card-head/.card-body như card thường — cả khối tiêu đề lẫn lưới cùng nằm trong một padding. */
+.calendar-layout { grid-template-columns: 2fr 1fr; align-items: start; }
+
+.calendar-card { padding: 22px 22px 8px; }
+
+.calendar-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.calendar-title { font-size: 21px; font-weight: 800; color: var(--text); }
+.calendar-title-year { font-size: 15px; font-weight: 500; color: var(--text-muted); margin-left: 6px; }
+
+.calendar-nav-actions { display: flex; align-items: center; gap: 8px; }
+
+.calendar-today-btn { border-radius: 999px; }
+
+/* Cụm nút trước/sau gộp chung một viền, ngăn nhau bằng một đường kẻ — kiểu "segmented control",
+   gọn hơn hẳn hai nút rời như bản trước. */
+.calendar-pager {
+    display: inline-flex;
+    border: 1px solid var(--border-soft);
+    border-radius: 999px;
+    overflow: hidden;
+}
+.calendar-pager a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    color: var(--text-muted);
+    font-size: 15px;
+}
+.calendar-pager a:first-child { border-right: 1px solid var(--border-soft); }
+.calendar-pager a:hover { background: var(--state-hover); color: var(--text); }
+
+.calendar-grid { width: 100%; border-collapse: collapse; table-layout: fixed; }
+
+.calendar-grid th {
+    padding: 0 8px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-align: left;
+}
+
+.calendar-day {
+    vertical-align: top;
+    padding: 10px 8px;
+    height: 100px;
+    border-bottom: 1px solid var(--border-soft);
+    transition: background .12s ease;
+}
+.calendar-grid tbody tr:last-child .calendar-day { border-bottom: none; }
+
+/* Ngày thuộc tháng trước/sau (đệm cho đủ tuần) — mờ đi, không phải trọng tâm của tháng đang xem. */
+.calendar-day-outside .calendar-day-num { color: var(--text-muted); opacity: .5; }
+
+/* Nổi bật thành một khối bo góc riêng thay vì chỉ đổi nền cả ô — vì lưới không còn viền dọc, tô
+   cả ô sẽ dính liền sang ô bên cạnh trông như một dải ngang chứ không phải MỘT NGÀY được chọn. */
+.calendar-day-today { position: relative; }
+.calendar-day-today::before {
+    content: "";
+    position: absolute;
+    inset: 2px 2px 3px;
+    background: var(--primary-soft);
+    border-radius: 8px;
+    z-index: 0;
+}
+.calendar-day-today .calendar-day-num,
+.calendar-day-today .calendar-task-list { position: relative; z-index: 1; }
+
+.calendar-day-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 6px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 650;
+    color: var(--text);
+    margin-bottom: 6px;
+}
+
+/* Số hôm nay khoanh tròn đặc màu thương hiệu, kiểu Google Calendar — thứ đầu tiên mắt bắt được
+   khi liếc qua cả lưới, không phải dò tô nền nhạt của cả ô mới nhận ra "hôm nay". */
+.calendar-day-today .calendar-day-num {
+    background: var(--primary);
+    color: #fff;
+    font-weight: 700;
+}
+
+.calendar-task-list { display: flex; flex-direction: column; gap: 3px; }
+
+/* Mỗi việc là một chip nền màu nhạt — CHỈ 3 sắc thái theo kết quả thực tế (Quá hạn/Hoàn thành/
+   Đang thực hiện), không tách theo cả 5 TaskStates như bản trước — liếc qua lưới là biết ngay
+   ngày nào có việc báo động, không cần đọc từng chữ trạng thái. */
+.calendar-task {
+    display: block;
+    font-size: 11.5px;
+    font-weight: 600;
+    line-height: 1.6;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    border-radius: 5px;
+    padding: 1px 7px;
+}
+.calendar-task:hover { filter: brightness(0.96); }
+
+.calendar-task-overdue   { background: var(--st-late-soft); color: var(--st-late); }
+.calendar-task-done      { background: var(--st-ok-soft);   color: var(--st-ok); }
+.calendar-task-active    { background: var(--primary-soft); color: var(--primary); }
+.calendar-task-cancelled { background: var(--st-idle-soft); color: var(--st-idle); }
+
+.calendar-more {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    padding: 1px 7px;
+    margin-top: 1px;
+}
+
+/* Chú giải màu — người mới xem lịch lần đầu biết ngay 3 màu chip nghĩa là gì, không phải đoán. */
+.calendar-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 14px 4px;
+    margin-top: 4px;
+    border-top: 1px solid var(--border-soft);
+    font-size: 12px;
+    color: var(--text-muted);
+}
+.calendar-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.calendar-legend .calendar-dot { width: 8px; height: 8px; border-radius: 50%; }
+.calendar-dot-overdue { background: var(--st-late); }
+.calendar-dot-done    { background: var(--st-ok); }
+.calendar-dot-active  { background: var(--primary); }
+
+@media (max-width: 900px) {
+    .calendar-layout { grid-template-columns: 1fr; }
+    .calendar-day { height: 84px; }
+    .calendar-card { padding: 16px 12px 4px; }
+}

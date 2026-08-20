@@ -128,3 +128,66 @@ String projectStateLabel(String state) {
       return state;
   }
 }
+
+/// Khop ProjectStates.ForPhase ben backend — cac trang thai hop le cua mot giai doan, dung lam
+/// options cho dropdown "Trạng thái" tren form Them du an (loc lai moi khi doi Giai doan).
+List<String> projectStatesForPhase(String phase) {
+  if (phase == 'HoTro') {
+    return const ['DangHoTro', 'TamDungHoTro', 'KetThucHoTro', 'Huy'];
+  }
+  return const [
+    'ChuanBi',
+    'DangThucHien',
+    'DangThuNghiem',
+    'TamDungTrienKhai',
+    'DaNghiemThu',
+    'Huy',
+  ];
+}
+
+/// Khop ProjectStates.DefaultFor ben backend — trang thai mac dinh khi chon mot giai doan.
+String projectStateDefaultFor(String phase) =>
+    phase == 'HoTro' ? 'DangHoTro' : 'ChuanBi';
+
+/// Tuy chon cho form "Thêm dự án" — danh sach "Loại dự án" hien co, LA DANH MUC DONG (khong co
+/// dinh trong code) nen phai goi MyProjectsApi/CreateForm de lay thay vi hard-code.
+class ProjectCreateFormOptions {
+  const ProjectCreateFormOptions({required this.projectTypes});
+
+  final List<String> projectTypes;
+
+  factory ProjectCreateFormOptions.fromJson(Map<String, dynamic> json) =>
+      ProjectCreateFormOptions(
+        projectTypes: (json['ProjectTypes'] as List<dynamic>? ?? [])
+            .map((e) => e as String)
+            .toList(),
+      );
+}
+
+/// Ket qua tra ve khi MyProjectsApi/Create tao du an thanh cong.
+class CreateProjectResult {
+  const CreateProjectResult({
+    required this.id,
+    this.code,
+    required this.name,
+    this.rejectedFiles = const [],
+  });
+
+  final int id;
+  final String? code;
+  final String name;
+
+  /// Ten + ly do cac file dinh kem bi tu choi (qua co/sai duoi) — rong neu khong file nao bi tu
+  /// choi hoac khong gui kem file nao. Du an van tao thanh cong du danh sach nay khong rong.
+  final List<String> rejectedFiles;
+
+  factory CreateProjectResult.fromJson(Map<String, dynamic> json) =>
+      CreateProjectResult(
+        id: json['Id'] as int,
+        code: json['Code'] as String?,
+        name: json['Name'] as String? ?? '',
+        rejectedFiles: (json['RejectedFiles'] as List<dynamic>? ?? [])
+            .map((e) => e as String)
+            .toList(),
+      );
+}

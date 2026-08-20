@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_icons/phosphor_icons.dart';
+import 'package:provider/provider.dart';
 
 import '../../config/app_theme.dart';
 import '../../core/classes/route_manager.dart';
@@ -18,6 +19,8 @@ import '../../core/widgets/app_text.dart';
 import '../../core/widgets/app_text_field.dart';
 import '../../shared/widgets/app_bottom_nav.dart';
 import '../app_routes.dart';
+import '../auth/auth_provider.dart';
+import 'add_project_screen.dart';
 import 'my_projects_models.dart';
 import 'my_projects_service.dart';
 
@@ -163,12 +166,32 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
     }
   }
 
+  Future<void> _openAddProject() async {
+    final created = await pushAddProjectScreen(context, service: _service);
+    if (created == true) _reload();
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Nut "+ Thêm dự án" hien tren CA HAI bien the man hinh (Dự án của tôi / Dự án — Toàn Tổ),
+    // mien tai khoan co quyen tao du an (canCreateProject — Quan ly/Quan tri/Quan ly To) — khop
+    // hanh vi ben web (nut luon nam ngay tren trang "Dự án", khong an theo scope dang xem).
+    final canCreateProject = context.watch<AuthProvider>().canCreateProject;
+
     return AppBottomNav(
       currentIndex: 1,
       appBar: AppAppBar(
-          title: widget.scope == 'team' ? 'Dự án — Toàn Tổ' : 'Dự án của tôi'),
+        title: widget.scope == 'team' ? 'Dự án — Toàn Tổ' : 'Dự án của tôi',
+        actions: canCreateProject
+            ? [
+                AppIconButton(
+                  icon: PhosphorIconsRegular.plus,
+                  tooltip: 'Thêm dự án',
+                  onPressed: _openAddProject,
+                ),
+              ]
+            : null,
+      ),
       body: SafeArea(
         child: FutureBuilder<MyProjectsData>(
           future: _future,

@@ -1,0 +1,182 @@
+﻿@model TTKDGP.ProjectManager.Controllers.CalendarViewModel
+@using TTKDGP.ProjectManager.Models
+@{
+    ViewBag.Title = "Lịch công việc";
+    var dowLabels = new[] { "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật" };
+    const int maxPerDay = 3;
+
+    var prevMonth = Model.Month == 1 ? 12 : Model.Month - 1;
+    var prevYear = Model.Month == 1 ? Model.Year - 1 : Model.Year;
+    var nextMonth = Model.Month == 12 ? 1 : Model.Month + 1;
+    var nextYear = Model.Month == 12 ? Model.Year + 1 : Model.Year;
+
+    // Chi 3 sac thai chinh nguoi dung yeu cau ("Qua han, Dung han, Dang thuc hien") thay vi tach
+    // du ca 5 TaskStates — nhin luot qua lich la biet ngay viec nao dang bao dong, khong can doc
+    // tung nhan trang thai. "Huy" la truong hop hiem, tach rieng mau xam de khong lan vao 3 nhom
+    // chinh (khong phai "dang thuc hien" ma cung khong phai mot ket qua tot nhu "hoan thanh").
+    Func<WorkTask, string> taskTone = t =>
+    {
+        if (t.IsOverdue) return "overdue";
+        if (t.State == TaskStates.Done) return "done";
+        if (t.State == TaskStates.Cancelled) return "cancelled";
+        return "active";
+    };
+}
+
+<div class="page-head">
+    <div>
+        <h1>Lịch công việc</h1>
+        <p>Theo dõi việc CỦA TÔI phân bố theo ngày trong tháng.</p>
+    </div>
+    <div class="btn-row">
+        @using (Html.BeginForm("Index", "Calendar", FormMethod.Get, new { @class = "inline-filter" }))
+        {
+            @Html.Hidden("year", Model.Year)
+            @Html.Hidden("month", Model.Month)
+            <select name="state" onchange="this.form.submit()">
+                <option value="">— Tất cả trạng thái —</option>
+                @foreach (var s in TaskStates.All)
+                {
+                    <option value="@s" selected="@(Model.StateFilter == s)">@TaskStates.Display(s)</option>
+                }
+            </select>
+            <select name="priority" onchange="this.form.submit()">
+                <option value="">— Tất cả ưu tiên —</option>
+                @foreach (var p in TaskPriorities.All)
+                {
+                    <option value="@p" selected="@(Model.PriorityFilter == p)">@TaskPriorities.Display(p)</option>
+                }
+            </select>
+        }
+    </div>
+</div>
+
+<div class="stats">
+    <div class="stat">
+        <div class="stat-value">@Model.TotalInMonth</div>
+        <div class="stat-label">Công việc trong tháng</div>
+    </div>
+    <div class="stat stat-ok">
+        <div class="stat-value">@Model.DoneCount</div>
+        <div class="stat-label">Đã hoàn thành</div>
+    </div>
+    <div class="stat stat-primary">
+        <div class="stat-value">@Model.InProgressCount</div>
+        <div class="stat-label">Đang thực hiện</div>
+    </div>
+    <div class="stat @(Model.OverdueCount > 0 ? "stat-late" : "")">
+        <div class="stat-value">@Model.OverdueCount</div>
+        <div class="stat-label">Quá hạn</div>
+    </div>
+</div>
+
+<div class="two-col calendar-layout">
+    <div class="card calendar-card">
+        <div class="calendar-title-row">
+            <div>
+                <span class="calendar-title">Tháng @Model.Month</span>
+                <span class="calendar-title-year">năm @Model.Year</span>
+            </div>
+            <div class="calendar-nav-actions">
+                <a class="btn btn-default btn-sm calendar-today-btn"
+                   href="@Url.Action("Index", new { year = Model.Today.Year, month = Model.Today.Month, state = Model.StateFilter, priority = Model.PriorityFilter })">Hôm nay</a>
+                <div class="calendar-pager">
+                    <a title="Tháng trước"
+                       href="@Url.Action("Index", new { year = prevYear, month = prevMonth, state = Model.StateFilter, priority = Model.PriorityFilter })">&lsaquo;</a>
+                    <a title="Tháng sau"
+                       href="@Url.Action("Index", new { year = nextYear, month = nextMonth, state = Model.StateFilter, priority = Model.PriorityFilter })">&rsaquo;</a>
+                </div>
+            </div>
+        </div>
+
+        <table class="calendar-grid">
+            <thead>
+                <tr>
+                    @foreach (var label in dowLabels)
+                    {
+                        <th>@label</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var week in Model.Weeks)
+                {
+                    <tr>
+                        @foreach (var day in week)
+                        {
+                            var isToday = day.Date == Model.Today;
+                            var cellClass = "calendar-day"
+                                + (day.InCurrentMonth ? "" : " calendar-day-outside")
+                                + (isToday ? " calendar-day-today" : "");
+                            <td class="@cellClass">
+                                <div class="calendar-day-num">@day.Date.Day</div>
+                                <div class="calendar-task-list">
+                                    @foreach (var t in day.Tasks.Take(maxPerDay))
+                                    {
+                                        <div class="calendar-task calendar-task-@taskTone(t)"
+                                             data-modal-url="@Url.Action("Detail", "Checklist", new { id = t.Id })"
+                                             data-modal-title="Chi tiết công việc" data-modal-size="lg" title="@t.Title">
+                                            @t.Title
+                                        </div>
+                                    }
+                                    @if (day.Tasks.Count > maxPerDay)
+                                    {
+                                        <div class="calendar-more">+@(day.Tasks.Count - maxPerDay) việc khác</div>
+                                    }
+                                </div>
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <div class="calendar-legend">
+            <span><i class="calendar-dot calendar-dot-overdue"></i>Quá hạn</span>
+            <span><i class="calendar-dot calendar-dot-done"></i>Đúng hạn / Hoàn thành</span>
+            <span><i class="calendar-dot calendar-dot-active"></i>Đang thực hiện</span>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-head">
+            <span>Công việc sắp tới</span>
+            <a class="muted" href="@Url.Action("Tasks", "MyWork")">Xem tất cả</a>
+        </div>
+        @if (Model.Upcoming.Count == 0)
+        {
+            <div class="card-body"><span class="muted">Không có việc nào sắp tới hạn.</span></div>
+        }
+        else
+        {
+            foreach (var t in Model.Upcoming)
+            {
+                <div class="task-feed-item"
+                     data-modal-url="@Url.Action("Detail", "Checklist", new { id = t.Id })"
+                     data-modal-title="Chi tiết công việc" data-modal-size="lg">
+                    <div class="task-feed-main">
+                        <div class="task-feed-title">@t.Title</div>
+                        <div class="task-feed-meta">
+                            <span>@(string.IsNullOrWhiteSpace(t.ProjectName) ? "Việc riêng" : t.ProjectName)</span>
+                            @if (t.DueDate.HasValue)
+                            {
+                                <span>·</span>
+                                <span>Hạn @t.DueDate.Value.ToString("dd/MM")</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="task-feed-side">
+                        @if (t.IsOverdue)
+                        {
+                            <span class="badge badge-danger">Quá hạn</span>
+                        }
+                        else
+                        {
+                            <span class="badge">@TaskStates.Display(t.State)</span>
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
