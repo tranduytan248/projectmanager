@@ -158,6 +158,14 @@
                         <td>
                             Hỗ trợ
                             <span class="muted">(@Model.SupportHours.ToString("0.#")/@Model.SupportCapHours.ToString("0.#") giờ mốc)</span>
+                            @if (supportPenalty > 0)
+                            {
+                                @* SupportPoint DA tru san khoan nay (xem KpiService.SupportPoint nhan
+                                   thang SupportLatePenalty lam tham so) — ghi ro ngay tai dong tinh
+                                   diem, khong phai mot buoc cong/tru rieng trong bang, de khong hieu
+                                   nham thanh mot dong toan hoc doc lap. *@
+                                <span class="danger-text">— đã trừ @supportPenalty.ToString("0.##") điểm báo cáo trễ</span>
+                            }
                         </td>
                         <td class="val">@Model.SupportPoint.ToString("0.##")</td>
                     </tr>
@@ -166,6 +174,10 @@
                         <td>
                             Thực hiện
                             <span class="muted">(@Model.ExecuteHours.ToString("0.#")/@Model.ExecuteTargetHours.ToString("0.#") giờ định mức)</span>
+                            @if (executePenalty > 0)
+                            {
+                                <span class="danger-text">— đã trừ @executePenalty.ToString("0.##") điểm báo cáo trễ</span>
+                            }
                         </td>
                         <td class="val">@Model.ExecutePoint.ToString("0.##")</td>
                     </tr>

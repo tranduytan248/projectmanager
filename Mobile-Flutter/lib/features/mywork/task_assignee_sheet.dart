@@ -71,10 +71,10 @@ class _TaskAssigneeSheetState extends State<_TaskAssigneeSheet> {
 
     if (result.isSuccess) {
       setState(() => _result = result.data!);
-      ToastService.show('Đã đổi người thực hiện.');
+      ToastService.show('Đã đổi người thực hiện.', type: ToastType.success);
       Navigator.of(context).pop(_result);
     } else {
-      ToastService.show(result.error!);
+      ToastService.show(result.error!, type: ToastType.error);
     }
   }
 

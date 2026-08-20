@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
 import '../../core/classes/route_manager.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_dimens.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/dialog_service.dart';
 import '../../core/widgets/app_app_bar.dart';
@@ -15,6 +16,7 @@ import '../app_routes.dart';
 import '../auth/auth_provider.dart';
 import 'personal_info_screen.dart';
 import 'policy_screen.dart';
+import 'version_history_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -76,6 +78,7 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             _SettingsGroup(
+              title: 'Cá nhân',
               children: [
                 _SettingsTile(
                   icon: PhosphorIconsRegular.userCircle,
@@ -85,6 +88,56 @@ class ProfileScreen extends StatelessWidget {
                     builder: (context) => const PersonalInfoScreen(),
                   )),
                 ),
+                _SettingsTile(
+                  icon: PhosphorIconsRegular.calendarCheck,
+                  label: 'Đăng ký nghỉ phép',
+                  onTap: () => Nav.toNamed(context, AppRoutes.leaves),
+                ),
+              ],
+            ),
+            // Nhom "Quan ly" chi danh cho Quan ly To — an han ca nhom (khong xam mo) voi nhan
+            // vien thuong, cac route ben duoi da co san nhung truoc day mo coi (khong gan noi nao
+            // trong UI).
+            if (auth.isTeamManager) ...[
+              const SizedBox(height: AppDimens.space24),
+              _SettingsGroup(
+                title: 'Quản lý',
+                children: [
+                  _SettingsTile(
+                    icon: PhosphorIconsRegular.folders,
+                    label: 'Danh sách dự án',
+                    onTap: () => Nav.toNamed(context, AppRoutes.projects,
+                        arguments: const {'scope': 'team'}),
+                  ),
+                  _SettingsTile(
+                    icon: PhosphorIconsRegular.checks,
+                    label: 'Duyệt nghỉ phép',
+                    onTap: () =>
+                        Nav.toNamed(context, AppRoutes.teamLeaveApprovals),
+                  ),
+                  _SettingsTile(
+                    icon: PhosphorIconsRegular.userPlus,
+                    label: 'Giao việc riêng',
+                    onTap: () =>
+                        Nav.toNamed(context, AppRoutes.teamPrivateTasks),
+                  ),
+                  _SettingsTile(
+                    icon: PhosphorIconsRegular.gauge,
+                    label: 'Bảng điều khiển tổ',
+                    onTap: () => Nav.toNamed(context, AppRoutes.teamDashboard),
+                  ),
+                  _SettingsTile(
+                    icon: PhosphorIconsRegular.star,
+                    label: 'KPI theo tháng',
+                    onTap: () => Nav.toNamed(context, AppRoutes.kpi),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: AppDimens.space24),
+            _SettingsGroup(
+              title: 'Hệ thống',
+              children: [
                 _SettingsTile(
                   icon: PhosphorIconsRegular.shieldCheck,
                   label: 'Chính sách bảo mật',
@@ -108,9 +161,12 @@ class ProfileScreen extends StatelessWidget {
                   )),
                 ),
                 _SettingsTile(
-                  icon: PhosphorIconsRegular.calendarCheck,
-                  label: 'Đăng ký nghỉ phép',
-                  onTap: () => Nav.toNamed(context, AppRoutes.leaves),
+                  icon: PhosphorIconsRegular.clockCounterClockwise,
+                  label: 'Các phiên bản cập nhật',
+                  onTap: () =>
+                      Navigator.of(context).push(MaterialPageRoute<void>(
+                    builder: (context) => const VersionHistoryScreen(),
+                  )),
                 ),
               ],
             ),
@@ -134,14 +190,18 @@ class ProfileScreen extends StatelessWidget {
 
 /// Khoi cac muc cai dat dang danh sach (khong phai luoi icon) — hop voi noi dung co do dai
 /// nhan khac nhau va mot muc nguy hiem (Thoat) can tach rieng khoi nhom con lai.
+///
+/// [title] la nhan nhom hien phia tren the (vi du "Cá nhân", "Quản lý", "Hệ thống") — de trong
+/// (null) cho nhom khong can tieu de (vi du nhom "Thoat" chi co 1 muc, tu no da ro nghia).
 class _SettingsGroup extends StatelessWidget {
-  const _SettingsGroup({required this.children});
+  const _SettingsGroup({this.title, required this.children});
 
+  final String? title;
   final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
+    final card = AppCard(
       padding: EdgeInsets.zero,
       child: Column(
         children: [
@@ -151,6 +211,21 @@ class _SettingsGroup extends StatelessWidget {
           ],
         ],
       ),
+    );
+
+    if (title == null) return card;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(
+              left: AppDimens.space4, bottom: AppDimens.space8),
+          child: AppText(title!.toUpperCase(),
+              variant: AppTextVariant.overline, color: AppColors.textSecondary),
+        ),
+        card,
+      ],
     );
   }
 }

@@ -109,9 +109,9 @@ class _TaskTimeLogSheetState extends State<_TaskTimeLogSheet> {
         _hoursController.clear();
         _noteController.clear();
       });
-      ToastService.show('Đã ghi giờ công.');
+      ToastService.show('Đã ghi giờ công.', type: ToastType.success);
     } else {
-      ToastService.show(result.error!);
+      ToastService.show(result.error!, type: ToastType.error);
     }
   }
 
@@ -136,9 +136,9 @@ class _TaskTimeLogSheetState extends State<_TaskTimeLogSheet> {
         _summary = result.data!;
         _changed = true;
       });
-      ToastService.show('Đã xoá lượt ghi giờ.');
+      ToastService.show('Đã xoá lượt ghi giờ.', type: ToastType.success);
     } else {
-      ToastService.show(result.error!);
+      ToastService.show(result.error!, type: ToastType.error);
     }
   }
 

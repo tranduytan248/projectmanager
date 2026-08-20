@@ -13,6 +13,12 @@ namespace TTKDGP.ProjectManager.Models.Api
         public string Token { get; set; }
         public string DisplayName { get; set; }
         public string Role { get; set; }
+
+        /// <summary>Danh sach ma quyen mobile can biet ngay luc dang nhap (hien chi gom
+        /// "wteam.manage" khi tai khoan la Quan ly To) — de trong neu khong co. Xem
+        /// AuthApiController.Login, gop dung ca hai loi cap Quan ly To (o tich rieng tai khoan HOAC
+        /// quyen nhom) nhu BaseController.IsTeamManager dang lam cho web.</summary>
+        public List<string> Permissions { get; set; }
     }
 
     /// <summary>Man "Thong tin ca nhan" cua mobile — tuong duong ProfilePageViewModel ben web
@@ -26,6 +32,11 @@ namespace TTKDGP.ProjectManager.Models.Api
         /// <summary>Da qua Roles.Display — ten (cac) nhom quyen, tra san server-side giong het
         /// ProfilePageViewModel.RoleDisplay, mobile khong can tu tra lai Ma nhom.</summary>
         public string RoleDisplay { get; set; }
+
+        /// <summary>Vai Quan ly To (User.IsTeamManager) nam NGOAI nhom quyen (RoleDisplay) nen phai
+        /// tra rieng — y het Views/Users/Index.cshtml hien them badge "Quan ly To" ben canh (cac)
+        /// nhom quyen, khong gop chung vao RoleDisplay.</summary>
+        public bool IsTeamManager { get; set; }
 
         public bool IsAdmin { get; set; }
         public DateTime CreatedAt { get; set; }
@@ -81,6 +92,15 @@ namespace TTKDGP.ProjectManager.Models.Api
 
         /// <summary>0 = muc goc, khac 0 = viec con cua muc co Id do.</summary>
         public int ParentId { get; set; }
+
+        /// <summary>Ngay tao dau viec — man danh sach (vi du Kanban Checklist mobile) dung de sap
+        /// xep moi den cu trong tung cot.</summary>
+        public DateTime CreatedAt { get; set; }
+
+        /// <summary>Nguoi nay co sua duoc cac truong rieng cua minh (trang thai/tien do) khong —
+        /// tinh san o server (CanEditTask), de man danh sach (vi du Kanban Checklist mobile) biet
+        /// tung the co doi trang thai duoc hay khong ma khong phai goi rieng Detail.</summary>
+        public bool CanEdit { get; set; }
     }
 
     /// <summary>Cac truong tinh cua rieng mot dau viec — phan "Task" trong TaskFullDetailDto tra
@@ -109,9 +129,6 @@ namespace TTKDGP.ProjectManager.Models.Api
         public decimal BonusPercent { get; set; }
         public bool HasAttachment { get; set; }
         public string AttachmentName { get; set; }
-
-        /// <summary>Nguoi nay co sua duoc cac truong rieng cua minh (trang thai/tien do) khong.</summary>
-        public bool CanEdit { get; set; }
 
         /// <summary>Nguoi nay co sua duoc TOAN BO truong cua dau viec (PM/Quan ly To) khong.</summary>
         public bool CanEditAll { get; set; }

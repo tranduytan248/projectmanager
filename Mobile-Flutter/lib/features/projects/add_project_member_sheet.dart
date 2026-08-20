@@ -101,10 +101,10 @@ class _AddProjectMemberSheetState extends State<_AddProjectMemberSheet> {
     setState(() => _submitting = false);
 
     if (result.isSuccess) {
-      ToastService.show('Đã thêm nhân sự vào dự án.');
+      ToastService.show('Đã thêm nhân sự vào dự án.', type: ToastType.success);
       Navigator.of(context).pop(result.data);
     } else {
-      ToastService.show(result.error!);
+      ToastService.show(result.error!, type: ToastType.error);
     }
   }
 

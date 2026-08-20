@@ -45,11 +45,21 @@ namespace TTKDGP.ProjectManager.Controllers.Api
             };
             Repository.ApiTokens.Insert(token);
 
+            // Gop dung HAI loi cap Quan ly To — o tich rieng tung tai khoan (User.IsTeamManager)
+            // HOAC quyen "wteam.manage" cap theo nhom — y het BaseController.IsTeamManager dang
+            // dung cho web. KHONG goi thang property do o day vi no doc CurrentUserId, ma request
+            // dang xu ly la luc CHUA co token (dang tao token), nen phai tinh truc tiep tu `user`.
+            var isTeamManager = user.IsTeamManager
+                || Permissions.UserHas(user.Role, Permissions.Team.Perm("manage"));
+
             return Json(new LoginResultDto
             {
                 Token = token.Token,
                 DisplayName = user.FullName,
-                Role = user.Role
+                Role = user.Role,
+                Permissions = isTeamManager
+                    ? new System.Collections.Generic.List<string> { "wteam.manage" }
+                    : new System.Collections.Generic.List<string>()
             });
         }
 

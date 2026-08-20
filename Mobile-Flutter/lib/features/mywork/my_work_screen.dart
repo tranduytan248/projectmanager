@@ -112,7 +112,8 @@ class _TaskRow extends StatelessWidget {
         children: [
           SlidableAction(
             onPressed: (_) => ToastService.show(
-                'Giao việc "${task.code}" — đang phát triển.'),
+                'Giao việc "${task.code}" — đang phát triển.',
+                type: ToastType.warning),
             backgroundColor: AppTheme.brandBlueDark,
             foregroundColor: Colors.white,
             icon: PhosphorIconsRegular.userPlus,
@@ -120,7 +121,8 @@ class _TaskRow extends StatelessWidget {
           ),
           SlidableAction(
             onPressed: (_) => ToastService.show(
-                'Chuyển trạng thái "${task.code}" — đang phát triển.'),
+                'Chuyển trạng thái "${task.code}" — đang phát triển.',
+                type: ToastType.warning),
             backgroundColor: AppTheme.brandBlue,
             foregroundColor: Colors.white,
             icon: PhosphorIconsRegular.arrowsClockwise,

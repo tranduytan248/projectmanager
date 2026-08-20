@@ -65,8 +65,19 @@ namespace TTKDGP.ProjectManager.Controllers.Api
                 AssigneeUserId = task.AssigneeUserId,
                 Progress = task.Progress,
                 Kind = task.Kind,
-                ParentId = task.ParentId
+                ParentId = task.ParentId,
+                CreatedAt = task.CreatedAt
             };
+        }
+
+        /// <summary>Ban co kem CanEdit tung dong — dung cho danh sach nhieu nguoi cung xem chung
+        /// (vi du Kanban Checklist mobile), noi man can biet ngay tung the co doi trang thai duoc
+        /// hay khong ma khong phai goi rieng Detail cho tung task.</summary>
+        public static TaskDto ToDto(WorkTask task, bool canEdit)
+        {
+            var dto = ToDto(task);
+            dto.CanEdit = canEdit;
+            return dto;
         }
 
         /// <summary>Chi tiet mot dau viec — TaskDetailDto ke thua het truong cua TaskDto, chi
@@ -90,6 +101,7 @@ namespace TTKDGP.ProjectManager.Controllers.Api
                 Progress = task.Progress,
                 Kind = task.Kind,
                 ParentId = task.ParentId,
+                CreatedAt = task.CreatedAt,
                 Description = Infrastructure.HtmlSanitizer.ToPlainText(task.Description),
                 StartDate = task.StartDate,
                 CompletedAt = task.CompletedAt

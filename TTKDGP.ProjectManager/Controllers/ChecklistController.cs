@@ -441,6 +441,17 @@ namespace TTKDGP.ProjectManager.Controllers
                 return LogTimeError("Công việc đã đóng nên không sửa được giờ đã ghi.");
             }
 
+            // Đang làm/Hoàn thành là hai trạng thái CHỈ được chuyển tới khi đã ghi giờ công
+            // (TimeLogService.ValidateStateChange) — xoá mất giờ trong khi vẫn giữ nguyên trạng
+            // thái đó sẽ để lại việc "Đang làm" mà không có căn cứ giờ công nào, sai logic ngược
+            // với luật kia. Hoàn thành đã bị IsClosed ở trên chặn sẵn, thêm Đang làm ở đây cho đủ.
+            if (task.State == TaskStates.InProgress)
+            {
+                return LogTimeError(
+                    "Việc đang \"Đang làm\" nên không xoá được giờ đã ghi — xoá sẽ khiến việc " +
+                    "mất hết căn cứ giờ công trong khi vẫn đang ở trạng thái này.");
+            }
+
             Repository.WorkTimeLogs.Delete(logId);
             TaskActivityLogService.Record(task.Id, CurrentUserId,
                 CurrentUser == null ? null : CurrentUser.FullName, TaskActivityActions.TimeLogDeleted,

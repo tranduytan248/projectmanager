@@ -114,6 +114,42 @@ namespace TTKDGP.ProjectManager
             var culture = new CultureInfo("vi-VN");
             Thread.CurrentThread.CurrentCulture = culture;
             Thread.CurrentThread.CurrentUICulture = culture;
+
+            ApplyLocalDevCors();
+        }
+
+        /// <summary>
+        /// CORS CHỈ mở cho origin localhost/127.0.0.1 (Flutter web chạy `flutter run -d chrome`
+        /// lúc phát triển gọi thẳng API qua origin khác) — KHÔNG mở cho origin ngoài, tránh biến
+        /// API thành công khai cho mọi trang web khác. Chỉ phục vụ máy dev cục bộ, không phải
+        /// giải pháp cho môi trường production/đối tác ngoài thật.
+        ///
+        /// Trình duyệt luôn preflight (OPTIONS) trước mọi request có header Authorization — phải
+        /// trả 200 kèm header CORS rồi dừng ngay ở đây, trước khi chạm AppAuthorize/routing MVC,
+        /// vì preflight không kèm Authorization nên sẽ bị 401 nếu để lọt xuống dưới.
+        /// </summary>
+        private void ApplyLocalDevCors()
+        {
+            var origin = Request.Headers["Origin"];
+            if (string.IsNullOrEmpty(origin)) return;
+            if (!IsLocalDevOrigin(origin)) return;
+
+            Response.Headers["Access-Control-Allow-Origin"] = origin;
+            Response.Headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type";
+            Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS";
+            Response.Headers["Vary"] = "Origin";
+
+            if (string.Equals(Request.HttpMethod, "OPTIONS", StringComparison.OrdinalIgnoreCase))
+            {
+                Response.StatusCode = 200;
+                CompleteRequest();
+            }
+        }
+
+        private static bool IsLocalDevOrigin(string origin)
+        {
+            return origin.StartsWith("http://localhost:", StringComparison.OrdinalIgnoreCase)
+                || origin.StartsWith("http://127.0.0.1:", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

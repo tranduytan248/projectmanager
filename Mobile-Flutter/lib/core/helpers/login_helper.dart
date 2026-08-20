@@ -19,11 +19,9 @@ Future<int> doAuth(
 
   await _tokenStorage.saveTokens(accessToken: result.token!);
   await _appCache.doLogin();
-  // AuthApi/Login chi tra Role (chuoi don), chua co danh sach quyen chi tiet nhu web — de trong
-  // permissions cho toi khi backend tra them, man "Quan ly To" se tu an vi AuthProvider.isTeamManager
-  // doc rong.
   await _appCache.saveLoginInfo(
-      displayName: result.displayName ?? username, permissions: const []);
+      displayName: result.displayName ?? username,
+      permissions: result.permissions ?? const []);
   return 1;
 }
 

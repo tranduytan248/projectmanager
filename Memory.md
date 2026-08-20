@@ -761,7 +761,8 @@ trong cùng phiên chạy app — chỉ đúng lại sau khi khởi động lạ
 ### Kiểm tra / Nghiệm thu
 - [x] Backend warm-up hoạt động đúng (đo bằng curl).
 - [x] 3 nút quyền: đúng cho cả Dev (ẩn) và PM (hiện, trừ Ghi giờ theo đúng luật cũ).
-- [ ] Vấn đề tên hiển thị sau đăng nhập trong phiên — CHƯA sửa, cần mở vấn đề riêng.
+- [x] Vấn đề tên hiển thị sau đăng nhập trong phiên — ĐÃ SỬA ngày 20/08/2026, xem mục
+      "[2026-08-20] Vấn đề: Sửa gốc lỗi tên/quyền hiển thị sai ngay sau khi đăng nhập" bên dưới.
 
 ### Ghi chú
 - Công cụ test: `adb` (cài đặt tại `C:\Users\K\AppData\Local\Android\Sdk\platform-tools\adb.exe`),
@@ -769,3 +770,559 @@ trong cùng phiên chạy app — chỉ đúng lại sau khi khởi động lạ
   do đọc sai tỉ lệ ảnh hiển thị so với độ phân giải thật của thiết bị 1080×2400).
 - IIS site `pm.vn` (không phải IIS Express) đã chạy sẵn dạng service, tự nhận bản build mới mà
   không cần thao tác gì thêm — chỉ cần build lại `TTKDGP.ProjectManager.sln`.
+
+---
+
+# [2026-08-19] Vấn đề: Thêm chế độ xem Kanban cho màn Checklist mobile
+
+## 1. Mô tả vấn đề
+Người dùng gửi 3 ảnh: (1) màn "Checklist" mobile hiện tại — chỉ có dạng danh sách; (2)+(3) màn
+"Checklist công việc" bên web — có 2 nút chuyển chế độ xem "Dạng lưới"/"Kanban", ảnh Kanban cho
+thấy 5 cột theo trạng thái (Chưa bắt đầu/Đang làm/Tạm dừng/Hoàn thành/Huỷ). Kèm câu: "Trong
+checklist xây dựng 2 chế độ xem là Dạng lưới và Kaban".
+
+## 2. Phân tích ban đầu
+- Bối cảnh: `ChecklistController` (web) đã có sẵn Index (dạng lưới) + Kanban (board, kéo-thả đổi
+  trạng thái qua `SetState`). Mobile (`Mobile-Flutter/lib/features/checklist/checklist_board_screen.dart`)
+  hiện chỉ có 1 chế độ danh sách phẳng — comment gốc trong code từng ghi rõ lý do: "khong keo-tha
+  Kanban — khong hop voi dien thoai" (quyết định thiết kế cũ, không phải từ một mục phân tích
+  chính thức trong Memory.md).
+- Mục tiêu: xây thêm chế độ xem Kanban cho mobile, khớp trải nghiệm web.
+- Phạm vi: chỉ màn Checklist mobile (không đổi Kanban web, không thêm kéo-thả cho mobile).
+- Ràng buộc: `.claude/rules/FLUTTER_RULES.md` (kiến trúc `App*`, tiếng Việt có dấu, đủ 5 trạng
+  thái UI); backend `ChecklistApiController.Index` hiện trả `TaskDto` (qua `ApiMappers.ToDto`)
+  KHÔNG có cờ "được sửa hay không" theo từng dòng — chỉ có `ChecklistData.canEdit` ở mức cả dự án
+  (PM/Quản lý Tổ). Để biết per-card có được đổi trạng thái không (PM/QLT HOẶC chính người thực
+  hiện), cần thêm `CanEdit` vào `TaskDto` cho riêng luồng Checklist Index — không có sẵn userId
+  đăng nhập lưu trong `AuthProvider` (mobile) để tự so sánh phía client.
+- Rủi ro/giả định: câu gốc khá ngắn nên đã hỏi lại 2 vòng để chốt trước khi code.
+- Phương án sơ bộ: (A) chỉ xem, đổi trạng thái vẫn qua màn Chi tiết; (B) chạm thẻ mở sheet đổi
+  nhanh trạng thái ngay trong Kanban; (C) kéo-thả như web. Đã hỏi người dùng chọn.
+
+## 3. Câu hỏi làm rõ
+1. Ý chính khi gửi 3 ảnh: muốn xây Kanban cho mobile / đang báo lỗi web / chỉ mô tả hiện trạng?
+2. Nếu xây Kanban: đổi trạng thái theo kiểu nào (mobile không kéo-thả như web)?
+3. Nút chuyển "Dạng lưới ⇄ Kanban" đặt ở đâu trong màn hình?
+4. Kanban có dùng chung Tìm kiếm/Bộ lọc hiện có không, và có phân trang/giới hạn cột không?
+
+## 4. Câu trả lời & Quyết định
+1. → **Muốn xây Kanban cho mobile**, khớp web.
+2. → **Chạm vào thẻ → mở menu/sheet chọn trạng thái** (không kéo-thả) — giải quyết đúng lo ngại
+   "khong keo-tha ... khong hop voi dien thoai" đã ghi trong code cũ.
+3. → **Icon toggle trên AppBar** (cạnh nút "+"), không dùng segmented control dưới ô Tìm kiếm.
+4. → **Dùng chung Tìm kiếm/Bộ lọc hiện có, tải toàn bộ dữ liệu như web** (không phân trang/giới
+   hạn — dự án thường chỉ vài chục đầu việc).
+
+## 5. Checklist: Kanban cho Checklist mobile
+
+### Chuẩn bị
+- [x] Đối chiếu lại 5 trạng thái + nhãn với `kTaskStateOptions` (`task_status_sheet.dart`) và
+      `TaskStates` backend (`Models/Work/WorkTask.cs`) — không tự suy nhãn.
+
+### Thực hiện — Backend
+- [x] `[Bắt buộc]` Thêm overload `ApiMappers.ToDto(WorkTask task, bool canEdit)` (giữ nguyên
+      `ToDto(WorkTask task)` cũ — đang dùng ở Dashboard/MyWork/ProjectMembers/Notifications,
+      KHÔNG đổi hành vi các nơi đó) — set thêm `CanEdit` vào `TaskDto`.
+- [x] `[Bắt buộc]` `ChecklistApiController.Index` (dòng ~45): đổi thành
+      `tasks.Select(t => ApiMappers.ToDto(t, CanEditTask(t))).ToList()`.
+- [x] `[Bắt buộc]` KHÔNG cần API mới cho đổi trạng thái — dùng lại `ChecklistApiController.UpdateStatus`
+      hiện có (đã áp `TimeLogService.ValidateStateChange` từ phiên trước).
+
+### Thực hiện — Mobile (Flutter)
+- [x] `[Bắt buộc]` `dashboard_models.dart`: thêm field `canEdit` vào `TaskItem`, parse `json['CanEdit']`.
+- [x] `[Bắt buộc]` `checklist_board_screen.dart`: thêm state chế độ xem (list/kanban) + icon toggle
+      trên `AppAppBar.actions`.
+- [x] `[Bắt buộc]` Dựng board Kanban mới (widget `App*`, cuộn ngang 5 cột, mỗi cột cuộn dọc, đếm
+      số lượng theo cột) — tái dùng phần lớn bố cục card từ `_TaskRow` hiện có, thu gọn cho vừa cột.
+- [x] `[Bắt buộc]` Kanban dùng chung `_filtered(data.tasks)` với dạng lưới (đúng quyết định #4).
+- [x] `[Bắt buộc]` Chạm thẻ: `canEdit == true` → mở sheet đổi nhanh trạng thái (component mới, gọn
+      hơn `task_status_sheet.dart` — chỉ chọn Trạng thái, KHÔNG có Tiến độ/%/Ghi chú, giữ nguyên
+      Progress hiện tại khi gọi API); `canEdit == false` → mở màn Chi tiết công việc (chỉ xem),
+      giống hành vi thẻ ở dạng lưới hiện tại.
+- [x] `[Bắt buộc]` Sheet đổi nhanh gọi lại API `UpdateStatus` có sẵn qua `ChecklistService` — lỗi
+      (kể cả lỗi logtime) hiện nguyên văn qua `ToastService`, không tự đoán luật ở client.
+- [x] `[Nên có]` Đổi trạng thái thành công trong Kanban → `_reload()` toàn màn (chấp nhận mất vị
+      trí cuộn, đơn giản hơn cập nhật cục bộ).
+- [x] `[Bắt buộc]` Tuân FLUTTER_RULES.md: chỉ widget `App*`, tiếng Việt có dấu, đủ 5 trạng thái UI
+      (loading/dữ liệu/rỗng/lỗi/mất mạng) — cột 0 việc hiển thị gọn gàng, không vỡ layout.
+
+### Kiểm tra / Nghiệm thu
+- [x] Build `TTKDGP.ProjectManager.sln` sạch sau khi sửa `ApiMappers.cs` + `ChecklistApiController.cs`
+      (đã build sạch ở phiên sửa backend trước phiên này).
+- [x] `flutter analyze` sạch trên file mới/sửa (và sạch toàn repo Mobile-Flutter).
+- [ ] Test tay: PM/Quản lý Tổ đổi được mọi thẻ trong Kanban; người chỉ được giao một số việc chỉ
+      đổi được thẻ của mình, thẻ người khác chạm vào chỉ mở xem chi tiết.
+- [ ] Test tay: thẻ chưa ghi giờ công, chọn "Đang làm"/"Hoàn thành" → nhận đúng lỗi logtime từ
+      backend, thẻ KHÔNG đổi cột.
+- [x] Nghiệm thu bằng skill `chuyen-gia-nghiem-thu-design` — **vòng 1: KHÔNG ĐẠT** (3 lỗi: vùng
+      chạm `_KanbanCard` <48dp khi thiếu nội dung, `AppColors.textFaint` dùng sai cho nội dung
+      thật "Không có việc" — dưới chuẩn tương phản AA, hard-code `Colors.white` thay vì
+      `AppColors.surface`). Đã sửa cả 3 (thêm `minHeight: AppDimens.minTapTarget` +
+      `mainAxisAlignment.center`, đổi sang `AppColors.textSecondary`, đổi sang `AppColors.surface`).
+      **Vòng 2: ĐẠT.** Còn 2 góp ý không bắt buộc (màu "Đang làm"/"Chưa bắt đầu" trùng nhau trong
+      `_stateColor`; `InkWell`/`PhosphorIcon` dùng trực tiếp — kế thừa từ `_TaskRow` cũ, không phải
+      lỗi mới).
+- [ ] Tick `[x]` mục test tay còn lại khi có người kiểm trên thiết bị thật/emulator.
+
+### Ghi chú
+- Không đổi Kanban bên web, không thêm kéo-thả cho mobile — nằm ngoài phạm vi đã chốt.
+- `CanEdit` thêm vào `TaskDto` là quyết định kỹ thuật phát sinh khi phân tích (không phải yêu cầu
+  gốc), cần thiết để biết per-card ai được đổi trạng thái mà không phải tính lại luật ở client.
+
+---
+
+# [2026-08-19] Vấn đề: Không cho xoá lượt ghi giờ làm sai logic trạng thái (web + mobile)
+
+## 1. Mô tả vấn đề
+Nguyên văn: "Hiện tại hệ thống nếu đã ghi logtime thì ko cho phép Xoá, vì khi Xoá thì trạng thái
+đang làm/đã hoàn thành nhưng lại ko có thời gian logtime. Làm sai logic. (Sửa cả trên web và
+mobile)"
+
+## 2. Phân tích ban đầu
+- **Bối cảnh**: Liên quan `[2026-08-19] Vấn đề: Logtime binding for task status transitions` (mục
+  ngay phía trên) — `TimeLogService.ValidateStateChange` chặn đổi trạng thái sang Đang làm/Hoàn
+  thành nếu tổng giờ ghi = 0, đã áp đủ mọi đường đổi trạng thái ở phiên trước. Vấn đề lần này là
+  chiều NGƯỢC LẠI: xoá giờ khiến tổng về 0 trong khi trạng thái đã lỡ ở Đang làm/Hoàn thành.
+- **Mục tiêu**: Không để tồn tại trạng thái Đang làm/Hoàn thành mà tổng giờ ghi = 0 — giữ bất biến
+  đã lập ở `ValidateStateChange` theo CẢ hai chiều (đổi trạng thái lẫn xoá giờ).
+- **Phạm vi**: `ChecklistController.DeleteTimeLog` (web) + `Api/ChecklistApiController.DeleteTimeLog`
+  (mobile) — nơi DUY NHẤT xoá được một lượt giờ.
+- **Ràng buộc/phát hiện qua code**:
+  - `DeleteTimeLog` hiện chỉ chặn khi (a) không phải dòng của chính người xoá, (b)
+    `TaskStates.IsClosed(task.State)` (State == HoanThanh hoặc Huy).
+  - Vì HoanThanh nằm trong `IsClosed`, xoá giờ của việc ĐÃ Hoàn thành **đã bị chặn sẵn** (dù lý do
+    gốc là "việc đã đóng không sửa được" chứ không phải vì luật logtime) — không có lỗ hổng thật ở
+    Hoàn thành.
+  - Lỗ hổng THẬT chỉ còn ở **"Đang làm" (DangLam)**: không bị coi là "đã đóng" nên vẫn xoá được
+    bình thường, kể cả khi đó là lượt DUY NHẤT — xoá xong việc vẫn Đang làm nhưng tổng giờ = 0.
+  - Mobile (`Api/ChecklistApiController.DeleteTimeLog`) mirror y hệt luật web, cùng lỗ hổng.
+- **Rủi ro/giả định**: Hai cách chặn khác hành vi thấy rõ với người dùng — cần chốt trước khi sửa.
+- **Phương án sơ bộ**:
+  - A. Chặn TUYỆT ĐỐI mọi xoá giờ khi State == Đang làm (dù còn dòng khác giữ tổng > 0).
+  - B. Chỉ chặn khi xoá DÒNG NÀY xong sẽ làm tổng về đúng 0 trong khi State == Đang làm (đúng sát
+    lý do người dùng nêu, ít hạn chế hơn).
+
+## 3. Câu hỏi làm rõ
+1. Chọn phương án A (chặn tuyệt đối mọi xoá khi Đang làm) hay B (chỉ chặn khi xoá xong tổng về 0)?
+2. Thông báo lỗi hiển thị khi bị chặn nên nói gì — có cần gợi ý người dùng "hãy chuyển việc về
+   Chưa bắt đầu/Tạm dừng trước rồi mới xoá được" hay chỉ báo đơn giản "không xoá được vì sẽ làm
+   việc mất hết giờ trong khi đang Đang làm"?
+
+## 4. Câu trả lời & Quyết định
+1. → **Chặn tuyệt đối** (gần phương án A, mở rộng thêm): "khi đang ở đang làm/đã hoàn thành thì ko
+   cho xoá" — chặn MỌI lượt xoá khi State == Đang làm, không cần tính xem xoá xong tổng có về 0 hay
+   không. Hoàn thành đã bị chặn sẵn qua `IsClosed` (giữ nguyên, không đổi).
+2. → Thông báo cụ thể, không chỉ nói chung chung: đã viết "Việc đang \"Đang làm\" nên không xoá
+   được giờ đã ghi — xoá sẽ khiến việc mất hết căn cứ giờ công trong khi vẫn đang ở trạng thái
+   này."
+
+## 5. Checklist
+### Thực hiện
+- [x] `[Bắt buộc]` `ChecklistController.DeleteTimeLog` (web, dòng ~439): thêm chặn khi
+      `task.State == TaskStates.InProgress`, giữ nguyên chặn `IsClosed` sẵn có cho Hoàn thành/Huỷ.
+- [x] `[Bắt buộc]` `Api/ChecklistApiController.DeleteTimeLog` (mobile, dòng ~168): mirror y hệt.
+- [x] `[Bắt buộc]` Build `TTKDGP.ProjectManager.sln` sạch sau khi sửa.
+
+### Kiểm tra / Nghiệm thu
+- [ ] Test tay: việc "Đang làm" có 1 lượt giờ duy nhất → bấm Xoá → nhận đúng thông báo, KHÔNG xoá.
+- [ ] Test tay: việc "Đang làm" có NHIỀU lượt giờ → xoá 1 lượt (dù tổng vẫn > 0 sau khi xoá) → vẫn
+      bị chặn giống hệt (đúng theo quyết định "chặn tuyệt đối", không phải "chỉ chặn khi về 0").
+- [ ] Test tay mobile: gọi xoá qua app → lỗi hiện đúng qua `AppToastBanner` (banner đỏ ở top).
+
+### Ghi chú
+- Nợ kỹ thuật CHƯA làm (không chặn tiến độ, ghi lại để làm sau nếu cần): DTO `TimeLogEntryDto.CanDelete`
+  (`ApiMappers.cs` dòng ~143) vẫn tính `taskOpen && log.UserId == currentUserId` — CHƯA loại trừ
+  trạng thái Đang làm, nên nút Xoá trên mobile vẫn HIỆN cho lượt giờ của việc Đang làm dù bấm sẽ bị
+  chặn ở server (trải nghiệm chưa mượt, không sai dữ liệu). Muốn ẩn hẳn nút thì phải đổi tham số
+  `taskOpen` truyền vào ở 3 chỗ gọi trong `ChecklistApiController.cs` (dòng 85/148/187) thành biểu
+  thức có thêm điều kiện `task.State != TaskStates.InProgress` — đổi tên biến cho đúng nghĩa mới
+  luôn (đang gọi là "taskOpen", giờ mang thêm nghĩa "và không phải Đang làm").
+
+---
+
+# [2026-08-19] Vấn đề: Bổ sung cột "Điểm trừ" vào màn KPI theo tháng (web)
+
+## 1. Mô tả vấn đề
+Nguyên văn: "Màn hình KPI theo tháng hiện tại chưa có cột Điểm trừ, nên chưa biết là có tính đúng
+hay sai? Yc bổ sung vào lun (Làm trên web)"
+
+## 2. Phân tích ban đầu
+- **Bối cảnh**: Màn "KPI theo tháng" = `Views/Kpi/Index.cshtml` (`ViewBag.Title = "KPI theo
+  tháng"`), model `List<KpiMonth>`. Đang có cột: #, Nhân sự, KPI cuối cùng, Xếp loại, Hỗ trợ, Thực
+  hiện, Việc riêng, Chất lượng, Giờ công, Nghỉ phép — KHÔNG có cột Điểm trừ.
+- **Mục tiêu**: Người dùng muốn ĐỐI CHIẾU được công thức tính KPI đang chạy đúng hay sai — Điểm
+  trừ (phạt báo cáo trễ) hiện "vô hình" trên màn danh sách, chỉ thấy dạng ghi chú nhỏ khi vào
+  từng người ở màn Chi tiết.
+- **Phạm vi**: Chỉ web. Người dùng chỉ nêu đích danh "màn KPI theo tháng" (Index), không nhắc màn
+  Chi tiết.
+- **Ràng buộc/phát hiện qua code**:
+  - Công thức tính đã có sẵn, KHÔNG cần sửa Controller/Model/database — thuần thêm cột vào View:
+    `KpiService.SupportLatePenalty(r.SupportLateCount) + KpiService.ExecuteLatePenalty(r.ExecuteLateCount)`
+    (đúng công thức `TeamDashboardController.TotalPenalty` đang dùng, `KpiMonth` đã có sẵn
+    `SupportLateCount`/`ExecuteLateCount`).
+  - `Views/Kpi/Detail.cshtml` (chi tiết 1 người) đã tính `supportPenalty`/`executePenalty` riêng
+    nhưng chỉ chèn dạng ghi chú nhỏ "trừ X điểm" cạnh giờ Hỗ trợ/Thực hiện — không phải cột/tổng
+    riêng biệt.
+  - `TeamDashboard/Index.cshtml` có sẵn cột "Điểm trừ" dạng "X/Y" (Y = TotalTasks, không thật sự
+    liên quan đến điểm trừ — có vẻ chỉ ghép cột cho gọn chứ X/Y không phải tỷ lệ đúng nghĩa).
+- **Rủi ro/giả định**: Không biết người dùng muốn xem TỔNG một số hay breakdown theo từng nhóm
+  (Hỗ trợ/Thực hiện) — vì mục đích chính là "đối chiếu tính đúng/sai" nên có thể cần breakdown mới
+  đối chiếu được, không chỉ tổng.
+- **Phương án sơ bộ**:
+  - A. Một cột tổng duy nhất (Hỗ trợ trễ + Thực hiện trễ).
+  - B. Cột tổng kèm breakdown nhỏ bên dưới (ví dụ "X" kèm ghi chú "Hỗ trợ: a · Thực hiện: b"),
+    cùng phong cách với các cột Hỗ trợ/Thực hiện hiện có (số chính + `cell-sub muted`).
+
+## 3. Câu hỏi làm rõ
+1. Cột Điểm trừ nên hiện TỔNG một số duy nhất, hay TỔNG kèm breakdown theo Hỗ trợ/Thực hiện để dễ
+   đối chiếu công thức (mục đích chính bạn nêu)?
+2. Vị trí cột — chèn ngay sau cột "Chất lượng" (đúng bước tính: Điểm trừ nằm trong Hỗ trợ/Thực
+   hiện, đã trừ trước khi cộng ra Chất lượng) hay vị trí khác bạn muốn?
+3. Có cần đồng bộ luôn màn Chi tiết (`Kpi/Detail.cshtml`) thành một dòng "Điểm trừ" rõ ràng trong
+   bảng tính (`kpi-calc`) thay vì ghi chú nhỏ hiện tại, hay giữ nguyên Detail và chỉ sửa đúng
+   Index như yêu cầu?
+
+## 4. Câu trả lời & Quyết định
+1. → **Tổng số + breakdown** Hỗ trợ/Thực hiện — cùng phong cách số chính + `cell-sub muted` như
+   các cột Hỗ trợ/Thực hiện hiện có.
+2. → Chèn ngay sau cột "Chất lượng" (đúng bước tính).
+3. → **Đồng bộ luôn `Kpi/Detail.cshtml`** thành một dòng "Điểm trừ" rõ ràng trong bảng `kpi-calc`,
+   thay ghi chú nhỏ hiện tại.
+
+## 5. Checklist
+### Thực hiện
+- [x] `[Bắt buộc]` `Views/Kpi/Index.cshtml`: thêm `<th>Điểm trừ</th>` sau cột "Chất lượng"; `<td>`
+      hiện tổng `KpiService.SupportLatePenalty(r.SupportLateCount) + KpiService.ExecuteLatePenalty(r.ExecuteLateCount)`
+      kèm `cell-sub muted` breakdown "Hỗ trợ: a · Thực hiện: b" (tách riêng 2 số hạng).
+- [x] `[Bắt buộc]` `Views/Kpi/Detail.cshtml`: **sửa lại quyết định nhỏ khi code** — KHÔNG thêm dòng
+      "Điểm trừ" độc lập vào chuỗi cộng của bảng `kpi-calc`, vì phát hiện `Model.SupportPoint`/
+      `ExecutePoint` (`KpiService.cs` dòng ~385/394) đã TRỪ SẴN khoản phạt bên trong khi tính (nhận
+      `SupportLatePenalty(...)`/`ExecuteLatePenalty(...)` làm tham số) — thêm một dòng trừ riêng sẽ
+      trừ hai lần trên MẶT SỐ HỌC hiển thị, đúng thứ gây hiểu lầm "tính đúng hay sai" mà yêu cầu
+      này muốn giải quyết. Thay vào đó: chú thích ngay TẠI dòng Hỗ trợ/Thực hiện trong bảng
+      `kpi-calc` — "— đã trừ X điểm báo cáo trễ" (màu `danger-text`) — nói rõ điểm đó ĐÃ phản ánh
+      phần trừ, không phải một bước trừ tách rời.
+- [x] `[Bắt buộc]` Build `TTKDGP.ProjectManager.sln` sạch sau khi sửa (chỉ sửa View, không đổi
+      Controller/Model nên rủi ro biên dịch rất thấp).
+
+### Kiểm tra / Nghiệm thu
+- [ ] Test tay: mở `Kpi/Index`, đối chiếu số ở cột Điểm trừ mới với tổng
+      `supportPenalty + executePenalty` hiện ở `Kpi/Detail` của cùng người/tháng — phải khớp.
+- [ ] Test tay: người không có lần báo cáo trễ nào → cột Điểm trừ hiện 0, không vỡ layout.
+
+### Ghi chú
+- Không đổi Controller/Model/database — thuần sửa 2 file View.
+
+## 6. Cập nhật ngày 20/08/2026 — đổi lại vị trí cột + cách tính hiển thị theo yêu cầu mới
+Nguyên văn: "màn hình http://pm.vn/Kpi cột điểm trừ sẽ nằm sau cột Việc riêng và cột chất lượng
+cũng sẽ được tính lại". Hỏi lại rõ ý "tính lại" (vì đụng số liệu KPI thật) — người dùng xác nhận:
+"điểm chất lượng chưa trừ điểm bị trừ" → muốn cột Chất lượng THỰC SỰ trừ Điểm trừ ra trên bảng,
+không chỉ đổi vị trí.
+
+**Vấn đề gốc phát hiện lại lúc sửa**: `r.SupportPoint`/`r.ExecutePoint` (tính sẵn ở
+`KpiService.cs`) đã TRỪ SẴN phạt báo cáo trễ bên trong (và chặn không cho âm) — nên "Chất lượng"
+(= tổng 3 cột) vốn đã là số liệu ĐÚNG/sau khi trừ rồi, không cần trừ thêm. Nhưng đặt "Điểm trừ"
+làm một cột riêng NGAY TRƯỚC "Chất lượng" mà không đổi gì khác thì bảng ĐỌC như một phép tính giả
+(nhìn như Chất lượng = Hỗ trợ+Thực hiện+Việc riêng−Điểm trừ nhưng thực ra Điểm trừ đã bị trừ ngầm
+từ trước, trừ lần nữa là sai/trùng) — đúng lỗi mà mục 5 phía trên (Detail.cshtml) đã tránh.
+
+**Quyết định**: đổi CẢ Hỗ trợ/Thực hiện sang hiện ĐIỂM GỐC (trước khi trừ — cộng ngược lại
+`SupportLatePenalty`/`ExecuteLatePenalty` vào `SupportPoint`/`ExecutePoint`), để bảng đọc đúng
+một phép tính thật theo thứ tự cột trái→phải: **Hỗ trợ (gốc) + Thực hiện (gốc) + Việc riêng −
+Điểm trừ = Chất lượng**. Về mặt số học, kết quả trùng khớp `QualityPoint` thật trong hầu hết
+trường hợp (chỉ lệch — thiếu đúng phần đã mất — khi MỘT nhóm bị phạt nặng hơn điểm kiếm được nên
+`SupportPoint`/`ExecutePoint` gốc đã bị chặn về 0 từ trước, một biên hiếm gặp, chấp nhận được).
+**"KPI cuối cùng"/"Xếp loại" và mọi nơi khác trong hệ thống KHÔNG đổi** — vẫn dùng `FinalPoint`/
+`Rank`/`QualityPoint` thật tính từ Controller, chỉ 3 Ô HIỂN THỊ (Hỗ trợ/Thực hiện/Chất lượng) đổi
+CÁCH TRÌNH BÀY trong `Views/Kpi/Index.cshtml`, không đổi Controller/Model/database.
+
+### Checklist
+- [x] Đổi thứ tự cột: `<th>` … Việc riêng, **Điểm trừ**, **Chất lượng**, Giờ công …
+- [x] Chuyển khối tính `rSupportPenalty/rExecutePenalty/rTotalPenalty` lên đầu vòng lặp (trước
+      khi dùng ở cả dòng "cell-recap" tên nhân sự lẫn các ô cột), thêm `rGrossSupport`,
+      `rGrossExecute`, `rDisplayQuality` (= gốc + gốc + Việc riêng − Điểm trừ, chặn không cho âm).
+- [x] Ô Hỗ trợ/Thực hiện đổi sang hiện `rGrossSupport`/`rGrossExecute` (điểm gốc); dòng
+      "cell-recap" cạnh tên nhân sự cũng đổi theo để không hiện 2 số khác nhau cho cùng một nhóm
+      trên cùng một dòng.
+- [x] Ô Chất lượng đổi sang hiện `rDisplayQuality` thay vì `r.QualityPoint` trực tiếp.
+- [x] Build `TTKDGP.ProjectManager.sln` sạch.
+- [ ] Test tay: đối chiếu `rDisplayQuality` hiển thị khớp `QualityPoint` thật (xem ở `Kpi/Detail`)
+      cho trường hợp bình thường; kiểm tra 1 ca "phạt nặng" (nếu có dữ liệu) để biết mức lệch
+      biên đã ghi chú ở trên thực tế lớn cỡ nào.
+- Không đổi `TeamDashboard/Index.cshtml` (cột "Điểm trừ" kiểu "X/Y" ở đó không thuộc phạm vi yêu
+  cầu lần này).
+
+---
+
+# [2026-08-19] Vấn đề: Sắp xếp lại màn Cài đặt mobile theo nhóm + màn Lịch sử phiên bản mới
+
+## 1. Mô tả vấn đề
+Nguyên văn: "Ở màn hình Cài đặt trên mobile. Tách ra làm các nhóm: 1. Cá nhân bao gồm: Thông tin
+cá nhân, Đăng kí nghỉ phép (nhóm này thì tất cả vai trò đều thấy). 2. Quản lý - Đối với vai trò là
+Quản lý tổ bao gồm: danh sách dự án, duyệt nghỉ phép, giao việc riêng, bảng điều khiển tổ, kpi
+theo tháng. 3. hệ thống: bao gồm: chính sách bảo mật, điều khoản sử dụng, các phiên bản cập nhật"
+
+## 2. Phân tích ban đầu
+- **Bối cảnh**: `Mobile-Flutter/lib/features/profile/profile_screen.dart` ("Cài đặt", tab thứ 4
+  trên bottom nav) hiện chỉ có 1 nhóm phẳng: Thông tin cá nhân, Chính sách bảo mật, Điều khoản sử
+  dụng, Đăng ký nghỉ phép — cộng nhóm "Thoát" riêng.
+- **Phát hiện quan trọng qua code**: 4/5 mục trong nhóm "Quản lý" người dùng liệt kê ĐÃ CÓ route
+  sẵn nhưng đang **mồ côi** (orphaned) — không gắn ở bất kỳ đâu trong UI hiện tại, chỉ truy cập
+  được qua deep link:
+  - "danh sách dự án" → `AppRoutes.projects` với `arguments: {'scope': 'team'}` (khác biến thể
+    'mine' đang dùng ở tab "Dự án" ngoài bottom nav — xem `my_projects_screen.dart` dòng 171,
+    title đổi thành "Dự án — Toàn Tổ" khi `scope == 'team'`).
+  - "duyệt nghỉ phép" → `AppRoutes.teamLeaveApprovals` (route `LeaveApprovalController`).
+  - "giao việc riêng" → `AppRoutes.teamPrivateTasks` (route `PrivateTasksController`).
+  - "bảng điều khiển tổ" → `AppRoutes.teamDashboard` (route `TeamDashboardController`) — comment
+    trong `app_bottom_nav.dart` dòng 29-31 xác nhận: "Không còn tab 'Tổ' — TeamDashboard vẫn còn
+    route, chỉ không gắn vào thanh điều hướng dưới nữa."
+  - "kpi theo tháng" → `AppRoutes.kpi` (route `KpiController`) — cũng mồ côi tương tự.
+  - Vai trò Quản lý Tổ đã có sẵn cờ kiểm tra: `AuthProvider.isTeamManager` (`features/auth/auth_provider.dart`).
+  - "các phiên bản cập nhật": CHƯA có màn nào — chỉ có số phiên bản tĩnh hiện ở màn Đăng nhập (qua
+    `package_info_plus`). `pubspec.yaml` vẫn ở `version: 1.0.0+1` từ đầu tới giờ dù đã qua nhiều
+    đợt tính năng lớn (xem `git log --oneline -- Mobile-Flutter/`) — chưa từng tăng version thật.
+- **Mục tiêu**: (a) Gom nhóm lại màn Cài đặt cho rõ ràng theo 3 nhóm nêu trên; (b) nhân thể mở lại
+  lối vào cho các màn quản lý đang mồ côi; (c) dựng MỚI một màn "Lịch sử phiên bản" (trước đây
+  chưa tồn tại).
+- **Phạm vi**: Chỉ mobile (Flutter). Không đổi bottom nav (4 tab giữ nguyên), không đổi các màn
+  đích (chỉ thêm lối vào), không đổi backend.
+- **Ràng buộc**: `.claude/rules/FLUTTER_RULES.md` — chỉ widget `App*`, tiếng Việt có dấu, đủ 5
+  trạng thái UI cho màn có dữ liệu động.
+- **Rủi ro/giả định**: (1) Nội dung thật của "Lịch sử phiên bản" (đợt nào có gì mới/sửa gì) chưa
+  có sẵn — không được tự bịa. (2) `version: 1.0.0+1` chưa từng tăng nên không có "nhiều phiên bản
+  thật" để liệt kê ngay — cần hỏi nguồn dữ liệu trước khi dựng.
+
+## 3. Câu hỏi làm rõ
+1. Màn "Lịch sử phiên bản" nên lấy dữ liệu từ đâu — dựng lại từ lịch sử commit thật (tôi đọc git
+   log, viết gọn lại), hay bắt đầu mới từ phiên bản hiện tại, từ nay mỗi lần phát hành mới tự tay
+   ghi changelog?
+2. (Ngầm hỏi thêm sau câu 1) Màn "Lịch sử phiên bản" nên hiển thị đúng nghĩa gì — chỉ số phiên bản
+   tĩnh, hay danh sách đầy đủ từng phiên bản kèm nội dung tính năng mới/sửa lỗi?
+
+## 4. Câu trả lời & Quyết định
+1. → Muốn màn **danh sách đầy đủ theo phiên bản, kèm nội dung tính năng mới/sửa lỗi từng phiên
+   bản** (không phải chỉ 1 dòng số phiên bản tĩnh).
+2. → Nguồn dữ liệu: **KHÔNG cần dựng lại lịch sử cũ** ("phiên bản đầu thì ko cần đâu"). Nội dung
+   thật (đợt nào có gì) **người dùng sẽ cung cấp sau** ("Nội dung đó tôi sẽ gợi ý sau, hãy xây dựng
+   màn hình trước giúp tôi") → Quyết định: dựng ĐỦ màn hình + cấu trúc dữ liệu (model + danh sách
+   tĩnh dễ chỉnh sau), KHÔNG tự bịa nội dung changelog — để danh sách rỗng với đúng trạng thái
+   "rỗng" theo FLUTTER_RULES (hoặc tối đa 1 mục ví dụ rõ ràng đánh dấu là placeholder, ưu tiên để
+   rỗng thật để không lẫn với nội dung thật sau này).
+
+## 5. Checklist: Sắp xếp Cài đặt theo nhóm + màn Lịch sử phiên bản
+
+### Chuẩn bị
+- [ ] Đọc lại `profile_screen.dart`, `app_routes.dart`, `auth_provider.dart`,
+      `my_projects_screen.dart` (biến `scope`) trước khi sửa — đã đọc ở phiên phân tích này, đọc
+      lại lần nữa lúc code để chắc không lệch dòng/tên biến sau các thay đổi khác trong phiên.
+
+### Thực hiện
+- [ ] `[Bắt buộc]` `profile_screen.dart`: tách `_SettingsGroup` hiện có (đang 1 khối phẳng) thành 3
+      nhóm có TIÊU ĐỀ rõ ràng: "Cá nhân", "Quản lý", "Hệ thống" (+ nhóm "Thoát" riêng biệt như cũ).
+      Cần thêm tiêu đề nhóm (`AppText` nhỏ, kiểu label) phía trên mỗi `_SettingsGroup` — hiện
+      `_SettingsGroup` chưa hỗ trợ tiêu đề, phải thêm.
+- [ ] `[Bắt buộc]` Nhóm "Cá nhân" (mọi vai trò thấy): Thông tin cá nhân, Đăng ký nghỉ phép — 2 mục
+      đã có sẵn trong nhóm phẳng cũ, chỉ chuyển vào nhóm mới.
+- [ ] `[Bắt buộc]` Nhóm "Quản lý" (CHỈ hiện khi `auth.isTeamManager == true`, ẩn hẳn cả nhóm với
+      người không phải Quản lý Tổ, không phải disable/xám mờ): danh sách dự án (`AppRoutes.projects`,
+      `arguments: {'scope': 'team'}`), duyệt nghỉ phép (`AppRoutes.teamLeaveApprovals`), giao việc
+      riêng (`AppRoutes.teamPrivateTasks`), bảng điều khiển tổ (`AppRoutes.teamDashboard`), kpi
+      theo tháng (`AppRoutes.kpi`).
+- [ ] `[Bắt buộc]` Nhóm "Hệ thống" (mọi vai trò thấy): Chính sách bảo mật, Điều khoản sử dụng (2
+      mục có sẵn, chuyển vào nhóm mới) + mục MỚI "Các phiên bản cập nhật".
+- [ ] `[Bắt buộc]` Dựng màn mới `VersionHistoryScreen` (tên file gợi ý
+      `features/profile/version_history_screen.dart`, theo đúng phong cách `PolicyScreen`/`AppCard`
+      đã có): danh sách các phiên bản, mỗi phiên bản có số hiệu + ngày + danh sách gạch đầu dòng
+      "tính năng mới"/"sửa lỗi" (phân biệt bằng nhãn/màu, dùng đúng `AppColors.success` cho tính
+      năng mới, `AppColors.warning` hoặc tương tự cho sửa lỗi — tự chọn cặp màu hợp lý, nhất quán).
+- [ ] `[Bắt buộc]` Data nguồn cho `VersionHistoryScreen`: 1 file dữ liệu tĩnh riêng (ví dụ
+      `version_history_data.dart`) chứa `List<VersionHistoryEntry>` — để RỖNG hoặc tối đa 1 mục
+      placeholder ghi rõ "sẽ cập nhật", KHÔNG tự soạn nội dung tính năng/lỗi thật. Cấu trúc dữ liệu
+      phải dễ để người dùng (hoặc phiên sau) điền tay thêm từng phiên bản.
+- [ ] `[Bắt buộc]` Trạng thái rỗng của `VersionHistoryScreen` (khi danh sách rỗng) phải tử tế theo
+      FLUTTER_RULES — không phải màn trắng trơn, có icon + câu giải thích "Chưa có nội dung cập
+      nhật nào được ghi lại".
+- [ ] `[Nên có]` Mục "Các phiên bản cập nhật" ở nhóm Hệ thống có thể hiện kèm số phiên bản hiện tại
+      (qua `package_info_plus`, cùng nguồn với màn Đăng nhập) làm phụ đề nhỏ dưới nhãn, cho tiện.
+
+### Kiểm tra / Nghiệm thu
+- [x] `flutter analyze` sạch trên các file mới/sửa.
+- [ ] Test tay: đăng nhập tài khoản KHÔNG phải Quản lý Tổ → màn Cài đặt KHÔNG thấy nhóm "Quản lý"
+      (ẩn hẳn, không phải xám mờ).
+- [ ] Test tay: đăng nhập tài khoản LÀ Quản lý Tổ → thấy đủ 3 nhóm, bấm từng mục trong "Quản lý"
+      mở đúng màn tương ứng (đặc biệt "danh sách dự án" phải ra "Dự án — Toàn Tổ", không phải "Dự
+      án của tôi").
+- [ ] Test tay: mở "Các phiên bản cập nhật" → vào đúng `VersionHistoryScreen`, thấy trạng thái rỗng
+      tử tế (chưa có nội dung thật).
+- [x] Nghiệm thu bằng skill `chuyen-gia-nghiem-thu-design` — **vòng 1: KHÔNG ĐẠT** (1 lỗi: badge
+      "Mới"/"Sửa lỗi" ở `_ChangeTypeBadge` dùng `AppColors.success`/`warning` trên nền
+      `successSoft`/`warningSoft` — tính tay ra tương phản ~4.45:1 và ~4.49:1, dưới chuẩn AA 4.5:1;
+      cùng cặp màu cũng dùng ở `app_toast_banner.dart` nên là lỗi cấp TOKEN, không riêng 1 màn).
+      Đã sửa: KHÔNG đổi thẳng `AppColors.success/warning` (phát hiện 2 màu này đồng bộ có chủ đích
+      với biến CSS `--success`/`--warn` bên web qua `site.css`, đổi sẽ lệch màu thương hiệu dùng
+      chung — vượt phạm vi nghiệm thu). Thay vào đó thêm 2 token MỚI riêng cho mobile
+      (`AppColors.successOnSoft` #197A4E, `AppColors.warningOnSoft` #8F6100 — đậm hơn bản gốc một
+      chút, KHÔNG đồng bộ site.css, chỉ dùng cho chữ đặt trên nền `*Soft`), áp cho cả
+      `_ChangeTypeBadge` lẫn `app_toast_banner.dart` (2 case success/warning; case error/`danger`
+      đã tính lại ra ~5.6:1, đạt chuẩn sẵn, không cần sửa). **Vòng 2: ĐẠT** (build/`flutter
+      analyze` sạch sau khi sửa).
+- [x] Test tay còn lại (phân quyền nhóm Quản lý, điều hướng, trạng thái rỗng) — đã chạy trên
+      emulator thật với tài khoản tantd.kha, xác nhận ĐÚNG sau khi vá thêm lỗ hổng phát sinh dưới
+      đây.
+
+---
+
+# [2026-08-20] Vấn đề: Mobile không bao giờ nhận được quyền Quản lý Tổ khi đăng nhập
+
+## 1. Mô tả vấn đề
+Phát sinh khi test tay nhóm "Quản lý" (mục trên): đăng nhập `tantd.kha` (đã tích "Là Quản lý Tổ"
+trên web) nhưng mobile vẫn hiện "Nhân viên", không thấy nhóm Quản lý.
+
+## 2. Nguyên nhân gốc (đã tìm ra, không phải lỗi mới — có từ trước, chỉ lộ ra khi nhóm Quản lý
+   phụ thuộc đúng vào chỗ này)
+- `AuthApiController.Login` (`Controllers/Api/AuthApiController.cs`) — `LoginResultDto` trước giờ
+  chỉ trả `Token`/`DisplayName`/`Role`, KHÔNG có danh sách quyền.
+- `login_helper.dart` do đó hard-code `permissions: const []` khi lưu cache, kèm comment gốc giải
+  thích đây là placeholder tạm "chờ backend trả thêm". Từ đó `AuthProvider.isTeamManager` (đọc
+  `permissions.contains('wteam.manage')`) LUÔN false với MỌI tài khoản, bất kể quyền thật trên
+  backend.
+- Quyền Quản lý Tổ cấp qua HAI lối (`Models/User.cs` — ô tích `User.IsTeamManager` HOẶC quyền
+  `wteam.manage` theo nhóm, `BaseController.IsTeamManager` đã gộp đúng cả hai cho web) — nhưng
+  không đường nào trong hai đường đó từng được mobile biết tới.
+
+## 3. Đã sửa
+- Backend: `LoginResultDto` (`Models/Api/ApiDtos.cs`) thêm `Permissions` (List<string>).
+  `AuthApiController.Login` tính `isTeamManager = user.IsTeamManager || Permissions.UserHas(user.Role,
+  Permissions.Team.Perm("manage"))` (tính trực tiếp từ `user` vừa fetch, KHÔNG gọi property
+  `IsTeamManager` kế thừa vì request đang xử lý CHƯA có token/CurrentUserId) — trả
+  `["wteam.manage"]` nếu true.
+- Mobile: `auth_service.dart` (`LoginResult` thêm field `permissions`, parse `data['Permissions']`),
+  `login_helper.dart` (dùng `result.permissions` thật thay vì `const []`, bỏ comment placeholder cũ).
+- Build backend + `flutter analyze` sạch cả hai lần sửa.
+
+## 4. Phát hiện thêm lúc test — LIÊN QUAN đến lỗi tên hiển thị "—" đã ghi ngày 18/08
+Sau khi sửa xong, đăng nhập LẠI trong cùng phiên app (không khởi động lại) vẫn hiện tên "—" VÀ vai
+trò "Nhân viên" (sai) — thoát hẳn app rồi mở lại (không đăng nhập lại) thì hiện ĐÚNG "Trần Duy Tân"
+/ "Quản lý Tổ" ngay. Xác nhận: lỗi "AuthProvider không đọc được state mới sau khi login() trong
+cùng phiên" (ghi ngày 18/08, khi đó CHƯA sửa vì "chỉ ảnh hưởng hiển thị") giờ ảnh hưởng RỘNG hơn ban
+đầu tưởng — che luôn cả tính năng thật (ẩn nhầm nhóm Quản lý), không chỉ hiển thị tên sai. Người
+dùng đã xác nhận muốn điều tra sửa hẳn gốc rễ — xem mục riêng ngay dưới đây.
+
+## 5. Checklist
+### Kiểm tra / Nghiệm thu
+- [x] Build backend sạch, `flutter analyze` sạch.
+- [x] Test tay trên emulator (tài khoản tantd.kha, sau khi thoát app + mở lại): nhóm "Quản lý"
+      hiện đủ 5 mục, vai trò hiện đúng "Quản lý Tổ".
+
+### Ghi chú
+- Không đổi web (`BaseController.IsTeamManager`/`Users/Index.cshtml`) — chỉ vá đường truyền dữ
+  liệu sang mobile, luật quyền gốc trên backend giữ nguyên.
+
+---
+
+# [2026-08-20] Vấn đề: Màn "Thông tin cá nhân" mobile thiếu thẻ "Quản lý Tổ" trong Phân quyền
+
+## 1. Mô tả vấn đề
+Nguyên văn: "Nội dung phân quyền lấy theo nội dung phân quyền trên web" — kèm ảnh chụp web
+(`Views/Users/Index.cshtml`) cho tantd.kha có 2 thẻ "Quản trị" + "Quản lý Tổ", còn mobile
+("Thông tin cá nhân") chỉ hiện 1 thẻ "Quản trị".
+
+## 2. Nguyên nhân
+`ProfileDto.RoleDisplay` (`AccountApiController.ToDto`) chỉ gọi `Roles.Display(user.Role)` — tên
+(các) NHÓM quyền, không bao gồm vai Quản lý Tổ vì đó là một cờ RIÊNG (`User.IsTeamManager`), nằm
+ngoài `user.Role` — đúng cách web tự tách hai khái niệm này (`Views/Users/Index.cshtml` hiện 2
+loại thẻ riêng biệt, không gộp chung).
+
+## 3. Đã sửa
+- Backend: `ProfileDto` thêm `IsTeamManager` (bool); `AccountApiController.ToDto` gán
+  `user.IsTeamManager` (khớp ĐÚNG nội dung web đang hiện — web cũng chỉ xét cờ này trực tiếp, không
+  gộp thêm quyền `wteam.manage` theo nhóm ở đúng chỗ hiển thị này).
+- Mobile: `ProfileInfo` (`profile_models.dart`) thêm field `isTeamManager`; `_RoleRow`
+  (`personal_info_screen.dart`) đổi từ 1 badge sang `Wrap` nhiều badge — thêm badge "Quản lý Tổ"
+  (dùng `AppColors.successOnSoft`, token vừa thêm ở nghiệm thu Lịch sử phiên bản, để đạt chuẩn
+  tương phản AA) khi `isTeamManager == true`, badge nhóm quyền cũ giữ nguyên.
+- `flutter analyze` sạch. Test tay trên emulator: hiện đúng 2 thẻ "Quản trị" + "Quản lý Tổ".
+
+## 4. Checklist
+### Kiểm tra / Nghiệm thu
+- [x] Build backend + `flutter analyze` sạch.
+- [x] Test tay trên emulator: badge "Quản lý Tổ" hiện đúng cạnh badge nhóm quyền.
+- [ ] Chưa chạy nghiệm thu `chuyen-gia-nghiem-thu-design` riêng cho thay đổi nhỏ này (2 badge
+      trong 1 hàng đã có sẵn, chỉ thêm 1 badge cùng kiểu — rủi ro thấp, cân nhắc bỏ qua bước này
+      hoặc gộp vào lần nghiệm thu tiếp theo tuỳ người dùng quyết định).
+
+### Ghi chú
+- KHÔNG bịa nội dung changelog — chờ người dùng cung cấp ở phiên sau, chỉ dựng khung.
+- Không đổi bottom nav, không đổi các màn đích (`TeamDashboardController`,
+  `LeaveApprovalController`, `PrivateTasksController`, `KpiController`, `MyProjectsController`) —
+  chỉ thêm lối vào từ Cài đặt.
+- `version: 1.0.0+1` trong `pubspec.yaml` — không tự ý tăng version trong phiên này, đó là quyết
+  định phát hành của người dùng, ngoài phạm vi yêu cầu.
+
+---
+
+# [2026-08-20] Vấn đề: Sửa gốc lỗi tên/quyền hiển thị sai ngay sau khi đăng nhập
+
+## 1. Mô tả vấn đề
+Phát sinh khi test nhóm "Quản lý" (mục ngay trên): đăng nhập trong CÙNG phiên chạy app (không
+thoát app) luôn hiện tên rỗng ("—"/"Chào, bạn!") và quyền sai (không thấy nhóm Quản lý dù tài
+khoản có quyền) — CHỈ đúng lại sau khi thoát hẳn app và mở lại. Đây chính là lỗi đã ghi nhận
+ngày 18/08/2026 ("Vấn đề tên hiển thị sau đăng nhập trong phiên") nhưng khi đó đánh giá "chỉ ảnh
+hưởng hiển thị" nên chưa sửa — nay lỗi này CHE LUÔN quyền Quản lý Tổ thật, ảnh hưởng chức năng
+thật chứ không chỉ hiển thị, nên người dùng yêu cầu điều tra sửa hẳn gốc rễ.
+
+## 2. Điều tra
+Đã cắm log tạm (`debugPrint`) xuyên suốt `AuthProvider` (constructor/getter/`_hydrate`/`login`/
+`logout`), `LoginScreen._submit`, `DashboardScreen.build`, `Cache.saveData/readData`, tái hiện
+nhiều lần trên emulator bằng 2 tài khoản test (`nhansudemo`/`pmdemo`, mật khẩu `Khoid@umo!248`) —
+đăng xuất rồi đăng nhập tài khoản khác trong CÙNG một tiến trình app.
+
+Bằng chứng thu được (log thật, `hashCode` khớp — xác nhận đúng CÙNG MỘT object `AuthProvider`
+suốt luồng, không phải đa instance):
+- `AuthProvider.login()` gán ĐÚNG `_displayName`/`_permissions` (đọc lại đúng từ cache vừa lưu).
+- Đọc lại NGAY SAU ĐÓ (`await Future.delayed(Duration.zero)` rồi đọc) — vẫn ĐÚNG.
+- Nhưng ngay sau `Navigator.pushReplacementNamed` (qua `Nav.to`) sang Dashboard, ở LẦN BUILD ĐẦU
+  TIÊN của màn mới, `context.watch<AuthProvider>().displayName` đọc ra `null` — và KHÔNG BAO GIỜ
+  tự sửa lại (không có build thứ hai tự đúng như kiểu cold-start `_hydrate()`).
+- Xác nhận `_submit()` chỉ chạy đúng 1 lần (không double-tap), `logout()`/`_hydrate()` KHÔNG chạy
+  lại trong lúc này (không có log tương ứng) — tức KHÔNG có đường code nào trong 3 nơi gán
+  `_displayName` (constructor→`_hydrate`, `login`, `logout`) chạy lần hai để giải thích giá trị
+  `null` xuất hiện. **Không tìm ra được dòng code cụ thể gây ra hiện tượng này** dù đã loại trừ
+  toàn bộ giả thuyết hợp lý (đa instance Provider, quyền `context.read` vs `context.watch`, race
+  giữa microtask/frame, `checkLogin` gọi logout nhầm, v.v.) — nghi vấn cao nhất là tương tác giữa
+  thời điểm `notifyListeners()` của `ChangeNotifierProvider` (gói `provider` 6.1.5+1) với
+  `Navigator.pushReplacementNamed` thay route ngay sau đó, nhưng chưa chứng minh được cơ chế
+  chính xác.
+
+## 3. Cách sửa (khắc phục triệt để phần TRIỆU CHỨNG, không cần biết đúng cơ chế gốc)
+Vì `_hydrate()` (chạy lúc khởi động app, đọc lại từ cache) LUÔN cho kết quả đúng — thêm một
+đường đọc lại y hệt, gọi tại điểm CHUNG mà MỌI màn hình yêu cầu đăng nhập đều đi qua khi mở
+(`StatelessController`/`ControllerState` trong `core/classes/controller_manager.dart`, nơi đã có
+sẵn `checkLogin` chạy cho mọi màn):
+- `AuthProvider`: thêm `Future<void> ensureFresh()` — đọc lại `displayName`/`permissions` từ
+  cache (logic giống hệt `_hydrate()`), chỉ `notifyListeners()` khi có gì đó THỰC SỰ đổi (tránh
+  rebuild thừa vì hàm này chạy trên MỌI lần mở màn có yêu cầu đăng nhập).
+- `controller_manager.dart`: gọi `context.read<AuthProvider>().ensureFresh()` ngay sau
+  `checkLogin(...)`, cả ở `StatelessController.build()` lẫn `ControllerState.initState()`.
+- Đã gỡ sạch toàn bộ log tạm (`auth_provider.dart`, `login_screen.dart`, `dashboard_screen.dart`,
+  `profile_screen.dart`, `cache_manager.dart`) trước khi coi là xong.
+
+## 4. Checklist
+### Kiểm tra / Nghiệm thu
+- [x] `flutter analyze` sạch toàn bộ `Mobile-Flutter` sau khi gỡ log tạm.
+- [x] Test tay trên emulator: đăng xuất `nhansudemo` → đăng nhập `pmdemo` (không thoát app) →
+      Dashboard hiện đúng ngay "Chào, Trần PM!" (trước đây hiện "Chào, bạn!"); màn Cài đặt hiện
+      đúng tên + vai trò ngay, không cần thoát app.
+- [ ] Chưa test case liên quan: đăng nhập tài khoản CÓ quyền Quản lý Tổ (ví dụ tantd.kha) trong
+      cùng phiên (không thoát app) → xác nhận nhóm "Quản lý" hiện đúng NGAY, không chỉ tên đúng.
+
+### Ghi chú
+- KHÔNG tìm ra được dòng code chính xác gây lỗi dù điều tra sâu bằng log thật trên thiết bị —
+  nếu sau này gặp lại hiện tượng tương tự ở MỘT provider khác (ví dụ `ThemeProvider`), nên nghi
+  ngờ ngay cùng cơ chế và áp dụng cùng cách vá (đọc lại từ nguồn sự thật — cache/API — ở điểm màn
+  hình mở, không chỉ tin state đã set trước lúc điều hướng).
+- Cách vá là "đường vòng" (workaround chắc chắn hoạt động), không phải sửa đúng nguyên nhân gốc.
+  Chấp nhận được vì: (1) đã điều tra hết mức hợp lý, (2) `ensureFresh()` tái dùng ĐÚNG logic đã
+  qua kiểm chứng (`_hydrate()`), (3) rủi ro thấp (chỉ đọc lại dữ liệu đã có, có early-return tránh
+  rebuild thừa).

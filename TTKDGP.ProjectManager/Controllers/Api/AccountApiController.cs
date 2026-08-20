@@ -73,6 +73,7 @@ namespace TTKDGP.ProjectManager.Controllers.Api
                 UserName = user.UserName,
                 FullName = user.FullName,
                 RoleDisplay = Roles.Display(user.Role),
+                IsTeamManager = user.IsTeamManager,
                 IsAdmin = user.IsAdmin,
                 CreatedAt = user.CreatedAt
             };
