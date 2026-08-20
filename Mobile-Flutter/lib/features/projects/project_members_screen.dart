@@ -193,9 +193,10 @@ class _ProjectMembersScreenState extends State<ProjectMembersScreen> {
 
     if (result.isSuccess) {
       _applyResult(result.data!);
-      ToastService.show('Đã đặt "${member.userFullName}" làm PM.');
+      ToastService.show('Đã đặt "${member.userFullName}" làm PM.',
+          type: ToastType.success);
     } else {
-      ToastService.show(result.error!);
+      ToastService.show(result.error!, type: ToastType.error);
     }
   }
 
@@ -213,7 +214,9 @@ class _ProjectMembersScreenState extends State<ProjectMembersScreen> {
         onDone: _applyResult,
       ),
     );
-    if (result == true) ToastService.show('Đã kết thúc tham gia.');
+    if (result == true) {
+      ToastService.show('Đã kết thúc tham gia.', type: ToastType.success);
+    }
   }
 
   Future<void> _confirmRemove(ProjectMember member) async {
@@ -230,9 +233,9 @@ class _ProjectMembersScreenState extends State<ProjectMembersScreen> {
 
     if (result.isSuccess) {
       _applyResult(result.data!);
-      ToastService.show('Đã xoá khỏi lịch sử.');
+      ToastService.show('Đã xoá khỏi lịch sử.', type: ToastType.success);
     } else {
-      ToastService.show(result.error!);
+      ToastService.show(result.error!, type: ToastType.error);
     }
   }
 }
@@ -484,7 +487,7 @@ class _EndMemberSheetState extends State<_EndMemberSheet> {
       widget.onDone(result.data!);
       Navigator.of(context).pop(true);
     } else {
-      ToastService.show(result.error!);
+      ToastService.show(result.error!, type: ToastType.error);
     }
   }
 

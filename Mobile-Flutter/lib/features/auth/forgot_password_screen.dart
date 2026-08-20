@@ -101,7 +101,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         setState(() => _step = _ForgotPasswordStep.otp);
         _startResendCountdown();
       } else {
-        ToastService.show(result.message);
+        ToastService.show(result.message, type: ToastType.error);
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -119,7 +119,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       if (!mounted) return;
       if (result.ok) _startResendCountdown();
       ToastService.show(
-          result.message.isNotEmpty ? result.message : 'Đã gửi lại mã OTP.');
+          result.message.isNotEmpty ? result.message : 'Đã gửi lại mã OTP.',
+          type: result.ok ? ToastType.success : ToastType.error);
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -139,7 +140,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         _resendTimer?.cancel();
         setState(() => _step = _ForgotPasswordStep.success);
       } else {
-        ToastService.show(result.message);
+        ToastService.show(result.message, type: ToastType.error);
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);

@@ -148,7 +148,8 @@ class _TaskCommentsScreenState extends State<TaskCommentsScreen> {
     final hasFile = _pendingAttachment != null;
 
     if (!hasText && !hasFile) {
-      ToastService.show('Vui lòng nhập nội dung hoặc đính kèm tệp.');
+      ToastService.show('Vui lòng nhập nội dung hoặc đính kèm tệp.',
+          type: ToastType.error);
       return;
     }
 
@@ -169,7 +170,7 @@ class _TaskCommentsScreenState extends State<TaskCommentsScreen> {
         _pendingAttachment = null;
       });
     } else {
-      ToastService.show(result.error!);
+      ToastService.show(result.error!, type: ToastType.error);
     }
   }
 
@@ -189,9 +190,9 @@ class _TaskCommentsScreenState extends State<TaskCommentsScreen> {
         _summary = result.data!;
         _changed = true;
       });
-      ToastService.show('Đã thu hồi trao đổi.');
+      ToastService.show('Đã thu hồi trao đổi.', type: ToastType.success);
     } else {
-      ToastService.show(result.error!);
+      ToastService.show(result.error!, type: ToastType.error);
     }
   }
 
@@ -217,7 +218,8 @@ class _TaskCommentsScreenState extends State<TaskCommentsScreen> {
       await OpenFilex.open(path);
     } catch (_) {
       if (mounted) {
-        ToastService.show('Không tải được tệp đính kèm. Hãy thử lại.');
+        ToastService.show('Không tải được tệp đính kèm. Hãy thử lại.',
+            type: ToastType.error);
       }
     } finally {
       if (mounted) setState(() => _openingAttachmentIds.remove(c.id));

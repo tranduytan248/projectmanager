@@ -183,6 +183,7 @@
                         <th class="center col-hide-sm nowrap">Hỗ trợ</th>
                         <th class="center col-hide-sm nowrap">Thực hiện</th>
                         <th class="center col-hide-sm nowrap">Việc riêng</th>
+                        <th class="center col-hide-sm nowrap">Điểm trừ</th>
                         <th class="center col-hide-sm nowrap">Chất lượng</th>
                         <th class="center col-hide-sm nowrap">Giờ công</th>
                         <th class="center col-hide-sm nowrap">Nghỉ phép</th>
@@ -197,6 +198,23 @@
                     {
                         var r = Model[i];
                         var isShort = r.AttendanceRate < 100;
+
+                        // Diem tru = phat bao cao tre cua hai nhom Ho tro + Thuc hien, cung cong
+                        // thuc TeamDashboardController.TotalPenalty dang dung. r.SupportPoint/
+                        // ExecutePoint (KpiService.cs) da TRU SAN khoan nay ben trong (va chan
+                        // khong cho am) — de bang doc duoc nhu mot phep tinh that theo dung thu
+                        // tu cot (Ho tro + Thuc hien + Viec rieng − Diem tru = Chat luong), cong
+                        // nguoc lai phat de ra DIEM GOC (truoc khi tru) cho rieng hai o nay.
+                        // Luu y: neu mot nhom bi phat NANG hon diem kiem duoc (r.SupportPoint da
+                        // ve 0 do chan am), diem goc tinh lai o day se THIEU dung phan da mat —
+                        // truong hop hiem (phai tre rat nhieu lan) nen chap nhan duoc.
+                        var rSupportPenalty = KpiService.SupportLatePenalty(r.SupportLateCount);
+                        var rExecutePenalty = KpiService.ExecuteLatePenalty(r.ExecuteLateCount);
+                        var rTotalPenalty = rSupportPenalty + rExecutePenalty;
+                        var rGrossSupport = r.SupportPoint + rSupportPenalty;
+                        var rGrossExecute = r.ExecutePoint + rExecutePenalty;
+                        var rDisplayQuality = rGrossSupport + rGrossExecute + r.AssignedPoint - rTotalPenalty;
+                        if (rDisplayQuality < 0) { rDisplayQuality = 0; }
 
                         <tr>
                             @* Ba hạng đầu đeo huy chương: bảng đã sắp theo điểm nên thứ hạng là
@@ -220,9 +238,9 @@
                                 <div class="cell-recap">
                                     <span>@r.Rank</span>
                                     <span>·</span>
-                                    <span>Hỗ trợ @r.SupportPoint.ToString("0.##") (@r.SupportHours.ToString("0.#")/@r.SupportCapHours.ToString("0.#")h)</span>
+                                    <span>Hỗ trợ @rGrossSupport.ToString("0.##") (@r.SupportHours.ToString("0.#")/@r.SupportCapHours.ToString("0.#")h)</span>
                                     <span>·</span>
-                                    <span>Thực hiện @r.ExecutePoint.ToString("0.##")</span>
+                                    <span>Thực hiện @rGrossExecute.ToString("0.##")</span>
                                     @if (r.AssignedPoint > 0)
                                     {
                                         <span>·</span>
@@ -257,8 +275,11 @@
                                ai cần nhắc làm việc, ai cần được giao việc. *@
                             @* Nhóm hỗ trợ chấm theo GIỜ so với mốc 30% (có trần), nên dòng phụ hiện
                                giờ chứ không hiện "x/y việc" — cùng lối với cột Thực hiện. *@
+                            @* Hien DIEM GOC (rGrossSupport, truoc khi tru phat — xem cong thuc o
+                               dau vong lap) de cong don voi Thuc hien/Viec rieng roi tru Diem tru
+                               ra dung Chat luong theo dung thu tu cot trai sang phai. *@
                             <td class="center col-hide-sm">
-                                @r.SupportPoint.ToString("0.##")
+                                @rGrossSupport.ToString("0.##")
                                 <div class="cell-sub muted">
                                     @if (r.SupportTotal == 0)
                                     {
@@ -284,10 +305,11 @@
                                 </div>
                             </td>
                             @* Nhóm thực hiện chấm theo GIỜ so với định mức, không theo số việc —
-                               nên dòng phụ hiện giờ chứ không hiện "x/y việc". *@
+                               nên dòng phụ hiện giờ chứ không hiện "x/y việc". Hien DIEM GOC, cung
+                               ly do voi cot Ho tro o tren. *@
                             <td class="center col-hide-sm">
-                                <span class="@(r.ExecutePoint > KpiService.ExecuteMaxPoint ? "ok-text" : "")">
-                                    @r.ExecutePoint.ToString("0.##")
+                                <span class="@(rGrossExecute > KpiService.ExecuteMaxPoint ? "ok-text" : "")">
+                                    @rGrossExecute.ToString("0.##")
                                 </span>
                                 <div class="cell-sub muted">
                                     @if (r.ExecuteTotal == 0)
@@ -310,7 +332,18 @@
                                     <span class="muted">—</span>
                                 }
                             </td>
-                            <td class="center col-hide-sm"><strong>@r.QualityPoint.ToString("0.##")</strong></td>
+                            @* Điểm trừ = phạt báo cáo trễ của hai nhóm Hỗ trợ + Thực hiện, cùng
+                               công thức TeamDashboardController.TotalPenalty đang dùng — tách
+                               breakdown để đối chiếu công thức đúng/sai theo từng nhóm. Đặt NGAY
+                               SAU Việc riêng, TRƯỚC Chất lượng — đúng thứ tự phép tính. *@
+                            <td class="center col-hide-sm nowrap">
+                                <span class="@(rTotalPenalty > 0 ? "danger-text" : "")">@rTotalPenalty.ToString("0.##")</span>
+                                <div class="cell-sub muted">Hỗ trợ: @rSupportPenalty.ToString("0.##") · Thực hiện: @rExecutePenalty.ToString("0.##")</div>
+                            </td>
+                            @* Chat luong = Ho tro (goc) + Thuc hien (goc) + Viec rieng − Diem tru,
+                               dung KHOP voi thu tu cot ben trai — xem rDisplayQuality o dau vong
+                               lap (co chan khong cho am). *@
+                            <td class="center col-hide-sm"><strong>@rDisplayQuality.ToString("0.##")</strong></td>
 
                             @* Giờ công là chỗ điểm bị hạ nhiều nhất — bày cả tỷ lệ lẫn số giờ,
                                và tô cảnh báo ngay khi chưa đủ. *@

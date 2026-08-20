@@ -4,6 +4,7 @@ import 'package:phosphor_icons/phosphor_icons.dart';
 
 import '../../config/app_theme.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_dimens.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/toast_service.dart';
 import '../../core/widgets/app_app_bar.dart';
@@ -120,9 +121,10 @@ class _ProfileBodyState extends State<_ProfileBody> {
 
     if (result.isSuccess) {
       setState(() => _profile = result.profile!);
-      ToastService.show('Đã cập nhật thông tin cá nhân.');
+      ToastService.show('Đã cập nhật thông tin cá nhân.',
+          type: ToastType.success);
     } else {
-      ToastService.show(result.error!);
+      ToastService.show(result.error!, type: ToastType.error);
     }
   }
 
@@ -142,9 +144,10 @@ class _ProfileBodyState extends State<_ProfileBody> {
       _currentPasswordController.clear();
       _newPasswordController.clear();
       _confirmPasswordController.clear();
-      ToastService.show('Đã đổi mật khẩu thành công.');
+      ToastService.show('Đã đổi mật khẩu thành công.',
+          type: ToastType.success);
     } else {
-      ToastService.show(result.error!);
+      ToastService.show(result.error!, type: ToastType.error);
     }
   }
 
@@ -303,20 +306,39 @@ class _RoleRow extends StatelessWidget {
               color: AppColors.textSecondary),
         ),
         Expanded(
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(4),
+          child: Wrap(
+            spacing: AppDimens.space8,
+            runSpacing: AppDimens.space8,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: AppText(profile.roleDisplay,
+                    variant: AppTextVariant.caption,
+                    fontSize: 11.5,
+                    weight: FontWeight.w700,
+                    color: color),
               ),
-              child: AppText(profile.roleDisplay,
-                  variant: AppTextVariant.caption,
-                  fontSize: 11.5,
-                  weight: FontWeight.w700,
-                  color: color),
-            ),
+              // Vai Quan ly To nam NGOAI (cac) nhom quyen o tren — the rieng, y het cach web
+              // (Views/Users/Index.cshtml) hien them badge "Quản lý Tổ" ben canh badge nhom quyen.
+              if (profile.isTeamManager)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppColors.successOnSoft.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const AppText('Quản lý Tổ',
+                      variant: AppTextVariant.caption,
+                      fontSize: 11.5,
+                      weight: FontWeight.w700,
+                      color: AppColors.successOnSoft),
+                ),
+            ],
           ),
         ),
       ],

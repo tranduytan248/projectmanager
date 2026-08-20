@@ -7,12 +7,17 @@ import '../../config/app_http.dart';
 /// 0 sai tai khoan/mat khau, -1 loi he thong (mang hoac server) — cac truong con lai chi co gia
 /// tri khi code == 1.
 class LoginResult {
-  const LoginResult._(this.code, {this.token, this.displayName, this.role});
+  const LoginResult._(
+      this.code, {this.token, this.displayName, this.role, this.permissions});
 
   final int code;
   final String? token;
   final String? displayName;
   final String? role;
+
+  /// Danh sach ma quyen tu server (hien chi co the gom "wteam.manage") — dung de
+  /// AuthProvider.isTeamManager doc dung ngay sau khi dang nhap, khong con de trong cung.
+  final List<String>? permissions;
 }
 
 /// Goi that AuthApiController.Login. Action nay nhan (username, password) qua form-encoded body
@@ -34,6 +39,8 @@ class AuthService {
         token: data['Token'] as String?,
         displayName: data['DisplayName'] as String?,
         role: data['Role'] as String?,
+        permissions:
+            (data['Permissions'] as List<dynamic>?)?.cast<String>(),
       );
     } on DioException catch (e) {
       if (e.response?.statusCode == 400) return const LoginResult._(0);

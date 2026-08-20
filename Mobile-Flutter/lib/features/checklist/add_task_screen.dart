@@ -157,7 +157,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     if (result.isSuccess) {
       Navigator.of(context).pop(true);
     } else {
-      ToastService.show(result.error!);
+      ToastService.show(result.error!, type: ToastType.error);
     }
   }
 

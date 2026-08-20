@@ -41,6 +41,40 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Doc lai displayName/permissions tu cache — goi tu ControllerManager moi khi mot man hinh
+  /// yeu cau dang nhap duoc mo (xem StatelessController/ControllerState). Da ghi nhan (khong
+  /// tim ra duoc dong code cu the gay ra du dieu tra ky): sau khi login() vua gan dung
+  /// _displayName/_permissions, man Dashboard duoc Navigator.pushReplacementNamed sang NGAY
+  /// SAU DO lai doc duoc gia tri rong o lan build dau tien — hien "Chao, ban!" thay vi ten
+  /// that, chi tu het khi thoat han app roi mo lai (luc do _hydrate() o tren chay dung tu dau).
+  /// Goi lai ham nay o MOI man hinh yeu cau dang nhap la luoi an toan: du roi vao dung truong
+  /// hop nao thi man cung tu doc lai dung tu cache khi mo, khong phu thuoc thoi diem
+  /// notifyListeners() cua login() lan truyen toi dau.
+  Future<void> ensureFresh() async {
+    final isLogin = await _appCache.isLogin();
+    if (!isLogin) return;
+
+    final info = _appCache.getLoginInfo();
+    final name = info?['displayName'] as String?;
+    final perms = (info?['permissions'] as List?)?.cast<String>() ?? const [];
+    if (_isAuthenticated && _displayName == name && _sameList(_permissions, perms)) {
+      return;
+    }
+
+    _isAuthenticated = true;
+    _displayName = name;
+    _permissions = perms;
+    notifyListeners();
+  }
+
+  static bool _sameList(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
   /// Tra ve true/false de LoginScreen biet co dieu huong sang Dashboard hay khong. Loi (sai
   /// tai khoan hoac loi server) hien thi ngay tai day qua ToastService thay vi bat LoginScreen
   /// tu doc ma loi 0/-1 — cung mot cho xu ly du sau nay them nhieu diem goi login() khac.
@@ -48,11 +82,12 @@ class AuthProvider extends ChangeNotifier {
       BuildContext context, String username, String password) async {
     final result = await doAuth(context, username, password);
     if (result == 0) {
-      ToastService.show('Sai tài khoản hoặc mật khẩu.');
+      ToastService.show('Sai tài khoản hoặc mật khẩu.', type: ToastType.error);
       return false;
     }
     if (result == -1) {
-      ToastService.show('Lỗi hệ thống, vui lòng thử lại sau.');
+      ToastService.show('Lỗi hệ thống, vui lòng thử lại sau.',
+          type: ToastType.error);
       return false;
     }
 

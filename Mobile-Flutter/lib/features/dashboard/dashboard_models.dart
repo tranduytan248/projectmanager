@@ -51,6 +51,8 @@ class TaskItem {
     required this.progress,
     required this.kind,
     required this.parentId,
+    this.canEdit = false,
+    this.createdAt,
   });
 
   final int id;
@@ -71,6 +73,16 @@ class TaskItem {
   /// 0 = muc goc, khac 0 = viec con cua muc co Id do.
   final int parentId;
 
+  /// Nguoi dang dang nhap co sua duoc trang thai/tien do cua rieng dau viec nay khong (PM/Quan ly
+  /// To HOAC chinh nguoi thuc hien) — CHI duoc backend tra dung cho luong Checklist (xem
+  /// ChecklistApiController.Index). Cac luong khac dung TaskItem (Dashboard, Cong viec cua toi...)
+  /// KHONG set truong nay nen mac dinh false — cac man do khong doc truong nay nen khong anh huong.
+  final bool canEdit;
+
+  /// Ngay tao dau viec — dung de sap xep moi den cu (vi du tung cot Kanban Checklist). Null neu
+  /// JSON thieu/loi dinh dang, noi dung sap xep tu coi nhu cu nhat.
+  final DateTime? createdAt;
+
   factory TaskItem.fromJson(Map<String, dynamic> json) => TaskItem(
         id: json['Id'] as int,
         code: json['Code'] as String? ?? '',
@@ -85,6 +97,8 @@ class TaskItem {
         progress: json['Progress'] as int? ?? 0,
         kind: json['Kind'] as String? ?? '',
         parentId: json['ParentId'] as int? ?? 0,
+        canEdit: json['CanEdit'] as bool? ?? false,
+        createdAt: parseAspNetDate(json['CreatedAt'] as String?),
       );
 }
 

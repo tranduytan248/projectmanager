@@ -91,7 +91,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _loadingMore = false);
-      ToastService.show('Không tải thêm được. Hãy thử lại.');
+      ToastService.show('Không tải thêm được. Hãy thử lại.',
+          type: ToastType.error);
     }
   }
 
@@ -124,7 +125,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             .toList();
         _unreadCount = unreadIds.length;
       });
-      ToastService.show('Không đánh dấu đã đọc được. Hãy thử lại.');
+      ToastService.show('Không đánh dấu đã đọc được. Hãy thử lại.',
+          type: ToastType.error);
     }
   }
 

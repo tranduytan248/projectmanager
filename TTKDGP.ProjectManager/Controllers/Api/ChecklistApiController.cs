@@ -42,7 +42,7 @@ namespace TTKDGP.ProjectManager.Controllers.Api
                 TotalCount = tasks.Count,
                 DoneCount = tasks.Count(t => t.State == TaskStates.Done),
                 OverdueCount = tasks.Count(t => t.IsOverdue),
-                Tasks = tasks.Select(ApiMappers.ToDto).ToList(),
+                Tasks = tasks.Select(t => ApiMappers.ToDto(t, CanEditTask(t))).ToList(),
                 Assignees = ActiveMemberIds(projectId)
                     .Select(id => Repository.Users.Find(id))
                     .Where(u => u != null)
@@ -168,6 +168,15 @@ namespace TTKDGP.ProjectManager.Controllers.Api
             if (TaskStates.IsClosed(task.State))
             {
                 return BadRequest("Công việc đã đóng nên không sửa được giờ đã ghi.");
+            }
+
+            // Y het ChecklistController.DeleteTimeLog — Dang lam chi dat duoc sau khi da ghi gio
+            // (TimeLogService.ValidateStateChange), xoa mat gio ma van giu trang thai do la sai logic.
+            if (task.State == TaskStates.InProgress)
+            {
+                return BadRequest(
+                    "Việc đang \"Đang làm\" nên không xoá được giờ đã ghi — xoá sẽ khiến việc " +
+                    "mất hết căn cứ giờ công trong khi vẫn đang ở trạng thái này.");
             }
 
             Repository.WorkTimeLogs.Delete(logId);

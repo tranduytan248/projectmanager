@@ -104,10 +104,10 @@ class _TaskStatusSheetState extends State<_TaskStatusSheet> {
 
     if (result.isSuccess) {
       setState(() => _result = result.data!);
-      ToastService.show('Đã cập nhật trạng thái.');
+      ToastService.show('Đã cập nhật trạng thái.', type: ToastType.success);
       Navigator.of(context).pop(_result);
     } else {
-      ToastService.show(result.error!);
+      ToastService.show(result.error!, type: ToastType.error);
     }
   }
 

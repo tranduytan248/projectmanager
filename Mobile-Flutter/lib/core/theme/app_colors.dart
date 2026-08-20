@@ -46,9 +46,19 @@ class AppColors {
   static const success = Color(0xFF1A7F52);
   static const successSoft = Color(0xFFE6F5EE);
 
+  /// Dam hon [success] mot chut — CHI dung cho CHU dat tren nen [successSoft] (badge/pill nhat
+  /// mau), vi cap success/successSoft goc do ~4.45:1, duoi chuan AA 4.5:1 cho chu thuong. KHONG
+  /// dong bo voi site.css (khac [success] — mau do chi dung rieng mobile, khong phai mau thuong
+  /// hieu dung chung voi web), nen KHONG dung cho bat ky ngu canh nao khac ngoai chu-tren-nen-soft.
+  static const successOnSoft = Color(0xFF197A4E);
+
   /// = --warn/--st-warn. Trang thai "sap den han/canh bao".
   static const warning = Color(0xFF9A6700);
   static const warningSoft = Color(0xFFFDF5E2);
+
+  /// Dam hon [warning] mot chut — CHI dung cho CHU dat tren nen [warningSoft], cung ly do voi
+  /// [successOnSoft] (cap goc ~4.49:1, duoi chuan AA). KHONG dong bo voi site.css.
+  static const warningOnSoft = Color(0xFF8F6100);
 
   /// = --danger/--st-late. Trang thai "qua han/loi".
   static const danger = Color(0xFFB3261E);

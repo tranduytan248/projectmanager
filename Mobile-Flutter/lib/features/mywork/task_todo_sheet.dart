@@ -97,7 +97,7 @@ class _TaskTodoSheetState extends State<_TaskTodoSheet> {
         _addController.clear();
       });
     } else {
-      ToastService.show(result.error!);
+      ToastService.show(result.error!, type: ToastType.error);
     }
   }
 
@@ -114,7 +114,7 @@ class _TaskTodoSheetState extends State<_TaskTodoSheet> {
         _changed = true;
       });
     } else {
-      ToastService.show(result.error!);
+      ToastService.show(result.error!, type: ToastType.error);
     }
   }
 
@@ -147,7 +147,7 @@ class _TaskTodoSheetState extends State<_TaskTodoSheet> {
         _editingId = null;
       });
     } else {
-      ToastService.show(result.error!);
+      ToastService.show(result.error!, type: ToastType.error);
     }
   }
 
@@ -169,9 +169,9 @@ class _TaskTodoSheetState extends State<_TaskTodoSheet> {
         _summary = result.data!;
         _changed = true;
       });
-      ToastService.show('Đã xoá việc cần làm.');
+      ToastService.show('Đã xoá việc cần làm.', type: ToastType.success);
     } else {
-      ToastService.show(result.error!);
+      ToastService.show(result.error!, type: ToastType.error);
     }
   }
 
