@@ -621,4 +621,49 @@ namespace TTKDGP.ProjectManager.Models.Api
             Tasks = new List<TaskDto>();
         }
     }
+
+    /// <summary>Mot don nghi phep — khop cac truong cua LeaveRequest, xem
+    /// Controllers/Api/LeavesApiController.cs.</summary>
+    public class LeaveRequestDto
+    {
+        public int Id { get; set; }
+
+        /// <summary>Gia tri tho cua LeaveKinds (PhepNam/KhongLuong/Om/Khac).</summary>
+        public string Kind { get; set; }
+
+        public DateTime FromDate { get; set; }
+        public DateTime ToDate { get; set; }
+        public bool IsHalfDay { get; set; }
+        public string HalfDaySession { get; set; }
+        public decimal Days { get; set; }
+        public string Reason { get; set; }
+
+        /// <summary>Gia tri tho cua LeaveStates (ChoDuyet/DaDuyet/TuChoi/DaHuy).</summary>
+        public string State { get; set; }
+
+        public string ApprovedByName { get; set; }
+        public DateTime? ApprovedAt { get; set; }
+        public string ApproverNote { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+
+    /// <summary>Danh sach "Nghi phep cua toi" tren mobile — khop ViewBag cua LeavesController.My
+    /// (Years/StatYear/ApprovedDaysInYear/PendingCount) cong danh sach don da loc.</summary>
+    public class LeavesListDto
+    {
+        public int StatYear { get; set; }
+        public decimal ApprovedDaysInYear { get; set; }
+        public int PendingCount { get; set; }
+
+        /// <summary>Cac nam co don, moi cho dropdown loc — giam dan.</summary>
+        public List<int> Years { get; set; }
+
+        public List<LeaveRequestDto> Items { get; set; }
+
+        public LeavesListDto()
+        {
+            Years = new List<int>();
+            Items = new List<LeaveRequestDto>();
+        }
+    }
 }

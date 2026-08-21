@@ -38,11 +38,15 @@ class ApiEndpoint {
   static const notificationMarkRead = '/NotificationsApi/MarkRead';
   static const notificationMarkAllRead = '/NotificationsApi/MarkAllRead';
 
+  static const leaves = '/LeavesApi/Index';
+  static const leaveCreate = '/LeavesApi/Create';
+  static const leaveUpdate = '/LeavesApi/Update';
+  static const leaveCancel = '/LeavesApi/Cancel';
+
   // Cac endpoint duoi day CHUA co controller tuong ung ben backend — giu lam danh sach du kien,
   // dung toi dau them controller toi do (xem Checklist-Thiet-ke-Giao-dien-Mobile.md, muc A).
   static const refreshToken = '/auth/refresh';
   static const myReports = '/reports/mine';
-  static const leaves = '/leaves/mine';
   static const kpiMine = '/kpi/mine';
 
   static String projectDetail(String id) => '/MyProjectsApi/Detail/$id';

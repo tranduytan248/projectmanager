@@ -2,7 +2,6 @@ import 'checklist/checklist_board_controller.dart';
 import 'dashboard/dashboard_controller.dart';
 import 'kpi/kpi_controller.dart';
 import 'leaves/leave_list_controller.dart';
-import 'leaves/leave_request_form_controller.dart';
 import 'mywork/my_work_controller.dart';
 import 'mywork/task_detail_controller.dart';
 import 'notifications/notifications_controller.dart';
@@ -29,7 +28,6 @@ class AppRoutes extends RouteManager {
   static const String checklist = '$name/projects/checklist';
   static const String projectMembers = '$name/projects/members';
   static const String leaves = '$name/leaves';
-  static const String leaveNew = '$name/leaves/new';
   static const String kpi = '$name/kpi';
   static const String notifications = '$name/notifications';
   static const String profile = '$name/profile';
@@ -46,7 +44,6 @@ class AppRoutes extends RouteManager {
     addRoute(checklist, (context) => const ChecklistBoardController());
     addRoute(projectMembers, (context) => const ProjectMembersController());
     addRoute(leaves, (context) => const LeaveListController());
-    addRoute(leaveNew, (context) => const LeaveRequestFormController());
     addRoute(kpi, (context) => const KpiController());
     addRoute(notifications, (context) => const NotificationsController());
     addRoute(profile, (context) => const ProfileController());

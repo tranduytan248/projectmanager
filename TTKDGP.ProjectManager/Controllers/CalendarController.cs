@@ -34,7 +34,9 @@ namespace TTKDGP.ProjectManager.Controllers
             var y = year.HasValue && year.Value >= 2000 && year.Value <= 2100 ? year.Value : today.Year;
             var m = month.HasValue && month.Value >= 1 && month.Value <= 12 ? month.Value : today.Month;
 
-            var mine = WorkService.TasksOfUser(userId);
+            var mine = WorkService.TasksOfUser(userId)
+                .Where(t => t.State != TaskStates.Paused)
+                .ToList();
 
             if (!string.IsNullOrEmpty(state)) mine = mine.Where(t => t.State == state).ToList();
             if (!string.IsNullOrEmpty(priority)) mine = mine.Where(t => t.Priority == priority).ToList();
@@ -60,6 +62,38 @@ namespace TTKDGP.ProjectManager.Controllers
             };
 
             return View(model);
+        }
+
+        /// <summary>
+        /// Danh sách chi tiết công việc cá nhân của một ngày cụ thể — mở trong modal khi bấm "+N việc khác" hoặc bấm vào ô ngày.
+        /// </summary>
+        public ActionResult DayTasks(string date, string state, string priority)
+        {
+            DateTime targetDate;
+            if (!DateTime.TryParseExact(date, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out targetDate))
+            {
+                if (!DateTime.TryParse(date, out targetDate))
+                {
+                    return HttpNotFound();
+                }
+            }
+
+            var mine = WorkService.TasksOfUser(CurrentUserId)
+                .Where(t => t.State != TaskStates.Paused)
+                .ToList();
+            if (!string.IsNullOrEmpty(state)) mine = mine.Where(t => t.State == state).ToList();
+            if (!string.IsNullOrEmpty(priority)) mine = mine.Where(t => t.Priority == priority).ToList();
+
+            var dayTasks = mine
+                .Where(t => t.DueDate.HasValue && t.DueDate.Value.Date == targetDate.Date)
+                .OrderByDescending(t => t.IsOverdue)
+                .ThenBy(t => t.Title, StringComparer.CurrentCulture)
+                .ToList();
+
+            ViewBag.Date = targetDate;
+            ViewBag.IsTeamView = false;
+
+            return PartialView("_DayTasks", dayTasks);
         }
 
         /// <summary>Số ngày lệch từ Thứ Hai (0) tới Chủ Nhật (6) — lịch trong dự án luôn bắt đầu

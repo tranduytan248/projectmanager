@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -88,6 +88,7 @@
     <Compile Include="Controllers\PermissionGroupsController.cs" />
     <Compile Include="Controllers\DashboardController.cs" />
     <Compile Include="Controllers\CalendarController.cs" />
+    <Compile Include="Controllers\TeamCalendarController.cs" />
     <Compile Include="Controllers\TeamDashboardController.cs" />
     <Compile Include="Controllers\WorkQueueController.cs" />
     <Compile Include="Controllers\SystemStatusController.cs" />
@@ -160,6 +161,7 @@
     <Compile Include="Controllers\Api\MyProjectsApiController.cs" />
     <Compile Include="Controllers\Api\ProjectMembersApiController.cs" />
     <Compile Include="Controllers\Api\ChecklistApiController.cs" />
+    <Compile Include="Controllers\Api\LeavesApiController.cs" />
     <Compile Include="Controllers\Api\ApiMappers.cs" />
     <Compile Include="Models\Api\ApiDtos.cs" />
     <Compile Include="Models\SmsApiModels.cs" />
@@ -295,6 +297,7 @@
     <Content Include="Views\WorkLogs\Edit.cshtml" />
     <Content Include="Views\Shared\CatalogIndex.cshtml" />
     <Content Include="Views\Shared\CatalogEdit.cshtml" />
+    <Content Include="Views\Shared\_DayTasks.cshtml" />
     <Content Include="Views\Members\Index.cshtml" />
     <Content Include="Views\Members\Edit.cshtml" />
     <Content Include="Views\Assignments\Index.cshtml" />
@@ -307,6 +310,7 @@
     <Content Include="Views\PermissionGroups\Edit.cshtml" />
     <Content Include="Views\Dashboard\Index.cshtml" />
     <Content Include="Views\Calendar\Index.cshtml" />
+    <Content Include="Views\TeamCalendar\Index.cshtml" />
     <Content Include="Views\TeamDashboard\Index.cshtml" />
     <Content Include="Views\TeamDashboard\_MemberTasks.cshtml" />
     <Content Include="Views\WorkQueue\Index.cshtml" />

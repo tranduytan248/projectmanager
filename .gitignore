@@ -53,6 +53,7 @@ TTKDGP.ProjectManager/App_Config/secrets.config
 TTKDGP.ProjectManager/config.json
 
 # ---- Khác ----
+.agents/
 Thumbs.db
 desktop.ini
 *.log

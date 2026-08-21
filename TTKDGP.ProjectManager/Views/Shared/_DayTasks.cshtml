@@ -1,0 +1,152 @@
+﻿@model List<TTKDGP.ProjectManager.Models.WorkTask>
+@using TTKDGP.ProjectManager.Models
+@{
+    var date = ViewBag.Date is DateTime ? (DateTime)ViewBag.Date : DateTime.Today;
+    var isTeamView = ViewBag.IsTeamView == true;
+
+    Func<WorkTask, string> taskTone = t =>
+    {
+        if (t.IsOverdue)                     return "overdue";
+        if (t.State == TaskStates.Done)      return "done";
+        if (t.State == TaskStates.Cancelled) return "cancelled";
+        return "active";
+    };
+
+    Func<DayOfWeek, string> dayOfWeekName = dow =>
+    {
+        switch (dow)
+        {
+            case DayOfWeek.Monday: return "Thứ Hai";
+            case DayOfWeek.Tuesday: return "Thứ Ba";
+            case DayOfWeek.Wednesday: return "Thứ Tư";
+            case DayOfWeek.Thursday: return "Thứ Năm";
+            case DayOfWeek.Friday: return "Thứ Sáu";
+            case DayOfWeek.Saturday: return "Thứ Bảy";
+            case DayOfWeek.Sunday: return "Chủ Nhật";
+            default: return "";
+        }
+    };
+}
+
+<div class="day-tasks-modal">
+    <div class="day-tasks-header">
+        <div class="day-tasks-info">
+            <span class="day-tasks-badge">@dayOfWeekName(date.DayOfWeek)</span>
+            <span class="day-tasks-date">@date.ToString("dd/MM/yyyy")</span>
+            <span class="day-tasks-count">&middot; <strong>@Model.Count</strong> công việc</span>
+        </div>
+    </div>
+
+    @if (Model.Count == 0)
+    {
+        <div class="empty-state">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:.35;margin-bottom:8px">
+                <rect x="6" y="8" width="36" height="34" rx="6" stroke="currentColor" stroke-width="2.5"/>
+                <path d="M6 18h36M16 4v8M32 4v8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M20 28l3 3 6-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div>Không có công việc nào trong ngày này.</div>
+        </div>
+    }
+    else
+    {
+        <div class="table-wrap" style="max-height: 65vh; overflow-y: auto;">
+            <table class="data day-tasks-table">
+                <thead>
+                    <tr>
+                        <th>Công việc</th>
+                        @if (isTeamView)
+                        {
+                            <th>Người thực hiện</th>
+                        }
+                        <th>Dự án</th>
+                        <th class="center">Ưu tiên</th>
+                        <th class="num">Tiến độ</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var t in Model)
+                    {
+                        var tone = taskTone(t);
+                        <tr class="day-task-row day-task-row-@tone"
+                            data-modal-url="@Url.Action("Detail", "Checklist", new { id = t.Id })"
+                            data-modal-title="Chi tiết công việc"
+                            data-modal-size="lg"
+                            title="Bấm để xem chi tiết công việc">
+                            <td class="wrap-text">
+                                <div class="day-task-title-cell">
+                                    <span class="cal-task-dot cal-dot-@tone"></span>
+                                    <div>
+                                        <a href="#" class="day-task-link"
+                                           data-modal-url="@Url.Action("Detail", "Checklist", new { id = t.Id })"
+                                           data-modal-title="Chi tiết công việc"
+                                           data-modal-size="lg">
+                                            @if (!string.IsNullOrWhiteSpace(t.Code))
+                                            {
+                                                <span class="muted font-mono">@t.Code</span> <text>&middot;</text>
+                                            }
+                                            <strong>@t.Title</strong>
+                                        </a>
+                                    </div>
+                                </div>
+                            </td>
+                            @if (isTeamView)
+                            {
+                                <td class="nowrap">
+                                    @if (!string.IsNullOrEmpty(t.AssigneeName))
+                                    {
+                                        <span class="day-task-assignee">
+                                            <svg class="cal-user-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M8 8a3 3 0 100-6 3 3 0 000 6zM2.5 13.5c0-2.5 2.5-3.5 5.5-3.5s5.5 1 5.5 3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                                            </svg>
+                                            @t.AssigneeName
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="muted">Chưa giao</span>
+                                    }
+                                </td>
+                            }
+                            <td class="wrap-text">
+                                <span class="muted">@(string.IsNullOrWhiteSpace(t.ProjectName) ? "Việc riêng" : t.ProjectName)</span>
+                            </td>
+                            <td class="center nowrap">
+                                @if (t.Priority == TaskPriorities.High)
+                                {
+                                    <span class="badge badge-danger">Cao</span>
+                                }
+                                else if (t.Priority == TaskPriorities.Low)
+                                {
+                                    <span class="badge">Thấp</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-default">Trung bình</span>
+                                }
+                            </td>
+                            <td class="num nowrap">
+                                <span class="font-tabular">@t.Progress%</span>
+                            </td>
+                            <td class="nowrap">
+                                @if (t.State == TaskStates.Done)
+                                {
+                                    <span class="badge badge-active">Hoàn thành @(t.IsOnTime ? "đúng hạn" : "trễ hạn")</span>
+                                }
+                                else if (t.IsOverdue)
+                                {
+                                    <span class="badge badge-danger">Quá hạn @(-t.DaysLeft) ngày</span>
+                                }
+                                else
+                                {
+                                    <span class="badge">@TaskStates.Display(t.State)</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
