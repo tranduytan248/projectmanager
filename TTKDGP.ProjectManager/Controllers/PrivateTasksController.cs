@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -52,7 +52,7 @@ namespace TTKDGP.ProjectManager.Controllers
                     || (t.AssigneeName ?? string.Empty).IndexOf(needle, StringComparison.CurrentCultureIgnoreCase) >= 0);
             }
 
-            var list = WorkService.Sort(items);
+            var list = items.OrderByDescending(t => t.CreatedAt).ThenByDescending(t => t.Id).ToList();
 
             ViewBag.Query = q;
             ViewBag.AssigneeId = assigneeId;

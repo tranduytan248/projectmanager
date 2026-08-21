@@ -74,11 +74,16 @@ class ApiEndpoint {
   static const projectEndMember = '/ProjectMembersApi/EndMember';
   static const projectRemoveMember = '/ProjectMembersApi/RemoveMember';
 
-  // Nhom "Quan ly To" (can quyen wteam.manage)
+  // Nhom "Quan ly To" (can quyen wteam.manage hoac wtasks.create)
   static const teamDashboard = '/team/dashboard';
   static const teamProjects = '/team/projects';
-  static const privateTasks = '/team/private-tasks';
+  static const privateTasks = '/PrivateTasksApi/Index';
+  static const privateTasksFormOptions = '/PrivateTasksApi/FormOptions';
+  static const privateTasksCreate = '/PrivateTasksApi/Create';
+  static const privateTasksUpdate = '/PrivateTasksApi/Update';
+  static const privateTasksDelete = '/PrivateTasksApi/Delete';
   static const leaveApprovals = '/team/leaves';
   static const teamReports = '/team/reports';
   static const kpiApprovals = '/team/kpi';
 }
+
