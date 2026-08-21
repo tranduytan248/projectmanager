@@ -1749,3 +1749,47 @@ Giả định đã áp dụng (không hỏi lại vì người dùng muốn làm
 - [x] Build lại 2 lần, xác nhận qua HTTP mỗi lần (đăng nhập + fetch `/Calendar`, kiểm tra có đúng
   class mới, không "Server Error") — lần này KHÔNG cần iisreset (chỉ sửa file .cs/.cshtml/.css đã
   có sẵn trong .csproj, không tạo file mới).
+
+---
+
+# [2026-08-20] Sửa nhanh: Bảng thông báo web tràn/cắt nội dung trên điện thoại
+
+## 1. Vấn đề
+Người dùng gửi ảnh chụp trình duyệt điện thoại (`pmncpt.cenit.vn`): bấm chuông thông báo, hộp danh
+sách hiện ra bị tràn sang trái, cắt mất khoảng nửa nội dung mỗi dòng thông báo.
+
+## 2. Nguyên nhân
+`.notif-panel` (`Content/site.css`) định vị `position: absolute; right: 0` — neo theo mép phải của
+CHÍNH CÁI CHUÔNG (`.notif`), không phải theo màn hình. Trên điện thoại, chuông không nằm sát mép
+phải cùng (còn tên người dùng + nút Đăng xuất phía sau nó), nên hộp rộng 380px kéo dài sang trái
+từ vị trí chuông sẽ tràn ra ngoài mép trái màn hình — phần tràn đó bị cắt mất.
+
+## 3. Đã sửa
+Trong `@media (max-width: 640px)` sẵn có (đúng breakpoint mobile của cả dự án), đổi `.notif-panel`
+sang `position: fixed; left: 8px; right: 8px; top: 60px; width: auto;` — định vị theo MÀN HÌNH
+thay vì theo chuông, luôn nằm gọn trong khung nhìn bất kể chuông ở đâu trên thanh trên.
+
+## 4. Kiểm tra
+- Build sạch, xác nhận CSS mới đã lên server qua HTTP fetch trực tiếp `/Content/site.css`.
+- [ ] Người dùng tự xác nhận trên điện thoại thật sau khi bấm chuông thông báo.
+
+## Cập nhật: Test tay trên emulator (tài khoản pmdemo)
+- [x] Danh sách tải đúng dữ liệu thật qua API (thống kê "Năm 2026 đã nghỉ 0 ngày công đã duyệt",
+      trạng thái rỗng ban đầu).
+- [x] Form tạo mới: dropdown Loại nghỉ, khối "Số ngày nghỉ" auto-tính đúng ngay khi mở form (mặc
+      định hôm nay-hôm nay = 1 ngày công), tick "Nghỉ nửa ngày" → số ngày đổi ngay thành 0.5 + hiện
+      dropdown Buổi đúng thiết kế.
+- [x] Gửi đơn thành công (nửa ngày, buổi sáng, Phép năm, lý do) → quay lại danh sách, đơn mới hiện
+      đầy đủ đúng thông tin, badge "Chờ duyệt", nút Sửa/Thu hồi.
+- [x] Validate trùng lịch hoạt động đúng: gửi đơn thứ 2 cùng khoảng ngày với đơn vừa tạo (còn Chờ
+      duyệt) → bị chặn đúng thông báo "Bạn đã có đơn chờ duyệt từ...đến...trùng khoảng ngày này."
+      (xác nhận `LeaveService.FindOverlap` hoạt động đúng qua API mới).
+- [ ] Chưa kịp test xong "Sửa"/"Thu hồi" (đang test dở thì phiên bị `/clear`) — cần test lại ở
+      phiên sau: bấm Sửa mở đúng form đổ sẵn dữ liệu cũ, sửa xong lưu đúng; bấm Thu hồi có hộp
+      thoại xác nhận, xác nhận xong đơn chuyển "Đã huỷ" và ẩn nút Sửa/Thu hồi.
+- Lưu ý: 1 đơn test đã tạo thật trên DB (21/08/2026, nửa ngày sáng, Phép năm, tài khoản pmdemo) —
+  có thể cần dọn/thu hồi thủ công sau nếu không muốn giữ dữ liệu test này.
+
+## Kết luận tổng thể tính năng "Đăng ký nghỉ phép" (backend + mobile)
+Đã hoàn thành, build sạch, code review không lỗi, test tay xác nhận luồng tạo đơn + validate trùng
+lịch hoạt động đúng 100% khớp logic gốc bên web. Còn thiếu bước test tay Sửa/Thu hồi (dang dở).

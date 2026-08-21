@@ -372,5 +372,25 @@ namespace TTKDGP.ProjectManager.Controllers.Api
                 IsOnTime = false
             };
         }
+
+        public static LeaveRequestDto ToDetailDto(LeaveRequest l)
+        {
+            return new LeaveRequestDto
+            {
+                Id = l.Id,
+                Kind = l.Kind,
+                FromDate = l.FromDate,
+                ToDate = l.ToDate,
+                IsHalfDay = l.IsHalfDay,
+                HalfDaySession = l.HalfDaySession,
+                Days = l.Days,
+                Reason = l.Reason,
+                State = l.State,
+                ApprovedByName = l.ApprovedByName,
+                ApprovedAt = l.ApprovedAt,
+                ApproverNote = l.ApproverNote,
+                CreatedAt = l.CreatedAt
+            };
+        }
     }
 }
