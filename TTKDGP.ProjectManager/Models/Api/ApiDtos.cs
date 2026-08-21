@@ -666,4 +666,61 @@ namespace TTKDGP.ProjectManager.Models.Api
             Items = new List<LeaveRequestDto>();
         }
     }
+
+    /// <summary>Giao việc riêng — Danh sách việc riêng trả về cho Mobile.</summary>
+    public class PrivateTasksDataDto
+    {
+        public int TotalCount { get; set; }
+        public int OverdueCount { get; set; }
+        public int InProgressCount { get; set; }
+        public int DoneCount { get; set; }
+        public List<PrivateTaskItemDto> Items { get; set; }
+        public List<AssigneeOptionDto> Members { get; set; }
+
+        public PrivateTasksDataDto()
+        {
+            Items = new List<PrivateTaskItemDto>();
+            Members = new List<AssigneeOptionDto>();
+        }
+    }
+
+    public class PrivateTaskItemDto
+    {
+        public int Id { get; set; }
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public string State { get; set; }
+        public string Priority { get; set; }
+        public int Progress { get; set; }
+        public int AssigneeUserId { get; set; }
+        public string AssigneeName { get; set; }
+        public int AssignedByUserId { get; set; }
+        public string AssignedByName { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? DueDate { get; set; }
+        public DateTime? CompletedAt { get; set; }
+        public bool IsOverdue { get; set; }
+        public decimal BonusPercent { get; set; }
+        public bool HasAttachment { get; set; }
+        public string AttachmentName { get; set; }
+        public long AttachmentSize { get; set; }
+        public bool CanEdit { get; set; }
+        public bool CanDelete { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+
+    public class PrivateTaskFormOptionsDto
+    {
+        public List<AssigneeOptionDto> Members { get; set; }
+        public List<decimal> BonusOptions { get; set; }
+        public List<string> Priorities { get; set; }
+
+        public PrivateTaskFormOptionsDto()
+        {
+            Members = new List<AssigneeOptionDto>();
+            BonusOptions = new List<decimal>();
+            Priorities = new List<string>();
+        }
+    }
 }
+
