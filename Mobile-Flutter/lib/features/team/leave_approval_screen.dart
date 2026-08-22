@@ -336,13 +336,12 @@ class _LeaveApprovalScreenState extends State<LeaveApprovalScreen> {
                 color: isSelected ? color : AppColors.borderStrong,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Text(
+              child: AppText(
                 '$count',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: isSelected ? Colors.white : AppColors.textSecondary,
-                ),
+                variant: AppTextVariant.caption,
+                fontSize: 11,
+                weight: FontWeight.bold,
+                color: isSelected ? AppColors.textOnPrimary : AppColors.textSecondary,
               ),
             ),
           ],

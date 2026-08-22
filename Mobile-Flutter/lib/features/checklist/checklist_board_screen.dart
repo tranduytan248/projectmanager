@@ -656,7 +656,7 @@ class _TaskRow extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: AppColors.border),
         ),

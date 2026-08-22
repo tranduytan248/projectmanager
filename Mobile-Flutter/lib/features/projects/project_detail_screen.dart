@@ -254,7 +254,7 @@ class _Header extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.06),
+                        color: AppColors.surfaceVariant,
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: const AppText('Đã đóng',

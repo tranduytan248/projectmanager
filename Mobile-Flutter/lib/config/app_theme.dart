@@ -1,34 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
+import '../core/theme/app_colors.dart';
 import '../core/theme/app_dimens.dart';
 
 class AppTheme {
   AppTheme._();
 
-  /// = Visual Studio Code Accent (#007ACC).
-  static const brandBlue = Color(0xFF007ACC);
-  static const brandBlueDark = Color(0xFF0E639C);
-  static const brandBlueDarker = Color(0xFF114A71);
-  static const brandBlueSoft = Color(0xFF1B2B3E);
+  /// Aliases chuyển tiếp sang AppColors để tương thích các nơi cũ
+  static const brandBlue = AppColors.primary;
+  static const brandBlueDark = AppColors.primaryDark;
+  static const brandBlueDarker = AppColors.primaryDarker;
+  static const brandBlueSoft = AppColors.primarySoft;
 
-  /// Trạng thái Hoàn thành / Đúng hạn (#4EC9B0).
-  static const statusSuccess = Color(0xFF4EC9B0);
-  static const statusSuccessSoft = Color(0xFF17332B);
+  static const statusSuccess = AppColors.success;
+  static const statusSuccessSoft = AppColors.successSoft;
 
-  /// Trạng thái Cảnh báo / Đang làm (#DCDCAA).
-  static const statusWarning = Color(0xFFDCDCAA);
-  static const statusWarningSoft = Color(0xFF33301B);
+  static const statusWarning = AppColors.warning;
+  static const statusWarningSoft = AppColors.warningSoft;
 
-  /// Trạng thái Quá hạn / Lỗi (#F14C4C).
-  static const statusDanger = Color(0xFFF14C4C);
-  static const statusDangerSoft = Color(0xFF3A1E1E);
+  static const statusDanger = AppColors.danger;
+  static const statusDangerSoft = AppColors.dangerSoft;
 
-  /// Màu chữ phụ (#9DA5B4).
-  static const textMuted = Color(0xFF9DA5B4);
-  static const textFaint = Color(0xFF6A737D);
-
-  /// Font chữ mặc định toàn app.
-  static const fontFamily = 'Be Vietnam Pro';
+  static const textMuted = AppColors.textSecondary;
+  static const textFaint = AppColors.textFaint;
 
   static const _minButtonSize = Size.fromHeight(AppDimens.minTapTarget);
 
@@ -37,64 +32,63 @@ class AppTheme {
   static ThemeData get dark => ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
-        fontFamily: fontFamily,
-        scaffoldBackgroundColor: const Color(0xFF1E1E1E),
+        textTheme: GoogleFonts.robotoTextTheme(ThemeData(brightness: Brightness.dark).textTheme),
+        scaffoldBackgroundColor: AppColors.background,
         colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF007ACC),
-          onPrimary: Colors.white,
-          secondary: Color(0xFF0E639C),
-          surface: Color(0xFF252526),
-          onSurface: Color(0xFFD4D4D4),
-          error: Color(0xFFF14C4C),
-          onError: Colors.white,
+          primary: AppColors.primary,
+          onPrimary: AppColors.textOnPrimary,
+          secondary: AppColors.primaryDark,
+          surface: AppColors.surface,
+          onSurface: AppColors.textPrimary,
+          error: AppColors.danger,
+          onError: AppColors.textOnPrimary,
         ),
-        appBarTheme: const AppBarTheme(
+        appBarTheme: AppBarTheme(
           centerTitle: true,
-          backgroundColor: Color(0xFF1E1E1E),
+          backgroundColor: AppColors.background,
           elevation: 0,
           scrolledUnderElevation: 0,
           surfaceTintColor: Colors.transparent,
-          titleTextStyle: TextStyle(
-            fontFamily: fontFamily,
-            color: Color(0xFFD4D4D4),
+          titleTextStyle: GoogleFonts.roboto(
+            color: AppColors.textPrimary,
             fontSize: 17,
             fontWeight: FontWeight.w700,
           ),
-          iconTheme: IconThemeData(color: Color(0xFFD4D4D4)),
+          iconTheme: const IconThemeData(color: AppColors.textPrimary),
         ),
         filledButtonTheme: FilledButtonThemeData(
           style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xFF007ACC),
-            foregroundColor: Colors.white,
+            backgroundColor: AppColors.primary,
+            foregroundColor: AppColors.textOnPrimary,
             minimumSize: _minButtonSize,
             elevation: 0,
           ),
         ),
         outlinedButtonTheme: OutlinedButtonThemeData(
           style: OutlinedButton.styleFrom(
-            foregroundColor: const Color(0xFFD4D4D4),
-            side: const BorderSide(color: Color(0xFF3C3C3C)),
+            foregroundColor: AppColors.textPrimary,
+            side: const BorderSide(color: AppColors.borderStrong),
             minimumSize: _minButtonSize,
           ),
         ),
         iconButtonTheme: IconButtonThemeData(
           style: IconButton.styleFrom(
-            foregroundColor: const Color(0xFFD4D4D4),
+            foregroundColor: AppColors.textPrimary,
             minimumSize: const Size.square(AppDimens.minTapTarget),
           ),
         ),
         bottomSheetTheme: const BottomSheetThemeData(
-          backgroundColor: Color(0xFF252526),
+          backgroundColor: AppColors.surface,
           elevation: 0,
           modalElevation: 0,
           surfaceTintColor: Colors.transparent,
         ),
         dialogTheme: const DialogThemeData(
-          backgroundColor: Color(0xFF252526),
+          backgroundColor: AppColors.surface,
           surfaceTintColor: Colors.transparent,
         ),
         dividerTheme: const DividerThemeData(
-          color: Color(0xFF333333),
+          color: AppColors.border,
           thickness: 1,
           space: 1,
         ),

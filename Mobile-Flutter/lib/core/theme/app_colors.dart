@@ -67,6 +67,28 @@ class AppColors {
   /// Viền đậm / Divider focus: (#454545).
   static const borderStrong = Color(0xFF454545);
 
+  /// Nền thanh điều hướng đáy / Status bar tối (#181818).
+  static const navBackground = Color(0xFF181818);
+
+  /// Xanh sáng cho link / tab đang chọn / focus viền (#3794FF).
+  static const accentBlue = Color(0xFF3794FF);
+
+  /// Nền nút bấm phụ (Secondary Button) (#333333).
+  static const buttonSecondary = Color(0xFF333333);
+
+  /// Trạng thái Thông tin / Khá: VS Code Info Blue (#0284C7 / #38BDF8).
+  static const info = Color(0xFF38BDF8);
+  static const infoSoft = Color(0xFF163244);
+  static const infoOnSoft = Color(0xFF38BDF8);
+
+  /// Huy hiệu xếp hạng (Rank Badges):
+  static const rankGoldBg = Color(0xFF3E371C);
+  static const rankGoldText = Color(0xFFDCDCAA);
+  static const rankSilverBg = Color(0xFF2D3139);
+  static const rankSilverText = Color(0xFF9DA5B4);
+  static const rankBronzeBg = Color(0xFF38261D);
+  static const rankBronzeText = Color(0xFFCE9178);
+
   /// Nền cho media viewer toàn màn hình.
   static const mediaViewerBackground = Color(0xFF121212);
 }

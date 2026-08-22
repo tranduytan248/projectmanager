@@ -75,7 +75,7 @@ class AppButton extends StatelessWidget {
       case AppButtonType.primary:
         return AppColors.primary;
       case AppButtonType.secondary:
-        return const Color(0xFF333333);
+        return AppColors.buttonSecondary;
       case AppButtonType.danger:
         return AppColors.danger;
       case AppButtonType.outline:
@@ -87,7 +87,7 @@ class AppButton extends StatelessWidget {
     switch (type) {
       case AppButtonType.primary:
       case AppButtonType.danger:
-        return Colors.white;
+        return AppColors.textOnPrimary;
       case AppButtonType.secondary:
       case AppButtonType.outline:
         return AppColors.textPrimary;

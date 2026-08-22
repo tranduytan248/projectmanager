@@ -114,8 +114,8 @@ class _TaskRow extends StatelessWidget {
             onPressed: (_) => ToastService.show(
                 'Giao việc "${task.code}" — đang phát triển.',
                 type: ToastType.warning),
-            backgroundColor: AppTheme.brandBlueDark,
-            foregroundColor: Colors.white,
+            backgroundColor: AppColors.primaryDark,
+            foregroundColor: AppColors.textOnPrimary,
             icon: PhosphorIconsRegular.userPlus,
             label: 'Giao việc',
           ),
@@ -123,8 +123,8 @@ class _TaskRow extends StatelessWidget {
             onPressed: (_) => ToastService.show(
                 'Chuyển trạng thái "${task.code}" — đang phát triển.',
                 type: ToastType.warning),
-            backgroundColor: AppTheme.brandBlue,
-            foregroundColor: Colors.white,
+            backgroundColor: AppColors.primary,
+            foregroundColor: AppColors.textOnPrimary,
             icon: PhosphorIconsRegular.arrowsClockwise,
             label: 'Xử lý',
           ),
@@ -142,14 +142,14 @@ class _TaskRow extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: AppTheme.brandBlueDark,
+                  color: AppColors.primaryDark,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: PhosphorIcon(
                   task.isOverdue
                       ? PhosphorIconsRegular.warningCircle
                       : PhosphorIconsRegular.plusCircle,
-                  color: Colors.white,
+                  color: AppColors.textOnPrimary,
                   size: 20,
                 ),
               ),

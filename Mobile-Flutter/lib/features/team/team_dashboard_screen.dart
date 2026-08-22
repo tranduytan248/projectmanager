@@ -829,16 +829,16 @@ class _TeamDashboardScreenState extends State<TeamDashboardScreen>
         final kpi = member.kpi;
 
         Color rankBadgeColor = AppColors.primarySoft;
-        Color rankTextColor = AppColors.primaryDark;
+        Color rankTextColor = AppColors.primary;
         if (rankNo == 1) {
-          rankBadgeColor = const Color(0xFFFEF3C7);
-          rankTextColor = const Color(0xFFB45309);
+          rankBadgeColor = AppColors.rankGoldBg;
+          rankTextColor = AppColors.rankGoldText;
         } else if (rankNo == 2) {
-          rankBadgeColor = const Color(0xFFF1F5F9);
-          rankTextColor = const Color(0xFF475569);
+          rankBadgeColor = AppColors.rankSilverBg;
+          rankTextColor = AppColors.rankSilverText;
         } else if (rankNo == 3) {
-          rankBadgeColor = const Color(0xFFFFEDD5);
-          rankTextColor = const Color(0xFFC2410C);
+          rankBadgeColor = AppColors.rankBronzeBg;
+          rankTextColor = AppColors.rankBronzeText;
         }
 
         return AppCard(
