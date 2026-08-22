@@ -223,7 +223,7 @@ class ProfileScreen extends StatelessWidget {
                       Navigator.of(context).push(MaterialPageRoute<void>(
                     builder: (context) => const PolicyScreen(
                       title: 'Chính sách bảo mật',
-                      paragraphs: privacyPolicyParagraphs,
+                      sections: privacyPolicySections,
                     ),
                   )),
                 ),
@@ -234,7 +234,7 @@ class ProfileScreen extends StatelessWidget {
                       Navigator.of(context).push(MaterialPageRoute<void>(
                     builder: (context) => const PolicyScreen(
                       title: 'Điều khoản sử dụng',
-                      paragraphs: termsOfUseParagraphs,
+                      sections: termsOfUseSections,
                     ),
                   )),
                 ),
