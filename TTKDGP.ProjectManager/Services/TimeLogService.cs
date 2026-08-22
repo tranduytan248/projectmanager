@@ -273,9 +273,9 @@ namespace TTKDGP.ProjectManager.Services
             {
                 model.BlockedReason = "Chỉ người được giao việc mới ghi được giờ công.";
             }
-            else if (TaskStates.IsClosed(task.State))
+            else if (task.State == TaskStates.Cancelled)
             {
-                model.BlockedReason = "Công việc đã đóng nên không ghi thêm giờ được.";
+                model.BlockedReason = "Công việc đã huỷ nên không ghi thêm giờ được.";
             }
             else if (!model.TaskCap.HasValue)
             {

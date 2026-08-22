@@ -399,9 +399,9 @@ namespace TTKDGP.ProjectManager.Controllers
                 return LogTimeError("Chỉ người được giao việc mới ghi được giờ công.");
             }
 
-            if (TaskStates.IsClosed(task.State))
+            if (task.State == TaskStates.Cancelled)
             {
-                return LogTimeError("Công việc đã đóng nên không ghi thêm giờ được.");
+                return LogTimeError("Công việc đã huỷ nên không ghi thêm giờ được.");
             }
 
             var error = TimeLogService.Add(task, CurrentUserId,
@@ -436,9 +436,9 @@ namespace TTKDGP.ProjectManager.Controllers
                 return LogTimeError("Chỉ xoá được dòng giờ của chính bạn.");
             }
 
-            if (TaskStates.IsClosed(task.State))
+            if (task.State == TaskStates.Cancelled)
             {
-                return LogTimeError("Công việc đã đóng nên không sửa được giờ đã ghi.");
+                return LogTimeError("Công việc đã huỷ nên không sửa được giờ đã ghi.");
             }
 
             // Đang làm/Hoàn thành là hai trạng thái CHỈ được chuyển tới khi đã ghi giờ công
