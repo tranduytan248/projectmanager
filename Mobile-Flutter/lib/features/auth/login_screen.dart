@@ -300,6 +300,39 @@ class _LoginScreenState extends State<LoginScreen> {
                                     () => _obscurePassword = !_obscurePassword),
                               ),
                             ),
+                            const SizedBox(height: AppDimens.space8),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: InkWell(
+                                onTap: () =>
+                                    Nav.toNamed(context, AuthRoutes.forgotPassword),
+                                borderRadius:
+                                    BorderRadius.circular(AppDimens.radiusSm),
+                                child: const Padding(
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: AppDimens.space4,
+                                      vertical: AppDimens.space4),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        PhosphorIconsRegular.key,
+                                        size: 14,
+                                        color: Color(0xFF3794FF),
+                                      ),
+                                      SizedBox(width: 4),
+                                      AppText(
+                                        'Quên mật khẩu?',
+                                        variant: AppTextVariant.caption,
+                                        fontSize: 13,
+                                        weight: FontWeight.w600,
+                                        color: Color(0xFF3794FF),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
                             const SizedBox(height: AppDimens.space24),
                             SizedBox(
                               width: double.infinity,
@@ -327,21 +360,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                         color: Colors.white,
                                         letterSpacing: 1.2,
                                       ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            TextButton(
-                              onPressed: () =>
-                                  Nav.toNamed(context, AuthRoutes.forgotPassword),
-                              style: TextButton.styleFrom(
-                                  foregroundColor: const Color(0xFF3794FF),
-                                  minimumSize:
-                                      const Size(88, AppDimens.minTapTarget)),
-                              child: const AppText(
-                                'Quên mật khẩu?',
-                                variant: AppTextVariant.body,
-                                color: Color(0xFF3794FF),
-                                decoration: TextDecoration.underline,
                               ),
                             ),
                             const SizedBox(height: AppDimens.space16),

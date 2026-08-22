@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:phosphor_icons/phosphor_icons.dart';
 
-import '../../config/app_theme.dart';
 import '../../core/classes/route_manager.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_dimens.dart';
@@ -18,15 +17,12 @@ import '../../core/widgets/app_text_field.dart';
 import 'auth_routes.dart';
 import 'forgot_password_service.dart';
 
-/// So giay cho giua hai lan gui OTP — khop dung cooldown that cua backend (PasswordResetService).
+/// Số giây chờ giữa 2 lần gửi lại OTP (khớp backend)
 const _resendCooldownSeconds = 60;
 
 enum _ForgotPasswordStep { phone, otp, success }
 
-/// Man "Quen mat khau" — 3 buoc noi bo trong CUNG mot man hinh (khong tach route rieng):
-/// 1) nhap so dien thoai -> gui OTP; 2) nhap OTP -> backend tu sinh mat khau moi va gui qua SMS;
-/// 3) bao thanh cong, quay ve man Dang nhap. Cung ngon ngu hinh anh voi LoginScreen (man mo man
-/// nay ra) — nen brandBlue toan man, o nhap kieu "pill" toi mau, cung logo/wordmark.
+/// Màn "Quên mật khẩu" — thiết kế đồng bộ theo chuẩn Dark Theme VS Code với LoginScreen.
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
 
@@ -68,8 +64,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   String? _validateOtp(String? value) {
     final code = value?.trim() ?? '';
     if (code.isEmpty) return 'Vui lòng nhập mã OTP';
-    if (!RegExp(r'^\d{6}$').hasMatch(code))
+    if (!RegExp(r'^\d{6}$').hasMatch(code)) {
       return 'Mã OTP phải gồm đúng 6 chữ số';
+    }
     return null;
   }
 
@@ -108,8 +105,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     }
   }
 
-  /// Gui lai OTP luc dang o Buoc 2 — khong doi buoc (man khong doi), chi khoi dong lai dem nguoc
-  /// va bao ket qua qua toast vi khong co thay doi giao dien nao khac de nguoi dung nhan biet.
   Future<void> _resendOtp() async {
     if (_resendSecondsLeft > 0 || _isSubmitting) return;
 
@@ -147,8 +142,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     }
   }
 
-  /// Quay lai Buoc 1 de sua so dien thoai go nham — khong phai dieu huong route, chi doi trang
-  /// thai noi bo, huy dem nguoc va xoa ma OTP da go (khong con hop le cho so moi).
   void _backToPhoneStep() {
     _resendTimer?.cancel();
     _otpController.clear();
@@ -169,28 +162,25 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Status bar trong suot, icon mau sang — dong bo voi LoginScreen (xem giai thich trong
-    // login_screen.dart) de chuyen man khong bi giat mau status bar.
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(
         statusBarColor: Colors.transparent,
-        systemNavigationBarColor: AppTheme.brandBlueDark,
+        systemNavigationBarColor: const Color(0xFF181818),
         systemNavigationBarIconBrightness: Brightness.light,
       ),
       child: AppScaffold(
-        // Cho ban phim tu day len khi go OTP/so dien thoai khong bi che noi dung phia duoi.
         resizeToAvoidBottomInset: true,
         body: Container(
           width: double.infinity,
           height: double.infinity,
-          color: AppTheme.brandBlue,
+          color: const Color(0xFF1E1E1E),
           child: Stack(
             children: [
               Positioned(
                 right: -70,
                 bottom: -40,
                 child: Opacity(
-                  opacity: 0.08,
+                  opacity: 0.05,
                   child: Image.asset('assets/images/logo_mark.png', width: 320),
                 ),
               ),
@@ -201,11 +191,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       Align(
                         alignment: Alignment.topLeft,
                         child: Padding(
-                          padding:
-                              const EdgeInsets.only(left: AppDimens.space8),
+                          padding: const EdgeInsets.only(left: AppDimens.space8, top: AppDimens.space8),
                           child: AppIconButton(
                             icon: PhosphorIconsRegular.arrowLeft,
-                            color: AppColors.textOnPrimary,
+                            color: AppColors.textPrimary,
                             tooltip: 'Quay lại',
                             onPressed: _isSubmitting ? null : _handleBack,
                           ),
@@ -248,21 +237,39 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Image.asset('assets/images/logo_mark.png', width: 56),
+        Image.asset('assets/images/logo_mark.png', width: 64),
         const SizedBox(height: AppDimens.space16),
-        AppText(
-          heading,
-          variant: AppTextVariant.title,
-          align: TextAlign.center,
-          color: AppColors.textOnPrimary,
+        const AppText(
+          'BrewTask',
+          variant: AppTextVariant.display,
+          fontSize: 28,
           weight: FontWeight.w800,
+          color: AppColors.textPrimary,
+          letterSpacing: 1,
+        ),
+        const SizedBox(height: AppDimens.space4),
+        const AppText(
+          'QUẢN LÝ CÔNG VIỆC',
+          variant: AppTextVariant.overline,
+          fontSize: 12,
+          color: Color(0xFF3794FF),
+          letterSpacing: 3,
+        ),
+        const SizedBox(height: AppDimens.space24),
+        AppText(
+          heading.toUpperCase(),
+          variant: AppTextVariant.overline,
+          align: TextAlign.center,
+          fontSize: 12,
+          color: AppColors.textSecondary,
+          letterSpacing: 1.5,
         ),
         const SizedBox(height: AppDimens.space8),
         AppText(
           subtitle,
           variant: AppTextVariant.body,
           align: TextAlign.center,
-          color: AppColors.textOnPrimary.withValues(alpha: 0.85),
+          color: AppColors.textSecondary,
           height: 1.45,
         ),
         const SizedBox(height: AppDimens.space24),
@@ -270,7 +277,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
-  // Buoc 1 — nhap so dien thoai.
+  // Bước 1 — nhập số điện thoại
   Widget _buildPhoneStep() {
     return Form(
       key: _phoneFormKey,
@@ -280,7 +287,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           _header(
             heading: 'Quên mật khẩu',
             subtitle:
-                'Nhập số điện thoại đã đăng ký để nhận mã xác nhận qua tin nhắn.',
+                'Nhập số điện thoại đã đăng ký để nhận mã OTP khôi phục mật khẩu.',
           ),
           _ForgotPasswordField(
             controller: _phoneController,
@@ -303,7 +310,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
-  // Buoc 2 — nhap ma OTP, co dem nguoc gui lai va duong quay lai sua so dien thoai.
+  // Bước 2 — nhập mã OTP
   Widget _buildOtpStep() {
     final canResend = _resendSecondsLeft <= 0 && !_isSubmitting;
 
@@ -315,14 +322,23 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           _header(
             heading: 'Xác nhận mã OTP',
             subtitle:
-                'Mã gồm 6 chữ số vừa được gửi qua tin nhắn tới số điện thoại:',
+                'Mã gồm 6 chữ số đã được gửi qua tin nhắn tới số điện thoại:',
           ),
-          AppText(
-            _phoneController.text.trim(),
-            variant: AppTextVariant.heading,
-            align: TextAlign.center,
-            color: AppColors.textOnPrimary,
-            weight: FontWeight.w700,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF252526),
+              borderRadius: BorderRadius.circular(AppDimens.radiusSm),
+              border: Border.all(color: const Color(0xFF3C3C3C)),
+            ),
+            child: AppText(
+              _phoneController.text.trim(),
+              variant: AppTextVariant.heading,
+              fontSize: 16,
+              align: TextAlign.center,
+              color: const Color(0xFF3794FF),
+              weight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: AppDimens.space16),
           _ForgotPasswordField(
@@ -342,30 +358,27 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              AppText(
+              const AppText(
                 'Chưa nhận được mã?',
                 variant: AppTextVariant.caption,
-                color: AppColors.textOnPrimary.withValues(alpha: 0.75),
+                color: AppColors.textSecondary,
               ),
               const SizedBox(width: AppDimens.space4),
-              // Giu TextButton tho cung ly do da giai thich trong login_screen.dart (lien ket phu,
-              // khong phai nut hanh dong chinh) — tu dat minimumSize 48dp du vung chu ngan.
-              TextButton(
-                style: TextButton.styleFrom(
-                  minimumSize: const Size(88, AppDimens.minTapTarget),
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                ),
-                onPressed: canResend ? _resendOtp : null,
-                child: AppText(
-                  _resendSecondsLeft > 0
-                      ? 'Gửi lại (${_resendSecondsLeft}s)'
-                      : 'Gửi lại mã',
-                  variant: AppTextVariant.caption,
-                  weight: FontWeight.w700,
-                  color: canResend
-                      ? AppColors.textOnPrimary
-                      : AppColors.textOnPrimary.withValues(alpha: 0.45),
-                  decoration: TextDecoration.underline,
+              InkWell(
+                onTap: canResend ? _resendOtp : null,
+                borderRadius: BorderRadius.circular(AppDimens.radiusSm),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                  child: AppText(
+                    _resendSecondsLeft > 0
+                        ? 'Gửi lại (${_resendSecondsLeft}s)'
+                        : 'Gửi lại mã',
+                    variant: AppTextVariant.caption,
+                    weight: FontWeight.w700,
+                    color: canResend
+                        ? const Color(0xFF3794FF)
+                        : AppColors.textSecondary.withValues(alpha: 0.5),
+                  ),
                 ),
               ),
             ],
@@ -376,16 +389,26 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             isLoading: _isSubmitting,
             onPressed: _confirmOtp,
           ),
-          const SizedBox(height: AppDimens.space12),
-          TextButton(
-            style: TextButton.styleFrom(
-                minimumSize: const Size(88, AppDimens.minTapTarget)),
-            onPressed: _isSubmitting ? null : _backToPhoneStep,
-            child: AppText(
-              'Sửa số điện thoại',
-              variant: AppTextVariant.body,
-              color: AppColors.textOnPrimary.withValues(alpha: 0.85),
-              decoration: TextDecoration.underline,
+          const SizedBox(height: AppDimens.space16),
+          InkWell(
+            onTap: _isSubmitting ? null : _backToPhoneStep,
+            borderRadius: BorderRadius.circular(AppDimens.radiusSm),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(PhosphorIconsRegular.pencilSimple, size: 14, color: Color(0xFF3794FF)),
+                  SizedBox(width: 4),
+                  AppText(
+                    'Đổi số điện thoại',
+                    variant: AppTextVariant.caption,
+                    fontSize: 13,
+                    color: Color(0xFF3794FF),
+                    weight: FontWeight.w600,
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -393,7 +416,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
-  // Buoc 3 — bao thanh cong, dieu huong ve man Dang nhap.
+  // Bước 3 — báo thành công
   Widget _buildSuccessStep() {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -402,34 +425,33 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           width: 84,
           height: 84,
           decoration: BoxDecoration(
-            // Nen mo va chinh icon deu la lop trang tri tren nen brandBlue, khong phai chu/du lieu
-            // — duoc phep dung mau tho theo dung ngoai le da ap dung trong login_screen.dart.
-            color: Colors.white.withValues(alpha: 0.14),
+            color: AppColors.success.withValues(alpha: 0.15),
             shape: BoxShape.circle,
+            border: Border.all(color: AppColors.success.withValues(alpha: 0.4), width: 2),
           ),
           child: const Center(
             child: PhosphorIcon(
               PhosphorIconsFill.checkCircle,
               size: 48,
-              color: AppColors.textOnPrimary,
+              color: AppColors.success,
             ),
           ),
         ),
         const SizedBox(height: AppDimens.space24),
         const AppText(
-          'Đã gửi mật khẩu mới',
+          'Đã cấp lại mật khẩu!',
           variant: AppTextVariant.title,
           align: TextAlign.center,
-          color: AppColors.textOnPrimary,
+          color: AppColors.textPrimary,
           weight: FontWeight.w800,
         ),
         const SizedBox(height: AppDimens.space8),
-        AppText(
-          'Mật khẩu mới đã được gửi qua tin nhắn tới số điện thoại của bạn. '
+        const AppText(
+          'Mật khẩu mới đã được gửi qua tin nhắn SMS tới số điện thoại của bạn. '
           'Vui lòng kiểm tra tin nhắn và đăng nhập lại.',
           variant: AppTextVariant.body,
           align: TextAlign.center,
-          color: AppColors.textOnPrimary.withValues(alpha: 0.9),
+          color: AppColors.textSecondary,
           height: 1.45,
         ),
         const SizedBox(height: AppDimens.space24),
@@ -443,9 +465,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 }
 
-/// Nut chinh mau dam tren nen brandBlue — dung LAI dung kieu nut cua LoginScreen (xem comment giai
-/// thich trong login_screen.dart._LoginScreenState.build ve viec AppButton chua co bien the phu
-/// hop cho nen mau nay). Factor rieng thanh widget vi man nay dung lai kieu nut nay o ca 3 buoc.
+/// Nút bấm Primary chuẩn VS Code
 class _PrimaryDarkButton extends StatelessWidget {
   const _PrimaryDarkButton({
     required this.label,
@@ -464,32 +484,29 @@ class _PrimaryDarkButton extends StatelessWidget {
       height: 50,
       child: FilledButton(
         style: FilledButton.styleFrom(
-          backgroundColor: AppTheme.brandBlueDarker,
-          foregroundColor: AppColors.textOnPrimary,
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
-          shape: const StadiumBorder(),
+          backgroundColor: const Color(0xFF007ACC),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppDimens.radiusMd),
+          ),
           elevation: 0,
         ),
-        // Khoa nut khi dang xu ly de chong bam kep tao 2 yeu cau OTP/reset cung luc.
         onPressed: isLoading ? null : onPressed,
         child: isLoading
-            ? const AppLoading(
-                size: 20, strokeWidth: 2, color: AppColors.textOnPrimary)
+            ? const AppLoading(size: 20, strokeWidth: 2, color: Colors.white)
             : AppText(
                 label,
                 variant: AppTextVariant.body,
                 weight: FontWeight.w700,
-                color: AppColors.textOnPrimary,
-                letterSpacing: 1,
+                color: Colors.white,
+                letterSpacing: 1.2,
               ),
       ),
     );
   }
 }
 
-/// Tuong duong _LoginField cua login_screen.dart — khong import duoc vi la class private cua file
-/// khac, dung lai dung kieu dang (o nhap bo tron "pill" tren nen toi) de hai man dong bo tuyet
-/// doi, chi them keyboardType/inputFormatters ma man Dang nhap khong can toi.
+/// Ô nhập liệu chuẩn Dark Theme
 class _ForgotPasswordField extends StatelessWidget {
   const _ForgotPasswordField({
     required this.controller,
@@ -522,16 +539,14 @@ class _ForgotPasswordField extends StatelessWidget {
       onFieldSubmitted: onFieldSubmitted,
       validator: validator,
       prefixIcon: icon,
-      textColor: AppColors.textOnPrimary,
-      labelColor: AppColors.textOnPrimary.withValues(alpha: 0.85),
-      iconColor: AppColors.textOnPrimary.withValues(alpha: 0.7),
-      // Nen mo va vien deu la lop trang tri (khong phai chu/icon) nen duoc phep giu Colors.white
-      // truc tiep theo dung ngoai le cua Quy tac 2 (FLUTTER_RULES.md) — giong het _LoginField.
-      fillColor: Colors.white.withValues(alpha: 0.14),
-      borderColor: Colors.white.withValues(alpha: 0.25),
-      focusedBorderColor: AppColors.textOnPrimary,
-      errorColor: AppColors.errorOnDark,
-      borderRadius: 30,
+      fillColor: const Color(0xFF252526),
+      borderColor: const Color(0xFF3C3C3C),
+      focusedBorderColor: const Color(0xFF007ACC),
+      textColor: AppColors.textPrimary,
+      labelColor: AppColors.textSecondary,
+      iconColor: AppColors.textSecondary,
+      borderRadius: AppDimens.radiusMd,
     );
   }
 }
+
