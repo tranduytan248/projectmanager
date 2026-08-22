@@ -3,6 +3,8 @@
 @{
     var date = ViewBag.Date is DateTime ? (DateTime)ViewBag.Date : DateTime.Today;
     var isTeamView = ViewBag.IsTeamView == true;
+    var loggedHours = ViewBag.LoggedHours as Dictionary<int, decimal> ?? new Dictionary<int, decimal>();
+    Func<int, decimal> logOf = id => { decimal h; return loggedHours.TryGetValue(id, out h) ? h : 0m; };
 
     Func<WorkTask, string> taskTone = t =>
     {
@@ -62,6 +64,7 @@
                         <th>Dự án</th>
                         <th class="center">Ưu tiên</th>
                         <th class="num">Tiến độ</th>
+                        <th class="center">Logtime</th>
                         <th>Trạng thái</th>
                     </tr>
                 </thead>
@@ -69,6 +72,7 @@
                     @foreach (var t in Model)
                     {
                         var tone = taskTone(t);
+                        var logH = logOf(t.Id);
                         <tr class="day-task-row day-task-row-@tone"
                             data-modal-url="@Url.Action("Detail", "Checklist", new { id = t.Id })"
                             data-modal-title="Chi tiết công việc"
@@ -128,6 +132,16 @@
                             </td>
                             <td class="num nowrap">
                                 <span class="font-tabular">@t.Progress%</span>
+                            </td>
+                            <td class="center nowrap">
+                                @if (logH > 0)
+                                {
+                                    <strong class="ok-text">@(logH.ToString("0.##"))h</strong>
+                                }
+                                else
+                                {
+                                    <span class="muted">0h</span>
+                                }
                             </td>
                             <td class="nowrap">
                                 @if (t.State == TaskStates.Done)

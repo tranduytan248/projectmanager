@@ -85,6 +85,9 @@ namespace TTKDGP.ProjectManager.Controllers
                 Upcoming = BuildUpcoming(tasks, today)
             };
 
+            var allTaskIds = tasks.Select(t => t.Id).Concat(model.Upcoming.Select(t => t.Id)).Distinct();
+            ViewBag.LoggedHours = TimeLogService.TotalsByTask(allTaskIds);
+
             return View(model);
         }
 
@@ -146,6 +149,7 @@ namespace TTKDGP.ProjectManager.Controllers
             ViewBag.Date = targetDate;
             ViewBag.UserFilter = userId;
             ViewBag.IsTeamView = true;
+            ViewBag.LoggedHours = TimeLogService.TotalsByTask(dayTasks.Select(t => t.Id));
 
             return PartialView("_DayTasks", dayTasks);
         }

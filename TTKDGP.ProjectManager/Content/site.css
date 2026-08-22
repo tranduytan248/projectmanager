@@ -3748,6 +3748,18 @@ summary.rowbtn::marker { content: ""; }
     line-height: 1;
 }
 
+/* Badge hiển thị tổng giờ Logtime trên chip việc */
+.cal-task-time {
+    font-size: 10px;
+    font-weight: 700;
+    color: inherit;
+    opacity: 0.85;
+    flex-shrink: 0;
+    margin-left: auto;
+    padding-left: 4px;
+    font-variant-numeric: tabular-nums;
+}
+
 .calendar-more {
     font-size: 10.5px;
     font-weight: 600;

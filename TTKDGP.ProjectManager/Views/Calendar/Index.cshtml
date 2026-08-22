@@ -43,6 +43,9 @@
         if (diff == 0) return "cal-due-badge cal-due-today";
         return "cal-due-badge cal-due-soon";
     };
+
+    var loggedHours = ViewBag.LoggedHours as Dictionary<int, decimal> ?? new Dictionary<int, decimal>();
+    Func<int, decimal> logOf = id => { decimal h; return loggedHours.TryGetValue(id, out h) ? h : 0m; };
 }
 
 <div class="page-head">
@@ -58,35 +61,93 @@
             </svg>
             Lịch công việc
         </h1>
-        <p>Theo dõi việc <strong>của tôi</strong> phân bố theo ngày trong tháng.</p>
+        <p>Phân bố công việc của bạn theo ngày trong tháng</p>
     </div>
     <div class="btn-row">
-        @using (Html.BeginForm("Index", "Calendar", FormMethod.Get, new { @class = "inline-filter" }))
-        {
-            @Html.Hidden("year",  Model.Year)
-            @Html.Hidden("month", Model.Month)
-            <select name="state" onchange="this.form.submit()">
-                <option value="">— Tất cả trạng thái —</option>
-                @foreach (var s in TaskStates.All.Where(s => s != TaskStates.Paused))
+        <a class="btn btn-default" href="@Url.Action("Tasks", "MyWork")">
+            &larr; Công việc của tôi
+        </a>
+    </div>
+</div>
+
+@* ===== Thanh điều hướng tháng & Bộ lọc ===== *@
+<div class="cal-toolbar">
+    <div class="cal-nav-group">
+        <a class="btn btn-default cal-nav-btn"
+           href="@Url.Action("Index", "Calendar", new { year = prevYear, month = prevMonth, state = Model.StateFilter, priority = Model.PriorityFilter })"
+           title="Tháng trước">&lsaquo;</a>
+
+        <div class="cal-select-group">
+            <select id="cal-month-select" class="cal-select" onchange="navigateCalendar()">
+                @for (var i = 0; i < monthNames.Length; i++)
                 {
-                    <option value="@s" selected="@(Model.StateFilter == s)">@TaskStates.Display(s)</option>
+                    var mVal = i + 1;
+                    <option value="@mVal" selected="@(Model.Month == mVal)">@monthNames[i]</option>
                 }
             </select>
-            <select name="priority" onchange="this.form.submit()">
-                <option value="">— Tất cả ưu tiên —</option>
+            <select id="cal-year-select" class="cal-select" onchange="navigateCalendar()">
+                @for (var yVal = yearFrom; yVal <= yearTo; yVal++)
+                {
+                    <option value="@yVal" selected="@(Model.Year == yVal)">@yVal</option>
+                }
+            </select>
+        </div>
+
+        <a class="btn btn-default cal-nav-btn"
+           href="@Url.Action("Index", "Calendar", new { year = nextYear, month = nextMonth, state = Model.StateFilter, priority = Model.PriorityFilter })"
+           title="Tháng sau">&rsaquo;</a>
+
+        @if (Model.Year != Model.Today.Year || Model.Month != Model.Today.Month)
+        {
+            <a class="btn btn-default btn-sm"
+               href="@Url.Action("Index", "Calendar", new { year = Model.Today.Year, month = Model.Today.Month, state = Model.StateFilter, priority = Model.PriorityFilter })">
+                Hôm nay
+            </a>
+        }
+    </div>
+
+    @* Bộ lọc trạng thái & độ ưu tiên *@
+    @using (Html.BeginForm("Index", "Calendar", FormMethod.Get, new { id = "cal-filter-form", @class = "cal-filters" }))
+    {
+        <input type="hidden" name="year" value="@Model.Year" />
+        <input type="hidden" name="month" value="@Model.Month" />
+
+        <div class="cal-filter-field">
+            <label for="state">Trạng thái</label>
+            <select id="state" name="state" onchange="this.form.submit()">
+                <option value="">— Tất cả —</option>
+                @foreach (var s in TaskStates.All)
+                {
+                    if (s != TaskStates.Paused)
+                    {
+                        <option value="@s" selected="@(Model.StateFilter == s)">@TaskStates.Display(s)</option>
+                    }
+                }
+            </select>
+        </div>
+
+        <div class="cal-filter-field">
+            <label for="priority">Độ ưu tiên</label>
+            <select id="priority" name="priority" onchange="this.form.submit()">
+                <option value="">— Tất cả —</option>
                 @foreach (var p in TaskPriorities.All)
                 {
                     <option value="@p" selected="@(Model.PriorityFilter == p)">@TaskPriorities.Display(p)</option>
                 }
             </select>
+        </div>
+
+        if (!string.IsNullOrEmpty(Model.StateFilter) || !string.IsNullOrEmpty(Model.PriorityFilter))
+        {
+            <a class="btn btn-default btn-sm" href="@Url.Action("Index", "Calendar", new { year = Model.Year, month = Model.Month })">Xoá lọc</a>
         }
-    </div>
+    }
 </div>
 
 <div class="stats">
     <div class="stat">
         <div class="stat-value">@Model.TotalInMonth</div>
-        <div class="stat-label">Công việc trong tháng</div>
+        <div class="stat-label">Tổng việc trong tháng</div>
     </div>
     <div class="stat stat-ok">
         <div class="stat-value">@Model.DoneCount</div>
@@ -102,45 +163,10 @@
     </div>
 </div>
 
-<div class="two-col calendar-layout">
+<div class="cal-layout">
 
     @* ===== Lưới lịch ===== *@
-    <div class="card calendar-card">
-
-        @* Tiêu đề tháng + bộ chọn tháng/năm + điều hướng *@
-        <div class="calendar-title-row">
-            @* Dropdown chọn tháng/năm — navigate ngay khi thay đổi *@
-            <form id="cal-jump-form" method="get" action="@Url.Action("Index", "Calendar")" class="cal-jump-form">
-                <input type="hidden" name="state"    value="@Model.StateFilter" />
-                <input type="hidden" name="priority" value="@Model.PriorityFilter" />
-                <div class="cal-jump-selects">
-                    <select id="cal-jump-month" name="month" class="cal-jump-select" onchange="document.getElementById('cal-jump-form').submit()">
-                        @for (int m = 1; m <= 12; m++)
-                        {
-                            <option value="@m" @(m == Model.Month ? "selected" : "")>@monthNames[m - 1]</option>
-                        }
-                    </select>
-                    <select id="cal-jump-year" name="year" class="cal-jump-select" onchange="document.getElementById('cal-jump-form').submit()">
-                        @for (int y = yearFrom; y <= yearTo; y++)
-                        {
-                            <option value="@y" @(y == Model.Year ? "selected" : "")>@y</option>
-                        }
-                    </select>
-                </div>
-            </form>
-            <div class="calendar-nav-actions">
-                <a class="btn btn-default btn-sm calendar-today-btn"
-                   href="@Url.Action("Index", new { year = Model.Today.Year, month = Model.Today.Month, state = Model.StateFilter, priority = Model.PriorityFilter })">Hôm nay</a>
-                <div class="calendar-pager">
-                    <a title="Tháng trước"
-                       href="@Url.Action("Index", new { year = prevYear,  month = prevMonth, state = Model.StateFilter, priority = Model.PriorityFilter })">&lsaquo;</a>
-                    <a title="Tháng sau"
-                       href="@Url.Action("Index", new { year = nextYear, month = nextMonth, state = Model.StateFilter, priority = Model.PriorityFilter })">&rsaquo;</a>
-                </div>
-            </div>
-        </div>
-
-        @* Lưới ngày *@
+    <div class="card cal-grid-card">
         <table class="calendar-grid">
             <thead>
                 <tr>
@@ -182,12 +208,14 @@
                                     @foreach (var t in day.Tasks.Take(maxPerDay))
                                     {
                                         var tone = taskTone(t);
+                                        var logH = logOf(t.Id);
                                         <div class="calendar-task calendar-task-@tone"
                                              data-modal-url="@Url.Action("Detail", "Checklist", new { id = t.Id })"
                                              data-modal-title="Chi tiết công việc" data-modal-size="lg"
-                                             title="@t.Title">
+                                             title="@t.Title · Logtime: @(logH.ToString("0.##"))h">
                                             <span class="cal-task-dot"></span>
                                             <span class="cal-task-text">@t.Title</span>
+                                            <span class="cal-task-time">@(logH.ToString("0.##"))h</span>
                                         </div>
                                     }
                                     @if (day.Tasks.Count > maxPerDay)
@@ -207,13 +235,6 @@
                 }
             </tbody>
         </table>
-
-        @* Chú giải màu *@
-        <div class="calendar-legend">
-            <span><i class="calendar-dot calendar-dot-overdue"></i>Quá hạn</span>
-            <span><i class="calendar-dot calendar-dot-done"></i>Hoàn thành</span>
-            <span><i class="calendar-dot calendar-dot-active"></i>Đang thực hiện</span>
-        </div>
     </div>
 
     @* ===== Panel bên phải: Sắp tới ===== *@
@@ -247,6 +268,7 @@
                 var tone     = taskTone(t);
                 var badge    = dueBadge(t);
                 var badgeCls = dueBadgeClass(t);
+                var logH     = logOf(t.Id);
                 <div class="task-feed-item cal-upcoming-item cal-upcoming-@tone"
                      data-modal-url="@Url.Action("Detail", "Checklist", new { id = t.Id })"
                      data-modal-title="Chi tiết công việc" data-modal-size="lg">
@@ -259,6 +281,8 @@
                                 <span>&middot;</span>
                                 <span>@t.DueDate.Value.ToString("dd/MM")</span>
                             }
+                            <span>&middot;</span>
+                            <span title="Tổng thời gian logtime">Log: <strong>@(logH.ToString("0.##"))h</strong></span>
                         </div>
                     </div>
                     <div class="task-feed-side">
