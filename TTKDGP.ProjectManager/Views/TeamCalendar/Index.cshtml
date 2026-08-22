@@ -48,6 +48,9 @@
         var parts = fullName.Trim().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
         return parts.Length > 0 ? parts[parts.Length - 1] : fullName;
     };
+
+    var loggedHours = ViewBag.LoggedHours as Dictionary<int, decimal> ?? new Dictionary<int, decimal>();
+    Func<int, decimal> logOf = id => { decimal h; return loggedHours.TryGetValue(id, out h) ? h : 0m; };
 }
 
 <div class="page-head">
@@ -91,6 +94,10 @@
                     <option value="@p" selected="@(Model.PriorityFilter == p)">@TaskPriorities.Display(p)</option>
                 }
             </select>
+            if (Model.UserFilter.HasValue || !string.IsNullOrEmpty(Model.StateFilter) || !string.IsNullOrEmpty(Model.PriorityFilter))
+            {
+                <a class="btn btn-default btn-sm" href="@Url.Action("Index", "TeamCalendar", new { year = Model.Year, month = Model.Month })">Xoá lọc</a>
+            }
         }
     </div>
 </div>
@@ -156,9 +163,9 @@
         <table class="calendar-grid">
             <thead>
                 <tr>
-                    @foreach (var label in dowLabels)
+                    @foreach (var dow in dowLabels)
                     {
-                        <th>@label</th>
+                        <th>@dow</th>
                     }
                 </tr>
             </thead>
@@ -195,8 +202,10 @@
                                     {
                                         var tone = taskTone(t);
                                         var memberShort = shortName(t.AssigneeName);
+                                        var logH = logOf(t.Id);
                                         var tooltip = t.Title + (!string.IsNullOrEmpty(t.AssigneeName) ? " (" + t.AssigneeName + ")" : "")
-                                            + (!string.IsNullOrEmpty(t.ProjectName) ? " — " + t.ProjectName : "");
+                                            + (!string.IsNullOrEmpty(t.ProjectName) ? " — " + t.ProjectName : "")
+                                            + " · Logtime: " + logH.ToString("0.##") + "h";
                                         <div class="calendar-task calendar-task-@tone"
                                              data-modal-url="@Url.Action("Detail", "Checklist", new { id = t.Id })"
                                              data-modal-title="Chi tiết công việc" data-modal-size="lg"
@@ -207,6 +216,7 @@
                                                 <span class="cal-member-tag" title="@t.AssigneeName">@memberShort</span>
                                             }
                                             <span class="cal-task-text">@t.Title</span>
+                                            <span class="cal-task-time">@(logH.ToString("0.##"))h</span>
                                         </div>
                                     }
                                     @if (day.Tasks.Count > maxPerDay)
@@ -266,6 +276,7 @@
                 var tone     = taskTone(t);
                 var badge    = dueBadge(t);
                 var badgeCls = dueBadgeClass(t);
+                var logH     = logOf(t.Id);
                 <div class="task-feed-item cal-upcoming-item cal-upcoming-@tone"
                      data-modal-url="@Url.Action("Detail", "Checklist", new { id = t.Id })"
                      data-modal-title="Chi tiết công việc" data-modal-size="lg">
@@ -288,6 +299,8 @@
                                 <span>&middot;</span>
                                 <span>@t.DueDate.Value.ToString("dd/MM")</span>
                             }
+                            <span>&middot;</span>
+                            <span title="Tổng thời gian logtime">Log: <strong>@(logH.ToString("0.##"))h</strong></span>
                         </div>
                     </div>
                     <div class="task-feed-side">
