@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,7 +23,7 @@ namespace TTKDGP.ProjectManager.Services
 
             try
             {
-                return Repository.UserNotifications.Insert(new UserNotification
+                var n = Repository.UserNotifications.Insert(new UserNotification
                 {
                     UserId = userId,
                     Type = type,
@@ -32,11 +32,55 @@ namespace TTKDGP.ProjectManager.Services
                     TaskId = taskId,
                     CreatedAt = DateTime.Now
                 });
+
+                // Tự động gửi Push Notification tới thiết bị đăng ký mới nhất của nhân viên
+                try
+                {
+                    var title = ResolveTitle(type);
+                    FcmPushService.SendToUser(userId, title, message, type, projectId, taskId);
+                }
+                catch
+                {
+                    // Nuốt lỗi FCM
+                }
+
+                return n;
             }
             catch (Exception)
             {
                 // SQL chập chờn thì thôi thông báo này — không làm hỏng thao tác chính.
                 return null;
+            }
+        }
+
+        private static string ResolveTitle(string type)
+        {
+            if (string.IsNullOrWhiteSpace(type)) return "Thông báo mới";
+            switch (type)
+            {
+                case NotificationTypes.TaskAssigned:
+                case NotificationTypes.ProjectTaskAssigned:
+                    return "Giao việc mới";
+                case NotificationTypes.TodoAdded:
+                    return "Việc con mới";
+                case NotificationTypes.TodoToggled:
+                    return "Cập nhật việc con";
+                case NotificationTypes.CommentAdded:
+                    return "Trao đổi mới";
+                case NotificationTypes.Mentioned:
+                    return "Được nhắc trong trao đổi";
+                case NotificationTypes.DueSoon:
+                    return "Nhắc việc đến hạn";
+                case NotificationTypes.ProjectAdded:
+                    return "Thêm vào dự án";
+                case NotificationTypes.ProjectRemoved:
+                    return "Rút khỏi dự án";
+                case NotificationTypes.LeaveRequested:
+                    return "Đơn nghỉ phép mới";
+                case NotificationTypes.LeaveResult:
+                    return "Kết quả duyệt nghỉ phép";
+                default:
+                    return "Thông báo mới";
             }
         }
 

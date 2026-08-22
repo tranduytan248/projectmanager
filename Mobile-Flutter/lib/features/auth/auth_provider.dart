@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../config/app_cache.dart';
 import '../../core/constants/route_names.dart';
 import '../../core/helpers/login_helper.dart';
+import '../../core/services/fcm_notification_service.dart';
 import '../../core/utils/toast_service.dart';
 
 /// Trang thai hien thi cua phien dang nhap — thay AuthController (StateNotifier) cu bang
@@ -47,6 +48,7 @@ class AuthProvider extends ChangeNotifier {
     _displayName = info?['displayName'] as String?;
     _permissions = (info?['permissions'] as List?)?.cast<String>() ?? const [];
     notifyListeners();
+    FcmNotificationService.instance.syncTokenWithBackend();
   }
 
   /// Doc lai displayName/permissions tu cache — goi tu ControllerManager moi khi mot man hinh
@@ -106,6 +108,7 @@ class AuthProvider extends ChangeNotifier {
     _displayName = info?['displayName'] as String? ?? username;
     _permissions = (info?['permissions'] as List?)?.cast<String>() ?? const [];
     notifyListeners();
+    FcmNotificationService.instance.syncTokenWithBackend();
     return true;
   }
 

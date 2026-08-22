@@ -54,6 +54,7 @@
     <Reference Include="System.Xml.Linq" />
     <!-- .xlsx là gói ZIP; ZipArchive nằm ở đây, không phải trong System.IO -->
     <Reference Include="System.IO.Compression" />
+    <Reference Include="System.Net.Http" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
   </ItemGroup>
   <ItemGroup>
@@ -201,6 +202,7 @@
     <Compile Include="Services\TimeLogService.cs" />
     <Compile Include="Services\TaskActivityLogService.cs" />
     <Compile Include="Services\NotificationService.cs" />
+    <Compile Include="Services\FcmPushService.cs" />
     <Compile Include="Services\EmailTemplateService.cs" />
     <Compile Include="Models\EmailTemplate.cs" />
     <Compile Include="Controllers\EmailTemplatesController.cs" />

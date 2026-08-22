@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -172,6 +172,16 @@ namespace TTKDGP.ProjectManager.Models
         public bool IsActive { get; set; }
 
         public DateTime CreatedAt { get; set; }
+
+        /// <summary>
+        /// Mã Token Firebase Cloud Messaging của thiết bị mới nhất đăng nhập tài khoản này.
+        /// Dùng để gửi Push Notification trực tiếp tới điện thoại của nhân viên.
+        /// </summary>
+        public string FcmDeviceToken { get; set; }
+
+        public string FcmDevicePlatform { get; set; }
+
+        public DateTime? FcmTokenUpdatedAt { get; set; }
 
         public bool IsAdmin
         {

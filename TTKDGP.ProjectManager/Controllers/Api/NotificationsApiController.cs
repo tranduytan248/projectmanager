@@ -71,5 +71,28 @@ namespace TTKDGP.ProjectManager.Controllers.Api
             NotificationService.MarkAllRead(CurrentUserId);
             return Json(new { ok = true });
         }
+
+        /// <summary>
+        /// Đăng ký FCM Device Token mới nhất của tài khoản trên thiết bị này.
+        /// Tự động thay thế token cũ để chỉ gửi tới thiết bị mới nhất.
+        /// </summary>
+        [HttpPost]
+        public ActionResult RegisterDevice(string token, string platform = "Android")
+        {
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return Json(new { ok = false, message = "Token không được để trống" });
+            }
+
+            var user = Repository.Users.Find(CurrentUserId);
+            if (user == null) return HttpNotFound();
+
+            user.FcmDeviceToken = token.Trim();
+            user.FcmDevicePlatform = string.IsNullOrWhiteSpace(platform) ? "Android" : platform.Trim();
+            user.FcmTokenUpdatedAt = System.DateTime.Now;
+            Repository.Users.Update(user);
+
+            return Json(new { ok = true, message = "Đã cập nhật thiết bị nhận thông báo thành công" });
+        }
     }
 }

@@ -26,4 +26,12 @@ class NotificationsService {
   Future<void> markAllRead() async {
     await _http.post(ApiEndpoint.notificationMarkAllRead);
   }
+
+  Future<void> registerDeviceToken({required String token, String platform = 'Android'}) async {
+    await _http.post(
+      ApiEndpoint.notificationRegisterDevice,
+      data: {'token': token, 'platform': platform},
+      options: Options(contentType: Headers.formUrlEncodedContentType),
+    );
+  }
 }
