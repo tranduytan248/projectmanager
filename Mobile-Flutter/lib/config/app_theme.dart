@@ -25,7 +25,7 @@ class AppTheme {
   static const textMuted = AppColors.textSecondary;
   static const textFaint = AppColors.textFaint;
 
-  static const _minButtonSize = Size.fromHeight(AppDimens.minTapTarget);
+  static const _minButtonSize = Size(0, AppDimens.minTapTarget);
 
   static ThemeData get light => dark; // Luôn áp dụng phong cách VS Code Dark Theme hiện đại
 

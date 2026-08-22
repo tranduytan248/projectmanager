@@ -334,16 +334,26 @@ class _KpiScreenState extends State<KpiScreen> {
                             weight: FontWeight.w700,
                           ),
                           if (_selectedUserId > 0)
-                            TextButton.icon(
-                              onPressed: () {
+                            InkWell(
+                              onTap: () {
                                 setState(() => _selectedUserId = 0);
                                 _loadData();
                               },
-                              icon: const Icon(Icons.clear, size: 16),
-                              label: const AppText(
-                                'Xóa lọc',
-                                variant: AppTextVariant.caption,
-                                color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(AppDimens.radiusSm),
+                              child: const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.clear, size: 16, color: AppColors.primary),
+                                    SizedBox(width: 4),
+                                    AppText(
+                                      'Xóa lọc',
+                                      variant: AppTextVariant.caption,
+                                      color: AppColors.primary,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                         ],
