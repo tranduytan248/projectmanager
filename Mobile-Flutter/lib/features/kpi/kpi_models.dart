@@ -215,8 +215,9 @@ class KpiIndexData {
   });
 
   factory KpiIndexData.fromJson(Map<String, dynamic> json) {
-    var rawRows = (json['rows'] ?? json['Rows']) as List<dynamic>? ?? [];
-    var rawUsers = (json['users'] ?? json['Users']) as List<dynamic>? ?? [];
+    final rawRows = (json['rows'] ?? json['Rows']) as List<dynamic>? ?? [];
+    final rawUsers = (json['users'] ?? json['Users']) as List<dynamic>? ?? [];
+    final rawSummary = json['summary'] ?? json['Summary'] ?? {};
 
     return KpiIndexData(
       year: json['year'] is num ? (json['year'] as num).toInt() : (json['Year'] as num?)?.toInt() ?? DateTime.now().year,
@@ -224,9 +225,9 @@ class KpiIndexData {
       isCurrentMonth: json['isCurrentMonth'] == true || json['IsCurrentMonth'] == true,
       selectedUserId:
           json['selectedUserId'] is num ? (json['selectedUserId'] as num).toInt() : (json['SelectedUserId'] as num?)?.toInt() ?? 0,
-      summary: KpiSummaryData.fromJson((json['summary'] ?? json['Summary'] ?? {}) as Map<String, dynamic>),
-      rows: rawRows.map((e) => KpiMemberRow.fromJson(e as Map<String, dynamic>)).toList(),
-      users: rawUsers.map((e) => KpiUserOption.fromJson(e as Map<String, dynamic>)).toList(),
+      summary: KpiSummaryData.fromJson(rawSummary is Map ? Map<String, dynamic>.from(rawSummary) : {}),
+      rows: rawRows.map((e) => KpiMemberRow.fromJson(e is Map ? Map<String, dynamic>.from(e) : {})).toList(),
+      users: rawUsers.map((e) => KpiUserOption.fromJson(e is Map ? Map<String, dynamic>.from(e) : {})).toList(),
       canGenerate: json['canGenerate'] == true || json['CanGenerate'] == true,
       canConfig: json['canConfig'] == true || json['CanConfig'] == true,
       standardDays: json['standardDays'] is num ? (json['standardDays'] as num).toInt() : (json['StandardDays'] as num?)?.toInt() ?? 22,
@@ -320,15 +321,16 @@ class KpiDetailData {
   });
 
   factory KpiDetailData.fromJson(Map<String, dynamic> json) {
-    var rawSupport = (json['supportTasks'] ?? json['SupportTasks']) as List<dynamic>? ?? [];
-    var rawExecute = (json['executeTasks'] ?? json['ExecuteTasks']) as List<dynamic>? ?? [];
-    var rawAssigned = (json['assignedTasks'] ?? json['AssignedTasks']) as List<dynamic>? ?? [];
+    final rawRow = json['row'] ?? json['Row'] ?? {};
+    final rawSupport = (json['supportTasks'] ?? json['SupportTasks']) as List<dynamic>? ?? [];
+    final rawExecute = (json['executeTasks'] ?? json['ExecuteTasks']) as List<dynamic>? ?? [];
+    final rawAssigned = (json['assignedTasks'] ?? json['AssignedTasks']) as List<dynamic>? ?? [];
 
     return KpiDetailData(
-      row: KpiMemberRow.fromJson((json['row'] ?? json['Row'] ?? {}) as Map<String, dynamic>),
-      supportTasks: rawSupport.map((e) => KpiTaskItem.fromJson(e as Map<String, dynamic>)).toList(),
-      executeTasks: rawExecute.map((e) => KpiTaskItem.fromJson(e as Map<String, dynamic>)).toList(),
-      assignedTasks: rawAssigned.map((e) => KpiTaskItem.fromJson(e as Map<String, dynamic>)).toList(),
+      row: KpiMemberRow.fromJson(rawRow is Map ? Map<String, dynamic>.from(rawRow) : {}),
+      supportTasks: rawSupport.map((e) => KpiTaskItem.fromJson(e is Map ? Map<String, dynamic>.from(e) : {})).toList(),
+      executeTasks: rawExecute.map((e) => KpiTaskItem.fromJson(e is Map ? Map<String, dynamic>.from(e) : {})).toList(),
+      assignedTasks: rawAssigned.map((e) => KpiTaskItem.fromJson(e is Map ? Map<String, dynamic>.from(e) : {})).toList(),
       canGenerate: json['canGenerate'] == true || json['CanGenerate'] == true,
       canConfig: json['canConfig'] == true || json['CanConfig'] == true,
     );

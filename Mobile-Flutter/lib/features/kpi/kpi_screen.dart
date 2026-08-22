@@ -290,6 +290,10 @@ class _KpiScreenState extends State<KpiScreen> {
                   );
                 }
 
+                if (!snapshot.hasData) {
+                  return const Center(child: AppLoading());
+                }
+
                 final data = snapshot.data!;
 
                 return RefreshIndicator(

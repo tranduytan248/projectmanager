@@ -158,6 +158,10 @@ class _KpiDetailScreenState extends State<KpiDetailScreen>
             );
           }
 
+          if (!snapshot.hasData) {
+            return const Center(child: AppLoading());
+          }
+
           final data = snapshot.data!;
           final row = data.row;
 

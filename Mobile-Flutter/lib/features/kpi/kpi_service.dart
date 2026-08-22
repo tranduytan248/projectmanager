@@ -16,11 +16,12 @@ class KpiService {
     );
 
     final data = response.data;
-    if (data is Map<String, dynamic>) {
-      if (data.containsKey('data') && data['data'] is Map<String, dynamic>) {
-        return KpiIndexData.fromJson(data['data'] as Map<String, dynamic>);
+    if (data is Map) {
+      final map = Map<String, dynamic>.from(data);
+      if (map.containsKey('data') && map['data'] is Map) {
+        return KpiIndexData.fromJson(Map<String, dynamic>.from(map['data'] as Map));
       }
-      return KpiIndexData.fromJson(data);
+      return KpiIndexData.fromJson(map);
     }
     throw Exception('Dữ liệu KPI trả về từ máy chủ không hợp lệ.');
   }
@@ -40,11 +41,12 @@ class KpiService {
     );
 
     final data = response.data;
-    if (data is Map<String, dynamic>) {
-      if (data.containsKey('data') && data['data'] is Map<String, dynamic>) {
-        return KpiDetailData.fromJson(data['data'] as Map<String, dynamic>);
+    if (data is Map) {
+      final map = Map<String, dynamic>.from(data);
+      if (map.containsKey('data') && map['data'] is Map) {
+        return KpiDetailData.fromJson(Map<String, dynamic>.from(map['data'] as Map));
       }
-      return KpiDetailData.fromJson(data);
+      return KpiDetailData.fromJson(map);
     }
     throw Exception('Dữ liệu chi tiết KPI trả về từ máy chủ không hợp lệ.');
   }
