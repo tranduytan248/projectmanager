@@ -75,7 +75,8 @@ class ApiEndpoint {
   static const projectRemoveMember = '/ProjectMembersApi/RemoveMember';
 
   // Nhom "Quan ly To" (can quyen wteam.manage hoac wtasks.create)
-  static const teamDashboard = '/team/dashboard';
+  static const teamDashboard = '/TeamDashboardApi/Index';
+  static const teamDashboardMemberTasks = '/TeamDashboardApi/MemberTasks';
   static const teamProjects = '/team/projects';
   static const privateTasks = '/PrivateTasksApi/Index';
   static const privateTasksFormOptions = '/PrivateTasksApi/FormOptions';
