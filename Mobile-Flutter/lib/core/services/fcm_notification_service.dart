@@ -150,6 +150,42 @@ class FcmNotificationService {
     }
   }
 
+  /// Kiểm tra xem thiết bị đã sẵn sàng nhận thông báo hay chưa
+  bool get isNotificationEnabled {
+    final token = _fcmToken ?? Cache.readData<String>('fcm_device_token');
+    return token != null && token.isNotEmpty;
+  }
+
+  /// Yêu cầu cấp quyền và lưu lại Token thiết bị khi người dùng xác nhận
+  Future<bool> requestPermissionAndRegister() async {
+    try {
+      final settings = await _messaging.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
+      );
+
+      final isAuthorized =
+          settings.authorizationStatus == AuthorizationStatus.authorized ||
+              settings.authorizationStatus == AuthorizationStatus.provisional;
+
+      if (isAuthorized) {
+        await _fetchAndStoreToken();
+        Cache.saveData('fcm_notification_confirmed', true);
+        await syncTokenWithBackend();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('[FCM] Lỗi yêu cầu cấp quyền thông báo: $e');
+      return false;
+    }
+  }
+
   /// Đồng bộ FCM Token lên server (chỉ lưu token cho thiết bị mới nhất của tài khoản)
   Future<void> syncTokenWithBackend() async {
     final token = _fcmToken ?? Cache.readData<String>('fcm_device_token');

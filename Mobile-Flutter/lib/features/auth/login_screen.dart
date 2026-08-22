@@ -4,10 +4,13 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:phosphor_icons/phosphor_icons.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/classes/cache_manager.dart';
 import '../../core/classes/route_manager.dart';
+import '../../core/services/fcm_notification_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_dimens.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/utils/toast_service.dart';
 import '../../core/widgets/app_icon_button.dart';
 import '../../core/widgets/app_loading.dart';
 import '../../core/widgets/app_scaffold.dart';
@@ -31,11 +34,127 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isSubmitting = false;
   bool _obscurePassword = true;
   String _versionLabel = '';
+  bool _isNotificationEnabled = false;
 
   @override
   void initState() {
     super.initState();
     _loadVersion();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAndPromptNotification();
+    });
+  }
+
+  void _checkAndPromptNotification() async {
+    final isEnabled = FcmNotificationService.instance.isNotificationEnabled;
+    if (mounted) setState(() => _isNotificationEnabled = isEnabled);
+
+    final prompted = Cache.readData<bool>('fcm_notification_prompted') ?? false;
+    if (!prompted && !isEnabled && mounted) {
+      await _showNotificationPermissionDialog();
+    }
+  }
+
+  Future<void> _showNotificationPermissionDialog() async {
+    Cache.saveData('fcm_notification_prompted', true);
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogCtx) => Dialog(
+        backgroundColor: const Color(0xFF252526),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimens.radiusLg),
+          side: const BorderSide(color: Color(0xFF3C3C3C)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(AppDimens.space24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF007ACC).withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                      color: const Color(0xFF007ACC).withValues(alpha: 0.3)),
+                ),
+                child: const Icon(
+                  PhosphorIconsRegular.bellRinging,
+                  color: Color(0xFF3794FF),
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: AppDimens.space16),
+              const AppText(
+                'Nhận thông báo công việc',
+                variant: AppTextVariant.title,
+                weight: FontWeight.w700,
+                color: AppColors.textPrimary,
+                align: TextAlign.center,
+              ),
+              const SizedBox(height: AppDimens.space12),
+              AppText(
+                'Cho phép BrewTask gửi thông báo đẩy tới thiết bị này khi có việc mới được giao, việc con hoàn thành, trao đổi mới hoặc nhắc việc sắp đến hạn.',
+                variant: AppTextVariant.body,
+                color: AppColors.textSecondary,
+                align: TextAlign.center,
+                height: 1.4,
+              ),
+              const SizedBox(height: AppDimens.space24),
+              SizedBox(
+                width: double.infinity,
+                height: 44,
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF007ACC),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppDimens.radiusMd),
+                    ),
+                  ),
+                  icon: const Icon(PhosphorIconsRegular.checkCircle, size: 20),
+                  label: const AppText(
+                    'Xác nhận bật thông báo',
+                    weight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                  onPressed: () async {
+                    Navigator.of(dialogCtx).pop();
+                    final success = await FcmNotificationService.instance
+                        .requestPermissionAndRegister();
+                    if (mounted) {
+                      setState(() => _isNotificationEnabled = success);
+                      if (success) {
+                        ToastService.show(
+                            'Đã bật và lưu thiết bị nhận thông báo thành công!',
+                            type: ToastType.success);
+                      } else {
+                        ToastService.show(
+                            'Chưa thể cấp quyền thông báo trên thiết bị.',
+                            type: ToastType.warning);
+                      }
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(height: AppDimens.space8),
+              TextButton(
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.textSecondary,
+                ),
+                onPressed: () => Navigator.of(dialogCtx).pop(),
+                child: const AppText(
+                  'Để sau',
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   /// Doc so build THAT tu goi cai dat, khong go tay — luon khop pubspec.yaml luc build, khong
@@ -225,7 +344,83 @@ class _LoginScreenState extends State<LoginScreen> {
                                 decoration: TextDecoration.underline,
                               ),
                             ),
-                            const SizedBox(height: AppDimens.space32),
+                            const SizedBox(height: AppDimens.space16),
+                            // Thẻ trạng thái Thông báo Push Notification trên thiết bị
+                            InkWell(
+                              onTap: _showNotificationPermissionDialog,
+                              borderRadius:
+                                  BorderRadius.circular(AppDimens.radiusMd),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: AppDimens.space12,
+                                    vertical: AppDimens.space8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF252526),
+                                  borderRadius:
+                                      BorderRadius.circular(AppDimens.radiusMd),
+                                  border: Border.all(
+                                    color: _isNotificationEnabled
+                                        ? const Color(0xFF388A34)
+                                            .withValues(alpha: 0.5)
+                                        : const Color(0xFF3C3C3C),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      _isNotificationEnabled
+                                          ? PhosphorIconsRegular
+                                              .bellSimpleRinging
+                                          : PhosphorIconsRegular.bellSlash,
+                                      size: 18,
+                                      color: _isNotificationEnabled
+                                          ? const Color(0xFF89D185)
+                                          : const Color(0xFFCCA700),
+                                    ),
+                                    const SizedBox(width: AppDimens.space8),
+                                    Expanded(
+                                      child: AppText(
+                                        _isNotificationEnabled
+                                            ? 'Thông báo: Đã bật trên thiết bị này'
+                                            : 'Thông báo: Chưa bật trên thiết bị',
+                                        variant: AppTextVariant.caption,
+                                        fontSize: 11,
+                                        color: _isNotificationEnabled
+                                            ? const Color(0xFF89D185)
+                                            : AppColors.textSecondary,
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: _isNotificationEnabled
+                                            ? const Color(0xFF388A34)
+                                                .withValues(alpha: 0.2)
+                                            : const Color(0xFF007ACC),
+                                        borderRadius: BorderRadius.circular(4),
+                                        border: Border.all(
+                                          color: _isNotificationEnabled
+                                              ? const Color(0xFF388A34)
+                                              : Colors.transparent,
+                                        ),
+                                      ),
+                                      child: AppText(
+                                        _isNotificationEnabled
+                                            ? 'Đã lưu'
+                                            : 'Bật ngay',
+                                        fontSize: 10,
+                                        weight: FontWeight.w700,
+                                        color: _isNotificationEnabled
+                                            ? const Color(0xFF89D185)
+                                            : Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: AppDimens.space24),
                             AppText(
                               'Trung tâm KDGP - VNPT KHA',
                               variant: AppTextVariant.overline,
