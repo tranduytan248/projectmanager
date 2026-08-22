@@ -48,6 +48,8 @@ dependencies:
   # nhung thang trong web/index.html, khong qua goi nay.
   firebase_core: ^4.13.0
   firebase_analytics: ^12.4.6
+  firebase_messaging: ^16.1.1
+  flutter_local_notifications: ^18.0.1
   # phosphor_flutter (goc) khong tuong thich Flutter moi: IconData da thanh "final class" nen
   # PhosphorIconData khong the extends duoc nua, build that (khong phai flutter analyze) se loi
   # bien dich. phosphor_icons la ban ke thua duoc bao tuong thich Flutter 3.43+, cung API.

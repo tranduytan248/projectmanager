@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:phosphor_icons/phosphor_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../../config/app_theme.dart';
+import '../../core/classes/cache_manager.dart';
 import '../../core/classes/route_manager.dart';
+import '../../core/services/fcm_notification_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_dimens.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/dialog_service.dart';
+import '../../core/utils/toast_service.dart';
 import '../../core/widgets/app_app_bar.dart';
+import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_card.dart';
 import '../../core/widgets/app_text.dart';
 import '../../shared/widgets/app_bottom_nav.dart';
@@ -29,6 +34,79 @@ class ProfileScreen extends StatelessWidget {
     if (ok && context.mounted) {
       await context.read<AuthProvider>().logout(context);
     }
+  }
+
+  void _showFcmTokenDialog(BuildContext context) {
+    final token = FcmNotificationService.instance.fcmToken ??
+        Cache.readData<String>('fcm_device_token') ??
+        'Đang lấy mã thiết bị hoặc chưa được cấp quyền...';
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(PhosphorIconsRegular.bellRinging, color: AppColors.primary),
+            SizedBox(width: AppDimens.space8),
+            Expanded(
+              child: AppText(
+                'FCM Device Token',
+                variant: AppTextVariant.heading,
+                weight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const AppText(
+              'Mã định danh thiết bị nhận thông báo đẩy Firebase Cloud Messaging:',
+              variant: AppTextVariant.caption,
+              color: AppColors.textSecondary,
+            ),
+            const SizedBox(height: AppDimens.space12),
+            Container(
+              padding: const EdgeInsets.all(AppDimens.space12),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: SelectableText(
+                token,
+                style: const TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 11,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          AppButton(
+            label: 'Sao chép mã',
+            icon: PhosphorIconsRegular.copy,
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: token));
+              Navigator.of(ctx).pop();
+              ToastService.show('Đã sao chép FCM Token vào bộ nhớ tạm!',
+                  type: ToastType.success);
+            },
+          ),
+          const SizedBox(height: AppDimens.space8),
+          AppButton(
+            label: 'Đóng',
+            type: AppButtonType.secondary,
+            onPressed: () => Navigator.of(ctx).pop(),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -159,6 +237,11 @@ class ProfileScreen extends StatelessWidget {
                       paragraphs: termsOfUseParagraphs,
                     ),
                   )),
+                ),
+                _SettingsTile(
+                  icon: PhosphorIconsRegular.bellRinging,
+                  label: 'Mã thiết bị nhận thông báo (FCM Token)',
+                  onTap: () => _showFcmTokenDialog(context),
                 ),
                 _SettingsTile(
                   icon: PhosphorIconsRegular.clockCounterClockwise,
