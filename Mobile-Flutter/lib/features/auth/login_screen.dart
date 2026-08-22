@@ -4,7 +4,6 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:phosphor_icons/phosphor_icons.dart';
 import 'package:provider/provider.dart';
 
-import '../../config/app_theme.dart';
 import '../../core/classes/route_manager.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_dimens.dart';
@@ -88,16 +87,14 @@ class _LoginScreenState extends State<LoginScreen> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(
         statusBarColor: Colors.transparent,
-        systemNavigationBarColor: AppTheme.brandBlueDark,
+        systemNavigationBarColor: const Color(0xFF181818),
         systemNavigationBarIconBrightness: Brightness.light,
       ),
       child: AppScaffold(
         body: Container(
           width: double.infinity,
           height: double.infinity,
-          // Nen phang mot mau (khong gradient) — dung huong flat design chung ca app, thay vi
-          // do do tu brandBlue sang brandBlueDark nhu truoc.
-          color: AppTheme.brandBlue,
+          color: const Color(0xFF1E1E1E),
           child: Stack(
             children: [
               // Hinh coc phong to, mo nhat, lam nen trang tri o goc duoi — cung mot bo nhan dien
@@ -106,7 +103,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 right: -70,
                 bottom: -40,
                 child: Opacity(
-                  opacity: 0.08,
+                  opacity: 0.05,
                   child: Image.asset('assets/images/logo_mark.png', width: 320),
                 ),
               ),
@@ -130,16 +127,15 @@ class _LoginScreenState extends State<LoginScreen> {
                               variant: AppTextVariant.display,
                               fontSize: 30,
                               weight: FontWeight.w800,
-                              color: AppColors.textOnPrimary,
+                              color: AppColors.textPrimary,
                               letterSpacing: 1,
                             ),
                             const SizedBox(height: AppDimens.space4),
-                            AppText(
+                            const AppText(
                               'QUẢN LÝ CÔNG VIỆC',
                               variant: AppTextVariant.overline,
                               fontSize: 12,
-                              color: AppColors.textOnPrimary
-                                  .withValues(alpha: 0.85),
+                              color: Color(0xFF3794FF),
                               letterSpacing: 3,
                             ),
                             const SizedBox(height: AppDimens.space24),
@@ -148,10 +144,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               variant: AppTextVariant.overline,
                               align: TextAlign.center,
                               fontSize: 12,
-                              // Alpha 0.8 (thay vi 0.7 truoc day) de dat toi thieu 4.5:1 tren nen
-                              // brandBlue — 0.7 chi dat ~4.38:1, duoi chuan AA cho chu thuong.
-                              color: AppColors.textOnPrimary
-                                  .withValues(alpha: 0.8),
+                              color: AppColors.textSecondary,
                               letterSpacing: 1.5,
                             ),
                             const SizedBox(height: 24),
@@ -182,31 +175,23 @@ class _LoginScreenState extends State<LoginScreen> {
                                 icon: _obscurePassword
                                     ? PhosphorIconsRegular.eyeSlash
                                     : PhosphorIconsRegular.eye,
-                                color: AppColors.textOnPrimary
-                                    .withValues(alpha: 0.7),
+                                color: AppColors.textSecondary,
                                 size: 20,
                                 onPressed: () => setState(
                                     () => _obscurePassword = !_obscurePassword),
                               ),
                             ),
                             const SizedBox(height: AppDimens.space24),
-                            // AppButton chua co kieu phu hop cho ngu canh nay: ca 3 loai
-                            // (primary/secondary/outline) deu dung nen hoac vien mau
-                            // brandBlue/brandBlueDark — gan nhu chim vao chinh nen xanh cua man
-                            // hinh nay (tuong phan qua thap). Giu FilledButton tho, tu them vien
-                            // trang mo de tach khoi nut ro voi nen, thay vi ep dung AppButton vao
-                            // mot ngu canh no chua duoc thiet ke cho.
                             SizedBox(
                               width: double.infinity,
                               height: 50,
                               child: FilledButton(
                                 style: FilledButton.styleFrom(
-                                  backgroundColor: AppTheme.brandBlueDarker,
-                                  foregroundColor: AppColors.textOnPrimary,
-                                  side: BorderSide(
-                                      color:
-                                          Colors.white.withValues(alpha: 0.3)),
-                                  shape: const StadiumBorder(),
+                                  backgroundColor: const Color(0xFF007ACC),
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(AppDimens.radiusMd),
+                                  ),
                                   elevation: 0,
                                 ),
                                 onPressed: _isSubmitting ? null : _submit,
@@ -214,33 +199,29 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ? const AppLoading(
                                         size: 20,
                                         strokeWidth: 2,
-                                        color: AppColors.textOnPrimary,
+                                        color: Colors.white,
                                       )
                                     : const AppText(
                                         'ĐĂNG NHẬP',
                                         variant: AppTextVariant.body,
                                         weight: FontWeight.w700,
-                                        color: AppColors.textOnPrimary,
-                                        letterSpacing: 1,
+                                        color: Colors.white,
+                                        letterSpacing: 1.2,
                                       ),
                               ),
                             ),
                             const SizedBox(height: 16),
-                            // Giu TextButton tho: day la mot lien ket phu giua noi dung, khong
-                            // phai nut hanh dong chinh — dung AppButton (luon to nhu nut that) se
-                            // pha vo bo cuc. Tu dat minimumSize 48dp vi theme moi chi ap dung
-                            // minimumSize cho Filled/OutlinedButton, chua ap dung cho TextButton.
                             TextButton(
+                              onPressed: () =>
+                                  Nav.toNamed(context, AuthRoutes.forgotPassword),
                               style: TextButton.styleFrom(
+                                  foregroundColor: const Color(0xFF3794FF),
                                   minimumSize:
                                       const Size(88, AppDimens.minTapTarget)),
-                              onPressed: () => Nav.toNamed(
-                                  context, AuthRoutes.forgotPassword),
-                              child: AppText(
+                              child: const AppText(
                                 'Quên mật khẩu?',
                                 variant: AppTextVariant.body,
-                                color: AppColors.textOnPrimary
-                                    .withValues(alpha: 0.85),
+                                color: Color(0xFF3794FF),
                                 decoration: TextDecoration.underline,
                               ),
                             ),
@@ -316,16 +297,14 @@ class _LoginField extends StatelessWidget {
       validator: validator,
       prefixIcon: icon,
       suffixIconWidget: suffixIconWidget,
-      textColor: AppColors.textOnPrimary,
-      labelColor: AppColors.textOnPrimary.withValues(alpha: 0.85),
-      iconColor: AppColors.textOnPrimary.withValues(alpha: 0.7),
-      // Nen mo va vien deu la lop trang tri (khong phai chu/icon) nen duoc phep giu Colors.white
-      // truc tiep theo dung ngoai le cua Quy tac 2 (FLUTTER_RULES.md).
-      fillColor: Colors.white.withValues(alpha: 0.14),
-      borderColor: Colors.white.withValues(alpha: 0.25),
-      focusedBorderColor: AppColors.textOnPrimary,
-      errorColor: AppColors.errorOnDark,
-      borderRadius: 30,
+      textColor: AppColors.textPrimary,
+      labelColor: AppColors.textSecondary,
+      iconColor: AppColors.textSecondary,
+      fillColor: AppColors.surfaceVariant,
+      borderColor: AppColors.border,
+      focusedBorderColor: AppColors.primary,
+      errorColor: AppColors.danger,
+      borderRadius: AppDimens.radiusMd,
     );
   }
 }

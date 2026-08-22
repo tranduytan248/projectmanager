@@ -11,69 +11,62 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  /// = --primary. Trung voi mau nen icon_app.png va splash nguyen sinh cua he dieu hanh.
-  static const primary = Color(0xFF1A56A8);
-  static const primaryDark = Color(0xFF143F7D);
-  static const primaryDarker = Color(0xFF10386F);
+  /// = Visual Studio Code Primary Accent (Status Bar / Action Blue).
+  static const primary = Color(0xFF007ACC);
+  static const primaryDark = Color(0xFF0E639C);
+  static const primaryDarker = Color(0xFF114A71);
 
-  /// = --primary-soft. Nen nhat cho khoi/badge lien quan toi thao tac chinh.
-  static const primarySoft = Color(0xFFEAF1FB);
+  /// Nền container nhạt mang sắc thái xanh VS Code.
+  static const primarySoft = Color(0xFF1B2B3E);
 
-  /// Chua co mau nhan dien phu rieng — dung chung sac dam cua primary.
-  static const secondary = primaryDark;
+  /// Nền secondary (Sidebar panel).
+  static const secondary = Color(0xFF252526);
 
-  static const background = Colors.white;
-  static const surface = Colors.white;
+  /// Nền ứng dụng chính: VS Code Editor Background (#1E1E1E).
+  static const background = Color(0xFF1E1E1E);
 
-  /// = --text. Chu chinh: tieu de, noi dung quan trong, gia tri du lieu.
-  static const textPrimary = Color(0xFF16202C);
+  /// Nền thẻ card / panel: VS Code Sidebar Background (#252526).
+  static const surface = Color(0xFF252526);
 
-  /// = --text-muted. Chu phu: nhan, ghi chu, mo ta phu — mau DAC (khong trong suot), khac han
-  /// Colors.black45/Colors.black54 (den trong suot) tung dung truoc day: hai mau do doc mo tren
-  /// nen trang, day la mau da duoc web dung san va kiem chung de doc.
-  static const textSecondary = Color(0xFF667289);
+  /// Nền ô nhập liệu, activity bar (#2D2D2D).
+  static const surfaceVariant = Color(0xFF2D2D2D);
 
-  /// = --text-faint. Nhat hon textSecondary mot chut — tuong phan ~3.3:1 tren nen trang, DUOI
-  /// chuan AA (4.5:1) cho chu thuong. CHI dung cho placeholder/hint (o nhap chua co gia tri, dropdown
-  /// chua chon) hoac icon nho (nguong UI component 3:1) — KHONG dung cho nhan/trang thai/badge
-  /// mang thong tin that (dung textSecondary cho cac truong hop do).
-  static const textFaint = Color(0xFF8B96A9);
+  /// Chữ chính: VS Code Default Foreground (#D4D4D4) — tương phản 11.8:1 trên nền #1E1E1E.
+  static const textPrimary = Color(0xFFD4D4D4);
 
-  /// Chu tren nen mau dam (vi du tren nut primary, banner mau).
+  /// Chữ phụ: VS Code Muted / Comment Text (#9DA5B4) — tương phản 5.5:1 trên #1E1E1E.
+  static const textSecondary = Color(0xFF9DA5B4);
+
+  /// Chữ mờ: Placeholder, hint (#6A737D).
+  static const textFaint = Color(0xFF6A737D);
+
+  /// Chữ trên nền nút màu đậm.
   static const textOnPrimary = Colors.white;
 
-  /// = --success/--st-ok. Trang thai "hoan thanh/dung han" — KHONG dung primary cho y nghia nay.
-  static const success = Color(0xFF1A7F52);
-  static const successSoft = Color(0xFFE6F5EE);
+  /// Trạng thái Hoàn thành / Đúng hạn: VS Code Class/Type Mint (#4EC9B0).
+  static const success = Color(0xFF4EC9B0);
+  static const successSoft = Color(0xFF17332B);
+  static const successOnSoft = Color(0xFF4EC9B0);
 
-  /// Dam hon [success] mot chut — CHI dung cho CHU dat tren nen [successSoft] (badge/pill nhat
-  /// mau), vi cap success/successSoft goc do ~4.45:1, duoi chuan AA 4.5:1 cho chu thuong. KHONG
-  /// dong bo voi site.css (khac [success] — mau do chi dung rieng mobile, khong phai mau thuong
-  /// hieu dung chung voi web), nen KHONG dung cho bat ky ngu canh nao khac ngoai chu-tren-nen-soft.
-  static const successOnSoft = Color(0xFF197A4E);
+  /// Trạng thái Cảnh báo / Đang làm: VS Code Function Gold (#DCDCAA).
+  static const warning = Color(0xFFDCDCAA);
+  static const warningSoft = Color(0xFF33301B);
+  static const warningOnSoft = Color(0xFFDCDCAA);
 
-  /// = --warn/--st-warn. Trang thai "sap den han/canh bao".
-  static const warning = Color(0xFF9A6700);
-  static const warningSoft = Color(0xFFFDF5E2);
+  /// Trạng thái Quá hạn / Lỗi: VS Code Error Red (#F14C4C).
+  static const danger = Color(0xFFF14C4C);
+  static const dangerSoft = Color(0xFF3A1E1E);
+  static const dangerOnSoft = Color(0xFFF14C4C);
 
-  /// Dam hon [warning] mot chut — CHI dung cho CHU dat tren nen [warningSoft], cung ly do voi
-  /// [successOnSoft] (cap goc ~4.49:1, duoi chuan AA). KHONG dong bo voi site.css.
-  static const warningOnSoft = Color(0xFF8F6100);
+  /// Chữ lỗi trên nền tối.
+  static const errorOnDark = Color(0xFFFF7B72);
 
-  /// = --danger/--st-late. Trang thai "qua han/loi".
-  static const danger = Color(0xFFB3261E);
-  static const dangerSoft = Color(0xFFFBEAE9);
+  /// Viền thẻ card / widget: VS Code Widget Border (#333333).
+  static const border = Color(0xFF333333);
 
-  /// Chu loi tren nen mau dam (man Dang nhap/Quen mat khau, nen brandBlue toi) — danger qua chim
-  /// tren nen do, can sac do nhat hon rieng cho hai man nay de van doc ro chu "loi".
-  static const errorOnDark = Color(0xFFFF8A80);
+  /// Viền đậm / Divider focus: (#454545).
+  static const borderStrong = Color(0xFF454545);
 
-  /// Vien mong dung khap app (the/card, o nhap, chip).
-  static const border = Color(0x14000000);
-  static const borderStrong = Color(0x1F000000);
-
-  /// Nen den cho trinh xem media toan man hinh (vi du xem anh dinh kem trong Trao doi) — quy uoc
-  /// rieng cho lop phu toan man, khac voi background/surface (luon trang) dung cho noi dung
-  /// thuong.
-  static const mediaViewerBackground = Colors.black;
+  /// Nền cho media viewer toàn màn hình.
+  static const mediaViewerBackground = Color(0xFF121212);
 }

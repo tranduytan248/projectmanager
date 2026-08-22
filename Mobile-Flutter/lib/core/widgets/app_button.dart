@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../config/app_theme.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
@@ -74,15 +73,24 @@ class AppButton extends StatelessWidget {
   Color _bg() {
     switch (type) {
       case AppButtonType.primary:
-        return AppTheme.brandBlue;
+        return AppColors.primary;
       case AppButtonType.secondary:
-        return AppTheme.brandBlueDark;
+        return const Color(0xFF333333);
       case AppButtonType.danger:
-        return AppTheme.statusDanger;
+        return AppColors.danger;
       case AppButtonType.outline:
-        return AppTheme.brandBlue;
+        return AppColors.borderStrong;
     }
   }
 
-  Color _fg() => type == AppButtonType.outline ? AppTheme.brandBlue : AppColors.textOnPrimary;
+  Color _fg() {
+    switch (type) {
+      case AppButtonType.primary:
+      case AppButtonType.danger:
+        return Colors.white;
+      case AppButtonType.secondary:
+      case AppButtonType.outline:
+        return AppColors.textPrimary;
+    }
+  }
 }
