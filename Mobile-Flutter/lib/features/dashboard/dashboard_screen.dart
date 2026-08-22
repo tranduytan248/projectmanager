@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
 import '../../core/classes/route_manager.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_dimens.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_card.dart';
@@ -134,7 +135,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   for (final task in filteredTasks) _TaskRow(task: task),
                 if (data.canSeeTeam && data.team != null) ...[
                   const SizedBox(height: 24),
-                  const _SectionTitle('Toàn Tổ'),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const _SectionTitle('Toàn Tổ'),
+                      InkWell(
+                        onTap: () => Nav.toNamed(context, AppRoutes.teamDashboard),
+                        borderRadius: BorderRadius.circular(AppDimens.radiusPill),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          child: Row(
+                            children: [
+                              AppText(
+                                'Bảng điều khiển',
+                                variant: AppTextVariant.caption,
+                                color: AppColors.primary,
+                                weight: FontWeight.w600,
+                              ),
+                              SizedBox(width: 2),
+                              Icon(Icons.chevron_right, size: 16, color: AppColors.primary),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 10),
                   _TeamSection(
                     team: data.team!,
