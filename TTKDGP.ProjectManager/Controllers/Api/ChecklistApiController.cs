@@ -82,12 +82,12 @@ namespace TTKDGP.ProjectManager.Controllers.Api
                 ? null
                 : (string.IsNullOrWhiteSpace(parent.Code) ? parent.Title : parent.Code + " · " + parent.Title);
 
-            var taskOpen = !TaskStates.IsClosed(task.State);
+            var canLogOrDelete = task.State != TaskStates.Cancelled;
 
             return new TaskFullDetailDto
             {
                 Task = ApiMappers.ToFullTaskDto(task, parentTitle, CanEditTask(task), CanEditAllOfTask(task)),
-                TimeLog = ApiMappers.ToDto(TimeLogService.BuildViewModel(task, CurrentUserId), taskOpen),
+                TimeLog = ApiMappers.ToDto(TimeLogService.BuildViewModel(task, CurrentUserId), canLogOrDelete),
                 Todo = ApiMappers.ToDto(BuildTaskTodos(task)),
                 Comments = BuildCommentsDto(task)
             };
@@ -132,9 +132,9 @@ namespace TTKDGP.ProjectManager.Controllers.Api
                 return BadRequest("Chỉ người được giao việc mới ghi được giờ công.");
             }
 
-            if (TaskStates.IsClosed(task.State))
+            if (task.State == TaskStates.Cancelled)
             {
-                return BadRequest("Công việc đã đóng nên không ghi thêm giờ được.");
+                return BadRequest("Công việc đã huỷ nên không ghi thêm giờ được.");
             }
 
             var error = TimeLogService.Add(task, CurrentUserId,
@@ -146,11 +146,11 @@ namespace TTKDGP.ProjectManager.Controllers.Api
                 string.Format("Đã ghi {0} giờ ({1:dd/MM/yyyy})", hoursValue, dateValue));
 
             return Json(ApiMappers.ToDto(TimeLogService.BuildViewModel(task, CurrentUserId),
-                !TaskStates.IsClosed(task.State)));
+                task.State != TaskStates.Cancelled));
         }
 
         /// <summary>Mirror ChecklistController.DeleteTimeLog — chi xoa duoc dong cua chinh minh,
-        /// viec chua dong.</summary>
+        /// viec chua bi huy.</summary>
         [HttpPost]
         public ActionResult DeleteTimeLog(int id, int logId)
         {
@@ -165,9 +165,9 @@ namespace TTKDGP.ProjectManager.Controllers.Api
                 return BadRequest("Chỉ xoá được dòng giờ của chính bạn.");
             }
 
-            if (TaskStates.IsClosed(task.State))
+            if (task.State == TaskStates.Cancelled)
             {
-                return BadRequest("Công việc đã đóng nên không sửa được giờ đã ghi.");
+                return BadRequest("Công việc đã huỷ nên không sửa được giờ đã ghi.");
             }
 
             // Y het ChecklistController.DeleteTimeLog — Dang lam chi dat duoc sau khi da ghi gio
@@ -185,7 +185,7 @@ namespace TTKDGP.ProjectManager.Controllers.Api
                 string.Format("Đã xoá lượt ghi {0} giờ ({1:dd/MM/yyyy})", log.Hours, log.WorkDate));
 
             return Json(ApiMappers.ToDto(TimeLogService.BuildViewModel(task, CurrentUserId),
-                !TaskStates.IsClosed(task.State)));
+                task.State != TaskStates.Cancelled));
         }
 
         // ---------- Việc cần làm ----------
