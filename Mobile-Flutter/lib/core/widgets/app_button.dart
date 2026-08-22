@@ -50,7 +50,8 @@ class AppButton extends StatelessWidget {
         ? OutlinedButton(
             onPressed: disabled ? null : onPressed,
             style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(AppDimens.minTapTarget),
+              minimumSize: const Size(0, AppDimens.minTapTarget),
+              padding: const EdgeInsets.symmetric(horizontal: AppDimens.space16),
               side: BorderSide(color: _bg()),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimens.radiusMd)),
             ),
@@ -60,7 +61,8 @@ class AppButton extends StatelessWidget {
             onPressed: disabled ? null : onPressed,
             style: FilledButton.styleFrom(
               backgroundColor: _bg(),
-              minimumSize: const Size.fromHeight(AppDimens.minTapTarget),
+              minimumSize: const Size(0, AppDimens.minTapTarget),
+              padding: const EdgeInsets.symmetric(horizontal: AppDimens.space16),
               elevation: 0,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimens.radiusMd)),
             ),

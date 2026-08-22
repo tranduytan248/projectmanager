@@ -11,7 +11,8 @@
     <application
         android:label="BrewTask - Quản Lý Công Việc"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true">
 
         <!-- Cấu hình kênh thông báo mặc định độ ưu tiên cao cho FCM -->
         <meta-data
