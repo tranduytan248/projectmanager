@@ -1,71 +1,69 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
 
-/// Cac muc dich hien thi chu — dung `.claude/rules/FLUTTER_RULES.md` ("thang co chu ro rang").
-/// AppText chon TextStyle theo variant nay, khong de tung man hinh tu dat fontSize/fontWeight.
+/// Các mục đích hiển thị chữ — chuẩn Typography dự án.
 enum AppTextVariant {
-  /// 20-22 — tieu de man hinh / con so noi bat (vi du "Ban co N du an").
+  /// 20-22 — tiêu đề màn hình / con số nổi bật.
   display,
 
-  /// 17-19 — tieu de man hinh nho hon / ten thuc the chinh (ten du an, ten cong viec).
+  /// 17-19 — tiêu đề màn hình nhỏ hơn / tên thực thể chính.
   title,
 
-  /// 15-16 — tieu de mot khoi/muc trong man hinh (vi du "Thong tin chung").
+  /// 15-16 — tiêu đề một khối/mục trong màn hình.
   heading,
 
-  /// 14 — noi dung chinh, gia tri du lieu.
+  /// 14 — nội dung chính, giá trị dữ liệu.
   body,
 
-  /// 12-13 — chu thich, nhan phu, ngay thang, mo ta ngan.
+  /// 12-13 — chú thích, nhãn phụ, ngày tháng, mô tả ngắn.
   caption,
 
-  /// 10-11, letter-spacing rong — nhan cuc nho (badge, tag trang thai).
+  /// 10-11, letter-spacing rộng — nhãn cực nhỏ (badge, tag trạng thái).
   overline,
 }
 
-/// Dinh nghia TextStyle cho tung AppTextVariant. Mau mac dinh lay theo AppColors.textPrimary,
-/// AppText cho phep doi mau khi ngu canh can (vi du chu tren nen mau, chu trang thai) — xem
-/// ghi chu trong app_text.dart.
+/// Định nghĩa TextStyle cho từng AppTextVariant dùng font Roboto thanh thoát, dễ đọc như ảnh mẫu.
 class AppTextStyles {
   AppTextStyles._();
 
-  static const display = TextStyle(
+  static final display = GoogleFonts.roboto(
     fontSize: 22,
     fontWeight: FontWeight.w800,
     color: AppColors.textPrimary,
     height: 1.3,
   );
 
-  static const title = TextStyle(
+  static final title = GoogleFonts.roboto(
     fontSize: 18,
     fontWeight: FontWeight.w800,
     color: AppColors.textPrimary,
     height: 1.3,
   );
 
-  static const heading = TextStyle(
+  static final heading = GoogleFonts.roboto(
     fontSize: 15,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
     height: 1.4,
   );
 
-  static const body = TextStyle(
+  static final body = GoogleFonts.roboto(
     fontSize: 14,
-    fontWeight: FontWeight.w500,
+    fontWeight: FontWeight.w400,
     color: AppColors.textPrimary,
     height: 1.45,
   );
 
-  static const caption = TextStyle(
+  static final caption = GoogleFonts.roboto(
     fontSize: 12.5,
-    fontWeight: FontWeight.w500,
+    fontWeight: FontWeight.w400,
     color: AppColors.textSecondary,
     height: 1.4,
   );
 
-  static const overline = TextStyle(
+  static final overline = GoogleFonts.roboto(
     fontSize: 10.5,
     fontWeight: FontWeight.w700,
     color: AppColors.textSecondary,

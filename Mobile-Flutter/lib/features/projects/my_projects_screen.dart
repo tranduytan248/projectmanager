@@ -424,7 +424,7 @@ class _ProjectCard extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.06),
+                              color: AppColors.surfaceVariant,
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: const AppText('Đã đóng',
@@ -552,7 +552,7 @@ class _FilterButton extends StatelessWidget {
       onPressed: onTap,
       size: 19,
       color: active ? AppColors.textOnPrimary : AppColors.textSecondary,
-      background: active ? AppTheme.brandBlue : Colors.white,
+      background: active ? AppColors.primary : AppColors.surface,
     );
   }
 }

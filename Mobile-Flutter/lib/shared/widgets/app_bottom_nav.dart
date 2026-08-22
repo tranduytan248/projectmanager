@@ -136,7 +136,7 @@ class _FlatBottomBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFF181818),
+        color: AppColors.navBackground,
         border: Border(top: BorderSide(color: AppColors.border)),
       ),
       child: SafeArea(
@@ -170,7 +170,7 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? const Color(0xFF3794FF) : AppColors.textSecondary;
+    final color = selected ? AppColors.accentBlue : AppColors.textSecondary;
 
     return InkWell(
       onTap: onTap,

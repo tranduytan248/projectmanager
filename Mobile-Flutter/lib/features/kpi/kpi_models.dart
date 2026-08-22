@@ -114,7 +114,7 @@ class KpiMemberRow {
       case 'Tốt':
         return AppColors.primary;
       case 'Khá':
-        return const Color(0xFF0284C7);
+        return AppColors.info;
       case 'Đạt':
         return AppColors.warning;
       case 'Chưa đạt':
@@ -130,7 +130,7 @@ class KpiMemberRow {
       case 'Tốt':
         return AppColors.primarySoft;
       case 'Khá':
-        return const Color(0xFFE0F2FE);
+        return AppColors.infoSoft;
       case 'Đạt':
         return AppColors.warningSoft;
       case 'Chưa đạt':

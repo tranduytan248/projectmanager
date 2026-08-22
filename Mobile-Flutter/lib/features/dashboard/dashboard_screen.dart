@@ -666,17 +666,17 @@ class _FilterChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? AppTheme.brandBlue : Colors.white,
+          color: selected ? AppColors.primary : AppColors.surface,
           borderRadius: BorderRadius.circular(20),
           border:
-              Border.all(color: selected ? AppTheme.brandBlue : Colors.black12),
+              Border.all(color: selected ? AppColors.primary : AppColors.border),
         ),
         child: AppText(
           label,
           variant: AppTextVariant.caption,
           fontSize: 12.5,
           weight: FontWeight.w600,
-          color: selected ? Colors.white : AppColors.textSecondary,
+          color: selected ? AppColors.textOnPrimary : AppColors.textSecondary,
         ),
       ),
     );
@@ -785,7 +785,7 @@ class _AvatarStack extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: _avatarTones[i % _avatarTones.length],
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1.5),
+                  border: Border.all(color: AppColors.surface, width: 1.5),
                 ),
               ),
             ),
@@ -797,9 +797,9 @@ class _AvatarStack extends StatelessWidget {
                 height: 24,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: Colors.black12,
+                  color: AppColors.surfaceVariant,
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1.5),
+                  border: Border.all(color: AppColors.surface, width: 1.5),
                 ),
                 child: AppText(
                   '+${count - 3}',

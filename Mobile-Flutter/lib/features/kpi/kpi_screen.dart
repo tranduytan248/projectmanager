@@ -598,13 +598,13 @@ class _SummaryStatsSection extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFEF3C7),
+                    color: AppColors.rankGoldBg,
                     borderRadius: BorderRadius.circular(AppDimens.radiusSm),
                   ),
                   child: const Icon(
                     Icons.emoji_events,
                     size: 20,
-                    color: Color(0xFFD97706),
+                    color: AppColors.rankGoldText,
                   ),
                 ),
                 const SizedBox(width: AppDimens.space12),
@@ -632,7 +632,7 @@ class _SummaryStatsSection extends StatelessWidget {
                   variant: AppTextVariant.title,
                   fontSize: 18,
                   weight: FontWeight.w800,
-                  color: const Color(0xFFD97706),
+                  color: AppColors.rankGoldText,
                 ),
               ],
             ),
@@ -900,7 +900,7 @@ class _MemberKpiCard extends StatelessWidget {
                 _BreakdownPill(
                   label: 'Triển khai',
                   value: '${row.executePoint.toStringAsFixed(1)}đ',
-                  color: const Color(0xFF0284C7),
+                  color: AppColors.info,
                 ),
                 if (row.assignedPoint > 0)
                   _BreakdownPill(
@@ -963,14 +963,14 @@ class _RankMedal extends StatelessWidget {
     Color bg;
     Color text;
     if (rankIndex == 1) {
-      bg = const Color(0xFFFEF3C7);
-      text = const Color(0xFFD97706);
+      bg = AppColors.rankGoldBg;
+      text = AppColors.rankGoldText;
     } else if (rankIndex == 2) {
-      bg = const Color(0xFFF1F5F9);
-      text = const Color(0xFF475569);
+      bg = AppColors.rankSilverBg;
+      text = AppColors.rankSilverText;
     } else if (rankIndex == 3) {
-      bg = const Color(0xFFFFEDD5);
-      text = const Color(0xFFC2410C);
+      bg = AppColors.rankBronzeBg;
+      text = AppColors.rankBronzeText;
     } else {
       bg = AppColors.background;
       text = AppColors.textSecondary;
