@@ -7,7 +7,6 @@ import '../../config/app_theme.dart';
 import '../../core/classes/route_manager.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
-import '../../core/utils/toast_service.dart';
 import '../../core/widgets/app_app_bar.dart';
 import '../../core/widgets/app_error_state.dart';
 import '../../core/widgets/app_loading.dart';
@@ -111,18 +110,16 @@ class _TaskRow extends StatelessWidget {
         extentRatio: 0.5,
         children: [
           SlidableAction(
-            onPressed: (_) => ToastService.show(
-                'Giao việc "${task.code}" — đang phát triển.',
-                type: ToastType.warning),
+            onPressed: (ctx) => Nav.toNamed(ctx, AppRoutes.taskDetail,
+                arguments: {'taskId': task.id.toString()}),
             backgroundColor: AppColors.primaryDark,
             foregroundColor: AppColors.textOnPrimary,
             icon: PhosphorIconsRegular.userPlus,
             label: 'Giao việc',
           ),
           SlidableAction(
-            onPressed: (_) => ToastService.show(
-                'Chuyển trạng thái "${task.code}" — đang phát triển.',
-                type: ToastType.warning),
+            onPressed: (ctx) => Nav.toNamed(ctx, AppRoutes.taskDetail,
+                arguments: {'taskId': task.id.toString()}),
             backgroundColor: AppColors.primary,
             foregroundColor: AppColors.textOnPrimary,
             icon: PhosphorIconsRegular.arrowsClockwise,
