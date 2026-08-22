@@ -378,6 +378,8 @@ namespace TTKDGP.ProjectManager.Controllers.Api
             return new LeaveRequestDto
             {
                 Id = l.Id,
+                UserId = l.UserId,
+                UserFullName = l.UserFullName,
                 Kind = l.Kind,
                 FromDate = l.FromDate,
                 ToDate = l.ToDate,

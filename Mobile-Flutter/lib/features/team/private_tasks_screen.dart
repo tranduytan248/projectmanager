@@ -11,6 +11,7 @@ import '../../core/widgets/app_checkbox.dart';
 import '../../core/widgets/app_dropdown.dart';
 import '../../core/widgets/app_error_state.dart';
 import '../../core/widgets/app_fab.dart';
+import '../../core/widgets/app_loading.dart';
 import '../../core/widgets/app_scaffold.dart';
 import '../../core/widgets/app_text.dart';
 import '../../core/widgets/app_text_field.dart';
@@ -284,7 +285,7 @@ class _PrivateTasksScreenState extends State<PrivateTasksScreen> {
 
   Widget _buildBody() {
     if (_isLoading && _data == null) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: AppLoading());
     }
 
     if (_errorMessage != null && _data == null) {

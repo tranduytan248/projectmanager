@@ -564,6 +564,10 @@
                                 {
                                     <div class="cell-meta">@t.ProjectName</div>
                                 }
+                                else if (t.Kind == TaskKinds.Standalone)
+                                {
+                                    <div class="cell-meta"><span class="badge badge-primary">Việc riêng</span></div>
+                                }
                                 <div class="cell-recap">
                                     <span>@timeRange(t)</span>
                                     <span>·</span>
@@ -669,19 +673,19 @@
                             <td class="col-name">
                                 @t.Title
                                 <div class="cell-recap">
-                                    <span>Mức cộng @t.BonusPercent.ToString("0.##")</span>
+                                    <span>Mức cộng @t.BonusPercent.ToString("0.##")%</span>
                                     <span>·</span>
-                                    <span>@(done ? (t.IsOnTime ? "Đúng hạn" : "Trễ hạn — không cộng") : TaskStates.Display(t.State))</span>
+                                    <span>@(done ? (t.IsOnTime ? "Đúng hạn" : "Trễ " + t.LateDays + " ngày — không cộng & phạt trễ") : TaskStates.Display(t.State))</span>
                                 </div>
                             </td>
-                            <td class="center col-hide-sm">@t.BonusPercent.ToString("0.##")</td>
+                            <td class="center col-hide-sm">@t.BonusPercent.ToString("0.##")%</td>
                             <td class="col-hide-sm">
                                 @if (done)
                                 {
                                     if (t.IsOnTime)
                                     { <span class="badge badge-active">Đúng hạn</span> }
                                     else
-                                    { <span class="badge badge-danger">Trễ hạn — không cộng</span> }
+                                    { <span class="badge badge-danger">Trễ @t.LateDays ngày</span> }
                                 }
                                 else
                                 { <span class="badge">@TaskStates.Display(t.State)</span> }
@@ -689,7 +693,11 @@
                             <td class="center">
                                 @if (earned)
                                 {
-                                    <strong class="ok-text">+@t.BonusPercent.ToString("0.##")</strong>
+                                    <strong class="ok-text">+@t.BonusPercent.ToString("0.##")%</strong>
+                                }
+                                else if (done && !t.IsOnTime)
+                                {
+                                    <span class="danger-text">Trễ hạn (trừ điểm ở nhóm Thực hiện)</span>
                                 }
                                 else
                                 {

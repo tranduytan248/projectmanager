@@ -122,6 +122,8 @@ class LeaveRequestItem {
     required this.toDate,
     required this.isHalfDay,
     required this.halfDaySession,
+    this.userId = 0,
+    this.userFullName,
     required this.days,
     required this.reason,
     required this.state,
@@ -132,6 +134,8 @@ class LeaveRequestItem {
   });
 
   final int id;
+  final int userId;
+  final String? userFullName;
 
   /// Gia tri tho cua LeaveKinds (PhepNam/KhongLuong/Om/Khac) — dung [leaveKindLabel] de hien thi.
   final String kind;
@@ -154,6 +158,8 @@ class LeaveRequestItem {
 
   factory LeaveRequestItem.fromJson(Map<String, dynamic> json) => LeaveRequestItem(
         id: json['Id'] as int,
+        userId: json['UserId'] as int? ?? 0,
+        userFullName: json['UserFullName'] as String?,
         kind: json['Kind'] as String? ?? LeaveKinds.annual,
         fromDate: parseAspNetDate(json['FromDate'] as String?) ?? DateTime.now(),
         toDate: parseAspNetDate(json['ToDate'] as String?) ?? DateTime.now(),
@@ -193,6 +199,57 @@ class LeavesData {
         approvedDaysInYear: (json['ApprovedDaysInYear'] as num?)?.toDouble() ?? 0,
         pendingCount: json['PendingCount'] as int? ?? 0,
         years: (json['Years'] as List<dynamic>? ?? []).map((e) => e as int).toList(),
+        items: (json['Items'] as List<dynamic>? ?? [])
+            .map((e) => LeaveRequestItem.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+}
+
+/// Tuy chon nhan su cho bo loc Duyet nghi phep.
+class LeaveMemberOption {
+  const LeaveMemberOption({
+    required this.userId,
+    required this.fullName,
+  });
+
+  final int userId;
+  final String fullName;
+
+  factory LeaveMemberOption.fromJson(Map<String, dynamic> json) => LeaveMemberOption(
+        userId: json['UserId'] as int? ?? 0,
+        fullName: json['FullName'] as String? ?? '',
+      );
+}
+
+/// Danh sach "Duyet nghi phep" toan To — khop LeaveApprovalsDataDto ben backend.
+class LeaveApprovalsData {
+  const LeaveApprovalsData({
+    required this.totalCount,
+    required this.pendingCount,
+    required this.approvedCount,
+    required this.rejectedCount,
+    required this.years,
+    required this.members,
+    required this.items,
+  });
+
+  final int totalCount;
+  final int pendingCount;
+  final int approvedCount;
+  final int rejectedCount;
+  final List<int> years;
+  final List<LeaveMemberOption> members;
+  final List<LeaveRequestItem> items;
+
+  factory LeaveApprovalsData.fromJson(Map<String, dynamic> json) => LeaveApprovalsData(
+        totalCount: json['TotalCount'] as int? ?? 0,
+        pendingCount: json['PendingCount'] as int? ?? 0,
+        approvedCount: json['ApprovedCount'] as int? ?? 0,
+        rejectedCount: json['RejectedCount'] as int? ?? 0,
+        years: (json['Years'] as List<dynamic>? ?? []).map((e) => e as int).toList(),
+        members: (json['Members'] as List<dynamic>? ?? [])
+            .map((e) => LeaveMemberOption.fromJson(e as Map<String, dynamic>))
+            .toList(),
         items: (json['Items'] as List<dynamic>? ?? [])
             .map((e) => LeaveRequestItem.fromJson(e as Map<String, dynamic>))
             .toList(),

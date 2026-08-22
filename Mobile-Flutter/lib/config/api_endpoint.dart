@@ -82,7 +82,8 @@ class ApiEndpoint {
   static const privateTasksCreate = '/PrivateTasksApi/Create';
   static const privateTasksUpdate = '/PrivateTasksApi/Update';
   static const privateTasksDelete = '/PrivateTasksApi/Delete';
-  static const leaveApprovals = '/team/leaves';
+  static const leaveApprovals = '/LeavesApi/Approvals';
+  static const leaveSetState = '/LeavesApi/SetState';
   static const teamReports = '/team/reports';
   static const kpiApprovals = '/team/kpi';
 }

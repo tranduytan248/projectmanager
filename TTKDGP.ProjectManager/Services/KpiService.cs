@@ -353,7 +353,7 @@ namespace TTKDGP.ProjectManager.Services
         public static void Fill(KpiMonth row, List<WorkTask> tasks)
         {
             var support = tasks.Where(t => t.Kind == TaskKinds.Support).ToList();
-            var execute = tasks.Where(t => t.Kind == TaskKinds.Checklist).ToList();
+            var execute = tasks.Where(t => t.Kind == TaskKinds.Checklist || t.Kind == TaskKinds.Standalone).ToList();
             var assigned = tasks.Where(t => t.Kind == TaskKinds.Standalone).ToList();
 
             // Ngày công tính TRƯỚC phần điểm: nhóm thực hiện nay chấm theo giờ, mà giờ yêu cầu
