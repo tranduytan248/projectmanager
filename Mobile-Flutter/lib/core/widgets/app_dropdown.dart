@@ -34,7 +34,7 @@ class AppDropdown<T> extends StatelessWidget {
       decoration: InputDecoration(
         labelText: label,
         filled: true,
-        fillColor: AppColors.surface,
+        fillColor: AppColors.surfaceVariant,
         constraints: const BoxConstraints(minHeight: AppDimens.minTapTarget),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: AppDimens.space12, vertical: AppDimens.space12),

@@ -135,9 +135,9 @@ class _FlatBottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.black.withValues(alpha: 0.06))),
+      decoration: const BoxDecoration(
+        color: Color(0xFF181818),
+        border: Border(top: BorderSide(color: AppColors.border)),
       ),
       child: SafeArea(
         top: false,
@@ -170,9 +170,7 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Tab chua chon dung textSecondary (mau dac, tuong phan tot) thay vi Colors.black45 (den
-    // trong suot, doc mo tren nen trang) — xem AppColors.textSecondary.
-    final color = selected ? AppTheme.brandBlue : AppColors.textSecondary;
+    final color = selected ? const Color(0xFF3794FF) : AppColors.textSecondary;
 
     return InkWell(
       onTap: onTap,

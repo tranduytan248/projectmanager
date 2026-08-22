@@ -132,8 +132,8 @@ class AppTextField extends StatelessWidget {
                 ? null
                 : Icon(suffixIcon,
                     size: 20, color: iconColor ?? AppColors.textFaint)),
-        filled: fillColor != null,
-        fillColor: fillColor,
+        filled: true,
+        fillColor: fillColor ?? AppColors.surfaceVariant,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radius),
           borderSide: BorderSide(color: resolvedBorderColor),
