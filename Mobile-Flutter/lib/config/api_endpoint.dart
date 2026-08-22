@@ -15,11 +15,7 @@ class ApiEndpoint {
   // Emulator Android khong doc duoc hosts file cua may Windows host nen khong phan giai duoc
   // "pm.vn" — dung dia chi dac biet "10.0.2.2" (alias cua host tu ben trong AVD) qua binding
   // rieng tren port 8080 (khong doi Host header) thay vi ten mien.
-  static String get baseUrl =>
-      _isAndroid ? 'http://10.0.2.2:8080' : 'http://pm.vn';
-
-  static bool get _isAndroid =>
-      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+  static String get baseUrl => 'http://pmncpt.cenit.vn';
 
   static const login = '/AuthApi/Login';
   static const forgotPasswordRequestOtp = '/AuthApi/RequestPasswordResetOtp';
