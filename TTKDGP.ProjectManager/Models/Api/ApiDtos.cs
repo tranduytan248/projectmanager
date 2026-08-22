@@ -837,5 +837,104 @@ namespace TTKDGP.ProjectManager.Models.Api
             Tasks = new List<TeamMemberTaskItemDto>();
         }
     }
+
+    public class KpiMonthSummaryDto
+    {
+        public int Total { get; set; }
+        public decimal AveragePoint { get; set; }
+        public int PassCount { get; set; }
+        public int PassPercent { get; set; }
+        public int FailCount { get; set; }
+        public int ShortHoursCount { get; set; }
+        public string TopName { get; set; }
+        public decimal TopPoint { get; set; }
+        public int StandardDays { get; set; }
+        public decimal ScaleMax { get; set; }
+    }
+
+    public class KpiMemberRowDto
+    {
+        public int Id { get; set; }
+        public int UserId { get; set; }
+        public string FullName { get; set; }
+        public int Year { get; set; }
+        public int Month { get; set; }
+        public decimal SupportPoint { get; set; }
+        public decimal SupportGrossPoint { get; set; }
+        public decimal SupportHours { get; set; }
+        public decimal SupportCapHours { get; set; }
+        public decimal ExecutePoint { get; set; }
+        public decimal ExecuteGrossPoint { get; set; }
+        public decimal ExecuteHours { get; set; }
+        public decimal ExecuteTargetHours { get; set; }
+        public decimal AssignedPoint { get; set; }
+        public decimal LatePenalty { get; set; }
+        public decimal QualityPoint { get; set; }
+        public int StandardDays { get; set; }
+        public decimal LeaveDays { get; set; }
+        public decimal RequiredHours { get; set; }
+        public decimal WorkedHours { get; set; }
+        public int AttendanceRate { get; set; }
+        public decimal FinalPoint { get; set; }
+        public string Rank { get; set; }
+        public bool IsSaved { get; set; }
+        public int RankIndex { get; set; }
+    }
+
+    public class KpiIndexDto
+    {
+        public int Year { get; set; }
+        public int Month { get; set; }
+        public bool IsCurrentMonth { get; set; }
+        public int SelectedUserId { get; set; }
+        public KpiMonthSummaryDto Summary { get; set; }
+        public List<KpiMemberRowDto> Rows { get; set; }
+        public List<AssigneeOptionDto> Users { get; set; }
+        public bool CanGenerate { get; set; }
+        public bool CanConfig { get; set; }
+        public int StandardDays { get; set; }
+        public decimal ScaleMax { get; set; }
+
+        public KpiIndexDto()
+        {
+            Rows = new List<KpiMemberRowDto>();
+            Users = new List<AssigneeOptionDto>();
+        }
+    }
+
+    public class KpiTaskItemDto
+    {
+        public int Id { get; set; }
+        public string Title { get; set; }
+        public int ProjectId { get; set; }
+        public string ProjectName { get; set; }
+        public string Kind { get; set; }
+        public string State { get; set; }
+        public int Progress { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? DueDate { get; set; }
+        public DateTime? CompletedAt { get; set; }
+        public bool IsOverdue { get; set; }
+        public decimal LoggedHours { get; set; }
+        public decimal EstimatedHours { get; set; }
+        public bool IsLate { get; set; }
+    }
+
+    public class KpiDetailDto
+    {
+        public KpiMemberRowDto Row { get; set; }
+        public List<KpiTaskItemDto> SupportTasks { get; set; }
+        public List<KpiTaskItemDto> ExecuteTasks { get; set; }
+        public List<KpiTaskItemDto> AssignedTasks { get; set; }
+        public bool CanGenerate { get; set; }
+        public bool CanConfig { get; set; }
+
+        public KpiDetailDto()
+        {
+            SupportTasks = new List<KpiTaskItemDto>();
+            ExecuteTasks = new List<KpiTaskItemDto>();
+            AssignedTasks = new List<KpiTaskItemDto>();
+        }
+    }
 }
 
