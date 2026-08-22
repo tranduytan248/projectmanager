@@ -27,6 +27,7 @@ class LeaveActionDialog extends StatefulWidget {
     return showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (context) => LeaveActionDialog(
         item: item,
@@ -66,31 +67,34 @@ class _LeaveActionDialogState extends State<LeaveActionDialog> {
           top: Radius.circular(AppDimens.radiusLg),
         ),
       ),
-      padding: EdgeInsets.fromLTRB(
-        AppDimens.space16,
-        AppDimens.space16,
-        AppDimens.space16,
-        AppDimens.space24 + bottomInset,
-      ),
-      child: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Thanh kéo trên modal
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: AppDimens.space16),
-                  decoration: BoxDecoration(
-                    color: AppColors.borderStrong,
-                    borderRadius: BorderRadius.circular(2),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            AppDimens.space16,
+            AppDimens.space16,
+            AppDimens.space16,
+            AppDimens.space24 + bottomInset,
+          ),
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Thanh kéo trên modal
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: AppDimens.space16),
+                      decoration: BoxDecoration(
+                        color: AppColors.borderStrong,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
                   ),
-                ),
-              ),
 
               // Tiêu đề modal
               Row(
@@ -220,6 +224,8 @@ class _LeaveActionDialogState extends State<LeaveActionDialog> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  ),
+);
+}
 }
