@@ -164,6 +164,7 @@
     <Compile Include="Controllers\Api\LeavesApiController.cs" />
     <Compile Include="Controllers\Api\PrivateTasksApiController.cs" />
     <Compile Include="Controllers\Api\TeamDashboardApiController.cs" />
+    <Compile Include="Controllers\Api\KpiApiController.cs" />
     <Compile Include="Controllers\Api\ApiMappers.cs" />
     <Compile Include="Models\Api\ApiDtos.cs" />
     <Compile Include="Models\SmsApiModels.cs" />

@@ -87,5 +87,11 @@ class ApiEndpoint {
   static const leaveSetState = '/LeavesApi/SetState';
   static const teamReports = '/team/reports';
   static const kpiApprovals = '/team/kpi';
+
+  // KPI theo tháng
+  static const kpiIndex = '/KpiApi/Index';
+  static const kpiDetail = '/KpiApi/Detail';
+  static const kpiCalculate = '/KpiApi/Calculate';
+  static const kpiRecalculate = '/KpiApi/Recalculate';
 }
 
