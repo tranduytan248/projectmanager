@@ -1,6 +1,13 @@
 import 'dart:ui';
 import '../../core/theme/app_colors.dart';
 
+num _asNum(dynamic val, [num fallback = 0]) {
+  if (val == null) return fallback;
+  if (val is num) return val;
+  if (val is String) return num.tryParse(val) ?? fallback;
+  return fallback;
+}
+
 class KpiSummaryData {
   final int total;
   final double averagePoint;
@@ -28,23 +35,16 @@ class KpiSummaryData {
 
   factory KpiSummaryData.fromJson(Map<String, dynamic> json) {
     return KpiSummaryData(
-      total: json['total'] is num ? (json['total'] as num).toInt() : (json['Total'] as num?)?.toInt() ?? 0,
-      averagePoint: json['averagePoint'] is num
-          ? (json['averagePoint'] as num).toDouble()
-          : (json['AveragePoint'] as num?)?.toDouble() ?? 0.0,
-      passCount: json['passCount'] is num ? (json['passCount'] as num).toInt() : (json['PassCount'] as num?)?.toInt() ?? 0,
-      passPercent: json['passPercent'] is num ? (json['passPercent'] as num).toInt() : (json['PassPercent'] as num?)?.toInt() ?? 0,
-      failCount: json['failCount'] is num ? (json['failCount'] as num).toInt() : (json['FailCount'] as num?)?.toInt() ?? 0,
-      shortHoursCount:
-          json['shortHoursCount'] is num ? (json['shortHoursCount'] as num).toInt() : (json['ShortHoursCount'] as num?)?.toInt() ?? 0,
+      total: _asNum(json['total'] ?? json['Total']).toInt(),
+      averagePoint: _asNum(json['averagePoint'] ?? json['AveragePoint']).toDouble(),
+      passCount: _asNum(json['passCount'] ?? json['PassCount']).toInt(),
+      passPercent: _asNum(json['passPercent'] ?? json['PassPercent']).toInt(),
+      failCount: _asNum(json['failCount'] ?? json['FailCount']).toInt(),
+      shortHoursCount: _asNum(json['shortHoursCount'] ?? json['ShortHoursCount']).toInt(),
       topName: (json['topName'] ?? json['TopName'] ?? '').toString(),
-      topPoint: json['topPoint'] is num
-          ? (json['topPoint'] as num).toDouble()
-          : (json['TopPoint'] as num?)?.toDouble() ?? 0.0,
-      standardDays: json['standardDays'] is num ? (json['standardDays'] as num).toInt() : (json['StandardDays'] as num?)?.toInt() ?? 22,
-      scaleMax: json['scaleMax'] is num
-          ? (json['scaleMax'] as num).toDouble()
-          : (json['ScaleMax'] as num?)?.toDouble() ?? 100.0,
+      topPoint: _asNum(json['topPoint'] ?? json['TopPoint']).toDouble(),
+      standardDays: _asNum(json['standardDays'] ?? json['StandardDays'], 22).toInt(),
+      scaleMax: _asNum(json['scaleMax'] ?? json['ScaleMax'], 100.0).toDouble(),
     );
   }
 }
@@ -141,7 +141,7 @@ class KpiMemberRow {
 
   factory KpiMemberRow.fromJson(Map<String, dynamic> json) {
     num getNum(String k1, String k2) =>
-        json[k1] is num ? (json[k1] as num) : ((json[k2] as num?) ?? 0);
+        _asNum(json[k1] ?? json[k2]);
 
     return KpiMemberRow(
       id: getNum('id', 'Id').toInt(),
@@ -220,20 +220,17 @@ class KpiIndexData {
     final rawSummary = json['summary'] ?? json['Summary'] ?? {};
 
     return KpiIndexData(
-      year: json['year'] is num ? (json['year'] as num).toInt() : (json['Year'] as num?)?.toInt() ?? DateTime.now().year,
-      month: json['month'] is num ? (json['month'] as num).toInt() : (json['Month'] as num?)?.toInt() ?? DateTime.now().month,
+      year: _asNum(json['year'] ?? json['Year'], DateTime.now().year).toInt(),
+      month: _asNum(json['month'] ?? json['Month'], DateTime.now().month).toInt(),
       isCurrentMonth: json['isCurrentMonth'] == true || json['IsCurrentMonth'] == true,
-      selectedUserId:
-          json['selectedUserId'] is num ? (json['selectedUserId'] as num).toInt() : (json['SelectedUserId'] as num?)?.toInt() ?? 0,
+      selectedUserId: _asNum(json['selectedUserId'] ?? json['SelectedUserId']).toInt(),
       summary: KpiSummaryData.fromJson(rawSummary is Map ? Map<String, dynamic>.from(rawSummary) : {}),
       rows: rawRows.map((e) => KpiMemberRow.fromJson(e is Map ? Map<String, dynamic>.from(e) : {})).toList(),
       users: rawUsers.map((e) => KpiUserOption.fromJson(e is Map ? Map<String, dynamic>.from(e) : {})).toList(),
       canGenerate: json['canGenerate'] == true || json['CanGenerate'] == true,
       canConfig: json['canConfig'] == true || json['CanConfig'] == true,
-      standardDays: json['standardDays'] is num ? (json['standardDays'] as num).toInt() : (json['StandardDays'] as num?)?.toInt() ?? 22,
-      scaleMax: json['scaleMax'] is num
-          ? (json['scaleMax'] as num).toDouble()
-          : (json['ScaleMax'] as num?)?.toDouble() ?? 100.0,
+      standardDays: _asNum(json['standardDays'] ?? json['StandardDays'], 22).toInt(),
+      scaleMax: _asNum(json['scaleMax'] ?? json['ScaleMax'], 100.0).toDouble(),
     );
   }
 }
