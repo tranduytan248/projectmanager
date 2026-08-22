@@ -37,6 +37,7 @@ class ApiEndpoint {
   static const notifications = '/NotificationsApi/Index';
   static const notificationMarkRead = '/NotificationsApi/MarkRead';
   static const notificationMarkAllRead = '/NotificationsApi/MarkAllRead';
+  static const notificationRegisterDevice = '/NotificationsApi/RegisterDevice';
 
   static const leaves = '/LeavesApi/Index';
   static const leaveCreate = '/LeavesApi/Create';

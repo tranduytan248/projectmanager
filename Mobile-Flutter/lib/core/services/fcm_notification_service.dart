@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../../features/app_routes.dart';
+import '../../features/notifications/notifications_service.dart';
 import '../classes/app_keys.dart';
 import '../classes/cache_manager.dart';
 
@@ -101,10 +102,12 @@ class FcmNotificationService {
 
       // 4. Lấy và lắng nghe FCM Token
       await _fetchAndStoreToken();
+      await syncTokenWithBackend();
       _messaging.onTokenRefresh.listen((newToken) {
         debugPrint('[FCM] Token được làm mới: $newToken');
         _fcmToken = newToken;
         Cache.saveData('fcm_device_token', newToken);
+        syncTokenWithBackend();
       });
 
       // 5. Đăng ký nhận tin nhắn khi app đang mở (Foreground)
@@ -144,6 +147,23 @@ class FcmNotificationService {
       }
     } catch (e) {
       debugPrint('[FCM] Không lấy được FCM token: $e');
+    }
+  }
+
+  /// Đồng bộ FCM Token lên server (chỉ lưu token cho thiết bị mới nhất của tài khoản)
+  Future<void> syncTokenWithBackend() async {
+    final token = _fcmToken ?? Cache.readData<String>('fcm_device_token');
+    if (token == null || token.isEmpty) return;
+
+    try {
+      final platform = kIsWeb
+          ? 'Web'
+          : (defaultTargetPlatform == TargetPlatform.iOS ? 'iOS' : 'Android');
+      await NotificationsService()
+          .registerDeviceToken(token: token, platform: platform);
+      debugPrint('[FCM] Đã đồng bộ Token lên máy chủ thành công.');
+    } catch (e) {
+      debugPrint('[FCM] Chưa thể đồng bộ Token (có thể chưa đăng nhập): $e');
     }
   }
 
