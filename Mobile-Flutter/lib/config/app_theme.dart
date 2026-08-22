@@ -32,6 +32,7 @@ class AppTheme {
   static ThemeData get dark => ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
+        fontFamily: GoogleFonts.roboto().fontFamily,
         textTheme: GoogleFonts.robotoTextTheme(ThemeData(brightness: Brightness.dark).textTheme),
         scaffoldBackgroundColor: AppColors.background,
         colorScheme: const ColorScheme.dark(
