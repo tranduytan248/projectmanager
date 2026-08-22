@@ -54,20 +54,23 @@ namespace TTKDGP.ProjectManager.Controllers.Api
         [HttpGet]
         public ActionResult Index(int? year, int? month, int? userId)
         {
-            if (!CanViewKpi)
-                return new HttpStatusCodeResult(403, "Bạn không có quyền xem KPI theo tháng.");
-
             var today = DateTime.Today;
             var y = year.HasValue && year.Value >= 2000 && year.Value <= 2100 ? year.Value : today.Year;
             var m = month.HasValue && month.Value >= 1 && month.Value <= 12 ? month.Value : today.Month;
-            var selectedUserId = userId ?? 0;
+
+            // Nếu có quyền CanViewKpi (Quản lý tổ / Admin / kpi.view) thì xem được cả tổ hoặc lọc theo userId
+            // Nếu là nhân viên thông thường, tự động chỉ xem KPI của chính mình
+            var selectedUserId = CanViewKpi ? (userId ?? 0) : CurrentUserId;
 
             var rows = BuildRows(y, m, selectedUserId > 0 ? (int?)selectedUserId : null);
             var standardDays = KpiService.StandardWorkingDays(y, m);
             var scaleMax = KpiService.MaxQualityPoint;
             if (scaleMax <= 0) scaleMax = 100;
 
-            var activeUsers = WorkService.ActiveUsers();
+            var activeUsers = CanViewKpi
+                ? WorkService.ActiveUsers()
+                : WorkService.ActiveUsers().Where(u => u.Id == CurrentUserId).ToList();
+
             var userOptions = activeUsers.Select(u => new AssigneeOptionDto
             {
                 UserId = u.Id,
@@ -107,25 +110,26 @@ namespace TTKDGP.ProjectManager.Controllers.Api
         /// Trả về chi tiết KPI của 1 nhân sự kèm danh sách công việc 4 trụ cột.
         /// </summary>
         [HttpGet]
-        public ActionResult Detail(int userId, int? year, int? month)
+        public ActionResult Detail(int? userId, int? year, int? month)
         {
-            if (!CanViewKpi && CurrentUserId != userId)
-                return new HttpStatusCodeResult(403, "Bạn không có quyền xem chi tiết KPI này.");
+            var targetUserId = (userId.HasValue && userId.Value > 0) ? userId.Value : CurrentUserId;
+            if (!CanViewKpi && CurrentUserId != targetUserId)
+                return new HttpStatusCodeResult(403, "Bạn không có quyền xem chi tiết KPI của nhân sự khác.");
 
-            var user = Repository.Users.Find(userId);
+            var user = Repository.Users.Find(targetUserId);
             if (user == null) return HttpNotFound("Không tìm thấy nhân sự.");
 
             var today = DateTime.Today;
             var y = year.HasValue && year.Value >= 2000 && year.Value <= 2100 ? year.Value : today.Year;
             var m = month.HasValue && month.Value >= 1 && month.Value <= 12 ? month.Value : today.Month;
 
-            var row = Repository.KpiMonths.FirstOrDefault(k => k.Year == y && k.Month == m && k.UserId == userId);
-            var tasks = KpiService.TasksOfUserInMonth(userId, y, m);
+            var row = Repository.KpiMonths.FirstOrDefault(k => k.Year == y && k.Month == m && k.UserId == targetUserId);
+            var tasks = KpiService.TasksOfUserInMonth(targetUserId, y, m);
             var isSaved = row != null;
 
             if (row == null)
             {
-                row = new KpiMonth { Year = y, Month = m, UserId = userId, UserFullName = user.FullName };
+                row = new KpiMonth { Year = y, Month = m, UserId = targetUserId, UserFullName = user.FullName };
                 KpiService.Fill(row, tasks);
             }
 
@@ -239,20 +243,41 @@ namespace TTKDGP.ProjectManager.Controllers.Api
 
             var savedUserIds = new HashSet<int>(rows.Select(r => r.UserId));
 
-            foreach (var user in WorkService.TrackedUsers())
+            if (userId.HasValue && userId.Value > 0)
             {
-                if (userId.HasValue && userId.Value > 0 && user.Id != userId.Value) continue;
-                if (savedUserIds.Contains(user.Id)) continue;
-
-                var preview = new KpiMonth
+                if (!savedUserIds.Contains(userId.Value))
                 {
-                    Year = year,
-                    Month = month,
-                    UserId = user.Id,
-                    UserFullName = user.FullName
-                };
-                KpiService.Fill(preview, KpiService.TasksOfUserInMonth(user.Id, year, month));
-                rows.Add(preview);
+                    var targetUser = Repository.Users.Find(userId.Value);
+                    if (targetUser != null && targetUser.IsActive)
+                    {
+                        var preview = new KpiMonth
+                        {
+                            Year = year,
+                            Month = month,
+                            UserId = targetUser.Id,
+                            UserFullName = targetUser.FullName
+                        };
+                        KpiService.Fill(preview, KpiService.TasksOfUserInMonth(targetUser.Id, year, month));
+                        rows.Add(preview);
+                    }
+                }
+            }
+            else
+            {
+                foreach (var user in WorkService.TrackedUsers())
+                {
+                    if (savedUserIds.Contains(user.Id)) continue;
+
+                    var preview = new KpiMonth
+                    {
+                        Year = year,
+                        Month = month,
+                        UserId = user.Id,
+                        UserFullName = user.FullName
+                    };
+                    KpiService.Fill(preview, KpiService.TasksOfUserInMonth(user.Id, year, month));
+                    rows.Add(preview);
+                }
             }
 
             return rows
