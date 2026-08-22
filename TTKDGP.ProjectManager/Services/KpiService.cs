@@ -368,11 +368,10 @@ namespace TTKDGP.ProjectManager.Services
             var requiredDays = row.StandardDays - row.LeaveDays;
             row.RequiredHours = requiredDays > 0 ? requiredDays * HoursPerDay : 0;
 
-            // "Báo cáo trễ" = việc hoàn thành sau hạn. Việc quá hạn còn treo không đếm vào đây —
-            // nó đã bị phạt qua tỷ lệ hoàn thành (done/total) rồi.
+            // Số lần trễ hạn = việc đã hoàn thành sau hạn HOẶC việc đang bị quá hạn chưa xong.
             row.SupportTotal = support.Count;
             row.SupportDone = support.Count(t => t.State == TaskStates.Done);
-            row.SupportLateCount = support.Count(t => t.State == TaskStates.Done && !t.IsOnTime);
+            row.SupportLateCount = support.Count(t => (t.State == TaskStates.Done && !t.IsOnTime) || t.IsOverdue);
 
             // Giờ hỗ trợ bị CHẶN TRẦN ở phần cấu hình (mặc định 30% quỹ giờ tháng). Hỗ trợ phát
             // sinh theo tuần và một người có thể bị kéo vào rất nhiều đầu việc rải khắp tháng —
@@ -386,10 +385,11 @@ namespace TTKDGP.ProjectManager.Services
                 row.SupportTotal, SupportLatePenalty(row.SupportLateCount));
 
             // Nhóm thực hiện chấm theo GIỜ đã bỏ ra, không theo số đầu việc — và không chặn trần.
-            // Giờ đếm trên việc đã xong hoặc đang làm, theo ngày làm việc riêng biệt.
+            // Giờ đếm trên việc đã xong, theo ngày làm việc riêng biệt.
+            // Số lần trễ hạn gồm việc hoàn thành sau hạn hoặc đang quá hạn (cả dự án lẫn việc riêng).
             row.ExecuteTotal = execute.Count;
             row.ExecuteDone = execute.Count(t => t.State == TaskStates.Done);
-            row.ExecuteLateCount = execute.Count(t => t.State == TaskStates.Done && !t.IsOnTime);
+            row.ExecuteLateCount = execute.Count(t => (t.State == TaskStates.Done && !t.IsOnTime) || t.IsOverdue);
             row.ExecuteHours = Math.Round(WorkedHours(execute, row.Year, row.Month), 2);
             row.ExecutePoint = ExecutePoint(ExecuteMaxPoint, row.ExecuteHours, row.RequiredHours,
                 row.ExecuteTotal, ExecuteLatePenalty(row.ExecuteLateCount));

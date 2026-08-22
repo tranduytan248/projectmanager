@@ -410,17 +410,15 @@
                     @foreach (var t in supportTasks)
                     {
                         var done = t.State == TaskStates.Done;
-
-                        @* CHỈ việc đã hoàn thành mới sinh ra giờ. Cột này là giờ RIÊNG của
-                           từng việc; tổng nhóm nhỏ hơn tổng cột khi nhiều việc chạy trùng ngày. *@
+                        var isLateOrOverdue = (done && !t.IsOnTime) || t.IsOverdue;
                         var counts = done;
-                        <tr class="@(done && !t.IsOnTime ? "row-due-warn" : "")">
+                        <tr class="@(isLateOrOverdue ? "row-due-warn" : "")">
                             <td class="col-name">
                                 @(string.IsNullOrWhiteSpace(t.Code) ? t.Title : t.Code + " · " + t.Title)
                                 <div class="cell-recap">
                                     <span>@timeRange(t)</span>
                                     <span>·</span>
-                                    <span>@(done ? (t.IsOnTime ? "Đúng hạn" : "Trễ " + t.LateDays + " ngày") : TaskStates.Display(t.State))</span>
+                                    <span>@(done ? (t.IsOnTime ? "Đúng hạn" : "Trễ " + t.LateDays + " ngày") : (t.IsOverdue ? "Quá hạn " + t.LateDays + " ngày" : TaskStates.Display(t.State)))</span>
                                 </div>
                             </td>
                             <td class="nowrap col-hide-sm">@timeRange(t)</td>
@@ -431,6 +429,10 @@
                                     { <span class="badge badge-active">Đúng hạn</span> }
                                     else
                                     { <span class="badge badge-danger">Trễ @t.LateDays ngày</span> }
+                                }
+                                else if (t.IsOverdue)
+                                {
+                                    <span class="badge badge-danger">Quá hạn @t.LateDays ngày</span>
                                 }
                                 else
                                 { <span class="badge">@TaskStates.Display(t.State)</span> }
@@ -508,7 +510,7 @@
                     <span>Hoàn thành <strong>@Model.ExecuteDone/@Model.ExecuteTotal</strong> việc</span>
                     <span>·</span>
                     <span class="@(Model.ExecuteLateCount > 0 ? "danger-text" : "")">
-                        Báo cáo trễ <strong>@Model.ExecuteLateCount</strong> lần
+                        Báo cáo trễ / quá hạn <strong>@Model.ExecuteLateCount</strong> lần
                     </span>
                     @if (executePenalty > 0)
                     {
@@ -552,12 +554,9 @@
                     @foreach (var t in executeTasks)
                     {
                         var done = t.State == TaskStates.Done;
-
-                        @* CHỈ việc đã hoàn thành mới sinh ra giờ. Cột này là giờ RIÊNG của
-                           từng việc; tổng nhóm nhỏ hơn tổng cột khi nhiều việc chạy trùng ngày —
-                           ngày trùng chỉ được tính một lần, xem chú thích dưới bảng. *@
+                        var isLateOrOverdue = (done && !t.IsOnTime) || t.IsOverdue;
                         var counts = done;
-                        <tr class="@(done && !t.IsOnTime ? "row-due-warn" : "")">
+                        <tr class="@(isLateOrOverdue ? "row-due-warn" : "")">
                             <td class="col-name">
                                 @(string.IsNullOrWhiteSpace(t.Code) ? t.Title : t.Code + " · " + t.Title)
                                 @if (t.ProjectId > 0 && !string.IsNullOrWhiteSpace(t.ProjectName))
@@ -571,7 +570,7 @@
                                 <div class="cell-recap">
                                     <span>@timeRange(t)</span>
                                     <span>·</span>
-                                    <span>@(done ? (t.IsOnTime ? "Đúng hạn" : "Trễ " + t.LateDays + " ngày") : TaskStates.Display(t.State))</span>
+                                    <span>@(done ? (t.IsOnTime ? "Đúng hạn" : "Trễ " + t.LateDays + " ngày") : (t.IsOverdue ? "Quá hạn " + t.LateDays + " ngày" : TaskStates.Display(t.State)))</span>
                                 </div>
                             </td>
                             <td class="nowrap col-hide-sm">@timeRange(t)</td>
@@ -582,6 +581,10 @@
                                     { <span class="badge badge-active">Đúng hạn</span> }
                                     else
                                     { <span class="badge badge-danger">Trễ @t.LateDays ngày</span> }
+                                }
+                                else if (t.IsOverdue)
+                                {
+                                    <span class="badge badge-danger">Quá hạn @t.LateDays ngày</span>
                                 }
                                 else
                                 { <span class="badge">@TaskStates.Display(t.State)</span> }
@@ -669,13 +672,14 @@
                     {
                         var done = t.State == TaskStates.Done;
                         var earned = done && t.IsOnTime;
-                        <tr class="@(done && !t.IsOnTime ? "row-due-warn" : "")">
+                        var isLateOrOverdue = (done && !t.IsOnTime) || t.IsOverdue;
+                        <tr class="@(isLateOrOverdue ? "row-due-warn" : "")">
                             <td class="col-name">
                                 @t.Title
                                 <div class="cell-recap">
                                     <span>Mức cộng @t.BonusPercent.ToString("0.##")%</span>
                                     <span>·</span>
-                                    <span>@(done ? (t.IsOnTime ? "Đúng hạn" : "Trễ " + t.LateDays + " ngày — không cộng & phạt trễ") : TaskStates.Display(t.State))</span>
+                                    <span>@(done ? (t.IsOnTime ? "Đúng hạn" : "Trễ " + t.LateDays + " ngày — không cộng & phạt trễ") : (t.IsOverdue ? "Quá hạn " + t.LateDays + " ngày — phạt trễ" : TaskStates.Display(t.State)))</span>
                                 </div>
                             </td>
                             <td class="center col-hide-sm">@t.BonusPercent.ToString("0.##")%</td>
@@ -687,6 +691,10 @@
                                     else
                                     { <span class="badge badge-danger">Trễ @t.LateDays ngày</span> }
                                 }
+                                else if (t.IsOverdue)
+                                {
+                                    <span class="badge badge-danger">Quá hạn @t.LateDays ngày</span>
+                                }
                                 else
                                 { <span class="badge">@TaskStates.Display(t.State)</span> }
                             </td>
@@ -695,9 +703,9 @@
                                 {
                                     <strong class="ok-text">+@t.BonusPercent.ToString("0.##")%</strong>
                                 }
-                                else if (done && !t.IsOnTime)
+                                else if (isLateOrOverdue)
                                 {
-                                    <span class="danger-text">Trễ hạn (trừ điểm ở nhóm Thực hiện)</span>
+                                    <span class="danger-text">Trễ/quá hạn (trừ điểm ở nhóm Thực hiện)</span>
                                 }
                                 else
                                 {
