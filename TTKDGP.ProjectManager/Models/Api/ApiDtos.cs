@@ -627,6 +627,8 @@ namespace TTKDGP.ProjectManager.Models.Api
     public class LeaveRequestDto
     {
         public int Id { get; set; }
+        public int UserId { get; set; }
+        public string UserFullName { get; set; }
 
         /// <summary>Gia tri tho cua LeaveKinds (PhepNam/KhongLuong/Om/Khac).</summary>
         public string Kind { get; set; }
@@ -663,6 +665,25 @@ namespace TTKDGP.ProjectManager.Models.Api
         public LeavesListDto()
         {
             Years = new List<int>();
+            Items = new List<LeaveRequestDto>();
+        }
+    }
+
+    /// <summary>Danh sach "Duyet nghi phep" toan To tren mobile.</summary>
+    public class LeaveApprovalsDataDto
+    {
+        public int TotalCount { get; set; }
+        public int PendingCount { get; set; }
+        public int ApprovedCount { get; set; }
+        public int RejectedCount { get; set; }
+        public List<int> Years { get; set; }
+        public List<AssigneeOptionDto> Members { get; set; }
+        public List<LeaveRequestDto> Items { get; set; }
+
+        public LeaveApprovalsDataDto()
+        {
+            Years = new List<int>();
+            Members = new List<AssigneeOptionDto>();
             Items = new List<LeaveRequestDto>();
         }
     }

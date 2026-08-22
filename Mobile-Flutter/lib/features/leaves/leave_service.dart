@@ -131,6 +131,50 @@ class LeaveService {
     };
   }
 
+  /// Lay danh sach don nghi phep toan To de duyet.
+  Future<LeaveApprovalsData> fetchApprovals({
+    String? q,
+    int? userId,
+    String? state,
+    int? year,
+    int? month,
+  }) async {
+    final response = await _http.get(
+      ApiEndpoint.leaveApprovals,
+      params: {
+        if (q != null && q.isNotEmpty) 'q': q,
+        if (userId != null && userId > 0) 'userId': userId,
+        if (state != null && state.isNotEmpty) 'state': state,
+        if (year != null && year > 0) 'year': year,
+        if (month != null && month > 0) 'month': month,
+      },
+    );
+    return LeaveApprovalsData.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// Duyet hoac Tu choi don nghi phep (yeu cau quyen leaves.approve).
+  Future<LeaveApiResult> setState({
+    required int id,
+    required String state,
+    String? note,
+  }) async {
+    try {
+      final response = await _http.post(
+        ApiEndpoint.leaveSetState,
+        data: FormData.fromMap({
+          'id': id,
+          'state': state,
+          'note': note ?? '',
+        }),
+      );
+      return LeaveApiResult._(
+          item: LeaveRequestItem.fromJson(response.data as Map<String, dynamic>));
+    } on DioException catch (e) {
+      return LeaveApiResult._(
+          error: _errorMessage(e, 'Không thể cập nhật trạng thái đơn nghỉ phép. Hãy thử lại.'));
+    }
+  }
+
   String _errorMessage(DioException e, String fallback) {
     final message = e.response?.statusCode == 400
         ? (e.response?.data is Map ? e.response?.data['error'] as String? : null)

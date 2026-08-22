@@ -122,7 +122,7 @@ namespace TTKDGP.ProjectManager.Services
                 var mine = tasks.Where(t => t.AssigneeUserId == userId).ToList();
 
                 var support = mine.Where(t => t.Kind == TaskKinds.Support).ToList();
-                var implement = mine.Where(t => t.Kind == TaskKinds.Checklist).ToList();
+                var implement = mine.Where(t => t.Kind == TaskKinds.Checklist || t.Kind == TaskKinds.Standalone).ToList();
 
                 decimal leaveDays;
                 leaveByUser.TryGetValue(userId, out leaveDays);

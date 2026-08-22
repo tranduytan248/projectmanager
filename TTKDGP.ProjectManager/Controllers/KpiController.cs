@@ -146,7 +146,7 @@ namespace TTKDGP.ProjectManager.Controllers
             ViewBag.IsSaved = saved;
             ViewBag.SupportTasks = tasks.Where(t => t.Kind == TaskKinds.Support)
                 .OrderBy(t => t.DueDate).ToList();
-            ViewBag.ExecuteTasks = tasks.Where(t => t.Kind == TaskKinds.Checklist)
+            ViewBag.ExecuteTasks = tasks.Where(t => t.Kind == TaskKinds.Checklist || t.Kind == TaskKinds.Standalone)
                 .OrderBy(t => t.DueDate).ToList();
             ViewBag.AssignedTasks = tasks.Where(t => t.Kind == TaskKinds.Standalone)
                 .OrderBy(t => t.DueDate).ToList();

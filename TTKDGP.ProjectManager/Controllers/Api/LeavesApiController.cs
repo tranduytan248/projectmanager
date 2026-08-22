@@ -195,5 +195,123 @@ namespace TTKDGP.ProjectManager.Controllers.Api
                 // Gui thong bao hong thi don van phai duoc luu — nguoi duyet con vao man duyet xem duoc.
             }
         }
+
+        // ================= Phần Duyệt nghỉ phép (Quản lý Tổ) =================
+
+        private bool CanApproveLeaves => Can(Permissions.Leaves.Perm("approve")) || IsTeamManager || Can("*");
+
+        [HttpGet]
+        public ActionResult Approvals(string q = null, int userId = 0, string state = null,
+            int year = 0, int month = 0)
+        {
+            if (!CanApproveLeaves) return new HttpStatusCodeResult(403, "Chỉ Quản lý Tổ mới có quyền duyệt nghỉ phép.");
+
+            // Mặc định là đơn chờ duyệt nếu chưa chọn trạng thái (state == null)
+            if (state == null) state = LeaveStates.Pending;
+
+            var all = Repository.LeaveRequests.All();
+            var items = all.AsEnumerable();
+
+            if (state.Length > 0) items = items.Where(l => l.State == state);
+            if (userId > 0) items = items.Where(l => l.UserId == userId);
+
+            if (year > 0 && month > 0)
+            {
+                var from = new DateTime(year, month, 1);
+                var to = from.AddMonths(1).AddDays(-1);
+                items = items.Where(l => l.OverlapsRange(from, to));
+            }
+            else if (year > 0)
+            {
+                items = items.Where(l => l.FromDate.Year == year || l.ToDate.Year == year);
+            }
+
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var needle = q.Trim();
+                items = items.Where(l =>
+                    (l.UserFullName ?? string.Empty).IndexOf(needle, StringComparison.CurrentCultureIgnoreCase) >= 0
+                    || (l.Reason ?? string.Empty).IndexOf(needle, StringComparison.CurrentCultureIgnoreCase) >= 0);
+            }
+
+            var list = items
+                .OrderBy(l => l.State == LeaveStates.Pending ? 0 : 1)
+                .ThenByDescending(l => l.FromDate)
+                .ThenByDescending(l => l.Id)
+                .ToList();
+
+            var members = WorkService.ActiveUsers()
+                .Select(u => new AssigneeOptionDto { UserId = u.Id, FullName = u.FullName })
+                .ToList();
+
+            var years = all
+                .Select(l => l.FromDate.Year)
+                .Distinct()
+                .OrderByDescending(y => y)
+                .ToList();
+
+            var result = new LeaveApprovalsDataDto
+            {
+                TotalCount = all.Count,
+                PendingCount = all.Count(l => l.State == LeaveStates.Pending),
+                ApprovedCount = all.Count(l => l.State == LeaveStates.Approved),
+                RejectedCount = all.Count(l => l.State == LeaveStates.Rejected),
+                Years = years,
+                Members = members,
+                Items = list.Select(ApiMappers.ToDetailDto).ToList()
+            };
+
+            return Json(result, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpPost]
+        public ActionResult SetState(int id, string state, string note)
+        {
+            if (!CanApproveLeaves) return new HttpStatusCodeResult(403, "Chỉ Quản lý Tổ mới có quyền duyệt nghỉ phép.");
+
+            var leave = Repository.LeaveRequests.Find(id);
+            if (leave == null) return HttpNotFound();
+
+            if (state != LeaveStates.Approved && state != LeaveStates.Rejected)
+            {
+                return BadRequest("Trạng thái không hợp lệ.");
+            }
+
+            if (state == LeaveStates.Rejected && string.IsNullOrWhiteSpace(note))
+            {
+                return BadRequest("Vui lòng nhập lý do từ chối để người đăng ký nắm được.");
+            }
+
+            leave.State = state;
+            leave.ApprovedByUserId = CurrentUserId;
+            leave.ApprovedByName = CurrentUser == null ? null : CurrentUser.FullName;
+            leave.ApprovedAt = DateTime.Now;
+            leave.ApproverNote = string.IsNullOrWhiteSpace(note) ? null : note.Trim();
+            leave.UpdatedAt = DateTime.Now;
+            Repository.LeaveRequests.Update(leave);
+
+            NotifyRequester(leave);
+
+            return Json(ApiMappers.ToDetailDto(leave));
+        }
+
+        /// <summary>Báo cho người xin nghỉ biết kết quả duyệt — y hệt LeavesController.NotifyRequester.</summary>
+        private static void NotifyRequester(LeaveRequest leave)
+        {
+            try
+            {
+                var message = leave.IsApproved
+                    ? string.Format("Đơn nghỉ {0:dd/MM} – {1:dd/MM/yyyy} đã được duyệt.",
+                        leave.FromDate, leave.ToDate)
+                    : string.Format("Đơn nghỉ {0:dd/MM} – {1:dd/MM/yyyy} bị từ chối: {2}",
+                        leave.FromDate, leave.ToDate, leave.ApproverNote);
+
+                NotificationService.Add(leave.UserId, NotificationTypes.LeaveResult, message);
+            }
+            catch (Exception)
+            {
+                // Thong bao hong khong lam hong thao tac duyet.
+            }
+        }
     }
 }
