@@ -743,5 +743,99 @@ namespace TTKDGP.ProjectManager.Models.Api
             Priorities = new List<string>();
         }
     }
+
+    // ==========================================
+    // BẢNG ĐIỀU KHIỂN TỔ (TEAM DASHBOARD) DTOs
+    // ==========================================
+
+    public class TeamDashboardDto
+    {
+        public DateTime Today { get; set; }
+        public int Year { get; set; }
+        public int Month { get; set; }
+        public bool IsCurrentMonth { get; set; }
+        public int TotalMembers { get; set; }
+        public int IdleCount { get; set; }
+        public int OverdueTodayCount { get; set; }
+        public List<TeamMemberRowDto> Members { get; set; }
+
+        public TeamDashboardDto()
+        {
+            Members = new List<TeamMemberRowDto>();
+        }
+    }
+
+    public class TeamMemberRowDto
+    {
+        public int UserId { get; set; }
+        public string FullName { get; set; }
+        public List<TeamTodayTaskDto> TodayTasks { get; set; }
+        public int TodayTaskCount { get; set; }
+        public int OverdueTodayCount { get; set; }
+        public KpiSummaryDto Kpi { get; set; }
+        public decimal TotalPenalty { get; set; }
+        public int TotalTasks { get; set; }
+        public TeamProjectCountDto Implement { get; set; }
+        public TeamProjectCountDto Support { get; set; }
+
+        public TeamMemberRowDto()
+        {
+            TodayTasks = new List<TeamTodayTaskDto>();
+            Implement = new TeamProjectCountDto();
+            Support = new TeamProjectCountDto();
+        }
+    }
+
+    public class TeamTodayTaskDto
+    {
+        public int TaskId { get; set; }
+        public string Title { get; set; }
+        public int ProjectId { get; set; }
+        public string ProjectName { get; set; }
+        public string State { get; set; }
+        public int Progress { get; set; }
+        public bool IsOverdue { get; set; }
+    }
+
+    public class TeamProjectCountDto
+    {
+        public int Projects { get; set; }
+        public int Tasks { get; set; }
+    }
+
+    public class TeamMemberTaskItemDto
+    {
+        public int Id { get; set; }
+        public string Code { get; set; }
+        public string Title { get; set; }
+        public int ProjectId { get; set; }
+        public string ProjectName { get; set; }
+        public string State { get; set; }
+        public string Priority { get; set; }
+        public int Progress { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? DueDate { get; set; }
+        public DateTime? CompletedAt { get; set; }
+        public bool IsOverdue { get; set; }
+        public decimal LoggedHours { get; set; }
+    }
+
+    public class TeamMemberTasksResultDto
+    {
+        public int UserId { get; set; }
+        public string MemberName { get; set; }
+        public int Year { get; set; }
+        public int Month { get; set; }
+        public string Kind { get; set; }
+        public string KindLabel { get; set; }
+        public int TotalProjects { get; set; }
+        public int TotalTasks { get; set; }
+        public List<TeamMemberTaskItemDto> Tasks { get; set; }
+
+        public TeamMemberTasksResultDto()
+        {
+            Tasks = new List<TeamMemberTaskItemDto>();
+        }
+    }
 }
 
