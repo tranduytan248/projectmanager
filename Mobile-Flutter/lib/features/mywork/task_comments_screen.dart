@@ -374,7 +374,7 @@ class _TaskCommentsScreenState extends State<TaskCommentsScreen> {
 
   Widget _buildComposer() {
     return Padding(
-      padding: EdgeInsets.fromLTRB(16, 12, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,

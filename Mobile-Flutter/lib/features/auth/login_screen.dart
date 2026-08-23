@@ -95,7 +95,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 align: TextAlign.center,
               ),
               const SizedBox(height: AppDimens.space12),
-              AppText(
+              const AppText(
                 'Cho phép BrewTask gửi thông báo đẩy tới thiết bị này khi có việc mới được giao, việc con hoàn thành, trao đổi mới hoặc nhắc việc sắp đến hạn.',
                 variant: AppTextVariant.body,
                 color: AppColors.textSecondary,
@@ -258,7 +258,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               letterSpacing: 3,
                             ),
                             const SizedBox(height: AppDimens.space24),
-                            AppText(
+                            const AppText(
                               'CHÀO MỪNG BẠN QUAY TRỞ LẠI',
                               variant: AppTextVariant.overline,
                               align: TextAlign.center,

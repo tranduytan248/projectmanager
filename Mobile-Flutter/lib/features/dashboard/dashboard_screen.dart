@@ -17,6 +17,7 @@ import '../../shared/widgets/app_bottom_nav.dart';
 import '../app_routes.dart';
 import '../auth/auth_provider.dart';
 import '../notifications/notifications_service.dart';
+import '../projects/project_discussion_service.dart';
 import 'dashboard_models.dart';
 import 'dashboard_service.dart';
 
@@ -42,9 +43,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _future = _service.fetch();
   }
 
-  void _reload() {
+  void _reload({bool forceRefresh = false}) {
     setState(() {
-      _future = _service.fetch();
+      _future = _service.fetch(forceRefresh: forceRefresh);
       _showTodayBanner = true;
     });
   }
@@ -69,26 +70,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: SafeArea(
         child: FutureBuilder<DashboardData>(
           future: _future,
+          initialData: _service.cachedData,
           builder: (context, snapshot) {
-            if (snapshot.connectionState != ConnectionState.done) {
+            final data = snapshot.data;
+
+            if (data == null) {
+              if (snapshot.hasError) {
+                return _ErrorState(onRetry: () => _reload(forceRefresh: true));
+              }
               return const Center(
                 child: AppLoading(),
               );
             }
 
-            if (snapshot.hasError) {
-              return _ErrorState(onRetry: _reload);
-            }
-
-            final data = snapshot.data!;
             final filteredTasks = _filteredTasks(data.tasks);
 
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-              children: [
-                _Header(
+            return RefreshIndicator(
+              color: AppColors.primary,
+              backgroundColor: AppColors.surface,
+              onRefresh: () async {
+                final refreshFuture = _service.fetch(forceRefresh: true);
+                setState(() {
+                  _future = refreshFuture;
+                });
+                await refreshFuture;
+              },
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                children: [
+                  _Header(
                     displayName: displayName,
-                    todayTaskCount: data.todayTaskCount),
+                    todayTaskCount: data.todayTaskCount,
+                    projectIds: data.projects.map((p) => p.id).toList(),
+                  ),
                 if (_showTodayBanner && data.todayTaskCount > 0) ...[
                   const SizedBox(height: 16),
                   _TodayBanner(
@@ -169,7 +184,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ],
               ],
-            );
+            ),
+          );
           },
         ),
       ),
@@ -234,10 +250,15 @@ class _EmptyHint extends StatelessWidget {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.displayName, required this.todayTaskCount});
+  const _Header({
+    required this.displayName,
+    required this.todayTaskCount,
+    this.projectIds,
+  });
 
   final String displayName;
   final int todayTaskCount;
+  final List<int>? projectIds;
 
   @override
   Widget build(BuildContext context) {
@@ -264,8 +285,78 @@ class _Header extends StatelessWidget {
             ],
           ),
         ),
-        const _NotificationBell(),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _DiscussionsChatButton(projectIds: projectIds),
+            const SizedBox(width: 8),
+            const _NotificationBell(),
+          ],
+        ),
       ],
+    );
+  }
+}
+
+/// Nút Trao đổi Dự án + số lượng tin nhắn CHƯA ĐỌC thời gian thực
+class _DiscussionsChatButton extends StatelessWidget {
+  const _DiscussionsChatButton({this.projectIds});
+
+  final List<int>? projectIds;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<int>(
+      valueListenable: ProjectDiscussionService.readStateNotifier,
+      builder: (context, _, __) {
+        return StreamBuilder<int>(
+          stream: ProjectDiscussionService().streamTotalDiscussionsCount(
+            userProjectIds: projectIds,
+          ),
+          builder: (context, snapshot) {
+            final count = snapshot.data ?? 0;
+            return Stack(
+              clipBehavior: Clip.none,
+              children: [
+                AppIconButton(
+                  icon: PhosphorIconsRegular.chatsCircle,
+                  tooltip: 'Trao đổi dự án',
+                  onPressed: () =>
+                      Nav.toNamed(context, AppRoutes.projectDiscussionsList),
+                  color: AppTheme.brandBlue,
+                  size: 22,
+                  background: AppTheme.brandBlue.withValues(alpha: 0.08),
+                ),
+                if (count > 0)
+                  Positioned(
+                    right: 2,
+                    top: 2,
+                    child: Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      constraints:
+                          const BoxConstraints(minWidth: 18, minHeight: 18),
+                      decoration: BoxDecoration(
+                        color: AppColors.accentBlue,
+                        borderRadius: BorderRadius.circular(9),
+                        border: Border.all(color: AppColors.surface, width: 1.5),
+                      ),
+                      alignment: Alignment.center,
+                      child: AppText(
+                        count > 99 ? '99+' : '$count',
+                        variant: AppTextVariant.overline,
+                        fontSize: 10,
+                        weight: FontWeight.w800,
+                        color: AppColors.textOnPrimary,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

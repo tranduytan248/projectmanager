@@ -24,6 +24,15 @@ namespace TTKDGP.ProjectManager.Infrastructure
 
             if (string.IsNullOrEmpty(token))
             {
+                // Fallback neu la phien dang nhap tu trinh duyet Web Cookie
+                if (filterContext.HttpContext.User != null &&
+                    filterContext.HttpContext.User.Identity != null &&
+                    filterContext.HttpContext.User.Identity.IsAuthenticated)
+                {
+                    base.OnActionExecuting(filterContext);
+                    return;
+                }
+
                 Reject(filterContext, "Thieu token dang nhap.");
                 return;
             }

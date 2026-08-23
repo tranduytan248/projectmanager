@@ -6,12 +6,17 @@ import 'api_endpoint.dart';
 import 'app_cache.dart';
 import 'token_storage.dart';
 
-/// HttpManager rieng cua du an: gan header `Authorization: Bearer <token>` cho moi request, va
-/// khi gap 401 thi xoa sach token + trang thai dang nhap truoc khi HttpManager day nguoi dung
-/// ve man dang nhap. Moi Service tu khoi tao rieng mot AppHttp (khong dung DI) — dung mau
-/// `final AppHttp _http = AppHttp();` trong tung Service.
+/// HttpManager rieng cua du an: su dung Singleton de tai su dung Connection Pool (Keep-Alive),
+/// gan header `Authorization: Bearer <token>` cho moi request va xu ly 401 tap trung.
 class AppHttp extends HttpManager {
-  AppHttp({super.headers})
+  factory AppHttp({Map<String, String>? headers}) {
+    if (headers != null) {
+      return AppHttp._internal(headers: headers);
+    }
+    return _instance ??= AppHttp._internal();
+  }
+
+  AppHttp._internal({super.headers})
       : super(
           baseUrl: ApiEndpoint.baseUrl,
           onUnauthorized: () async {
@@ -19,8 +24,13 @@ class AppHttp extends HttpManager {
             await AppCache().doLogout();
           },
         ) {
+    dio.options.connectTimeout = const Duration(seconds: 15);
+    dio.options.receiveTimeout = const Duration(seconds: 15);
+    dio.options.sendTimeout = const Duration(seconds: 15);
     dio.interceptors.add(InterceptorsWrapper(onRequest: _onRequest));
   }
+
+  static AppHttp? _instance;
 
   Future<void> _onRequest(
       RequestOptions options, RequestInterceptorHandler handler) async {

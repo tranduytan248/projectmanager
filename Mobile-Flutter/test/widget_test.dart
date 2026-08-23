@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,14 +9,13 @@ import 'package:ttkdgp_mobile/config/app_providers.dart';
 import 'package:ttkdgp_mobile/core/classes/cache_manager.dart';
 
 void main() {
-  testWidgets('App khoi dong va hien man hinh dang nhap', (WidgetTester tester) async {
-    // Cache.init() doc SharedPreferences that qua platform channel — can mock truoc trong
-    // moi truong test, khong thi se treo/loi vi khong co plugin thuc.
+  testWidgets('App khoi dong va hien man hinh', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});
+    FlutterSecureStorage.setMockInitialValues({});
     await Cache.init();
 
     await tester.pumpWidget(MultiProvider(providers: appProviders, child: const TtkdgpApp()));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 4));
 
     expect(find.byType(MaterialApp), findsOneWidget);
   });

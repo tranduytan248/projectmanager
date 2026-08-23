@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 
 import '../../config/api_endpoint.dart';
 import '../../config/app_http.dart';
+import '../../core/classes/cache_manager.dart';
+import '../../core/services/data_cache.dart';
 import 'my_projects_models.dart';
 
 /// Ket qua goi MyProjectsApi/Create. loi != null nghia la backend tu choi (thieu Ten/Loai du
@@ -21,10 +23,22 @@ class CreateProjectApiResult {
 class MyProjectsService {
   final _http = AppHttp();
 
+  String _cacheKey(String? query, bool showClosed, String scope) =>
+      'projects_${query ?? ""}_${showClosed}_$scope';
+
+  MyProjectsData? getCached({String? query, bool showClosed = false, String scope = 'mine'}) {
+    return DataCache.instance.getStale<MyProjectsData>(_cacheKey(query, showClosed, scope));
+  }
+
   /// scope="team": toan bo du an cua Ca To (chi hieu luc voi tai khoan Quan ly To — server tu
   /// am tham tra ve "mine" cho tai khoan khac, xem MyProjectsApiController.Index).
-  Future<MyProjectsData> fetch(
-      {String? query, bool showClosed = false, String scope = 'mine'}) async {
+  Future<MyProjectsData> fetch({
+    String? query,
+    bool showClosed = false,
+    String scope = 'mine',
+    bool forceRefresh = false,
+  }) async {
+    final key = _cacheKey(query, showClosed, scope);
     final response = await _http.get(
       ApiEndpoint.myProjects,
       params: {
@@ -33,7 +47,13 @@ class MyProjectsService {
         'scope': scope,
       },
     );
-    return MyProjectsData.fromJson(response.data as Map<String, dynamic>);
+    final result = MyProjectsData.fromJson(response.data as Map<String, dynamic>);
+    DataCache.instance.set(key, result, ttl: const Duration(minutes: 5));
+    if (scope == 'mine' && (query == null || query.isEmpty) && !showClosed) {
+      final ids = result.projects.map((p) => p.id).toList();
+      Cache.saveData('my_user_project_ids', ids);
+    }
+    return result;
   }
 
   /// Danh sach "Loại dự án" hien co de do vao form Them du an — danh muc DONG, khong hard-code.

@@ -9,6 +9,8 @@ import 'notifications/notifications_controller.dart';
 import 'profile/profile_controller.dart';
 import 'projects/my_projects_controller.dart';
 import 'projects/project_detail_controller.dart';
+import 'projects/project_discussion_controller.dart';
+import 'projects/project_discussions_list_controller.dart';
 import 'projects/project_members_controller.dart';
 import 'team/leave_approval_controller.dart';
 import 'team/private_tasks_controller.dart';
@@ -26,6 +28,8 @@ class AppRoutes extends RouteManager {
   static const String taskDetail = '$name/my-work/task';
   static const String projects = '$name/projects';
   static const String projectDetail = '$name/projects/detail';
+  static const String projectDiscussion = '$name/projects/discussion';
+  static const String projectDiscussionsList = '$name/projects/discussions-list';
   static const String checklist = '$name/projects/checklist';
   static const String projectMembers = '$name/projects/members';
   static const String leaves = '$name/leaves';
@@ -43,6 +47,8 @@ class AppRoutes extends RouteManager {
     addRoute(taskDetail, (context) => const TaskDetailController());
     addRoute(projects, (context) => const MyProjectsController());
     addRoute(projectDetail, (context) => const ProjectDetailController());
+    addRoute(projectDiscussion, (context) => const ProjectDiscussionController());
+    addRoute(projectDiscussionsList, (context) => const ProjectDiscussionsListController());
     addRoute(checklist, (context) => const ChecklistBoardController());
     addRoute(projectMembers, (context) => const ProjectMembersController());
     addRoute(leaves, (context) => const LeaveListController());

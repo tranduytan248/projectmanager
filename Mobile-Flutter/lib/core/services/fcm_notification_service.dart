@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../../features/app_routes.dart';
+import '../../features/notifications/notification_models.dart';
 import '../../features/notifications/notifications_service.dart';
 import '../classes/app_keys.dart';
 import '../classes/cache_manager.dart';
@@ -29,7 +30,12 @@ class FcmNotificationService {
   static const String _channelName = 'Thông báo quan trọng';
   static const String _channelDesc = 'Nhận thông báo công việc, trao đổi và nhắc việc';
 
-  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  FirebaseMessaging? _messagingInstance;
+  FirebaseMessaging get _messaging {
+    _messagingInstance ??= FirebaseMessaging.instance;
+    return _messagingInstance!;
+  }
+
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
@@ -38,8 +44,8 @@ class FcmNotificationService {
 
   /// Khởi tạo toàn bộ dịch vụ FCM và Local Notifications.
   Future<void> initialize() async {
-    if (kIsWeb) {
-      debugPrint('[FCM] Nền tảng Web không dùng cấu hình native FCM service.');
+    if (kIsWeb || Firebase.apps.isEmpty) {
+      debugPrint('[FCM] Không khởi tạo FCM native (web hoặc test environment).');
       return;
     }
 
@@ -138,6 +144,7 @@ class FcmNotificationService {
   /// Lấy FCM Token từ thiết bị và lưu cache
   Future<void> _fetchAndStoreToken() async {
     try {
+      if (kIsWeb || Firebase.apps.isEmpty) return;
       _fcmToken = await _messaging.getToken();
       if (_fcmToken != null) {
         debugPrint('====================================================');
@@ -159,6 +166,7 @@ class FcmNotificationService {
   /// Yêu cầu cấp quyền và lưu lại Token thiết bị khi người dùng xác nhận
   Future<bool> requestPermissionAndRegister() async {
     try {
+      if (kIsWeb || Firebase.apps.isEmpty) return false;
       final settings = await _messaging.requestPermission(
         alert: true,
         announcement: false,
@@ -244,39 +252,79 @@ class FcmNotificationService {
     );
   }
 
-  /// Xử lý điều hướng thông minh theo dữ liệu payload
+  /// Xử lý điều hướng thông minh theo dữ liệu payload — khớp 100% logic điều hướng khi mở thông báo
   void handlePayload(Map<String, dynamic> data) {
     if (data.isEmpty) {
       _navigateSafely(AppRoutes.notifications);
       return;
     }
 
-    final taskId = data['taskId'] ?? data['task_id'] ?? data['TaskId'];
-    final projectId = data['projectId'] ?? data['project_id'] ?? data['ProjectId'];
-    final type = (data['type'] ?? data['Type'] ?? '').toString().toLowerCase();
+    final rawType = (data['type'] ?? data['Type'] ?? '').toString().trim();
+    final rawProjectId =
+        (data['projectId'] ?? data['project_id'] ?? data['ProjectId'] ?? '')
+            .toString()
+            .trim();
+    final rawTaskId =
+        (data['taskId'] ?? data['task_id'] ?? data['TaskId'] ?? '')
+            .toString()
+            .trim();
 
-    if (taskId != null && taskId.toString().isNotEmpty) {
-      _navigateSafely(AppRoutes.taskDetail, arguments: {'taskId': taskId.toString()});
+    final projectId = int.tryParse(rawProjectId) ?? 0;
+    final taskId = int.tryParse(rawTaskId) ?? 0;
+
+    // 0. Trao đổi dự án -> Mở thẳng phòng chat dự án
+    if (rawType.toLowerCase() == 'traodoiduan' ||
+        rawType.toLowerCase() == 'traodoi') {
+      if (projectId > 0) {
+        _navigateSafely(AppRoutes.projectDiscussion, arguments: {
+          'projectId': projectId,
+          'projectName': '',
+        });
+        return;
+      }
+    }
+
+    // 1. Vào/rút dự án -> Màn "Dự án của tôi"
+    if (rawType == NotificationTypes.projectAdded ||
+        rawType == NotificationTypes.projectRemoved ||
+        rawType.toLowerCase() == 'vaoduan' ||
+        rawType.toLowerCase() == 'roiduan') {
+      _navigateSafely(AppRoutes.projects);
       return;
     }
 
-    if (projectId != null && projectId.toString().isNotEmpty) {
-      _navigateSafely(AppRoutes.projectDetail, arguments: {'projectId': projectId.toString()});
-      return;
-    }
-
-    if (type.contains('leave') || type.contains('phep')) {
+    // 2. Xin nghỉ phép mới -> Màn "Duyệt nghỉ phép" (Toàn Tổ)
+    if (rawType == NotificationTypes.leaveRequested ||
+        rawType.toLowerCase() == 'leave.request' ||
+        rawType.toLowerCase() == 'leaverequested') {
       _navigateSafely(AppRoutes.teamLeaveApprovals);
       return;
     }
 
-    if (type.contains('kpi')) {
-      _navigateSafely(AppRoutes.kpi);
+    // 3. Kết quả duyệt nghỉ phép -> Màn "Nghỉ phép của tôi"
+    if (rawType == NotificationTypes.leaveResult ||
+        rawType.toLowerCase() == 'leave.result' ||
+        rawType.toLowerCase() == 'leaveresult') {
+      _navigateSafely(AppRoutes.leaves);
       return;
     }
 
-    // Mặc định chuyển đến màn danh sách thông báo
-    _navigateSafely(AppRoutes.notifications);
+    // 4. Nếu có ProjectId -> Mở Checklist dự án
+    if (projectId > 0) {
+      _navigateSafely(AppRoutes.checklist,
+          arguments: {'projectId': projectId.toString()});
+      return;
+    }
+
+    // 5. Nếu có TaskId (việc ngoài dự án) -> Mở Chi tiết công việc
+    if (taskId > 0) {
+      _navigateSafely(AppRoutes.taskDetail,
+          arguments: {'taskId': taskId.toString()});
+      return;
+    }
+
+    // 6. Mặc định chuyển đến màn Công việc của tôi
+    _navigateSafely(AppRoutes.myWork);
   }
 
   void _navigateSafely(String routeName, {Object? arguments}) {
