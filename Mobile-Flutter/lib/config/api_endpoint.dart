@@ -33,6 +33,8 @@ class ApiEndpoint {
   static const notificationMarkRead = '/NotificationsApi/MarkRead';
   static const notificationMarkAllRead = '/NotificationsApi/MarkAllRead';
   static const notificationRegisterDevice = '/NotificationsApi/RegisterDevice';
+  static const discussionsUpload = '/DiscussionsApi/Upload';
+  static const discussionsTasks = '/DiscussionsApi/Tasks';
 
   static const leaves = '/LeavesApi/Index';
   static const leaveCreate = '/LeavesApi/Create';

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Web;
@@ -26,9 +26,34 @@ namespace TTKDGP.ProjectManager.Infrastructure
         private static readonly HashSet<string> AllowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp",
+            ".mp4", ".mov", ".webm", ".m4v",
             ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
             ".txt", ".csv", ".md", ".zip", ".rar", ".7z"
         };
+
+        public static bool IsImage(string fileNameOrExt)
+        {
+            if (string.IsNullOrWhiteSpace(fileNameOrExt)) return false;
+            var ext = Path.GetExtension(fileNameOrExt);
+            if (string.IsNullOrEmpty(ext)) ext = fileNameOrExt;
+            return ext.Equals(".png", StringComparison.OrdinalIgnoreCase) ||
+                   ext.Equals(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                   ext.Equals(".jpeg", StringComparison.OrdinalIgnoreCase) ||
+                   ext.Equals(".gif", StringComparison.OrdinalIgnoreCase) ||
+                   ext.Equals(".webp", StringComparison.OrdinalIgnoreCase) ||
+                   ext.Equals(".bmp", StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static bool IsVideo(string fileNameOrExt)
+        {
+            if (string.IsNullOrWhiteSpace(fileNameOrExt)) return false;
+            var ext = Path.GetExtension(fileNameOrExt);
+            if (string.IsNullOrEmpty(ext)) ext = fileNameOrExt;
+            return ext.Equals(".mp4", StringComparison.OrdinalIgnoreCase) ||
+                   ext.Equals(".mov", StringComparison.OrdinalIgnoreCase) ||
+                   ext.Equals(".webm", StringComparison.OrdinalIgnoreCase) ||
+                   ext.Equals(".m4v", StringComparison.OrdinalIgnoreCase);
+        }
 
         private static string Folder()
         {
