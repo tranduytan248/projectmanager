@@ -98,10 +98,18 @@ namespace TTKDGP.ProjectManager.Services
         /// </summary>
         public static List<WorkTask> TasksOfUserInMonth(int userId, int year, int month)
         {
+            var from = new DateTime(year, month, 1);
+            var to = from.AddMonths(1).AddDays(-1);
+
+            var loggedTaskIds = new HashSet<int>(
+                Repository.WorkTimeLogs.All()
+                    .Where(l => l.UserId == userId && l.WorkDate.Date >= from && l.WorkDate.Date <= to)
+                    .Select(l => l.TaskId));
+
             return Repository.WorkTasks.All()
-                .Where(t => t.AssigneeUserId == userId
-                            && t.State != TaskStates.Cancelled
-                            && TaskInMonth(t, year, month))
+                .Where(t => t.State != TaskStates.Cancelled
+                            && (t.AssigneeUserId == userId || loggedTaskIds.Contains(t.Id))
+                            && (TaskInMonth(t, year, month) || loggedTaskIds.Contains(t.Id)))
                 .ToList();
         }
 
@@ -188,18 +196,22 @@ namespace TTKDGP.ProjectManager.Services
         }
 
         /// <summary>
-        /// Tổng giờ được công nhận trong tháng — CHỈ tính việc ĐÃ HOÀN THÀNH.
-        ///
-        /// Việc đang làm không sinh giờ nào cho tới khi xong. Trước đây có tính, và điều đó cho ra
-        /// kết quả sai hẳn: một đầu việc hỗ trợ đặt hạn 03/08–31/08, trạng thái "đang làm", tiến
-        /// độ 0% vẫn ăn trọn 168 giờ và đủ điểm nhóm — tức là nhận việc xong để đó cũng được chấm
-        /// như đã làm cả tháng. Giờ công phải phản ánh công ĐÃ bỏ ra, không phải công sẽ bỏ ra.
-        ///
-        /// Việc chưa bắt đầu và tạm dừng cũng không đếm, như trước.
+        /// Tổng giờ được công nhận trong tháng của một người — tính từ TỔNG GIỜ LOGTIME THỰC TẾ (WorkTimeLogs)
+        /// mà người đó đã ghi trong tháng (ngoại trừ công việc Chưa bắt đầu hoặc Huỷ).
         /// </summary>
-        public static decimal WorkedHours(IEnumerable<WorkTask> tasks, int year, int month)
+        public static decimal WorkedHours(int userId, IEnumerable<WorkTask> tasks, int year, int month)
         {
-            return HoursOf(tasks.Where(t => t.State == TaskStates.Done), year, month);
+            var from = new DateTime(year, month, 1);
+            var to = from.AddMonths(1).AddDays(-1);
+            var validTaskIds = new HashSet<int>(
+                tasks.Where(t => t.State != TaskStates.NotStarted && t.State != TaskStates.Cancelled)
+                     .Select(t => t.Id));
+
+            if (validTaskIds.Count == 0) return 0m;
+
+            return Repository.WorkTimeLogs.All()
+                .Where(l => l.UserId == userId && validTaskIds.Contains(l.TaskId) && l.WorkDate.Date >= from && l.WorkDate.Date <= to)
+                .Sum(l => (decimal?)l.Hours) ?? 0m;
         }
 
         /// <summary>
@@ -373,36 +385,23 @@ namespace TTKDGP.ProjectManager.Services
             row.SupportDone = support.Count(t => t.State == TaskStates.Done);
             row.SupportLateCount = support.Count(t => (t.State == TaskStates.Done && !t.IsOnTime) || t.IsOverdue);
 
-            // Giờ hỗ trợ bị CHẶN TRẦN ở phần cấu hình (mặc định 30% quỹ giờ tháng). Hỗ trợ phát
-            // sinh theo tuần và một người có thể bị kéo vào rất nhiều đầu việc rải khắp tháng —
-            // để nguyên thì nó nuốt trọn quỹ giờ, người đó "đủ giờ công" mà chẳng triển khai gì.
-            //
-            // Phải tính TRƯỚC phần điểm: nhóm này chấm theo giờ nên giờ chính là đầu vào của điểm.
-            row.SupportHoursRaw = Math.Round(WorkedHours(support, row.Year, row.Month), 2);
+            // Giờ hỗ trợ bị CHẶN TRẦN ở phần cấu hình (mặc định 30% quỹ giờ tháng).
+            row.SupportHoursRaw = Math.Round(WorkedHours(row.UserId, support, row.Year, row.Month), 2);
             row.SupportHours = CappedSupportHours(row.SupportHoursRaw, row.RequiredHours);
 
             row.SupportPoint = SupportPoint(SupportMaxPoint, row.SupportHours, row.RequiredHours,
                 row.SupportTotal, SupportLatePenalty(row.SupportLateCount));
 
             // Nhóm thực hiện chấm theo GIỜ đã bỏ ra, không theo số đầu việc — và không chặn trần.
-            // Giờ đếm trên việc đã xong, theo ngày làm việc riêng biệt.
-            // Số lần trễ hạn gồm việc hoàn thành sau hạn hoặc đang quá hạn (cả dự án lẫn việc riêng).
             row.ExecuteTotal = execute.Count;
             row.ExecuteDone = execute.Count(t => t.State == TaskStates.Done);
             row.ExecuteLateCount = execute.Count(t => (t.State == TaskStates.Done && !t.IsOnTime) || t.IsOverdue);
-            row.ExecuteHours = Math.Round(WorkedHours(execute, row.Year, row.Month), 2);
+            row.ExecuteHours = Math.Round(WorkedHours(row.UserId, execute, row.Year, row.Month), 2);
             row.ExecutePoint = ExecutePoint(ExecuteMaxPoint, row.ExecuteHours, row.RequiredHours,
                 row.ExecuteTotal, ExecuteLatePenalty(row.ExecuteLateCount));
 
-            // Tổng giờ công.
-            //
-            // Nền là giờ đếm GỘP cả ba nhóm theo ngày làm việc riêng biệt — ngày mà hỗ trợ và
-            // triển khai cùng chạy chỉ tính một lần, đúng như một ngày công thật. Cộng ba nhóm
-            // rời rạc sẽ nhân đôi những ngày trùng đó.
-            //
-            // Rồi trừ đi phần hỗ trợ VƯỢT TRẦN: giờ hỗ trợ quá mức cấu hình không được tính vào
-            // quỹ giờ công. Trừ trên tổng gộp thay vì chặn từng nhóm để không đụng tới ngày trùng.
-            var totalHours = WorkedHours(tasks, row.Year, row.Month);
+            // Tổng giờ công = Tổng giờ logtime thực tế trừ phần hỗ trợ vượt trần
+            var totalHours = WorkedHours(row.UserId, tasks, row.Year, row.Month);
             var supportOver = row.SupportHoursRaw - row.SupportHours;
 
             var working = totalHours - supportOver;

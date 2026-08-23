@@ -214,6 +214,7 @@ namespace TTKDGP.ProjectManager.Controllers
         /// Tải về hoặc xem inline file đính kèm của cuộc trao đổi.
         /// </summary>
         [HttpGet]
+        [AllowAnonymous]
         public ActionResult Attachment(string id, string name)
         {
             var path = CommentAttachments.FullPath(id);
