@@ -64,7 +64,10 @@
 
                 <!-- Popup gợi ý Mention (&#64;) -->
                 <div class="mention-picker-popup" id="mentionPickerPopup" style="display:none;">
-                    <div class="mention-picker-head">Gợi ý thành viên (&#64;)</div>
+                    <div class="mention-picker-head">
+                        <span>Nhắc thành viên (&#64;)</span>
+                        <span style="font-size: 10px; font-weight: normal; opacity: 0.7;">Esc để đóng</span>
+                    </div>
                     <div class="mention-picker-list" id="mentionPickerList">
                         @if (Model.Members != null)
                         {
@@ -82,14 +85,43 @@
                     </div>
                 </div>
 
+                <!-- Popup gợi ý Task khi gõ '/' -->
+                <div class="task-picker-popup" id="taskPickerPopup" style="display:none;">
+                    <div class="task-picker-head">
+                        <span>📋 Chọn công việc trong dự án (/)</span>
+                        <span style="font-size: 10px; font-weight: normal; opacity: 0.7;">Esc để đóng</span>
+                    </div>
+                    <div class="task-picker-list" id="taskPickerList">
+                        <div style="padding: 12px; text-align: center; color: var(--text-muted); font-size: 12px;">Đang tải danh sách công việc...</div>
+                    </div>
+                </div>
+
                 <!-- Thanh soạn thảo tin nhắn -->
                 <div class="chat-input-container">
+                    <!-- Khay xem trước file/ảnh đính kèm trước khi gửi -->
+                    <div class="chat-attachment-preview-bar" id="chatAttachmentPreview" style="display:none;">
+                        <div class="chat-preview-thumb-wrap" id="previewThumbWrap">
+                            <span class="chat-preview-icon" id="previewIcon">📎</span>
+                            <img src="" alt="Thumbnail" class="chat-preview-thumb-img" id="previewImg" style="display:none;" />
+                        </div>
+                        <div class="chat-preview-info">
+                            <div class="chat-preview-filename" id="previewFileName">ten_file.jpg</div>
+                            <div class="chat-preview-size" id="previewFileSize">1.2 MB</div>
+                        </div>
+                        <button type="button" class="chat-preview-remove" id="btnRemoveAttachment" title="Xóa đính kèm">✕</button>
+                    </div>
+
                     <div class="chat-input-bar">
                         <button type="button" class="chat-tool-btn" id="btnMentionTrigger" title="Nhắc tên thành viên (&#64;)">&#64;</button>
-                        <input type="text" id="chatInputText" class="chat-input-field" placeholder="Nhập tin nhắn trao đổi (nhấn Enter để gửi)..." autocomplete="off" />
+                        <button type="button" class="chat-tool-btn" id="btnTaskTrigger" title="Gợi ý công việc (/)" style="font-size: 14px; font-weight: bold;">/</button>
+                        <button type="button" class="chat-tool-btn" id="btnAttachTrigger" title="Đính kèm Ảnh/Video/Tài liệu (tối đa 10 MB)">📎</button>
+                        <input type="file" id="chatFileInput" accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar" style="display:none;" />
+
+                        <input type="text" id="chatInputText" class="chat-input-field" placeholder="Nhập tin nhắn trao đổi (gõ / để chèn task, dán ảnh Ctrl+V)..." autocomplete="off" />
+                        
                         <button type="button" class="chat-send-btn" id="btnSendMessage" title="Gửi tin nhắn">
                             <span class="send-icon">➤</span>
-                            <span class="send-label">Gửi</span>
+                            <span class="send-label" id="sendBtnLabel">Gửi</span>
                         </button>
                     </div>
                 </div>
@@ -125,12 +157,29 @@
 
             var $input = document.getElementById('chatInputText');
             var $btnSend = document.getElementById('btnSendMessage');
+            var $sendBtnLabel = document.getElementById('sendBtnLabel');
             var $messagesList = document.getElementById('chatMessagesList');
             var $loading = document.getElementById('chatLoadingPlaceholder');
             var $empty = document.getElementById('chatEmptyState');
             var $scrollArea = document.getElementById('chatMessagesArea');
             var $mentionPicker = document.getElementById('mentionPickerPopup');
             var $btnMention = document.getElementById('btnMentionTrigger');
+            var $taskPicker = document.getElementById('taskPickerPopup');
+            var $taskList = document.getElementById('taskPickerList');
+            var $btnTask = document.getElementById('btnTaskTrigger');
+            var $btnAttach = document.getElementById('btnAttachTrigger');
+            var $fileInput = document.getElementById('chatFileInput');
+            var $previewBar = document.getElementById('chatAttachmentPreview');
+            var $previewImg = document.getElementById('previewImg');
+            var $previewIcon = document.getElementById('previewIcon');
+            var $previewFileName = document.getElementById('previewFileName');
+            var $previewFileSize = document.getElementById('previewFileSize');
+            var $btnRemoveAttachment = document.getElementById('btnRemoveAttachment');
+
+            var MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+            var pendingFile = null;
+            var projectTasks = [];
+            var isUploading = false;
 
             var rtdb = window.BrewTaskRTDB;
             if (!rtdb) {
@@ -160,7 +209,7 @@
                 return h + ':' + m + ' ' + d + '/' + mo;
             }
 
-            // Kiem tra tin nhan co phai do chinh minh gui khong
+            // Kiem tra tin nhan cua chinh minh
             function isMyMessage(msgData) {
                 if (!msgData) return false;
                 if (msgData.senderId && currentUserId && parseInt(msgData.senderId, 10) === parseInt(currentUserId, 10)) {
@@ -184,6 +233,23 @@
                 return false;
             }
 
+            function formatFileSize(bytes) {
+                if (!bytes) return '';
+                if (bytes >= 1024 * 1024) return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+                if (bytes >= 1024) return Math.round(bytes / 1024) + ' KB';
+                return bytes + ' B';
+            }
+
+            function escapeHtml(str) {
+                if (!str) return '';
+                return str
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
+
             // Tao bong bong tin nhan
             function createMessageElement(msgId, msgData) {
                 var isMe = isMyMessage(msgData);
@@ -196,21 +262,76 @@
                 var timeFormatted = formatTime(msgData.createdAt);
 
                 var atChar = String.fromCharCode(64);
-                var contentHtml = (msgData.content || '')
-                    .replace(/&/g, '&amp;')
-                    .replace(/</g, '&lt;')
-                    .replace(/>/g, '&gt;')
-                    .replace(new RegExp(atChar + '([\\p{L}\\p{N}_\\. ]+)', 'gu'), '<span class="mention-highlight">' + atChar + '$1</span>');
+                var rawText = msgData.content || msgData.text || '';
+                var contentHtml = escapeHtml(rawText);
+
+                // Format mentions
+                contentHtml = contentHtml.replace(new RegExp(atChar + '([\\p{L}\\p{N}_\\. ]+)', 'gu'), '<span class="mention-highlight">' + atChar + '$1</span>');
+
+                // Format [task:ID|Title]
+                contentHtml = contentHtml.replace(/\[task:(\d+)\|([^\]]+)\]/g, function (match, taskId, taskTitle) {
+                    return '<a href="/MyWork/Detail/' + taskId + '" target="_blank" class="chat-task-card" title="Bấm để xem chi tiết công việc">' +
+                        '<span class="chat-task-card-icon">📋</span>' +
+                        '<span class="chat-task-card-code">#' + taskId + '</span>' +
+                        '<span class="chat-task-card-title">' + taskTitle + '</span>' +
+                        '<span class="chat-task-card-arrow">↗</span>' +
+                        '</a>';
+                });
+
+                // Attachments (Image, Video, Document)
+                var attachHtml = '';
+                var attachUrl = msgData.attachmentUrl || '';
+                var attachName = msgData.attachmentName || '';
+                var attachType = (msgData.type || '').toLowerCase();
+                var sizeLabel = msgData.attachmentSizeLabel || formatFileSize(msgData.attachmentSize);
+
+                if (attachUrl) {
+                    if (attachType === 'image' || /\.(png|jpg|jpeg|gif|webp|bmp)$/i.test(attachUrl)) {
+                        attachHtml = '<div class="chat-msg-attachment">' +
+                            '<a href="' + attachUrl + '" target="_blank" class="chat-img-link" title="Xem ảnh">' +
+                            '<img src="' + attachUrl + '" alt="' + escapeHtml(attachName || 'Ảnh') + '" class="chat-msg-img" loading="lazy" />' +
+                            '</a>' +
+                            '</div>';
+                    } else if (attachType === 'video' || /\.(mp4|mov|webm|m4v)$/i.test(attachUrl)) {
+                        attachHtml = '<div class="chat-msg-attachment">' +
+                            '<div class="chat-video-wrap">' +
+                            '<video controls preload="metadata" class="chat-msg-video">' +
+                            '<source src="' + attachUrl + '" type="video/mp4" />' +
+                            'Trình duyệt không hỗ trợ phát video.' +
+                            '</video>' +
+                            '</div>' +
+                            '<div class="chat-file-meta" style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">🎬 ' + escapeHtml(attachName) + ' <span class="muted">(' + sizeLabel + ')</span></div>' +
+                            '</div>';
+                    } else {
+                        attachHtml = '<div class="chat-msg-attachment">' +
+                            '<a href="' + attachUrl + '" class="chat-file-card" download title="Tải về file">' +
+                            '<div class="chat-file-icon">📄</div>' +
+                            '<div class="chat-file-info">' +
+                            '<div class="chat-file-name">' + escapeHtml(attachName || 'Tài liệu') + '</div>' +
+                            '<div class="chat-file-size">' + sizeLabel + '</div>' +
+                            '</div>' +
+                            '<div class="chat-file-down">⬇</div>' +
+                            '</a>' +
+                            '</div>';
+                    }
+                }
 
                 var html = '';
                 if (!isMe) {
-                    html += '<div class="msg-avatar" title="' + (msgData.senderName || '') + '">' + senderAvatar + '</div>';
+                    html += '<div class="msg-avatar" title="' + escapeHtml(msgData.senderName || '') + '">' + senderAvatar + '</div>';
                 }
                 html += '<div class="msg-content-box">';
                 if (!isMe) {
-                    html += '<div class="msg-sender-name">' + (msgData.senderName || 'Dong nghiep') + '</div>';
+                    html += '<div class="msg-sender-name">' + escapeHtml(msgData.senderName || 'Đồng nghiệp') + '</div>';
                 }
-                html += '  <div class="msg-bubble">' + contentHtml + '</div>';
+                html += '  <div class="msg-bubble">';
+                if (contentHtml) {
+                    html += '<div>' + contentHtml + '</div>';
+                }
+                if (attachHtml) {
+                    html += attachHtml;
+                }
+                html += '  </div>';
                 html += '  <div class="msg-meta">' + timeFormatted + '</div>';
                 html += '</div>';
 
@@ -234,7 +355,7 @@
                 scrollToBottom();
             });
 
-            // Sau 2s neu khong co tin nhan nao thi an loading, hien empty state
+            // Sau 1.8s neu khong co tin nhan thi hien empty state
             setTimeout(function () {
                 if (!hasMessages) {
                     if ($loading) $loading.style.display = 'none';
@@ -242,11 +363,212 @@
                 }
             }, 1800);
 
-            // Gui tin nhan
-            function sendMessage() {
-                var text = ($input.value || '').trim();
-                if (!text) return;
+            // ==================== 1. Xử lý Attachment (Đính kèm file & Paste ảnh) ====================
+            function setPendingFile(file) {
+                if (!file) return;
 
+                if (file.size > MAX_BYTES) {
+                    alert('File/Video đính kèm vượt quá giới hạn tối đa 10 MB (Kích thước hiện tại: ' + formatFileSize(file.size) + ').');
+                    return;
+                }
+
+                pendingFile = file;
+                $previewFileName.textContent = file.name || 'anh_clipboard.png';
+                $previewFileSize.textContent = formatFileSize(file.size);
+
+                if (file.type && file.type.indexOf('image/') === 0) {
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        $previewImg.src = e.target.result;
+                        $previewImg.style.display = 'block';
+                        $previewIcon.style.display = 'none';
+                    };
+                    reader.readAsDataURL(file);
+                } else if (file.type && file.type.indexOf('video/') === 0) {
+                    $previewImg.style.display = 'none';
+                    $previewIcon.textContent = '🎬';
+                    $previewIcon.style.display = 'block';
+                } else {
+                    $previewImg.style.display = 'none';
+                    $previewIcon.textContent = '📄';
+                    $previewIcon.style.display = 'block';
+                }
+
+                $previewBar.style.display = 'flex';
+                $input.focus();
+            }
+
+            function clearPendingFile() {
+                pendingFile = null;
+                $previewBar.style.display = 'none';
+                $previewImg.src = '';
+                $fileInput.value = '';
+            }
+
+            $btnRemoveAttachment.addEventListener('click', clearPendingFile);
+
+            if ($btnAttach && $fileInput) {
+                $btnAttach.addEventListener('click', function () {
+                    $fileInput.click();
+                });
+
+                $fileInput.addEventListener('change', function () {
+                    if ($fileInput.files && $fileInput.files[0]) {
+                        setPendingFile($fileInput.files[0]);
+                    }
+                });
+            }
+
+            // Paste Clipboard (Ctrl + V)
+            window.addEventListener('paste', function (e) {
+                if (!e.clipboardData || !e.clipboardData.items) return;
+
+                var items = e.clipboardData.items;
+                for (var i = 0; i < items.length; i++) {
+                    if (items[i].type.indexOf('image/') !== -1) {
+                        var blob = items[i].getAsFile();
+                        if (blob) {
+                            var filename = 'anh_dan_' + new Date().getTime() + '.png';
+                            var imageFile = new File([blob], filename, { type: blob.type });
+                            setPendingFile(imageFile);
+                            e.preventDefault();
+                            break;
+                        }
+                    }
+                }
+            });
+
+            // ==================== 2. Xử lý Gợi ý Task khi gõ '/' ====================
+            function loadProjectTasks() {
+                $.getJSON('/Discussions/GetProjectTasks', { projectId: projectId }, function (res) {
+                    if (res && res.success && res.tasks) {
+                        projectTasks = res.tasks;
+                        renderTaskList(projectTasks);
+                    }
+                });
+            }
+            loadProjectTasks();
+
+            function renderTaskList(tasks) {
+                if (!tasks || tasks.length === 0) {
+                    $taskList.innerHTML = '<div style="padding: 14px; text-align: center; color: var(--text-muted); font-size: 12px;">Không có công việc nào trong dự án này</div>';
+                    return;
+                }
+
+                var html = '';
+                tasks.forEach(function (t) {
+                    html += '<div class="task-picker-item" data-id="' + t.id + '" data-title="' + escapeHtml(t.title) + '">' +
+                        '<span class="task-picker-badge">#' + t.id + '</span>' +
+                        '<div class="task-picker-info">' +
+                        '<div class="task-picker-title">' + escapeHtml(t.title) + '</div>' +
+                        '<div class="task-picker-sub">' +
+                        '<span>Trạng thái: <strong>' + escapeHtml(t.state || 'Mới') + '</strong></span>' +
+                        (t.assigneeName ? '<span>· Phụ trách: ' + escapeHtml(t.assigneeName) + '</span>' : '') +
+                        '</div>' +
+                        '</div>' +
+                        '</div>';
+                });
+
+                $taskList.innerHTML = html;
+
+                var items = $taskList.querySelectorAll('.task-picker-item');
+                items.forEach(function (item) {
+                    item.addEventListener('click', function () {
+                        var tid = item.getAttribute('data-id');
+                        var ttitle = item.getAttribute('data-title');
+                        insertTaskToken(tid, ttitle);
+                    });
+                });
+            }
+
+            function insertTaskToken(taskId, taskTitle) {
+                var val = $input.value || '';
+                // Thay the ky tu / o cuoi hoac them moi
+                if (val.lastIndexOf('/') !== -1) {
+                    var lastSlash = val.lastIndexOf('/');
+                    val = val.substring(0, lastSlash);
+                }
+                var token = '[task:' + taskId + '|' + taskTitle + '] ';
+                $input.value = (val.trim() ? val.trim() + ' ' : '') + token;
+                $taskPicker.style.display = 'none';
+                $input.focus();
+            }
+
+            if ($btnTask && $taskPicker) {
+                $btnTask.addEventListener('click', function () {
+                    $taskPicker.style.display = $taskPicker.style.display === 'none' ? 'flex' : 'none';
+                    $mentionPicker.style.display = 'none';
+                });
+            }
+
+            // Kiem tra ky tu / khi dang go trong o input
+            $input.addEventListener('input', function () {
+                var text = $input.value || '';
+                var cursorPos = $input.selectionStart || text.length;
+                var textBeforeCursor = text.substring(0, cursorPos);
+                var lastSlash = textBeforeCursor.lastIndexOf('/');
+
+                if (lastSlash !== -1 && (lastSlash === 0 || /\s/.test(textBeforeCursor[lastSlash - 1]))) {
+                    var query = textBeforeCursor.substring(lastSlash + 1).toLowerCase().trim();
+                    var filtered = projectTasks.filter(function (t) {
+                        return (t.title && t.title.toLowerCase().indexOf(query) !== -1) ||
+                               (t.id && t.id.toString().indexOf(query) !== -1);
+                    });
+                    renderTaskList(filtered);
+                    $taskPicker.style.display = 'flex';
+                    $mentionPicker.style.display = 'none';
+                } else {
+                    $taskPicker.style.display = 'none';
+                }
+            });
+
+            // ==================== 3. Gửi tin nhắn ====================
+            function sendMessage() {
+                if (isUploading) return;
+
+                var text = ($input.value || '').trim();
+                if (!text && !pendingFile) return;
+
+                if (pendingFile) {
+                    isUploading = true;
+                    $sendBtnLabel.textContent = 'Đang gửi...';
+                    $btnSend.disabled = true;
+
+                    var formData = new FormData();
+                    formData.append('projectId', projectId);
+                    formData.append('file', pendingFile);
+
+                    $.ajax({
+                        url: '/Discussions/UploadAttachment',
+                        type: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        success: function (res) {
+                            isUploading = false;
+                            $sendBtnLabel.textContent = 'Gửi';
+                            $btnSend.disabled = false;
+
+                            if (res && res.success) {
+                                postToFirebase(text, res.fileType, res.url, res.originalName, res.fileSize, res.fileSizeLabel);
+                                clearPendingFile();
+                            } else {
+                                alert((res && res.error) ? res.error : 'Không thể tải file đính kèm lên.');
+                            }
+                        },
+                        error: function () {
+                            isUploading = false;
+                            $sendBtnLabel.textContent = 'Gửi';
+                            $btnSend.disabled = false;
+                            alert('Lỗi kết nối máy chủ khi tải file đính kèm.');
+                        }
+                    });
+                } else {
+                    postToFirebase(text, 'text', '', '', 0, '');
+                }
+            }
+
+            function postToFirebase(text, type, attachUrl, attachName, attachSize, attachSizeLabel) {
                 $input.value = '';
                 $input.focus();
 
@@ -258,14 +580,20 @@
                     senderUsername: currentUserName,
                     senderAvatar: '',
                     content: text,
-                    createdAt: firebase.database.ServerValue.TIMESTAMP
+                    createdAt: firebase.database.ServerValue.TIMESTAMP,
+                    type: type || 'text',
+                    attachmentUrl: attachUrl || '',
+                    attachmentName: attachName || '',
+                    attachmentSize: attachSize || 0,
+                    attachmentSizeLabel: attachSizeLabel || ''
                 };
 
                 newMsgRef.set(payload).then(function () {
+                    var summaryText = text || (type === 'image' ? '[Hình ảnh]' : type === 'video' ? '[Video]' : '[File đính kèm]');
                     summaryRef.set({
                         projectId: projectId,
                         projectName: projectName,
-                        lastMessage: text,
+                        lastMessage: summaryText,
                         lastSenderName: currentUserFullName,
                         lastSenderId: currentUserId,
                         lastUpdatedAt: firebase.database.ServerValue.TIMESTAMP
@@ -274,7 +602,7 @@
                     // Gui Push Notification toi Mobile cho cac thanh vien khac
                     $.post('/api/NotificationsApi/SendProjectDiscussionNotification', {
                         projectId: projectId,
-                        content: text,
+                        content: summaryText,
                         senderName: currentUserFullName
                     });
                 }).catch(function (err) {
@@ -286,15 +614,27 @@
             $btnSend.addEventListener('click', sendMessage);
             $input.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter' && !e.shiftKey) {
+                    if ($taskPicker.style.display !== 'none') {
+                        var firstItem = $taskList.querySelector('.task-picker-item');
+                        if (firstItem) {
+                            firstItem.click();
+                            e.preventDefault();
+                            return;
+                        }
+                    }
                     e.preventDefault();
                     sendMessage();
+                } else if (e.key === 'Escape') {
+                    $taskPicker.style.display = 'none';
+                    $mentionPicker.style.display = 'none';
                 }
             });
 
-            // Xu ly Mention thanh vien
+            // ==================== 4. Mention picker popup ====================
             if ($btnMention && $mentionPicker) {
                 $btnMention.addEventListener('click', function () {
-                    $mentionPicker.style.display = $mentionPicker.style.display === 'none' ? 'block' : 'none';
+                    $mentionPicker.style.display = $mentionPicker.style.display === 'none' ? 'flex' : 'none';
+                    $taskPicker.style.display = 'none';
                 });
 
                 var mentionItems = document.querySelectorAll('.mention-picker-item');
@@ -308,13 +648,16 @@
                         $mentionPicker.style.display = 'none';
                     });
                 });
-
-                document.addEventListener('click', function (e) {
-                    if (!e.target.closest('#mentionPickerPopup') && !e.target.closest('#btnMentionTrigger')) {
-                        $mentionPicker.style.display = 'none';
-                    }
-                });
             }
+
+            document.addEventListener('click', function (e) {
+                if (!e.target.closest('#mentionPickerPopup') && !e.target.closest('#btnMentionTrigger')) {
+                    if ($mentionPicker) $mentionPicker.style.display = 'none';
+                }
+                if (!e.target.closest('#taskPickerPopup') && !e.target.closest('#btnTaskTrigger') && e.target !== $input) {
+                    if ($taskPicker) $taskPicker.style.display = 'none';
+                }
+            });
 
             if (projectId > 0) {
                 localStorage.setItem('disc_last_read_' + projectId, Date.now());

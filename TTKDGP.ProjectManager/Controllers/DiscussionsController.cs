@@ -157,5 +157,115 @@ namespace TTKDGP.ProjectManager.Controllers
 
             return PartialView("_Panel", projects);
         }
+
+        /// <summary>
+        /// Tải lên file / ảnh / video đính kèm cho phòng trao đổi dự án (Tối đa 10 MB).
+        /// </summary>
+        [HttpPost]
+        public ActionResult UploadAttachment(int projectId, System.Web.HttpPostedFileBase file)
+        {
+            var project = Repository.WorkProjects.Find(projectId);
+            if (project == null)
+            {
+                return Json(new { success = false, error = "Dự án không tồn tại." });
+            }
+
+            var userId = CurrentUserId;
+            var isMember = Can("wprojects.view") || Repository.WorkAssignments.All().Any(a => a.ProjectId == projectId && a.UserId == userId && a.IsActive);
+            if (!isMember)
+            {
+                return Json(new { success = false, error = "Bạn không có quyền gửi tài liệu trong dự án này." });
+            }
+
+            if (file == null || file.ContentLength <= 0)
+            {
+                return Json(new { success = false, error = "Vui lòng chọn file hợp lệ." });
+            }
+
+            if (file.ContentLength > CommentAttachments.MaxBytes)
+            {
+                return Json(new { success = false, error = "File/Video đính kèm vượt quá giới hạn tối đa 10 MB." });
+            }
+
+            string stored, name, error;
+            long size;
+            if (!CommentAttachments.TrySaveFile(file, out stored, out name, out size, out error))
+            {
+                return Json(new { success = false, error = error ?? "Không thể lưu file đính kèm." });
+            }
+
+            string fileType = "file";
+            if (CommentAttachments.IsImage(name)) fileType = "image";
+            else if (CommentAttachments.IsVideo(name)) fileType = "video";
+
+            return Json(new
+            {
+                success = true,
+                storedName = stored,
+                originalName = name,
+                fileSize = size,
+                fileSizeLabel = CommentAttachments.SizeLabel(size),
+                fileType = fileType,
+                url = Url.Action("Attachment", "Discussions", new { id = stored, name = name })
+            });
+        }
+
+        /// <summary>
+        /// Tải về hoặc xem inline file đính kèm của cuộc trao đổi.
+        /// </summary>
+        [HttpGet]
+        public ActionResult Attachment(string id, string name)
+        {
+            var path = CommentAttachments.FullPath(id);
+            if (path == null) return HttpNotFound();
+
+            var fileName = string.IsNullOrWhiteSpace(name) ? System.IO.Path.GetFileName(path) : name;
+            var mime = System.Web.MimeMapping.GetMimeMapping(fileName);
+
+            // Cho phép stream inline ảnh và video trong thẻ img/video của browser
+            if (CommentAttachments.IsImage(fileName) || CommentAttachments.IsVideo(fileName))
+            {
+                return File(path, mime);
+            }
+
+            return File(path, "application/octet-stream", fileName);
+        }
+
+        /// <summary>
+        /// Lấy danh sách công việc (Task) trong dự án để gợi ý khi gõ ký tự '/'.
+        /// </summary>
+        [HttpGet]
+        public ActionResult GetProjectTasks(int projectId)
+        {
+            var project = Repository.WorkProjects.Find(projectId);
+            if (project == null)
+            {
+                return Json(new { success = false, tasks = new object[0] }, JsonRequestBehavior.AllowGet);
+            }
+
+            var userId = CurrentUserId;
+            var isMember = Can("wprojects.view") || Repository.WorkAssignments.All().Any(a => a.ProjectId == projectId && a.UserId == userId && a.IsActive);
+            if (!isMember)
+            {
+                return Json(new { success = false, tasks = new object[0] }, JsonRequestBehavior.AllowGet);
+            }
+
+            var tasks = Repository.WorkTasks.All()
+                .Where(t => t.ProjectId == projectId)
+                .OrderByDescending(t => t.Id)
+                .Select(t => new
+                {
+                    id = t.Id,
+                    code = t.Code,
+                    title = t.Title,
+                    state = t.State,
+                    assigneeName = t.AssigneeName,
+                    priority = t.Priority,
+                    url = Url.Action("Detail", "MyWork", new { id = t.Id })
+                })
+                .ToList();
+
+            return Json(new { success = true, tasks = tasks }, JsonRequestBehavior.AllowGet);
+        }
     }
 }

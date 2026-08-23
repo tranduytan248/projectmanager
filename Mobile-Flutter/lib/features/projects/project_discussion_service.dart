@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../config/api_endpoint.dart';
 import '../../config/app_cache.dart';
 import '../../config/app_http.dart';
 import '../../core/classes/cache_manager.dart';
@@ -282,7 +285,63 @@ class ProjectDiscussionService {
     return controller.stream;
   }
 
-  /// Gửi một tin nhắn trao đổi mới vào Realtime Database
+  /// Lấy danh sách công việc (Task) trong dự án để gợi ý khi gõ '/'
+  Future<List<ProjectTaskOption>> fetchProjectTasks(int projectId) async {
+    try {
+      final response = await _http.get(
+        ApiEndpoint.discussionsTasks,
+        params: {'projectId': projectId},
+      );
+      if (response.data is Map) {
+        final rawList = response.data['tasks'];
+        if (rawList is List) {
+          return rawList
+              .whereType<Map<String, dynamic>>()
+              .map((json) => ProjectTaskOption.fromJson(json))
+              .toList();
+        }
+      }
+      return [];
+    } catch (e) {
+      debugPrint('[Discussions] Khong the tai danh sach task: $e');
+      return [];
+    }
+  }
+
+  /// Tải lên file đính kèm (Ảnh, Video <= 10MB, Tài liệu)
+  Future<Map<String, dynamic>?> uploadAttachment({
+    required int projectId,
+    required String filePath,
+    required String fileName,
+  }) async {
+    final file = File(filePath);
+    if (!file.existsSync()) {
+      throw Exception('Tập tin không tồn tại trên thiết bị.');
+    }
+
+    final fileSize = file.lengthSync();
+    if (fileSize > 10 * 1024 * 1024) {
+      throw Exception('File/Video đính kèm vượt quá giới hạn tối đa 10 MB.');
+    }
+
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(filePath, filename: fileName),
+    });
+
+    final response = await _http.post(
+      '${ApiEndpoint.discussionsUpload}?projectId=$projectId',
+      data: formData,
+    );
+
+    if (response.data is Map && response.data['success'] == true) {
+      return Map<String, dynamic>.from(response.data as Map);
+    } else {
+      final errorMsg = response.data is Map ? response.data['error'] : null;
+      throw Exception(errorMsg ?? 'Không thể tải file đính kèm lên.');
+    }
+  }
+
+  /// Gửi một tin nhắn trao đổi mới vào Realtime Database (hỗ trợ ảnh/video/task)
   Future<void> sendMessage({
     required int projectId,
     required String content,
@@ -291,15 +350,20 @@ class ProjectDiscussionService {
     required String senderUsername,
     String senderAvatar = '',
     String projectName = '',
+    String type = 'text',
+    String attachmentUrl = '',
+    String attachmentName = '',
+    int attachmentSize = 0,
+    String attachmentSizeLabel = '',
   }) async {
     final trimmed = content.trim();
-    if (trimmed.isEmpty) return;
+    if (trimmed.isEmpty && attachmentUrl.isEmpty) return;
 
     if (Firebase.apps.isNotEmpty) {
       try {
         debugPrint('[RTDB] Dang gui tin nhan toi du an $projectId...');
         final newMsgRef = _discussionsRef(projectId).push();
-        await newMsgRef.set({
+        final payload = {
           'projectId': projectId,
           'senderId': senderId,
           'senderName': senderName,
@@ -307,14 +371,28 @@ class ProjectDiscussionService {
           'senderAvatar': senderAvatar,
           'content': trimmed,
           'createdAt': ServerValue.timestamp,
-        });
+          'type': type,
+          'attachmentUrl': attachmentUrl,
+          'attachmentName': attachmentName,
+          'attachmentSize': attachmentSize,
+          'attachmentSizeLabel': attachmentSizeLabel,
+        };
+        await newMsgRef.set(payload);
         debugPrint('[RTDB] Da tao message thanh cong: ${newMsgRef.key}');
 
         // Cập nhật tóm tắt tin nhắn cuối lên node summary
+        final summaryText = trimmed.isNotEmpty
+            ? trimmed
+            : (type == 'image'
+                ? '[Hình ảnh]'
+                : type == 'video'
+                    ? '[Video]'
+                    : '[Tài liệu đính kèm]');
+
         await _summaryRef(projectId).set({
           'projectId': projectId,
           'projectName': projectName,
-          'lastMessage': trimmed,
+          'lastMessage': summaryText,
           'lastSenderName': senderName,
           'lastSenderId': senderId,
           'lastUpdatedAt': ServerValue.timestamp,
@@ -329,9 +407,17 @@ class ProjectDiscussionService {
 
     // Gửi Push Notification ngầm tới các thành viên dự án qua Backend
     try {
+      final summaryText = trimmed.isNotEmpty
+          ? trimmed
+          : (type == 'image'
+              ? '[Hình ảnh]'
+              : type == 'video'
+                  ? '[Video]'
+                  : '[Tài liệu đính kèm]');
+
       _notifyMembersInBackground(
         projectId: projectId,
-        content: trimmed,
+        content: summaryText,
         senderName: senderName,
       );
     } catch (_) {}
