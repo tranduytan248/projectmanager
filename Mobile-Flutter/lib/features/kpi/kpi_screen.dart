@@ -43,16 +43,21 @@ class _KpiScreenState extends State<KpiScreen> {
     _loadData();
   }
 
-  void _loadData() {
+  void _loadData({bool forceRefresh = false}) {
     setState(() {
       _future = _service
           .fetchIndex(
             year: _year,
             month: _month,
             userId: _selectedUserId > 0 ? _selectedUserId : null,
+            forceRefresh: forceRefresh,
           )
           .then((data) {
-        _users = data.users;
+        if (mounted) {
+          setState(() {
+            _users = data.users;
+          });
+        }
         return data;
       });
     });
@@ -278,26 +283,26 @@ class _KpiScreenState extends State<KpiScreen> {
           Expanded(
             child: FutureBuilder<KpiIndexData>(
               future: _future,
+              initialData: _service.getCachedIndex(
+                year: _year,
+                month: _month,
+                userId: _selectedUserId > 0 ? _selectedUserId : null,
+              ),
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
+                final data = snapshot.data;
+
+                if (data == null) {
+                  if (snapshot.hasError) {
+                    return AppErrorState(
+                      message: 'Không thể tải dữ liệu KPI. Vui lòng thử lại.',
+                      onRetry: () => _loadData(forceRefresh: true),
+                    );
+                  }
                   return const Center(child: AppLoading());
                 }
-
-                if (snapshot.hasError) {
-                  return AppErrorState(
-                    message: snapshot.error.toString(),
-                    onRetry: _loadData,
-                  );
-                }
-
-                if (!snapshot.hasData) {
-                  return const Center(child: AppLoading());
-                }
-
-                final data = snapshot.data!;
 
                 return RefreshIndicator(
-                  onRefresh: () async => _loadData(),
+                  onRefresh: () async => _loadData(forceRefresh: true),
                   color: AppColors.primary,
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(

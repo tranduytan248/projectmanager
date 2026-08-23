@@ -2,6 +2,20 @@
 
 ---
 
+# [2026-08-23] Tối ưu hoá cơ chế Cache UI Mobile: Chuyển sang Stale-While-Revalidate chuẩn không chặn API
+
+## 1. Mô tả vấn đề
+Người dùng phản ánh: Việc cache UI mobile làm app không cập nhật được nội dung mới (nhiệm vụ mới, phân công mới, KPI mới, trao đổi mới), người dùng không nắm bắt được thông tin kịp thời.
+
+## 2. Phân tích nguyên nhân & Giải pháp
+- **Nguyên nhân**: Trước đây `DataCache` chặn luồng `fetch()` trong 3-5 phút (`if (cached != null) return cached;`). Khi người dùng mở app hoặc chuyển tab, app trả về cache cũ và hoàn toàn không gửi HTTP request lên server.
+- **Giải pháp tối ưu**:
+  - `fetch()` trong toàn bộ các service (`DashboardService`, `MyProjectsService`, `MyWorkService`, `KpiService`): **LUÔN LUÔN** thực hiện HTTP GET gọi trực tiếp lên máy chủ để tải dữ liệu mới nhất 100%.
+  - `DataCache.instance.getStale()` chỉ đóng vai trò cung cấp `initialData` ban đầu cho `FutureBuilder` để vẽ màn hình ngay lập tức (0ms không giật/nháy trắng), sau đó dữ liệu mới từ máy chủ về sẽ cập nhật và ghi đè cache ngay lập tức.
+  - Loại bỏ hoàn toàn việc chặn gọi API bởi cache hết hạn/còn hạn. Dữ liệu luôn đồng bộ thời gian thực giữa Web và Mobile.
+
+---
+
 # [2026-08-14] Vấn đề: Fix text màu xám toàn ứng dụng mobile — phát hiện lệch kiến trúc với FLUTTER_RULES.md
 
 ## 1. Mô tả vấn đề
@@ -1793,3 +1807,151 @@ thay vì theo chuông, luôn nằm gọn trong khung nhìn bất kể chuông �
 ## Kết luận tổng thể tính năng "Đăng ký nghỉ phép" (backend + mobile)
 Đã hoàn thành, build sạch, code review không lỗi, test tay xác nhận luồng tạo đơn + validate trùng
 lịch hoạt động đúng 100% khớp logic gốc bên web. Còn thiếu bước test tay Sửa/Thu hồi (dang dở).
+
+---
+
+# [2026-08-23] Vấn đề: Tối ưu hóa tốc độ tải dữ liệu API cho hệ thống Mobile (BrewTask) & Backend
+
+## 1. Mô tả vấn đề
+Người dùng nhận thấy tốc độ tải API hiện tại đang khá chậm và cần tư vấn / triển khai các giải pháp tối ưu hiệu năng.
+
+## 2. Phân tích ban đầu
+- **Bối cảnh**:
+  - Backend ASP.NET MVC 5 (.NET Framework 4.8) cung cấp các API endpoint tại `Controllers/Api/*` cho Flutter mobile app (BrewTask).
+  - Tốc độ phản hồi hiện tại chịu ảnh hưởng bởi 3 tầng: (1) Client Mobile (Flutter), (2) Server Backend (C# Web API), và (3) Cơ sở dữ liệu (SQL Server).
+- **Mục tiêu**:
+  - Giảm thời gian tải (Latency / TTFB) của các API.
+  - Tăng trải nghiệm mượt mà, tức thì cho người dùng trên ứng dụng di động và web.
+- **Phạm vi khả dĩ**:
+  - **Tầng 1 (Client Mobile Flutter)**:
+    - Gọi API song song bằng `Future.wait` thay vì tuần tự `await` từng request.
+    - Áp dụng bộ nhớ đệm (In-memory Cache / Local Cache) cho các danh mục tĩnh hoặc ít thay đổi (danh sách dự án, cấu hình, thông tin người dùng).
+    - Phân trang (Pagination) hoặc Lazy load dữ liệu lớn.
+  - **Tầng 2 (Backend C# / IIS)**:
+    - Bật nén HTTP Compression (Gzip / Deflate) cho JSON responses.
+    - Caching tầng Service (`MemoryCache`) cho các dữ liệu tổng hợp/thống kê (KPI, Dashboard, Danh mục phòng ban).
+    - Tinh gọn DTO (chỉ serialize các trường thật sự cần thiết, bỏ các trường HTML/rich text dài khi load danh sách).
+    - Tối ưu truy vấn dữ liệu trong Service/Repository, tránh vòng lặp N+1 queries.
+  - **Tầng 3 (SQL Server Database)**:
+    - Rà soát và bổ sung Index cho các cột khóa ngoại và cột lọc thường dùng (`UserId`, `ProjectId`, `State`, `DueDate`, `CreatedAt`).
+    - Tối ưu các câu lệnh LINQ / SQL query.
+- **Rủi ro & Ràng buộc**:
+  - Tuân thủ nghiêm ngặt `CODING_RULES.md` (giữ nguyên kiến trúc, không làm sai lệch business logic).
+  - Đảm bảo cơ chế Cache Invalidation khi có thao tác thêm/sửa/xóa dữ liệu.
+
+## 4. Câu trả lời & Quyết định
+- Người dùng yêu cầu tối ưu toàn diện. Đã triển khai In-Memory Token Caching, HTTP Connection Pooling Singleton, DataCache in-memory với TTL và Stale-While-Revalidate trên toàn bộ các màn hình chính của Mobile.
+
+---
+
+# [2026-08-23] Vấn đề: Xây dựng chức năng gửi Push Notification từ Backend xuống Mobile & Điều hướng chính xác khi click
+
+## 1. Mô tả vấn đề
+Nguyên văn: "Đối với chức năng gửi Notification cho mobile. Hãy xây dựng chức năng đó dưới backend. Các nd gửi thông báo có hiển thị trên chuông thông báo thì đều gửi notification xún mobile. Khi click vào các notification cũng điều hướng tới các màn hình giống như click vào chi tiết thông báo"
+
+## 2. Phân tích ban đầu
+- **Bối cảnh**:
+  - Hệ thống Web ASP.NET MVC 5 quản lý thông báo nội bộ qua bảng `UserNotifications` và hiển thị trên chuông thông báo (bell icon ở góc trên màn hình).
+  - Mọi sự kiện phát chuông thông báo (giao việc riêng, giao việc dự án, thêm/rút khỏi dự án, nhắc tên @, trao đổi mới, việc con todolist thay đổi, nhắc việc đến hạn, đơn nghỉ phép mới, kết quả duyệt nghỉ phép) đều được phát tập trung qua `NotificationService.Add` và các helper method tương ứng.
+  - Ứng dụng mobile Flutter (BrewTask) đã tích hợp Firebase Cloud Messaging (`FcmNotificationService`), đăng ký token thiết bị qua `NotificationsApiController.RegisterDevice`.
+- **Mục tiêu**:
+  - Đảm bảo 100% các thông báo phát sinh trên hệ thống (hiển thị trên chuông thông báo web) đều đồng thời gửi Push Notification qua FCM HTTP v1 tới thiết bị di động mới nhất của nhân viên nhận thông báo.
+  - Khi người dùng click vào Push Notification trên điện thoại (cả khi app đang mở - foreground, đang ở nền - background, hoặc đã tắt hoàn toàn - terminated), ứng dụng sẽ tự động điều hướng tới đúng màn hình tương ứng 100% khớp với hành vi khi click vào dòng thông báo trên chuông web (`UserNotificationsController.Open`) và mobile (`NotificationsScreen._openNotification`).
+- **Phạm vi & Luồng điều hướng chuẩn**:
+  1. `NotificationTypes.ProjectAdded` ("VaoDuAn") / `ProjectRemoved` ("RoiDuAn") $\rightarrow$ Màn hình **Dự án của tôi** (`AppRoutes.projects`).
+  2. `NotificationTypes.LeaveRequested` ("leave.request") $\rightarrow$ Màn hình **Duyệt nghỉ phép** (`AppRoutes.teamLeaveApprovals`).
+  3. `NotificationTypes.LeaveResult` ("leave.result") $\rightarrow$ Màn hình **Nghỉ phép của tôi** (`AppRoutes.leaves`).
+  4. Nếu thông báo có `ProjectId > 0` (ví dụ: `Mentioned`, `DueSoon`, `CommentAdded` của dự án, `ProjectTaskAssigned`) $\rightarrow$ Màn hình **Checklist của dự án** (`AppRoutes.checklist`, tham số `projectId`).
+  5. Nếu thông báo có `TaskId > 0` (ví dụ: `TaskAssigned` việc riêng ngoài dự án) $\rightarrow$ Màn hình **Chi tiết công việc** (`AppRoutes.taskDetail`, tham số `taskId`).
+  6. Các trường hợp khác $\rightarrow$ Màn hình **Công việc của tôi** (`AppRoutes.myWork`) hoặc màn **Thông báo** (`AppRoutes.notifications`).
+- **Ràng buộc & Rủi ro**:
+  - Việc gửi Push Notification là tác vụ nền phụ thuộc bên thứ ba (Google FCM) $\rightarrow$ Tuyệt đối không để lỗi mạng / lỗi token / lỗi cấu hình làm ảnh hưởng đến transaction và luồng nghiệp vụ chính của người dùng (nuốt lỗi và ghi log vào `App_Data/fcm.log`).
+  - Hỗ trợ linh hoạt cấu hình Service Account qua file `App_Data/firebase-service-account.json` hoặc đường dẫn trong `Web.config`.
+  - Cung cấp API test gửi notification (`NotificationsApiController.SendTestPush`) để kiểm tra tức thì.
+
+## 3. Kế hoạch triển khai
+### Backend (C# ASP.NET MVC 5)
+- [x] Kiểm tra và củng cố `FcmPushService.cs` (FCM HTTP v1 qua OAuth2 JWT Service Account) hỗ trợ đầy đủ payload: `title`, `body`, `type`, `projectId`, `taskId`.
+- [x] Rà soát toàn bộ các điểm gọi trong `NotificationService.cs` (`ProjectAdded`, `ProjectRemoved`, `Mentions`, `CommentAdded`, `TaskAssigned`, `ProjectTaskAssigned`, `TodoAdded`, `TodoToggled`, `DueSoon`, `LeaveRequested`, `LeaveResult`) đảm bảo đều chuyển tiếp qua `NotificationService.Add` và gửi FCM Push.
+- [x] Bổ sung API test Push Notification `POST /api/notifications/test-push` (chỉ dành cho Quản trị viên hoặc chính tài khoản đăng nhập) để kiểm tra luồng gửi nhận.
+
+### Mobile (Flutter)
+- [x] Cập nhật `fcm_notification_service.dart` phương thức `handlePayload`: đồng bộ thứ tự ưu tiên điều hướng chuẩn xác 100% khớp với `UserNotificationsController.Open` và `NotificationsScreen._openNotification`.
+- [x] Đảm bảo xử lý đầy đủ 3 trạng thái nhận tin nhắn: Foreground (Local Notification banner click), Background (Notification tray click), Terminated (Cold start from notification).
+- [x] Chạy `flutter analyze` và `flutter test` đảm bảo 0 Errors, 0 Warnings.
+
+---
+
+# [2026-08-23] Vấn đề: Xây dựng tính năng Trao đổi trong Dự án (Project Discussion) qua Firebase Cloud Firestore trên Mobile
+
+## 1. Mô tả vấn đề
+Nguyên văn: "Hãy xây dựng chức năng trao đổi này trên mobile trước. Chức năng này nằm trong Chi tiết Dự án. Có 1 icon nằm góc trên phải, khi click thì chuyển qua màn hình trao đổi."
+
+## 2. Phân tích ban đầu
+- **Bối cảnh**:
+  - Người dùng muốn xây dựng tính năng Trao đổi / Thảo luận nhóm theo từng Dự án trên ứng dụng di động BrewTask.
+  - Sử dụng Firebase Cloud Firestore để đạt trải nghiệm Chat Real-time mượt mà, lưu trữ vĩnh viễn và không làm tải nặng SQL Server nội bộ.
+  - File Service Account `firebase-service-account.json` cho project `brewtask-99719` đã được cấu hình hợp lệ trong backend.
+- **Mục tiêu**:
+  - Thêm icon Chat / Trao đổi ở góc trên bên phải AppBar của màn hình **Chi tiết Dự án (`ProjectDetailScreen`)**.
+  - Khi người dùng bấm vào icon, chuyển hướng sang màn hình **Trao đổi Dự án (`ProjectDiscussionScreen`)**.
+  - Màn hình Trao đổi hỗ trợ:
+    1. Stream realtime danh sách tin nhắn Firestore (`projects/{projectId}/discussions`).
+    2. Phân biệt tin nhắn của tôi (căn phải, nền `AppColors.primary`) và đồng nghiệp (căn trái, nền `AppColors.card`).
+    3. Hỗ trợ hiển thị tên, avatar, thời gian gửi (hh:mm dd/MM).
+    4. Thanh soạn thảo tin nhắn có nút @mention thành viên dự án và nút gửi tin nhắn.
+    5. Đầy đủ 5 trạng thái màn hình: *Loading (ly cà phê bốc khói `AppLoading`), Empty, Data, Error, Offline*.
+    6. Tự động gửi thông báo ngầm cho các thành viên trong dự án.
+- **Ràng buộc & Quy tắc tuân thủ**:
+  - Tuân thủ 100% `FLUTTER_RULES.md` (Custom widgets `App*`, `AppColors`, `AppDimens`, touch target $\ge 48dp$).
+  - Guard `Firebase.apps.isEmpty` để test suite không bị lỗi trong môi trường test mock.
+
+## 3. Kế hoạch triển khai (Workflow 7 Bước)
+- [x] **Bước 1 — Phân tích vấn đề & Ghi Memory.md**.
+- [ ] **Bước 2 — Thiết kế UI/UX**: Xây dựng layout bong bóng chat, thanh nhập tin nhắn, thanh chọn @mention, 5 trạng thái giao diện.
+- [ ] **Bước 3 — Triển khai Code**:
+  - `project_discussion_models.dart`: Định nghĩa model tin nhắn `ProjectDiscussionMessage`.
+  - `project_discussion_service.dart`: Stream và Gửi tin nhắn qua `cloud_firestore`.
+  - `project_discussion_screen.dart`: Giao diện trao đổi realtime.
+  - `project_discussion_controller.dart`: Controller định tuyến `AppRoutes.projectDiscussion`.
+  - `project_detail_screen.dart`: Thêm `AppIconButton` icon chat trên `AppAppBar.actions`.
+  - `app_routes.dart`: Đăng ký route `$name/projects/discussion`.
+- [ ] **Bước 4 — Review Code**: Rà soát bộ nhớ Stream subscription, xử lý lỗi ngoại lệ, chuẩn đặt tên.
+- [ ] **Bước 5 — Kiểm toán bảo mật**: Kiểm tra an toàn dữ liệu, chống XSS/Script Injection trong nội dung chat.
+- [x] **Bước 6 — Kiểm thử & Sửa lỗi**: Viết Unit/Widget test cho tính năng trao đổi dự án, chạy `flutter test` và `flutter analyze` (0 Errors, 0 Warnings).
+- [x] **Bước 7 — Nghiệm thu Design UI/UX**: Tự nghiệm thu 7 tiêu chí WCAG AA, Touch target $\ge 48dp$, 100% custom widgets `App*`.
+
+---
+
+# [2026-08-23] Vấn đề: Xây dựng Trung tâm Trao đổi Dự án (Discussions Hub) & Nút Icon Chat cạnh Chuông thông báo
+
+## 1. Mô tả vấn đề
+Nguyên văn: "Tôi ko mún hiển thị bên chỗ Chuông thông báo mà kiểu thêm 1 icon chat bên cạnh, Khi click vào sẽ hiển thị danh sách các dự án đang có trao đổi."
+
+## 2. Phân tích ban đầu
+- **Bối cảnh & Mong muốn người dùng**:
+  - Tách bạch rõ ràng 2 kênh:
+    1. **Chuông thông báo**: Chỉ phục vụ các thông báo nghiệp vụ hệ thống (giao việc, việc đến hạn, xin/duyệt nghỉ phép, phê duyệt...).
+    2. **Icon Chat (Trao đổi)**: Nằm bên cạnh icon Chuông trên Header Dashboard (và thanh điều hướng). Khi click vào icon Chat, mở màn hình **Danh sách Trao đổi Dự án (`ProjectDiscussionsListScreen`)**.
+- **Chức năng màn hình Danh sách Trao đổi Dự án (`ProjectDiscussionsListScreen`)**:
+  - Tải danh sách tất cả các dự án của người dùng (từ `MyProjectsService`).
+  - Lắng nghe Firestore Realtime để hiển thị **Tin nhắn mới nhất (`lastMessage`)**, **Người gửi cuối (`lastSenderName`)**, và **Thời gian (`lastUpdatedAt`)** cho từng dự án.
+  - Sắp xếp dự án có trao đổi mới nhất lên đầu danh sách.
+  - Tìm kiếm / Lọc dự án nhanh theo tên.
+  - Bấm vào bất kỳ dự án nào $\rightarrow$ Mở thẳng màn hình **Trao đổi Dự án (`ProjectDiscussionScreen`)**.
+- **Cập nhật luồng Firestore Realtime**:
+  - Khi gửi tin nhắn trong `ProjectDiscussionService`:
+    - Thêm message vào `projects/{projectId}/discussions`.
+    - Đồng thời cập nhật document `projects/{projectId}` với `lastMessage`, `lastSenderName`, `lastUpdatedAt: serverTimestamp()`.
+
+## 3. Kế hoạch triển khai (Workflow 7 Bước)
+- [x] **Bước 1 — Phân tích vấn đề & Ghi Memory.md**.
+- [ ] **Bước 2 — Thiết kế UI/UX**: Thiết kế Icon Chat cạnh Chuông thông báo trên Dashboard + Màn hình Danh sách Trao đổi Dự án hiện đại, chuẩn Dark Theme, 5 trạng thái giao diện.
+- [ ] **Bước 3 — Triển khai Code**:
+  - `project_discussions_list_screen.dart`: Màn hình danh sách dự án kèm tin nhắn cuối realtime.
+  - `project_discussions_list_controller.dart`: Controller định tuyến `AppRoutes.projectDiscussionsList`.
+  - `project_discussion_service.dart`: Bổ sung stream danh sách trao đổi các dự án và cập nhật `lastMessage`.
+  - `dashboard_screen.dart`: Thêm `_DiscussionsButton` cạnh `_NotificationBell`.
+  - `app_routes.dart`: Đăng ký route `AppRoutes.projectDiscussionsList`.
+- [ ] **Bước 4, 5, 6, 7 — Review, Bảo mật, Kiểm thử (Tests) và Nghiệm thu UI/UX**.
+

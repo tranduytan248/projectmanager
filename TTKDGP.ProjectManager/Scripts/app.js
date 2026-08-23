@@ -371,6 +371,39 @@
     });
 })(jQuery);
 
+// Nút Trao đổi Dự án trên thanh đầu trang: bấm mở panel (nạp AJAX), bấm ra ngoài thì đóng.
+(function ($) {
+    'use strict';
+
+    $(function () {
+        var $wrap = $('[data-discussions-hub]');
+        if (!$wrap.length) return;
+
+        var $panel = $wrap.find('[data-discussions-panel]');
+
+        $wrap.on('click', '[data-discussions-toggle]', function () {
+            if ($wrap.hasClass('open')) {
+                $wrap.removeClass('open');
+                return;
+            }
+
+            // Đóng notif panel nếu đang mở
+            $('[data-notif]').removeClass('open');
+
+            $wrap.addClass('open');
+            $panel.html('<div class="discussions-empty">Đang tải danh sách trao đổi…</div>');
+
+            $.get($panel.data('url'))
+                .done(function (html) { $panel.html(html); })
+                .fail(function () { $panel.html('<div class="discussions-empty">Không tải được danh sách trao đổi.</div>'); });
+        });
+
+        $(document).on('mousedown', function (e) {
+            if (!$(e.target).closest('[data-discussions-hub]').length) $wrap.removeClass('open');
+        });
+    });
+})(jQuery);
+
 // Nút "Sao chép" các ô có khoá/giá trị: chép nội dung ô đích vào clipboard, báo nhanh trên nút.
 (function ($) {
     'use strict';

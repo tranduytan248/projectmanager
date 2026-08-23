@@ -79,6 +79,8 @@ namespace TTKDGP.ProjectManager.Services
                     return "Đơn nghỉ phép mới";
                 case NotificationTypes.LeaveResult:
                     return "Kết quả duyệt nghỉ phép";
+                case "TraoDoiDuAn":
+                    return "Trao đổi dự án";
                 default:
                     return "Thông báo mới";
             }

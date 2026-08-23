@@ -12,6 +12,7 @@ import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_card.dart';
 import '../../core/widgets/app_detail_section.dart';
 import '../../core/widgets/app_error_state.dart';
+import '../../core/widgets/app_icon_button.dart';
 import '../../core/widgets/app_loading.dart';
 import '../../core/widgets/app_scaffold.dart';
 import '../../core/widgets/app_text.dart';
@@ -33,6 +34,7 @@ class ProjectDetailScreen extends StatefulWidget {
 class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   final _service = ProjectDetailService();
   late Future<ProjectDetail> _future;
+  ProjectDetail? _cachedProject;
 
   @override
   void initState() {
@@ -47,7 +49,25 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return AppScaffold(
-      appBar: const AppAppBar(title: 'Chi tiết dự án'),
+      appBar: AppAppBar(
+        title: 'Chi tiết dự án',
+        actions: [
+          AppIconButton(
+            icon: PhosphorIconsRegular.chatsCircle,
+            tooltip: 'Trao đổi dự án',
+            color: AppColors.primary,
+            onPressed: () => Nav.toNamed(
+              context,
+              AppRoutes.projectDiscussion,
+              arguments: {
+                'projectId': widget.projectId,
+                'projectName': _cachedProject?.name ?? '',
+                'members': _cachedProject?.members ?? const <ProjectMember>[],
+              },
+            ),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: FutureBuilder<ProjectDetail>(
           future: _future,
@@ -64,6 +84,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             }
 
             final p = snapshot.data!;
+            _cachedProject = p;
 
             return ListView(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),

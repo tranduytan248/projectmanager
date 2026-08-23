@@ -70,7 +70,11 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   int _assigneeUserId = 0;
   // Mac dinh hom nay — dung truoc day backend tu gan lang le, gio hien tuong minh cho nguoi
   // dung thay va doi lai duoc (yeu cau bo sung sau khi da lam xong ban rut gon).
-  DateTime _startDate = DateTime.now();
+  DateTime _startDate = DateTime(
+    DateTime.now().year,
+    DateTime.now().month,
+    DateTime.now().day,
+  );
   DateTime? _dueDate;
   bool _submitting = false;
   final List<String> _todos = [];

@@ -63,9 +63,13 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
     _future = _service.fetch(scope: widget.scope);
   }
 
-  void _reload() {
+  void _reload({bool forceRefresh = false}) {
     setState(() {
-      _future = _service.fetch(showClosed: _showClosed, scope: widget.scope);
+      _future = _service.fetch(
+        showClosed: _showClosed,
+        scope: widget.scope,
+        forceRefresh: forceRefresh,
+      );
     });
   }
 
@@ -195,51 +199,57 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
       body: SafeArea(
         child: FutureBuilder<MyProjectsData>(
           future: _future,
+          initialData: _service.getCached(showClosed: _showClosed, scope: widget.scope),
           builder: (context, snapshot) {
-            if (snapshot.connectionState != ConnectionState.done) {
+            final data = snapshot.data;
+
+            if (data == null) {
+              if (snapshot.hasError) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const PhosphorIcon(PhosphorIconsRegular.warningCircle,
+                            color: AppTheme.statusDanger, size: 32),
+                        const SizedBox(height: 12),
+                        const AppText('Không tải được danh sách dự án.',
+                            variant: AppTextVariant.body),
+                        const SizedBox(height: 12),
+                        AppButton(
+                          label: 'Thử lại',
+                          onPressed: () => _reload(forceRefresh: true),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
               return const Center(
                 child: AppLoading(),
               );
             }
 
-            if (snapshot.hasError) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const PhosphorIcon(PhosphorIconsRegular.warningCircle,
-                          color: AppTheme.statusDanger, size: 32),
-                      const SizedBox(height: 12),
-                      const AppText('Không tải được danh sách dự án.',
-                          variant: AppTextVariant.body),
-                      const SizedBox(height: 12),
-                      AppButton(
-                        label: 'Thử lại',
-                        onPressed: _reload,
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }
-
-            final data = snapshot.data!;
             final rows = _filtered(data.projects);
 
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-              children: [
-                AppText(
-                  widget.scope == 'team'
-                      ? 'Cả Tổ có ${data.totalCount} dự án'
-                      : 'Bạn có ${data.totalCount} dự án'
-                          '${data.pmCount > 0 ? ' — làm PM ${data.pmCount} dự án' : ''}',
-                  variant: AppTextVariant.body,
-                  fontSize: 15,
-                  weight: FontWeight.w700,
-                ),
+            return RefreshIndicator(
+              color: AppColors.primary,
+              backgroundColor: AppColors.surface,
+              onRefresh: () async => _reload(forceRefresh: true),
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                children: [
+                  AppText(
+                    widget.scope == 'team'
+                        ? 'Cả Tổ có ${data.totalCount} dự án'
+                        : 'Bạn có ${data.totalCount} dự án'
+                            '${data.pmCount > 0 ? ' — làm PM ${data.pmCount} dự án' : ''}',
+                    variant: AppTextVariant.body,
+                    fontSize: 15,
+                    weight: FontWeight.w700,
+                  ),
                 const SizedBox(height: 14),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -329,12 +339,13 @@ class _MyProjectsScreenState extends State<MyProjectsScreen> {
                 else
                   for (final row in rows) _ProjectCard(row: row),
               ],
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _ReportBadge extends StatelessWidget {

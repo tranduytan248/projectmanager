@@ -120,8 +120,8 @@ void main() {
       insertMention(controller, match, option);
 
       expect(controller.text, '@Trần Thiên Long  xin chao');
-      final expectedOffset = '@Trần Thiên Long '.length;
-      expect(controller.selection, TextSelection.collapsed(offset: expectedOffset));
+      const expectedOffset = 17;
+      expect(controller.selection, const TextSelection.collapsed(offset: expectedOffset));
     });
 
     test('chen dung khi "@query" nam o cuoi chuoi', () {

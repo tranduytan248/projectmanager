@@ -1,0 +1,121 @@
+﻿@model List<TTKDGP.ProjectManager.Controllers.DiscussionsController.DiscussionProjectDto>
+@using TTKDGP.ProjectManager.Infrastructure
+@{
+    var currentUser = (ViewBag.CurrentUser as AppIdentity) ?? (User.Identity as AppIdentity);
+    var currentUserFullName = currentUser != null ? currentUser.FullName : "";
+}
+<div class="discussions-panel-head">
+    <span class="discussions-panel-title">Trao đổi chưa xem</span>
+    <a class="discussions-panel-all" href="@Url.Action("Index", "Discussions")">Tất cả dự án ›</a>
+</div>
+
+<div class="discussions-empty" id="panelEmptyState" style="display:none; padding: 24px 16px; text-align: center;">
+    <span class="discussions-empty-icon" style="font-size: 28px; display: block; margin-bottom: 8px;">✓</span>
+    <p style="margin: 0 0 10px; color: var(--text-muted); font-size: 13px;">Không có cuộc trao đổi nào chưa xem.</p>
+    <a class="btn btn-default btn-xs" href="@Url.Action("Index", "Discussions")">Mở Hub Trao đổi ›</a>
+</div>
+
+<div class="discussions-panel-list" id="panelProjectList">
+    @if (Model != null)
+    {
+        foreach (var p in Model)
+        {
+            <a class="discussions-panel-item" href="@Url.Action("Index", "Discussions", new { projectId = p.Id })"
+               data-project-id="@p.Id" style="display:none;">
+                <div class="discussions-item-avatar">
+                    @(string.IsNullOrWhiteSpace(p.Name) ? "DA" : p.Name.Substring(0, Math.Min(2, p.Name.Length)).ToUpper())
+                </div>
+                <div class="discussions-item-content">
+                    <div class="discussions-item-name">
+                        <span>@p.Name</span>
+                        <span class="nav-count-badge" id="panel-count-@p.Id" style="display:none;"></span>
+                    </div>
+                    <div class="discussions-item-summary" id="discussion-summary-@p.Id">
+                        <span class="text-faint">Đang nạp trao đổi...</span>
+                    </div>
+                </div>
+                <div class="discussions-item-meta">
+                    <span class="discussions-item-time" id="discussion-time-@p.Id"></span>
+                </div>
+            </a>
+        }
+    }
+</div>
+
+<script>
+    (function () {
+        if (typeof window.BrewTaskRTDB === 'undefined') return;
+        var rtdb = window.BrewTaskRTDB;
+        var myFullName = @Html.Raw(Json.Encode(currentUserFullName)).toLowerCase();
+        var items = document.querySelectorAll('.discussions-panel-item[data-project-id]');
+        var $empty = document.getElementById('panelEmptyState');
+        var checkedCount = 0;
+        var unreadProjects = 0;
+
+        if (!items || items.length === 0) {
+            if ($empty) $empty.style.display = 'block';
+            return;
+        }
+
+        items.forEach(function (el) {
+            var pid = el.getAttribute('data-project-id');
+            if (!pid) return;
+
+            rtdb.ref('projects/' + pid).once('value', function (snapshot) {
+                checkedCount++;
+                var projData = snapshot.val();
+                var lastRead = parseInt(localStorage.getItem('disc_last_read_' + pid) || '0', 10);
+                var unread = 0;
+
+                if (projData && projData.discussions) {
+                    var msgs = projData.discussions;
+                    Object.keys(msgs).forEach(function (k) {
+                        var m = msgs[k];
+                        var timeMs = m.createdAt || 0;
+                        var isFromMe = (m.senderName || '').toLowerCase() === myFullName;
+                        if (!isFromMe && timeMs > lastRead) {
+                            unread++;
+                        }
+                    });
+                }
+
+                var $sum = document.getElementById('discussion-summary-' + pid);
+                var $time = document.getElementById('discussion-time-' + pid);
+                var $count = document.getElementById('panel-count-' + pid);
+
+                if (unread > 0) {
+                    unreadProjects++;
+                    el.style.display = 'flex';
+                    if ($count) {
+                        $count.style.display = 'inline-block';
+                        $count.textContent = unread > 99 ? '99+' : unread;
+                    }
+                    if (projData && projData.summary && projData.summary.lastMessage) {
+                        if ($sum) {
+                            var sender = projData.summary.lastSenderName ? (projData.summary.lastSenderName + ': ') : '';
+                            $sum.textContent = sender + projData.summary.lastMessage;
+                        }
+                        if ($time && projData.summary.lastUpdatedAt) {
+                            var dt = new Date(projData.summary.lastUpdatedAt);
+                            var h = ('0' + dt.getHours()).slice(-2);
+                            var m = ('0' + dt.getMinutes()).slice(-2);
+                            var d = ('0' + dt.getDate()).slice(-2);
+                            var mo = ('0' + (dt.getMonth() + 1)).slice(-2);
+                            $time.textContent = h + ':' + m + ' ' + d + '/' + mo;
+                        }
+                    }
+                } else {
+                    el.style.display = 'none';
+                }
+
+                if (checkedCount >= items.length) {
+                    if (unreadProjects === 0 && $empty) {
+                        $empty.style.display = 'block';
+                    } else if ($empty) {
+                        $empty.style.display = 'none';
+                    }
+                }
+            });
+        });
+    })();
+</script>

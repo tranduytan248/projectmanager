@@ -58,13 +58,17 @@ class _MyWorkScreenState extends State<MyWorkScreen> {
     super.dispose();
   }
 
-  void _loadData() {
-    _future = _service.fetch(scope: widget.scope, filter: widget.filter);
+  void _loadData({bool forceRefresh = false}) {
+    _future = _service.fetch(
+      scope: widget.scope,
+      filter: widget.filter,
+      forceRefresh: forceRefresh,
+    );
   }
 
-  void _reload() {
+  void _reload({bool forceRefresh = false}) {
     setState(() {
-      _loadData();
+      _loadData(forceRefresh: forceRefresh);
     });
   }
 
@@ -332,15 +336,16 @@ class _MyWorkScreenState extends State<MyWorkScreen> {
       ),
       body: FutureBuilder<List<TaskItem>>(
         future: _future,
+        initialData: _service.getCached(scope: widget.scope, filter: widget.filter),
         builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
+          if (snapshot.data == null && snapshot.connectionState != ConnectionState.done) {
             return const Center(child: AppLoading());
           }
 
-          if (snapshot.hasError) {
+          if (snapshot.data == null && snapshot.hasError) {
             return AppErrorState(
               message: 'Không tải được danh sách công việc.',
-              onRetry: _reload,
+              onRetry: () => _reload(forceRefresh: true),
             );
           }
 
@@ -362,7 +367,7 @@ class _MyWorkScreenState extends State<MyWorkScreen> {
           final countCompleted = allTasks.where((t) => t.state == 'HoanThanh').length;
 
           return RefreshIndicator(
-            onRefresh: () async => _reload(),
+            onRefresh: () async => _reload(forceRefresh: true),
             color: AppColors.primary,
             child: Column(
               children: [

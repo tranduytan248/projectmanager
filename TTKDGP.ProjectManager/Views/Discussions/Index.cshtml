@@ -1,0 +1,324 @@
+﻿@model TTKDGP.ProjectManager.Controllers.DiscussionsController.DiscussionHubViewModel
+@using TTKDGP.ProjectManager.Infrastructure
+@{
+    var pName = Model.SelectedProject != null ? Model.SelectedProject.Name : "Dự án";
+    ViewBag.Title = "Trao đổi: " + pName;
+    ViewBag.Crumbs = new List<TTKDGP.ProjectManager.Models.Crumb>
+    {
+        new TTKDGP.ProjectManager.Models.Crumb { Label = "Dự án", Url = Url.Action("Index", "WorkProjects") },
+        new TTKDGP.ProjectManager.Models.Crumb { Label = pName, Url = Model.SelectedProject != null ? Url.Action("Details", "WorkProjects", new { id = Model.SelectedProject.Id }) : null },
+        new TTKDGP.ProjectManager.Models.Crumb { Label = "Trao đổi" }
+    };
+}
+
+<div class="discussions-hub-page">
+    <div class="discussions-hub-layout">
+        <!-- Khung Chat thời gian thực của dự án -->
+        <section class="discussions-chat-container">
+            @if (Model.SelectedProject != null)
+            {
+                var p = Model.SelectedProject;
+                <div class="chat-header">
+                    <div class="chat-header-info">
+                        <div class="chat-header-avatar">
+                            @(string.IsNullOrWhiteSpace(p.Name) ? "DA" : p.Name.Substring(0, Math.Min(2, p.Name.Length)).ToUpper())
+                        </div>
+                        <div>
+                            <div class="chat-header-title">@p.Name</div>
+                            <div class="chat-header-subtitle">
+                                <span class="badge-status-dot online"></span>
+                                <span>Thời gian thực</span>
+                                @if (Model.Members != null && Model.Members.Count > 0)
+                                {
+                                    <span> · @Model.Members.Count thành viên</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chat-header-actions" style="display: flex; gap: 8px;">
+                        <a class="btn btn-default btn-sm" href="@Url.Action("Details", "WorkProjects", new { id = p.Id })">
+                            ‹ Chi tiết dự án
+                        </a>
+                        <a class="btn btn-default btn-sm" href="@Url.Action("Index", "Checklist", new { projectId = p.Id })">
+                            Checklist
+                        </a>
+                        <a class="btn btn-default btn-sm" href="@Url.Action("Members", "WorkProjects", new { id = p.Id })">
+                            Nhân sự
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Danh sách tin nhắn cuộn -->
+                <div class="chat-messages-area" id="chatMessagesArea">
+                    <div class="chat-loading-placeholder" id="chatLoadingPlaceholder">
+                        <div class="chat-spinner"></div>
+                        <span>Đang đồng bộ tin nhắn thời gian thực...</span>
+                    </div>
+                    <div class="chat-empty-state" id="chatEmptyState" style="display:none;">
+                        <span class="empty-icon">💬</span>
+                        <div class="empty-title">Chưa có trao đổi nào trong dự án này</div>
+                        <div class="empty-desc">Hãy gửi tin nhắn đầu tiên để cùng đồng nghiệp trao đổi tiến độ!</div>
+                    </div>
+                    <div class="chat-messages-list" id="chatMessagesList"></div>
+                </div>
+
+                <!-- Popup gợi ý Mention (&#64;) -->
+                <div class="mention-picker-popup" id="mentionPickerPopup" style="display:none;">
+                    <div class="mention-picker-head">Gợi ý thành viên (&#64;)</div>
+                    <div class="mention-picker-list" id="mentionPickerList">
+                        @if (Model.Members != null)
+                        {
+                            foreach (var m in Model.Members)
+                            {
+                                <div class="mention-picker-item" data-fullname="@m.FullName" data-username="@m.Username">
+                                    <div class="mention-avatar">@(string.IsNullOrWhiteSpace(m.FullName) ? "NV" : m.FullName.Substring(0, Math.Min(2, m.FullName.Length)).ToUpper())</div>
+                                    <div class="mention-info">
+                                        <span class="mention-name">@m.FullName</span>
+                                        <span class="mention-uname">&#64;@m.Username</span>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+
+                <!-- Thanh soạn thảo tin nhắn -->
+                <div class="chat-input-container">
+                    <div class="chat-input-bar">
+                        <button type="button" class="chat-tool-btn" id="btnMentionTrigger" title="Nhắc tên thành viên (&#64;)">&#64;</button>
+                        <input type="text" id="chatInputText" class="chat-input-field" placeholder="Nhập tin nhắn trao đổi (nhấn Enter để gửi)..." autocomplete="off" />
+                        <button type="button" class="chat-send-btn" id="btnSendMessage" title="Gửi tin nhắn">
+                            <span class="send-icon">➤</span>
+                            <span class="send-label">Gửi</span>
+                        </button>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="chat-no-project">
+                    <span class="empty-icon">💬</span>
+                    <div class="empty-title">Không tìm thấy dự án</div>
+                    <p class="empty-desc">Dự án không tồn tại hoặc bạn chưa được phân công tham gia.</p>
+                    <a class="btn btn-primary" href="@Url.Action("Index", "WorkProjects")">Về danh sách dự án</a>
+                </div>
+            }
+        </section>
+    </div>
+</div>
+
+@if (Model.SelectedProject != null)
+{
+    var currentProjId = Model.SelectedProjectId;
+    var currentProjName = Model.SelectedProject.Name;
+    var currentUserId = Model.CurrentUserId;
+    var currentUserName = Model.CurrentUserName;
+    var currentUserFullName = Model.CurrentUserFullName;
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var projectId = @currentProjId;
+            var projectName = @Html.Raw(Json.Encode(currentProjName));
+            var currentUserId = @currentUserId;
+            var currentUserName = @Html.Raw(Json.Encode(currentUserName));
+            var currentUserFullName = @Html.Raw(Json.Encode(currentUserFullName));
+
+            var $input = document.getElementById('chatInputText');
+            var $btnSend = document.getElementById('btnSendMessage');
+            var $messagesList = document.getElementById('chatMessagesList');
+            var $loading = document.getElementById('chatLoadingPlaceholder');
+            var $empty = document.getElementById('chatEmptyState');
+            var $scrollArea = document.getElementById('chatMessagesArea');
+            var $mentionPicker = document.getElementById('mentionPickerPopup');
+            var $btnMention = document.getElementById('btnMentionTrigger');
+
+            var rtdb = window.BrewTaskRTDB;
+            if (!rtdb) {
+                console.error('[RTDB] Firebase Realtime Database chua duoc khoi tao');
+                return;
+            }
+
+            var messagesRef = rtdb.ref('projects/' + projectId + '/discussions');
+            var summaryRef = rtdb.ref('projects/' + projectId + '/summary');
+            var hasMessages = false;
+
+            // Cuon xuong cuoi
+            function scrollToBottom() {
+                setTimeout(function () {
+                    $scrollArea.scrollTop = $scrollArea.scrollHeight;
+                }, 50);
+            }
+
+            // Dinh dang thoi gian
+            function formatTime(timestamp) {
+                if (!timestamp) return '';
+                var dt = new Date(timestamp);
+                var h = ('0' + dt.getHours()).slice(-2);
+                var m = ('0' + dt.getMinutes()).slice(-2);
+                var d = ('0' + dt.getDate()).slice(-2);
+                var mo = ('0' + (dt.getMonth() + 1)).slice(-2);
+                return h + ':' + m + ' ' + d + '/' + mo;
+            }
+
+            // Kiem tra tin nhan co phai do chinh minh gui khong
+            function isMyMessage(msgData) {
+                if (!msgData) return false;
+                if (msgData.senderId && currentUserId && parseInt(msgData.senderId, 10) === parseInt(currentUserId, 10)) {
+                    return true;
+                }
+                if (msgData.senderUsername && currentUserName &&
+                    msgData.senderUsername.toString().trim().toLowerCase() === currentUserName.toString().trim().toLowerCase()) {
+                    return true;
+                }
+                if (msgData.senderName && currentUserFullName &&
+                    msgData.senderName.toString().trim().toLowerCase() === currentUserFullName.toString().trim().toLowerCase()) {
+                    return true;
+                }
+                if (msgData.senderName && currentUserName &&
+                    msgData.senderName.toString().trim().toLowerCase() === currentUserName.toString().trim().toLowerCase()) {
+                    return true;
+                }
+                if (msgData.senderName === 'Tôi') {
+                    return true;
+                }
+                return false;
+            }
+
+            // Tao bong bong tin nhan
+            function createMessageElement(msgId, msgData) {
+                var isMe = isMyMessage(msgData);
+
+                var bubbleWrap = document.createElement('div');
+                bubbleWrap.className = 'chat-message-row ' + (isMe ? 'is-me' : 'is-other');
+                bubbleWrap.id = 'msg-' + msgId;
+
+                var senderAvatar = (msgData.senderName || 'NV').substring(0, 2).toUpperCase();
+                var timeFormatted = formatTime(msgData.createdAt);
+
+                var atChar = String.fromCharCode(64);
+                var contentHtml = (msgData.content || '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(new RegExp(atChar + '([\\p{L}\\p{N}_\\. ]+)', 'gu'), '<span class="mention-highlight">' + atChar + '$1</span>');
+
+                var html = '';
+                if (!isMe) {
+                    html += '<div class="msg-avatar" title="' + (msgData.senderName || '') + '">' + senderAvatar + '</div>';
+                }
+                html += '<div class="msg-content-box">';
+                if (!isMe) {
+                    html += '<div class="msg-sender-name">' + (msgData.senderName || 'Dong nghiep') + '</div>';
+                }
+                html += '  <div class="msg-bubble">' + contentHtml + '</div>';
+                html += '  <div class="msg-meta">' + timeFormatted + '</div>';
+                html += '</div>';
+
+                bubbleWrap.innerHTML = html;
+                return bubbleWrap;
+            }
+
+            // Lang nghe tin nhan realtime
+            messagesRef.on('child_added', function (snapshot) {
+                var msgData = snapshot.val();
+                if (!msgData) return;
+
+                if (!hasMessages) {
+                    hasMessages = true;
+                    if ($loading) $loading.style.display = 'none';
+                    if ($empty) $empty.style.display = 'none';
+                }
+
+                var el = createMessageElement(snapshot.key, msgData);
+                $messagesList.appendChild(el);
+                scrollToBottom();
+            });
+
+            // Sau 2s neu khong co tin nhan nao thi an loading, hien empty state
+            setTimeout(function () {
+                if (!hasMessages) {
+                    if ($loading) $loading.style.display = 'none';
+                    if ($empty) $empty.style.display = 'flex';
+                }
+            }, 1800);
+
+            // Gui tin nhan
+            function sendMessage() {
+                var text = ($input.value || '').trim();
+                if (!text) return;
+
+                $input.value = '';
+                $input.focus();
+
+                var newMsgRef = messagesRef.push();
+                var payload = {
+                    projectId: projectId,
+                    senderId: currentUserId,
+                    senderName: currentUserFullName,
+                    senderUsername: currentUserName,
+                    senderAvatar: '',
+                    content: text,
+                    createdAt: firebase.database.ServerValue.TIMESTAMP
+                };
+
+                newMsgRef.set(payload).then(function () {
+                    summaryRef.set({
+                        projectId: projectId,
+                        projectName: projectName,
+                        lastMessage: text,
+                        lastSenderName: currentUserFullName,
+                        lastSenderId: currentUserId,
+                        lastUpdatedAt: firebase.database.ServerValue.TIMESTAMP
+                    });
+
+                    // Gui Push Notification toi Mobile cho cac thanh vien khac
+                    $.post('/api/NotificationsApi/SendProjectDiscussionNotification', {
+                        projectId: projectId,
+                        content: text,
+                        senderName: currentUserFullName
+                    });
+                }).catch(function (err) {
+                    console.error('[RTDB] Loi gui tin nhan:', err);
+                    alert('Khong the gui tin nhan. Vui long thu lai.');
+                });
+            }
+
+            $btnSend.addEventListener('click', sendMessage);
+            $input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            // Xu ly Mention thanh vien
+            if ($btnMention && $mentionPicker) {
+                $btnMention.addEventListener('click', function () {
+                    $mentionPicker.style.display = $mentionPicker.style.display === 'none' ? 'block' : 'none';
+                });
+
+                var mentionItems = document.querySelectorAll('.mention-picker-item');
+                mentionItems.forEach(function (item) {
+                    item.addEventListener('click', function () {
+                        var name = item.getAttribute('data-fullname');
+                        if (name) {
+                            $input.value = ($input.value ? $input.value + ' ' : '') + String.fromCharCode(64) + name + ' ';
+                            $input.focus();
+                        }
+                        $mentionPicker.style.display = 'none';
+                    });
+                });
+
+                document.addEventListener('click', function (e) {
+                    if (!e.target.closest('#mentionPickerPopup') && !e.target.closest('#btnMentionTrigger')) {
+                        $mentionPicker.style.display = 'none';
+                    }
+                });
+            }
+
+            if (projectId > 0) {
+                localStorage.setItem('disc_last_read_' + projectId, Date.now());
+            }
+        });
+    </script>
+}

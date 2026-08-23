@@ -30,6 +30,8 @@ void main() {
         ),
       ),
     );
+    await tester.enterText(find.byType(AppTextField).first, 'Công việc mẫu');
+    await tester.pump();
   }
 
   /// Mo lich cua truong ngay tai [fieldIndex], chuyen thang neu can roi bam dung ngay [target],
@@ -59,7 +61,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  const errorText = 'Hạn hoàn thành phải sau ngày bắt đầu';
+  const errorText = 'Hạn hoàn thành không được sớm hơn ngày bắt đầu';
 
   testWidgets(
     'Han hoan thanh chon dung bang Ngay bat dau (ca hai qua lich) thi hop le',

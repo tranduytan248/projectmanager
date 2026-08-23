@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -62,11 +63,21 @@ namespace TTKDGP.ProjectManager.Services
             }
 
             var deviceToken = user.FcmDeviceToken.Trim();
+            await SendDirectAsync(deviceToken, title, body, type, projectId, taskId);
+        }
+
+        /// <summary>
+        /// Gửi trực tiếp tin nhắn Push Notification tới một Device Token cụ thể.
+        /// </summary>
+        public static async Task<bool> SendDirectAsync(string deviceToken, string title, string body, string type = "", int projectId = 0, int taskId = 0)
+        {
+            if (string.IsNullOrWhiteSpace(deviceToken)) return false;
+
             var serviceAccount = LoadServiceAccount();
             if (serviceAccount == null)
             {
                 LogWarning("Chưa tìm thấy tệp cấu hình firebase-service-account.json trong App_Data. Không thể gửi FCM.");
-                return;
+                return false;
             }
 
             var projectIdStr = serviceAccount.ProjectId ?? DefaultProjectId;
@@ -74,7 +85,7 @@ namespace TTKDGP.ProjectManager.Services
             if (string.IsNullOrWhiteSpace(accessToken))
             {
                 LogWarning("Không thể tạo OAuth2 Access Token từ Google Service Account.");
-                return;
+                return false;
             }
 
             var fcmUrl = string.Format("https://fcm.googleapis.com/v1/projects/{0}/messages:send", projectIdStr);
@@ -83,7 +94,7 @@ namespace TTKDGP.ProjectManager.Services
             {
                 message = new
                 {
-                    token = deviceToken,
+                    token = deviceToken.Trim(),
                     notification = new
                     {
                         title = string.IsNullOrWhiteSpace(title) ? "BrewTask" : title,
@@ -123,7 +134,10 @@ namespace TTKDGP.ProjectManager.Services
             {
                 var respBody = await response.Content.ReadAsStringAsync();
                 LogWarning(string.Format("FCM HTTP v1 trả về mã lỗi {0}: {1}", (int)response.StatusCode, respBody));
+                return false;
             }
+
+            return true;
         }
 
         #region Google Service Account & OAuth2 JWT
@@ -147,6 +161,21 @@ namespace TTKDGP.ProjectManager.Services
         {
             try
             {
+                // 1. Kiểm tra Web.config AppSettings trực tiếp
+                var jsonConfig = ConfigurationManager.AppSettings["FirebaseServiceAccountJson"];
+                if (!string.IsNullOrWhiteSpace(jsonConfig))
+                {
+                    return JsonConvert.DeserializeObject<ServiceAccountInfo>(jsonConfig);
+                }
+
+                var customPath = ConfigurationManager.AppSettings["FirebaseServiceAccountPath"];
+                if (!string.IsNullOrWhiteSpace(customPath) && File.Exists(customPath))
+                {
+                    var content = File.ReadAllText(customPath);
+                    return JsonConvert.DeserializeObject<ServiceAccountInfo>(content);
+                }
+
+                // 2. Kiểm tra App_Data/firebase-service-account.json
                 var appDataPath = HostingEnvironment.MapPath("~/App_Data/firebase-service-account.json");
                 if (File.Exists(appDataPath))
                 {
@@ -154,6 +183,7 @@ namespace TTKDGP.ProjectManager.Services
                     return JsonConvert.DeserializeObject<ServiceAccountInfo>(content);
                 }
 
+                // 3. Kiểm tra App_Data/service-account.json
                 var fallbackPath = HostingEnvironment.MapPath("~/App_Data/service-account.json");
                 if (File.Exists(fallbackPath))
                 {

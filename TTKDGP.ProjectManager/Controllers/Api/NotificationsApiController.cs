@@ -94,5 +94,75 @@ namespace TTKDGP.ProjectManager.Controllers.Api
 
             return Json(new { ok = true, message = "Đã cập nhật thiết bị nhận thông báo thành công" });
         }
+
+        /// <summary>
+        /// Gửi thử nghiệm một Push Notification tới tài khoản hiện tại hoặc UserId chỉ định.
+        /// Hỗ trợ kiểm thử điều hướng và khả năng nhận notification trên mobile.
+        /// </summary>
+        [HttpPost]
+        public async System.Threading.Tasks.Task<ActionResult> SendTestPush(string title = "Thông báo thử nghiệm", string message = "Kiểm tra gửi Push Notification từ máy chủ", string type = "", int projectId = 0, int taskId = 0, int targetUserId = 0)
+        {
+            var targetId = targetUserId > 0 ? targetUserId : CurrentUserId;
+            var user = Repository.Users.Find(targetId);
+            if (user == null)
+            {
+                return Json(new { ok = false, message = "Không tìm thấy người dùng" });
+            }
+
+            if (string.IsNullOrWhiteSpace(user.FcmDeviceToken))
+            {
+                return Json(new { ok = false, message = "Người dùng chưa đăng ký thiết bị nhận thông báo (FcmDeviceToken rỗng)" });
+            }
+
+            var success = await FcmPushService.SendDirectAsync(user.FcmDeviceToken, title, message, type, projectId, taskId);
+            return Json(new
+            {
+                ok = success,
+                message = success ? "Đã gửi Push Notification thành công tới thiết bị" : "Không thể gửi Push Notification (hãy kiểm tra firebase-service-account.json hoặc log máy chủ)",
+                targetUser = user.FullName,
+                deviceToken = user.FcmDeviceToken
+            });
+        }
+
+        /// <summary>
+        /// Gửi Push Notification trao đổi dự án cho tất cả thành viên (trừ người gửi).
+        /// </summary>
+        [HttpPost]
+        public ActionResult SendProjectDiscussionNotification(int projectId, string content, string senderName = "")
+        {
+            if (projectId <= 0 || string.IsNullOrWhiteSpace(content))
+            {
+                return Json(new { ok = false, message = "Dữ liệu không hợp lệ" });
+            }
+
+            var project = Repository.WorkProjects.Find(projectId);
+            if (project == null) return HttpNotFound();
+
+            var currentUserId = CurrentUserId;
+            var senderDisplayName = string.IsNullOrWhiteSpace(senderName)
+                ? (CurrentUser != null ? CurrentUser.FullName : "Đồng nghiệp")
+                : senderName.Trim();
+
+            // Lấy danh sách thành viên dự án (trừ người gửi)
+            var members = Repository.WorkAssignments.All()
+                .Where(a => a.ProjectId == projectId && a.IsActive && a.UserId != currentUserId)
+                .Select(a => a.UserId)
+                .Distinct()
+                .ToList();
+
+            var trimmedContent = content.Trim();
+
+            foreach (var memberId in members)
+            {
+                NotificationService.Add(
+                    userId: memberId,
+                    type: "TraoDoiDuAn",
+                    message: string.Format("{0} đã nhắn trong dự án \"{1}\": {2}", senderDisplayName, project.Name, trimmedContent),
+                    projectId: projectId
+                );
+            }
+
+            return Json(new { ok = true, recipientCount = members.Count });
+        }
     }
 }

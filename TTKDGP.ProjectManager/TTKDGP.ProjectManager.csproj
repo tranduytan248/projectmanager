@@ -80,6 +80,7 @@
     <Compile Include="Controllers\AccountController.cs" />
     <Compile Include="Controllers\AssignmentsController.cs" />
     <Compile Include="Controllers\BaseController.cs" />
+    <Compile Include="Controllers\DiscussionsController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\MembersController.cs" />
     <Compile Include="Controllers\ProjectsController.cs" />

@@ -31,25 +31,59 @@
        lan publish, khong can nho tay tang so. *@
     <link rel="stylesheet" href="@Url.Content("~/Content/site.css")?v=@System.IO.File.GetLastWriteTimeUtc(Server.MapPath("~/Content/site.css")).Ticks" />
 
-    @* Firebase Analytics (GA4) — cung du an "brewtask-99719" voi ban mobile. MVC nay tai lai
-       toan bo trang cho moi man hinh (khong phai SPA) nen Analytics tu ghi nhan page_view cho
-       tung man ma khong can goi logEvent tay o tung noi. *@
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics.js";
-
+    @* Firebase SDK (App, Analytics & Realtime Database) — kết nối dự án "brewtask-99719" *@
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics-compat.js"></script>
+    <script>
         const firebaseConfig = {
             apiKey: "AIzaSyAUT7WwXd7bwCb8HlWBOaZC_UqGZBiEYaw",
             authDomain: "brewtask-99719.firebaseapp.com",
+            databaseURL: "https://brewtask-99719-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "brewtask-99719",
             storageBucket: "brewtask-99719.firebasestorage.app",
             messagingSenderId: "810388374826",
             appId: "1:810388374826:web:1cb79b77d3d246d1f40a53",
             measurementId: "G-S94R27X1G6"
         };
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        try { firebase.analytics(); } catch (e) {}
+        window.BrewTaskRTDB = firebase.database();
 
-        const firebaseApp = initializeApp(firebaseConfig);
-        getAnalytics(firebaseApp);
+        // Lắng nghe tổng số tin nhắn CHƯA ĐỌC để cập nhật badge trên Topbar
+        try {
+            var currentUserName = '@(currentUser != null ? currentUser.FullName : "")'.toLowerCase();
+            window.BrewTaskRTDB.ref('projects').on('value', function(snapshot) {
+                var val = snapshot.val();
+                var badge = document.getElementById('webDiscussionsBadge');
+                if (!badge) return;
+                var totalUnread = 0;
+                if (val) {
+                    Object.keys(val).forEach(function(pid) {
+                        if (val[pid] && val[pid].discussions) {
+                            var lastRead = parseInt(localStorage.getItem('disc_last_read_' + pid) || '0', 10);
+                            var disc = val[pid].discussions;
+                            Object.keys(disc).forEach(function(mk) {
+                                var m = disc[mk];
+                                var timeMs = m.createdAt || 0;
+                                var isFromMe = (m.senderName || '').toLowerCase() === currentUserName;
+                                if (!isFromMe && timeMs > lastRead) {
+                                    totalUnread++;
+                                }
+                            });
+                        }
+                    });
+                }
+                if (totalUnread > 0) {
+                    badge.style.display = 'inline-block';
+                    badge.textContent = totalUnread > 99 ? '99+' : totalUnread;
+                } else {
+                    badge.style.display = 'none';
+                }
+            });
+        } catch (e) {}
     </script>
 </head>
 @* Chưa đăng nhập thì không dựng menu dọc — trang Đăng nhập dùng trọn bề ngang *@
@@ -158,6 +192,18 @@
                     @if (currentUser != null)
                     {
                         var unread = TTKDGP.ProjectManager.Services.NotificationService.UnreadCount(currentUser.UserId);
+
+                        @* Nút Trao đổi Dự án bên cạnh Chuông Thông báo *@
+                        <div class="notif discussions-hub-trigger" data-discussions-hub>
+                            <button type="button" class="notif-bell discussions-bell" data-discussions-toggle
+                                    title="Trao đổi dự án" aria-label="Trao đổi dự án">
+                                <span class="notif-bell-icon">💬</span>
+                                <span class="notif-badge discussion-badge" id="webDiscussionsBadge" style="display:none; background-color: #2563eb;">0</span>
+                            </button>
+                            <div class="notif-panel discussions-dropdown-panel" data-discussions-panel
+                                 data-url="@Url.Action("Panel", "Discussions")"></div>
+                        </div>
+
                         <div class="notif" data-notif>
                             <button type="button" class="notif-bell" data-notif-toggle
                                     title="Thông báo" aria-label="Thông báo">
