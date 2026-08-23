@@ -9,13 +9,18 @@
     var assignedTasks = ViewBag.AssignedTasks as List<WorkTask> ?? new List<WorkTask>();
     var isSaved = ViewBag.IsSaved != null && (bool)ViewBag.IsSaved;
 
-    // Giờ công thật của từng việc (người thực hiện tự khai). Việc chưa ai ghi thì không có
-    // khoá trong map — hàm dưới trả 0 để chỗ hiển thị khỏi phải kiểm tra hai lần.
     var loggedHours = ViewBag.LoggedHours as Dictionary<int, decimal> ?? new Dictionary<int, decimal>();
     Func<WorkTask, decimal> loggedOf = task =>
     {
         decimal h;
         return loggedHours.TryGetValue(task.Id, out h) ? h : 0m;
+    };
+
+    var loggedInMonth = ViewBag.LoggedInMonth as Dictionary<int, decimal> ?? new Dictionary<int, decimal>();
+    Func<WorkTask, decimal> loggedInMonthOf = task =>
+    {
+        decimal h;
+        return loggedInMonth.TryGetValue(task.Id, out h) ? h : 0m;
     };
 
     var can = ViewBag.Can as Func<string, bool>;
@@ -266,7 +271,7 @@
                     <strong>@Model.RequiredHours.ToString("0.##") giờ</strong>
                 </div>
                 <div class="kpi-line">
-                    <span>Giờ đã làm <span class="muted">(chỉ việc đã hoàn thành)</span></span>
+                    <span>Giờ đã làm <span class="muted">(ngoại trừ việc Chưa bắt đầu)</span></span>
                     <strong>@Model.WorkedHours.ToString("0.##") giờ</strong>
                 </div>
                 @if (Model.IsSupportCapped)
@@ -402,8 +407,8 @@
                         <th>Công việc</th>
                         <th class="nowrap col-hide-sm">Thời gian</th>
                         <th class="col-hide-sm">Báo cáo đúng hạn</th>
-                        <th class="center">Giờ tính</th>
-                        <th class="center">Giờ công</th>
+                        <th class="center">Log trong tháng</th>
+                        <th class="center">Tổng log</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -411,7 +416,7 @@
                     {
                         var done = t.State == TaskStates.Done;
                         var isLateOrOverdue = (done && !t.IsOnTime) || t.IsOverdue;
-                        var counts = done;
+                        var counts = t.State != TaskStates.NotStarted && t.State != TaskStates.Cancelled;
                         <tr class="@(isLateOrOverdue ? "row-due-warn" : "")">
                             <td class="col-name">
                                 @(string.IsNullOrWhiteSpace(t.Code) ? t.Title : t.Code + " · " + t.Title)
@@ -440,7 +445,15 @@
                             <td class="center">
                                 @if (counts)
                                 {
-                                    <strong>@KpiService.HoursOf(new[] { t }, Model.Year, Model.Month).ToString("0.#")h</strong>
+                                    var hSup = loggedInMonthOf(t);
+                                    if (hSup > 0)
+                                    {
+                                        <strong>@hSup.ToString("0.##")h</strong>
+                                    }
+                                    else
+                                    {
+                                        <span class="muted">0h</span>
+                                    }
                                 }
                                 else
                                 {
@@ -451,7 +464,7 @@
                                 @{ var loggedSup = loggedOf(t); }
                                 @if (loggedSup > 0)
                                 {
-                                    <strong>@loggedSup.ToString("0.##")h</strong>
+                                    <span>@loggedSup.ToString("0.##")h</span>
                                 }
                                 else
                                 {
@@ -471,7 +484,7 @@
                 @Model.SupportHoursRaw.ToString("0.#") giờ của cả nhóm: nhiều việc chạy trùng ngày
                 thì ngày đó chỉ được tính <strong>một lần</strong>.
                 Chỉ đếm ngày <strong>nằm trong tháng</strong> @Model.Month/@Model.Year.
-                Việc <strong>chưa hoàn thành</strong> (chưa bắt đầu, đang làm, tạm dừng) chưa sinh giờ nào.
+                Việc <strong>chưa bắt đầu</strong> chưa được tính giờ.
             </span>
         </div>
     }
@@ -546,8 +559,8 @@
                         <th>Công việc</th>
                         <th class="nowrap col-hide-sm">Thời gian</th>
                         <th class="col-hide-sm">Báo cáo đúng hạn</th>
-                        <th class="center">Giờ tính</th>
-                        <th class="center">Giờ công</th>
+                        <th class="center">Log trong tháng</th>
+                        <th class="center">Tổng log</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -555,7 +568,7 @@
                     {
                         var done = t.State == TaskStates.Done;
                         var isLateOrOverdue = (done && !t.IsOnTime) || t.IsOverdue;
-                        var counts = done;
+                        var counts = t.State != TaskStates.NotStarted && t.State != TaskStates.Cancelled;
                         <tr class="@(isLateOrOverdue ? "row-due-warn" : "")">
                             <td class="col-name">
                                 @(string.IsNullOrWhiteSpace(t.Code) ? t.Title : t.Code + " · " + t.Title)
@@ -592,7 +605,15 @@
                             <td class="center">
                                 @if (counts)
                                 {
-                                    <strong>@KpiService.HoursOf(new[] { t }, Model.Year, Model.Month).ToString("0.#")h</strong>
+                                    var hExe = loggedInMonthOf(t);
+                                    if (hExe > 0)
+                                    {
+                                        <strong>@hExe.ToString("0.##")h</strong>
+                                    }
+                                    else
+                                    {
+                                        <span class="muted">0h</span>
+                                    }
                                 }
                                 else
                                 {
@@ -603,7 +624,7 @@
                                 @{ var logged = loggedOf(t); }
                                 @if (logged > 0)
                                 {
-                                    <strong>@logged.ToString("0.##")h</strong>
+                                    <span>@logged.ToString("0.##")h</span>
                                 }
                                 else
                                 {
@@ -624,7 +645,7 @@
                 @Model.ExecuteHours.ToString("0.#") giờ của cả nhóm: nhiều việc chạy trùng ngày thì
                 ngày đó chỉ được tính <strong>một lần</strong> — một người làm ba việc song song
                 trong tuần vẫn chỉ là một tuần công, không phải ba.
-                Việc <strong>chưa hoàn thành</strong> (chưa bắt đầu, đang làm, tạm dừng) chưa sinh giờ nào.
+                Việc <strong>chưa bắt đầu</strong> chưa được tính giờ.
             </span>
         </div>
     }

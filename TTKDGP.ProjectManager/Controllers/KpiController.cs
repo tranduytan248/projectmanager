@@ -151,9 +151,9 @@ namespace TTKDGP.ProjectManager.Controllers
             ViewBag.AssignedTasks = tasks.Where(t => t.Kind == TaskKinds.Standalone)
                 .OrderBy(t => t.DueDate).ToList();
 
-            // Giờ công THẬT do người thực hiện tự khai, khác với cột "Giờ tính" quy đổi từ số
-            // ngày của việc. Hiện cả hai cạnh nhau để thấy được chỗ lệch giữa ước lượng theo
-            // ngày và công sức thật bỏ ra. Nạp một lượt cho mọi việc, không hỏi lại từng dòng.
+            var from = new DateTime(year, month, 1);
+            var to = from.AddMonths(1).AddDays(-1);
+            ViewBag.LoggedInMonth = TimeLogService.HoursByTask(userId, from, to);
             ViewBag.LoggedHours = TimeLogService.TotalsByTask(tasks.Select(t => t.Id));
 
             return View(row);
