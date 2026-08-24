@@ -55,11 +55,6 @@ class ProjectDiscussionMessage {
     }
 
     final path = attachmentUrl.startsWith('/') ? attachmentUrl : '/$attachmentUrl';
-
-    if (kDebugMode && !kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2:8080$path';
-    }
-
     final base = ApiEndpoint.baseUrl.endsWith('/')
         ? ApiEndpoint.baseUrl.substring(0, ApiEndpoint.baseUrl.length - 1)
         : ApiEndpoint.baseUrl;
