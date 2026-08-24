@@ -1,0 +1,76 @@
+﻿@{
+    ViewBag.Title = "Chính sách quyền riêng tư - BrewTask";
+}
+
+<div class="card" style="max-width: 900px; margin: 24px auto; padding: 32px 28px;">
+    <div style="border-bottom: 1px solid var(--border-color, #e2e8f0); padding-bottom: 16px; margin-bottom: 24px;">
+        <h1 style="font-size: 24px; font-weight: 700; margin: 0 0 8px; color: var(--text-heading, #1e293b);">Chính sách quyền riêng tư (Privacy Policy)</h1>
+        <p class="muted" style="margin: 0; font-size: 13px;">Ứng dụng: <strong>BrewTask - Quản Lý Công Việc</strong> &bull; Cập nhật lần cuối: 24/08/2026</p>
+    </div>
+
+    <div class="rich-content" style="line-height: 1.7; color: var(--text-color, #334155); font-size: 14px;">
+        <section style="margin-bottom: 24px;">
+            <h2 style="font-size: 17px; font-weight: 600; margin-bottom: 8px; color: var(--primary, #1a56a8);">1. Giới thiệu</h2>
+            <p>
+                Ứng dụng di động <strong>BrewTask</strong> và hệ thống quản lý trực tuyến được phát triển bởi <strong>Tổ NCPT &mdash; Trung tâm Kinh doanh Giải pháp, VNPT Khánh Hòa</strong>. Chúng tôi tôn trọng và cam kết bảo vệ quyền riêng tư của bạn. Chính sách này mô tả cách chúng tôi thu thập, sử dụng và bảo vệ thông tin khi bạn sử dụng ứng dụng BrewTask.
+            </p>
+        </section>
+
+        <section style="margin-bottom: 24px;">
+            <h2 style="font-size: 17px; font-weight: 600; margin-bottom: 8px; color: var(--primary, #1a56a8);">2. Thông tin chúng tôi thu thập</h2>
+            <p>Để phục vụ công tác quản lý dự án, phân công công việc và kết nối đội ngũ, ứng dụng có thể tiếp nhận các thông tin sau:</p>
+            <ul>
+                <li><strong>Thông tin tài khoản:</strong> Tên đăng nhập, họ tên, email, chức vụ, phòng ban và ảnh đại diện do đơn vị cấp.</li>
+                <li><strong>Dữ liệu công việc & dự án:</strong> Tiến độ thực hiện, nhật ký thời gian làm việc (log time), nội dung trao đổi, bình luận và các tệp tin đính kèm (ảnh, tài liệu).</li>
+                <li><strong>Thông tin kỹ thuật & thiết bị:</strong> Token thông báo đẩy (FCM Token), thông số hệ điều hành và thông tin phân tích hiệu năng (thông qua Firebase Analytics) nhằm mục đích cải thiện độ ổn định và phát hiện sự cố.</li>
+            </ul>
+        </section>
+
+        <section style="margin-bottom: 24px;">
+            <h2 style="font-size: 17px; font-weight: 600; margin-bottom: 8px; color: var(--primary, #1a56a8);">3. Các quyền ứng dụng yêu cầu trên thiết bị</h2>
+            <p>Ứng dụng yêu cầu một số quyền cần thiết để kích hoạt các tính năng cốt lõi:</p>
+            <ul>
+                <li><strong>Quyền Truy cập Internet (<code>android.permission.INTERNET</code>):</strong> Để đồng bộ dữ liệu công việc, dự án và gửi nhận tin nhắn trao đổi thời gian thực.</li>
+                <li><strong>Quyền Thông báo (<code>android.permission.POST_NOTIFICATIONS</code>):</strong> Để gửi thông báo đẩy nhắc nhở khi có công việc mới, phản hồi hoặc phê duyệt đơn nghỉ phép.</li>
+                <li><strong>Quyền Rung (<code>android.permission.VIBRATE</code>):</strong> Báo hiệu khi có thông báo quan trọng từ hệ thống.</li>
+                <li><strong>Quyền Đọc / Chọn tệp tin & Ảnh:</strong> Chỉ được kích hoạt khi bạn chủ động chọn hình ảnh hoặc tệp tin tài liệu để đính kèm vào phòng trao đổi dự án hoặc bình luận công việc.</li>
+            </ul>
+        </section>
+
+        <section style="margin-bottom: 24px;">
+            <h2 style="font-size: 17px; font-weight: 600; margin-bottom: 8px; color: var(--primary, #1a56a8);">4. Mục đích sử dụng thông tin</h2>
+            <p>Thông tin thu thập chỉ được sử dụng cho các mục đích nội bộ sau:</p>
+            <ul>
+                <li>Xác thực người dùng và phân quyền quản trị/thành viên trong dự án.</li>
+                <li>Cung cấp và duy trì các tính năng quản lý công việc, trao đổi thời gian thực và đánh giá hiệu suất (KPI).</li>
+                <li>Gửi thông báo cập nhật tiến độ công việc và trạng thái phê duyệt đơn từ.</li>
+                <li>Đảm bảo an ninh, phòng chống gian lận và nâng cao chất lượng trải nghiệm ứng dụng.</li>
+            </ul>
+        </section>
+
+        <section style="margin-bottom: 24px;">
+            <h2 style="font-size: 17px; font-weight: 600; margin-bottom: 8px; color: var(--primary, #1a56a8);">5. Bảo mật dữ liệu & Chia sẻ thông tin</h2>
+            <p>
+                Chúng tôi áp dụng các tiêu chuẩn bảo mật nghiêm ngặt (mã hóa dữ liệu đường truyền HTTPS/SSL, lưu trữ token an toàn và kiểm soát quyền truy cập). Chúng tôi <strong>tuyệt đối không bán, cho thuê hoặc chia sẻ thông tin cá nhân của bạn cho bất kỳ bên thứ ba nào</strong> vì mục đích thương mại hoặc quảng cáo.
+            </p>
+        </section>
+
+        <section style="margin-bottom: 24px;">
+            <h2 style="font-size: 17px; font-weight: 600; margin-bottom: 8px; color: var(--primary, #1a56a8);">6. Quyền của người dùng & Xóa dữ liệu</h2>
+            <p>
+                Bạn có quyền tra cứu, cập nhật thông tin cá nhân hoặc yêu cầu khóa/xóa tài khoản và dữ liệu liên quan bất kỳ lúc nào bằng cách liên hệ với Quản trị viên hệ thống tại đơn vị.
+            </p>
+        </section>
+
+        <section style="margin-top: 24px; padding-top: 16px; border-top: 1px dashed var(--border-color, #cbd5e1);">
+            <h2 style="font-size: 17px; font-weight: 600; margin-bottom: 8px; color: var(--primary, #1a56a8);">7. Thông tin liên hệ</h2>
+            <p style="margin-bottom: 4px;">Mọi thắc mắc hoặc yêu cầu liên quan đến Chính sách quyền riêng tư, vui lòng liên hệ:</p>
+            <ul style="margin-top: 4px;">
+                <li><strong>Đơn vị:</strong> Tổ Nghiên cứu & Phát triển (NCPT) &mdash; TTKD Giải pháp, VNPT Khánh Hòa</li>
+                <li><strong>Địa chỉ:</strong> 50 Lê Thánh Tôn, TP. Nha Trang, Tỉnh Khánh Hòa, Việt Nam</li>
+                <li><strong>Email hỗ trợ:</strong> ttkdgp.ncpt@vnpt.vn / cenit.vn</li>
+                <li><strong>Cổng thông tin trực tuyến:</strong> <a href="http://pmncpt.cenit.vn" target="_blank">http://pmncpt.cenit.vn</a></li>
+            </ul>
+        </section>
+    </div>
+</div>

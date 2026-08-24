@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web.Mvc;
@@ -99,6 +99,16 @@ namespace TTKDGP.ProjectManager.Controllers
             FillCurrentWeek(model);
             FillMonthTasks(model);
             return View(model);
+        }
+
+        /// <summary>
+        /// Chính sách quyền riêng tư của ứng dụng BrewTask (yêu cầu bắt buộc của Google Play Console).
+        /// Công khai, không yêu cầu đăng nhập.
+        /// </summary>
+        [AllowAnonymous]
+        public ActionResult Privacy()
+        {
+            return View();
         }
 
         /// <summary>
