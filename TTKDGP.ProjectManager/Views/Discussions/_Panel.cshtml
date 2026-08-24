@@ -46,7 +46,7 @@
     (function () {
         if (typeof window.BrewTaskRTDB === 'undefined') return;
         var rtdb = window.BrewTaskRTDB;
-        var myFullName = @Html.Raw(Json.Encode(currentUserFullName)).toLowerCase();
+        var myFullName = (@Html.Raw(Json.Encode(currentUserFullName ?? ""))).toLowerCase();
         var items = document.querySelectorAll('.discussions-panel-item[data-project-id]');
         var $empty = document.getElementById('panelEmptyState');
         var checkedCount = 0;
