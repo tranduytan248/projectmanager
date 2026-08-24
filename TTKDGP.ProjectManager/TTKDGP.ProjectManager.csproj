@@ -223,6 +223,7 @@
     <Compile Include="Models\Permission.cs" />
     <Compile Include="Models\RoleGroup.cs" />
     <Compile Include="Models\ViewModels.cs" />
+    <Compile Include="Models\DiscussionViewModels.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
