@@ -50,14 +50,21 @@ namespace TTKDGP.ProjectManager.Controllers
         public ActionResult Index(int? projectId)
         {
             var userId = CurrentUserId;
-            var canViewAll = Can("wprojects.view");
+            var canViewAll = IsTeamManager || Can("wprojects.view");
 
-            // Lấy danh sách dự án người dùng tham gia hoặc toàn bộ nếu có quyền
+            // Lấy danh sách dự án người dùng tham gia hoặc làm PM
             var userProjectIds = Repository.WorkAssignments.All()
                 .Where(a => a.UserId == userId && a.IsActive)
                 .Select(a => a.ProjectId)
                 .Distinct()
                 .ToList();
+
+            var pmProjectIds = Repository.WorkProjects.All()
+                .Where(p => p.PmUserId == userId)
+                .Select(p => p.Id)
+                .ToList();
+
+            userProjectIds = userProjectIds.Union(pmProjectIds).Distinct().ToList();
 
             IEnumerable<WorkProject> query = Repository.WorkProjects.All();
             if (!canViewAll)
@@ -70,9 +77,9 @@ namespace TTKDGP.ProjectManager.Controllers
                 .Select(p => new DiscussionProjectDto
                 {
                     Id = p.Id,
-                    Name = p.Name,
-                    Code = p.Code,
-                    Customer = p.Customer,
+                    Name = p.Name ?? "",
+                    Code = p.Code ?? "",
+                    Customer = p.Customer ?? "",
                     IsActive = p.IsOpen,
                     MemberCount = Repository.WorkAssignments.All().Count(a => a.ProjectId == p.Id && a.IsActive)
                 })
@@ -96,20 +103,28 @@ namespace TTKDGP.ProjectManager.Controllers
                     .Where(a => a.ProjectId == selectedProject.Id && a.IsActive)
                     .ToList();
 
-                var memberUserIds = assignments.Select(a => a.UserId).Distinct().ToList();
+                var memberUserIds = assignments.Select(a => a.UserId).Where(id => id > 0).Distinct().ToList();
+                if (selectedProject.PmUserId > 0 && !memberUserIds.Contains(selectedProject.PmUserId))
+                {
+                    memberUserIds.Add(selectedProject.PmUserId);
+                }
+
                 var users = Repository.Users.All().Where(u => memberUserIds.Contains(u.Id)).ToList();
 
-                members = (from a in assignments
-                           join u in users on a.UserId equals u.Id
-                           select new ProjectMemberViewModel
-                           {
-                               UserId = u.Id,
-                               FullName = u.FullName,
-                               Username = u.UserName,
-                               RoleInProject = a.Role
-                           })
-                           .OrderBy(m => m.FullName)
-                           .ToList();
+                members = users.Select(u =>
+                {
+                    var assign = assignments.FirstOrDefault(a => a.UserId == u.Id);
+                    var roleInProj = assign != null ? (assign.Role ?? "") : (u.Id == selectedProject.PmUserId ? "PM" : "Thành viên");
+                    return new ProjectMemberViewModel
+                    {
+                        UserId = u.Id,
+                        FullName = u.FullName ?? u.UserName ?? "",
+                        Username = u.UserName ?? "",
+                        RoleInProject = roleInProj
+                    };
+                })
+                .OrderBy(m => m.FullName)
+                .ToList();
             }
 
             var vm = new DiscussionHubViewModel
@@ -119,8 +134,8 @@ namespace TTKDGP.ProjectManager.Controllers
                 SelectedProject = selectedProject,
                 Members = members,
                 CurrentUserId = CurrentUserId,
-                CurrentUserName = CurrentUser != null ? CurrentUser.Name : "",
-                CurrentUserFullName = CurrentUser != null ? CurrentUser.FullName : ""
+                CurrentUserName = CurrentUser != null ? (CurrentUser.Name ?? "") : "",
+                CurrentUserFullName = CurrentUser != null ? (CurrentUser.FullName ?? "") : ""
             };
 
             return View(vm);
@@ -133,13 +148,20 @@ namespace TTKDGP.ProjectManager.Controllers
         public ActionResult Panel()
         {
             var userId = CurrentUserId;
-            var canViewAll = Can("wprojects.view");
+            var canViewAll = IsTeamManager || Can("wprojects.view");
 
             var userProjectIds = Repository.WorkAssignments.All()
                 .Where(a => a.UserId == userId && a.IsActive)
                 .Select(a => a.ProjectId)
                 .Distinct()
                 .ToList();
+
+            var pmProjectIds = Repository.WorkProjects.All()
+                .Where(p => p.PmUserId == userId)
+                .Select(p => p.Id)
+                .ToList();
+
+            userProjectIds = userProjectIds.Union(pmProjectIds).Distinct().ToList();
 
             IEnumerable<WorkProject> query = Repository.WorkProjects.All();
             if (!canViewAll)
@@ -152,9 +174,9 @@ namespace TTKDGP.ProjectManager.Controllers
                 .Select(p => new DiscussionProjectDto
                 {
                     Id = p.Id,
-                    Name = p.Name,
-                    Code = p.Code,
-                    Customer = p.Customer,
+                    Name = p.Name ?? "",
+                    Code = p.Code ?? "",
+                    Customer = p.Customer ?? "",
                     IsActive = p.IsOpen,
                     MemberCount = Repository.WorkAssignments.All().Count(a => a.ProjectId == p.Id && a.IsActive)
                 })
@@ -176,7 +198,8 @@ namespace TTKDGP.ProjectManager.Controllers
             }
 
             var userId = CurrentUserId;
-            var isMember = Can("wprojects.view") || Repository.WorkAssignments.All().Any(a => a.ProjectId == projectId && a.UserId == userId && a.IsActive);
+            var isMember = IsTeamManager || Can("wprojects.view") || project.PmUserId == userId ||
+                           Repository.WorkAssignments.All().Any(a => a.ProjectId == projectId && a.UserId == userId && a.IsActive);
             if (!isMember)
             {
                 return Json(new { success = false, error = "Bạn không có quyền gửi tài liệu trong dự án này." });
@@ -250,7 +273,8 @@ namespace TTKDGP.ProjectManager.Controllers
             }
 
             var userId = CurrentUserId;
-            var isMember = Can("wprojects.view") || Repository.WorkAssignments.All().Any(a => a.ProjectId == projectId && a.UserId == userId && a.IsActive);
+            var isMember = IsTeamManager || Can("wprojects.view") || project.PmUserId == userId ||
+                           Repository.WorkAssignments.All().Any(a => a.ProjectId == projectId && a.UserId == userId && a.IsActive);
             if (!isMember)
             {
                 return Json(new { success = false, tasks = new object[0] }, JsonRequestBehavior.AllowGet);

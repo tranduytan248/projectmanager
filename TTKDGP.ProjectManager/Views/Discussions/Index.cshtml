@@ -142,10 +142,10 @@
 @if (Model.SelectedProject != null)
 {
     var currentProjId = Model.SelectedProjectId;
-    var currentProjName = Model.SelectedProject.Name;
+    var currentProjName = Model.SelectedProject != null ? (Model.SelectedProject.Name ?? "") : "";
     var currentUserId = Model.CurrentUserId;
-    var currentUserName = Model.CurrentUserName;
-    var currentUserFullName = Model.CurrentUserFullName;
+    var currentUserName = Model.CurrentUserName ?? "";
+    var currentUserFullName = Model.CurrentUserFullName ?? "";
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
