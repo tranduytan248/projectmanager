@@ -360,6 +360,8 @@
     <Content Include="Views\Leaves\Edit.cshtml" />
     <Content Include="Views\Leaves\Approve.cshtml" />
     <Content Include="Views\Leaves\_EditForm.cshtml" />
+    <Content Include="Views\Discussions\Index.cshtml" />
+    <Content Include="Views\Discussions\_Panel.cshtml" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
