@@ -1,9 +1,9 @@
 # ---- Kết quả biên dịch ----
-bin/
 obj/
-*.dll
-*.pdb
 *.cache
+TTKDGP.ProjectManager/bin/*
+!TTKDGP.ProjectManager/bin/TTKDGP.ProjectManager.dll
+!TTKDGP.ProjectManager/bin/TTKDGP.ProjectManager.pdb
 
 # ---- Visual Studio ----
 .vs/
