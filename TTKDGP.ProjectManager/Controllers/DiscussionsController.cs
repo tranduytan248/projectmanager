@@ -82,6 +82,11 @@ namespace TTKDGP.ProjectManager.Controllers
                 ? projectId.Value
                 : (projects.Count > 0 ? projects[0].Id : 0);
 
+            if (!canViewAll && selectedId > 0 && !userProjectIds.Contains(selectedId))
+            {
+                selectedId = projects.Count > 0 ? projects[0].Id : 0;
+            }
+
             var selectedProject = selectedId > 0 ? Repository.WorkProjects.Find(selectedId) : null;
 
             var members = new List<ProjectMemberViewModel>();

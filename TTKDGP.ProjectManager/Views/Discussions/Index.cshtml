@@ -600,7 +600,7 @@
                     });
 
                     // Gui Push Notification toi Mobile cho cac thanh vien khac
-                    $.post('/api/NotificationsApi/SendProjectDiscussionNotification', {
+                    $.post('/NotificationsApi/SendProjectDiscussionNotification', {
                         projectId: projectId,
                         content: summaryText,
                         senderName: currentUserFullName

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Security.Principal;
 using System.Web;
 using System.Web.Mvc;
@@ -164,6 +164,18 @@ namespace TTKDGP.ProjectManager.Infrastructure
 
             if (principal == null || !principal.Identity.IsAuthenticated)
             {
+                if (filterContext.HttpContext.Request.IsAjaxRequest())
+                {
+                    filterContext.Result = new JsonResult
+                    {
+                        Data = new { success = false, error = "Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại.", unauthenticated = true },
+                        JsonRequestBehavior = JsonRequestBehavior.AllowGet
+                    };
+                    filterContext.HttpContext.Response.StatusCode = 401;
+                    filterContext.HttpContext.Response.TrySkipIisCustomErrors = true;
+                    return;
+                }
+
                 var returnUrl = filterContext.HttpContext.Request.Url == null
                     ? "/"
                     : filterContext.HttpContext.Request.Url.PathAndQuery;

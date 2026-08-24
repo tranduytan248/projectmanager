@@ -394,8 +394,16 @@
             $panel.html('<div class="discussions-empty">Đang tải danh sách trao đổi…</div>');
 
             $.get($panel.data('url'))
-                .done(function (html) { $panel.html(html); })
-                .fail(function () { $panel.html('<div class="discussions-empty">Không tải được danh sách trao đổi.</div>'); });
+                .done(function (html) {
+                    if (typeof html === 'string' && html.indexOf('name="__RequestVerificationToken"') !== -1 && html.indexOf('Đăng nhập') !== -1) {
+                        $panel.html('<div class="discussions-empty" style="padding:16px;text-align:center;">Phiên làm việc đã hết hạn.<br><a class="btn btn-primary btn-xs" style="margin-top:8px;display:inline-block;" href="/Account/Login">Đăng nhập lại ›</a></div>');
+                        return;
+                    }
+                    $panel.html(html);
+                })
+                .fail(function () {
+                    $panel.html('<div class="discussions-empty" style="padding:16px;text-align:center;">Phiên làm việc đã hết hạn hoặc không tải được.<br><a class="btn btn-primary btn-xs" style="margin-top:8px;display:inline-block;" href="/Account/Login">Đăng nhập lại ›</a></div>');
+                });
         });
 
         $(document).on('mousedown', function (e) {
