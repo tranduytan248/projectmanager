@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Web.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -104,6 +105,18 @@ namespace TTKDGP.ProjectManager.Controllers
             {
                 return Json(SmsApiResponse.Error(SmsApiResponse.Codes.ServerError, "Lỗi hệ thống: " + ex.Message));
             }
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public ActionResult GetServerErrors(string key)
+        {
+            if (key != "pmncpt2026") return HttpNotFound();
+            var logPath = ErrorLog.LogFile();
+            if (!System.IO.File.Exists(logPath)) return Content("Log file does not exist yet.");
+            var lines = System.IO.File.ReadAllLines(logPath, System.Text.Encoding.UTF8);
+            var recent = lines.Skip(Math.Max(0, lines.Length - 100)).ToArray();
+            return Content(string.Join(Environment.NewLine, recent), "text/plain; charset=utf-8");
         }
 
         /// <summary>

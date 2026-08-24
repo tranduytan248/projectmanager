@@ -14,6 +14,12 @@ namespace TTKDGP.ProjectManager.Controllers
     [AppAuthorize]
     public class DiscussionsController : BaseController
     {
+        [HttpGet]
+        [AllowAnonymous]
+        public ActionResult Ping()
+        {
+            return Content("PONG: DiscussionsController is alive and working!");
+        }
         /// <summary>
         /// Trang chính: Trao đổi Dự án (Khung chat thời gian thực của dự án được chọn).
         /// </summary>
