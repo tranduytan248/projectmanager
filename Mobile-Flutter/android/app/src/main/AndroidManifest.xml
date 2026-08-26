@@ -1,4 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <!-- Ban debug tu them quyen nay (xem src/debug/AndroidManifest.xml) nen luc chay
          `flutter run` van goi mang binh thuong du khai o day hay khong — nhung ban release thi
          KHONG, thieu dong nay se khien moi cuoc goi mang (API cua app lan Firebase Analytics)
@@ -7,6 +8,9 @@
     <!-- Quyen hien thi thong bao tren Android 13+ (API 33+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
+
+    <!-- Ứng dụng nội bộ không chứa quảng cáo, loại bỏ quyền AD_ID do Firebase tự merge -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove"/>
 
     <application
         android:label="BrewTask - Quản Lý Công Việc"

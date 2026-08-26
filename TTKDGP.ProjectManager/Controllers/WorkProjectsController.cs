@@ -226,6 +226,27 @@ namespace TTKDGP.ProjectManager.Controllers
                 var saved = Repository.WorkProjects.Insert(model);
                 SaveProjectFiles(saved.Id, files);
 
+                if (saved.PmUserId > 0)
+                {
+                    var pmUser = Repository.Users.Find(saved.PmUserId);
+                    if (pmUser != null)
+                    {
+                        Repository.WorkAssignments.Insert(new WorkAssignment
+                        {
+                            ProjectId = saved.Id,
+                            ProjectName = saved.Name,
+                            UserId = pmUser.Id,
+                            UserFullName = pmUser.FullName,
+                            Role = "PM",
+                            IsPm = true,
+                            Phase = AssignmentPhases.Both,
+                            JoinedAt = saved.StartDate ?? DateTime.Today,
+                            CreatedAt = now
+                        });
+                        WorkService.SyncCurrentPm(saved.Id);
+                    }
+                }
+
                 Notify(string.Format("Đã thêm dự án \"{0}\". Bước tiếp theo: phân công nhân sự.", saved.Name));
                 return Saved("Members", new { id = saved.Id }, goToTarget: true);
             }
