@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Web.Mvc;
 using TTKDGP.ProjectManager.Data;
@@ -75,11 +75,11 @@ namespace TTKDGP.ProjectManager.Controllers
         }
 
         /// <summary>
-        /// Được sửa nội dung của dự án này không: hoặc là PM của chính nó, hoặc là Quản lý Tổ.
+        /// Được sửa nội dung của dự án này không: hoặc là PM của chính nó, hoặc là Quản lý Tổ, hoặc có quyền quản lý dự án.
         /// </summary>
         protected bool CanEditProject(int projectId)
         {
-            return IsTeamManager || IsPmOf(projectId);
+            return IsTeamManager || Can(Permissions.WorkProjects.Perm("edit")) || Can(Permissions.WorkProjects.Perm("create")) || IsPmOf(projectId);
         }
 
         /// <summary>
@@ -181,6 +181,9 @@ namespace TTKDGP.ProjectManager.Controllers
         protected bool CanViewProject(int projectId)
         {
             if (IsTeamManager) return true;
+            if (Can(Permissions.WorkProjects.Perm("view"))
+                || Can(Permissions.WorkProjects.Perm("create"))
+                || Can(Permissions.WorkProjects.Perm("edit"))) return true;
             if (CurrentUserId <= 0) return false;
             if (IsPmOf(projectId)) return true;
 
