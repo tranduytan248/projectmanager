@@ -11,13 +11,14 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  /// = Visual Studio Code Primary Accent (Status Bar / Action Blue).
-  static const primary = Color(0xFF007ACC);
-  static const primaryDark = Color(0xFF0E639C);
-  static const primaryDarker = Color(0xFF114A71);
+  /// = Sắc xanh sáng rõ nét độ tương phản cao (Sky Blue 400 - #38BDF8).
+  /// Đạt chuẩn WCAG AAA trên nền đen (#1E1E1E), hiển thị sắc nét trên mọi loại màn hình.
+  static const primary = Color(0xFF38BDF8);
+  static const primaryDark = Color(0xFF0284C7);
+  static const primaryDarker = Color(0xFF0369A1);
 
-  /// Nền container nhạt mang sắc thái xanh VS Code.
-  static const primarySoft = Color(0xFF1B2B3E);
+  /// Nền container nhạt mang sắc thái xanh rõ ràng, không bị đen đục.
+  static const primarySoft = Color(0xFF0C2E4E);
 
   /// Nền secondary (Sidebar panel).
   static const secondary = Color(0xFF252526);
@@ -31,63 +32,63 @@ class AppColors {
   /// Nền ô nhập liệu, activity bar (#2D2D2D).
   static const surfaceVariant = Color(0xFF2D2D2D);
 
-  /// Chữ chính: VS Code Default Foreground (#D4D4D4) — tương phản 11.8:1 trên nền #1E1E1E.
-  static const textPrimary = Color(0xFFD4D4D4);
+  /// Chữ chính: Trắng sáng (#F1F5F9) — tương phản > 14:1 trên nền tối.
+  static const textPrimary = Color(0xFFF1F5F9);
 
-  /// Chữ phụ: VS Code Muted / Comment Text (#9DA5B4) — tương phản 5.5:1 trên #1E1E1E.
-  static const textSecondary = Color(0xFF9DA5B4);
+  /// Chữ phụ: Xám sáng (#CBD5E1) — tương phản > 7:1, không bị chìm trên màn hình tối.
+  static const textSecondary = Color(0xFFCBD5E1);
 
-  /// Chữ mờ: Placeholder, hint (#6A737D).
-  static const textFaint = Color(0xFF6A737D);
+  /// Chữ mờ: Placeholder, hint (#94A3B8).
+  static const textFaint = Color(0xFF94A3B8);
 
-  /// Chữ trên nền nút màu đậm.
-  static const textOnPrimary = Colors.white;
+  /// Chữ trên nền nút màu đậm hoặc nút xanh sáng.
+  static const textOnPrimary = Color(0xFF0F172A);
 
-  /// Trạng thái Hoàn thành / Đúng hạn: VS Code Class/Type Mint (#4EC9B0).
-  static const success = Color(0xFF4EC9B0);
-  static const successSoft = Color(0xFF17332B);
-  static const successOnSoft = Color(0xFF4EC9B0);
+  /// Trạng thái Hoàn thành / Đúng hạn: Mint sáng (#4ADE80 / #4EC9B0).
+  static const success = Color(0xFF4ADE80);
+  static const successSoft = Color(0xFF143823);
+  static const successOnSoft = Color(0xFF4ADE80);
 
-  /// Trạng thái Cảnh báo / Đang làm: VS Code Function Gold (#DCDCAA).
-  static const warning = Color(0xFFDCDCAA);
-  static const warningSoft = Color(0xFF33301B);
-  static const warningOnSoft = Color(0xFFDCDCAA);
+  /// Trạng thái Cảnh báo / Đang làm: Vàng sáng (#FDE047 / #DCDCAA).
+  static const warning = Color(0xFFFDE047);
+  static const warningSoft = Color(0xFF3B3314);
+  static const warningOnSoft = Color(0xFFFDE047);
 
-  /// Trạng thái Quá hạn / Lỗi: VS Code Error Red (#F14C4C).
-  static const danger = Color(0xFFF14C4C);
-  static const dangerSoft = Color(0xFF3A1E1E);
-  static const dangerOnSoft = Color(0xFFF14C4C);
+  /// Trạng thái Quá hạn / Lỗi: Đỏ sáng (#F87171 / #F14C4C).
+  static const danger = Color(0xFFF87171);
+  static const dangerSoft = Color(0xFF3F1D1D);
+  static const dangerOnSoft = Color(0xFFF87171);
 
   /// Chữ lỗi trên nền tối.
-  static const errorOnDark = Color(0xFFFF7B72);
+  static const errorOnDark = Color(0xFFFF8B8B);
 
-  /// Viền thẻ card / widget: VS Code Widget Border (#333333).
-  static const border = Color(0xFF333333);
+  /// Viền thẻ card / widget: (#383838).
+  static const border = Color(0xFF383838);
 
-  /// Viền đậm / Divider focus: (#454545).
-  static const borderStrong = Color(0xFF454545);
+  /// Viền đậm / Divider focus: (#4B5563).
+  static const borderStrong = Color(0xFF4B5563);
 
   /// Nền thanh điều hướng đáy / Status bar tối (#181818).
   static const navBackground = Color(0xFF181818);
 
-  /// Xanh sáng cho link / tab đang chọn / focus viền (#3794FF).
-  static const accentBlue = Color(0xFF3794FF);
+  /// Xanh sáng nổi bật cho link / tab đang chọn / focus viền (#60A5FA / #38BDF8).
+  static const accentBlue = Color(0xFF60A5FA);
 
   /// Nền nút bấm phụ (Secondary Button) (#333333).
   static const buttonSecondary = Color(0xFF333333);
 
-  /// Trạng thái Thông tin / Khá: VS Code Info Blue (#0284C7 / #38BDF8).
+  /// Trạng thái Thông tin / Khá: Sky Blue (#38BDF8).
   static const info = Color(0xFF38BDF8);
-  static const infoSoft = Color(0xFF163244);
+  static const infoSoft = Color(0xFF0C2E4E);
   static const infoOnSoft = Color(0xFF38BDF8);
 
   /// Huy hiệu xếp hạng (Rank Badges):
   static const rankGoldBg = Color(0xFF3E371C);
-  static const rankGoldText = Color(0xFFDCDCAA);
+  static const rankGoldText = Color(0xFFFDE047);
   static const rankSilverBg = Color(0xFF2D3139);
-  static const rankSilverText = Color(0xFF9DA5B4);
+  static const rankSilverText = Color(0xFFCBD5E1);
   static const rankBronzeBg = Color(0xFF38261D);
-  static const rankBronzeText = Color(0xFFCE9178);
+  static const rankBronzeText = Color(0xFFFDBA74);
 
   /// Nền cho media viewer toàn màn hình.
   static const mediaViewerBackground = Color(0xFF121212);

@@ -1,0 +1,73 @@
+name: Build iOS (BrewTask)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - mobile
+      - main
+    paths:
+      - 'Mobile-Flutter/**'
+      - '.github/workflows/build-ios.yml'
+
+concurrency:
+  group: ios-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-ios:
+    name: Build iOS App (.ipa / Runner.app)
+    runs-on: macos-latest
+
+    defaults:
+      run:
+        working-directory: Mobile-Flutter
+
+    steps:
+      - name: 1. Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 2. Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: 3. Kiem tra phien ban moi truong
+        run: |
+          flutter --version
+          xcodebuild -version
+
+      - name: 4. Cai dat dependencies
+        run: flutter pub get
+
+      - name: 5. Chay kiem thu tu dong (Test Suite)
+        run: flutter test
+
+      - name: 6. Cai dat CocoaPods
+        run: |
+          cd ios
+          pod install
+          cd ..
+
+      - name: 7. Bien dich ung dung iOS (Release mode)
+        run: |
+          flutter build ios --release --no-codesign
+
+      - name: 8. Dong goi file cai dat (.ipa va .zip)
+        run: |
+          mkdir -p build/ios/iphoneos/Payload
+          cp -r build/ios/iphoneos/Runner.app build/ios/iphoneos/Payload/
+          cd build/ios/iphoneos
+          zip -r BrewTask-iOS-Unsigned.ipa Payload
+          zip -r BrewTask-Runner.app.zip Runner.app
+          cd ../../..
+
+      - name: 9. Luu file Build len GitHub Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: BrewTask-iOS-Build
+          path: |
+            Mobile-Flutter/build/ios/iphoneos/BrewTask-iOS-Unsigned.ipa
+            Mobile-Flutter/build/ios/iphoneos/BrewTask-Runner.app.zip
+          retention-days: 14

@@ -88,8 +88,9 @@ class AppButton extends StatelessWidget {
   Color _fg() {
     switch (type) {
       case AppButtonType.primary:
-      case AppButtonType.danger:
         return AppColors.textOnPrimary;
+      case AppButtonType.danger:
+        return Colors.white;
       case AppButtonType.secondary:
       case AppButtonType.outline:
         return AppColors.textPrimary;
