@@ -117,8 +117,8 @@ flutter_launcher_icons:
 # khoi; bo icon o day thi giai doan nay chi la mot manh xanh phang, chuyen tiep sang coc animated
 # nhin lien mach thay vi giat/lap logo hai lan. Tao lai bang: dart run flutter_native_splash:create
 flutter_native_splash:
-  color: "#1A56A8"
+  color: "#181818"
   android_12:
-    color: "#1A56A8"
+    color: "#181818"
   android: true
   ios: true

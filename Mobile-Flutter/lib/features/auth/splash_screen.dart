@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../config/app_cache.dart';
-import '../../config/app_theme.dart';
 import '../../core/classes/route_manager.dart';
 import '../../core/widgets/app_scaffold.dart';
 import '../app_routes.dart';
@@ -77,7 +76,7 @@ class _SplashScreenState extends State<SplashScreen>
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        color: AppTheme.brandBlue,
+        color: const Color(0xFF181818),
         child: Center(
           child: SizedBox(
             width: 220,
