@@ -113,9 +113,10 @@ class _KpiScreenState extends State<KpiScreen> {
           color: AppColors.textSecondary,
         ),
         actions: [
-          TextButton(
+          AppButton(
+            label: 'Hủy',
+            type: AppButtonType.outline,
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const AppText('Hủy', color: AppColors.textSecondary),
           ),
           AppButton(
             label: 'Tính & Chốt',
@@ -201,8 +202,9 @@ class _KpiScreenState extends State<KpiScreen> {
                       fontSize: 17,
                       weight: FontWeight.w700,
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
+                    AppIconButton(
+                      icon: Icons.close,
+                      tooltip: 'Đóng',
                       onPressed: () => Navigator.of(ctx).pop(),
                     ),
                   ],
@@ -449,11 +451,9 @@ class _HeaderToolbar extends StatelessWidget {
       child: Row(
         children: [
           // Month navigator
-          IconButton(
-            icon: const Icon(Icons.chevron_left),
-            iconSize: 22,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+          AppIconButton(
+            icon: Icons.chevron_left,
+            tooltip: 'Tháng trước',
             onPressed: () => onChangeMonth(-1),
           ),
           InkWell(
@@ -475,11 +475,9 @@ class _HeaderToolbar extends StatelessWidget {
               ),
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.chevron_right),
-            iconSize: 22,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+          AppIconButton(
+            icon: Icons.chevron_right,
+            tooltip: 'Tháng sau',
             onPressed: () => onChangeMonth(1),
           ),
           if (!isNow) ...[
@@ -1125,8 +1123,9 @@ class _MonthPickerSheetState extends State<_MonthPickerSheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                IconButton(
-                  icon: const Icon(Icons.chevron_left),
+                AppIconButton(
+                  icon: Icons.chevron_left,
+                  tooltip: 'Năm trước',
                   onPressed: () => setState(() => _selectedYear -= 1),
                 ),
                 AppText(
@@ -1135,8 +1134,9 @@ class _MonthPickerSheetState extends State<_MonthPickerSheet> {
                   fontSize: 16,
                   weight: FontWeight.w700,
                 ),
-                IconButton(
-                  icon: const Icon(Icons.chevron_right),
+                AppIconButton(
+                  icon: Icons.chevron_right,
+                  tooltip: 'Năm sau',
                   onPressed: () => setState(() => _selectedYear += 1),
                 ),
               ],

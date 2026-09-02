@@ -154,6 +154,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
   Widget _obscureToggle(bool obscured, VoidCallback onTap) {
     return AppIconButton(
       icon: obscured ? PhosphorIconsRegular.eye : PhosphorIconsRegular.eyeSlash,
+      tooltip: obscured ? 'Hiện mật khẩu' : 'Ẩn mật khẩu',
       size: 19,
       color: AppColors.textFaint,
       // Nut phu, nam doc lap trong o nhap (giong nut "x" go dieu kien loc tren chip) — giam

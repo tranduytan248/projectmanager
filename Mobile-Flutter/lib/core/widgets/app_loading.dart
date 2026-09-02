@@ -49,20 +49,23 @@ class _AppLoadingState extends State<AppLoading>
     final color = widget.color ?? AppTheme.brandBlue;
 
     // Cao hon chieu rong mot chut de co cho khoi boc len tren mieng ly ma khong bi cat.
-    return SizedBox(
-      width: widget.size,
-      height: widget.size * 1.35,
-      child: Stack(
-        alignment: Alignment.bottomCenter,
-        clipBehavior: Clip.none,
-        children: [
-          Positioned(
-            top: 0,
-            child: _RisingSteam(
-                controller: _steamController, color: color, size: widget.size),
-          ),
-          _CupIcon(size: widget.size, color: color),
-        ],
+    return Semantics(
+      label: 'Đang tải dữ liệu...',
+      child: SizedBox(
+        width: widget.size,
+        height: widget.size * 1.35,
+        child: Stack(
+          alignment: Alignment.bottomCenter,
+          clipBehavior: Clip.none,
+          children: [
+            Positioned(
+              top: 0,
+              child: _RisingSteam(
+                  controller: _steamController, color: color, size: widget.size),
+            ),
+            _CupIcon(size: widget.size, color: color),
+          ],
+        ),
       ),
     );
   }
@@ -84,7 +87,7 @@ class _CupIcon extends StatelessWidget {
       height: size,
       child: ColorFiltered(
         colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-        child: Image.asset(_asset, fit: BoxFit.contain),
+        child: Image.asset(_asset, fit: BoxFit.contain, excludeFromSemantics: true),
       ),
     );
   }
@@ -166,7 +169,7 @@ class _SteamWisp extends StatelessWidget {
       },
       child: ColorFiltered(
         colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-        child: Image.asset(_asset, width: width),
+        child: Image.asset(_asset, width: width, excludeFromSemantics: true),
       ),
     );
   }
