@@ -115,6 +115,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 16),
                 WorkTimeHUDChart(
                   workTime: data.workTime ?? WorkTimeDashboard.fallback(),
+                  monthlyTargetHours: data.kpi?.requiredHours,
                 ),
                 if (data.kpi != null) ...[
                   const SizedBox(height: 16),

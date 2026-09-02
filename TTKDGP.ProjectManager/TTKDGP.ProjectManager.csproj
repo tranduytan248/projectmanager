@@ -223,6 +223,10 @@
     <Compile Include="Models\Permission.cs" />
     <Compile Include="Models\RoleGroup.cs" />
     <Compile Include="Models\ViewModels.cs" />
+    <Compile Include="Models\Work\Holiday.cs" />
+    <Compile Include="Services\HolidayService.cs" />
+    <Compile Include="Controllers\HolidayController.cs" />
+    <Compile Include="Controllers\Api\HolidayApiController.cs" />
     <Compile Include="Models\DiscussionViewModels.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -362,6 +366,7 @@
     <Content Include="Views\Leaves\_EditForm.cshtml" />
     <Content Include="Views\Discussions\Index.cshtml" />
     <Content Include="Views\Discussions\_Panel.cshtml" />
+    <Content Include="Views\Holiday\Index.cshtml" />
     <Content Include="Views\Home\Privacy.cshtml" />
     <Content Include="Views\Home\Support.cshtml" />
   </ItemGroup>

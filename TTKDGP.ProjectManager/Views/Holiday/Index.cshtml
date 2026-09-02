@@ -1,0 +1,566 @@
+﻿@model List<TTKDGP.ProjectManager.Models.Work.Holiday>
+@using TTKDGP.ProjectManager.Models.Work
+@{
+    ViewBag.Title = "Quản lý Ngày nghỉ lễ";
+    int selectedYear = ViewBag.SelectedYear ?? DateTime.Now.Year;
+    var years = ViewBag.Years as List<int> ?? new List<int> { selectedYear };
+    var monthlyHolidays = ViewBag.MonthlyHolidays as Dictionary<int, List<Holiday>> ?? new Dictionary<int, List<Holiday>>();
+    var allHolidays = ViewBag.AllHolidays as List<Holiday> ?? Model;
+
+    var fixedCount = Model.Count(h => h.Kind == HolidayKind.AnnualFixed);
+    var compensatoryCount = Model.Count(h => h.Kind != HolidayKind.AnnualFixed);
+}
+
+<style>
+    /* ===== Tùy biến giao diện Module Ngày nghỉ lễ ===== */
+    .holiday-hero-card {
+        background: var(--surface, #ffffff);
+        border: 1px solid var(--border, #e2e8f0);
+        border-radius: var(--radius, 14px);
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+    .holiday-month-grid {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 8px;
+        margin-top: 14px;
+    }
+    @@media (max-width: 1100px) {
+        .holiday-month-grid {
+            grid-template-columns: repeat(6, 1fr);
+        }
+    }
+    @@media (max-width: 600px) {
+        .holiday-month-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+    .month-box {
+        border-radius: 10px;
+        padding: 10px 4px;
+        text-align: center;
+        border: 1px solid var(--border, #e2e8f0);
+        background: #f8fafc;
+        transition: all 0.2s ease;
+    }
+    .month-box.has-holiday {
+        background: rgba(14, 165, 233, 0.08);
+        border-color: #38bdf8;
+    }
+    .month-box .m-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-muted, #64748b);
+        margin-bottom: 2px;
+    }
+    .month-box .m-val {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text, #1e293b);
+    }
+    .month-box.has-holiday .m-val {
+        color: #0284c7;
+    }
+
+    .holiday-table-card {
+        background: var(--surface, #ffffff);
+        border: 1px solid var(--border, #e2e8f0);
+        border-radius: var(--radius, 14px);
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+    .holiday-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 0;
+    }
+    .holiday-table th {
+        background: #f8fafc;
+        color: #475569;
+        font-weight: 600;
+        font-size: 13px;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border, #e2e8f0);
+        text-align: left;
+    }
+    .holiday-table td {
+        padding: 14px 16px;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+        font-size: 13.5px;
+    }
+    .holiday-table tr:last-child td {
+        border-bottom: none;
+    }
+    .holiday-table tr:hover td {
+        background: #f8fafc;
+    }
+
+    .badge-fixed {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        background: #f3e8ff;
+        color: #7e22ce;
+        border: 1px solid #e9d5ff;
+    }
+    .badge-compensatory {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        background: #ffedd5;
+        color: #c2410c;
+        border: 1px solid #fed7aa;
+    }
+
+    .btn-action-edit {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        background: #e0f2fe;
+        color: #0369a1;
+        border: 1px solid #bae6fd;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .btn-action-edit:hover {
+        background: #0284c7;
+        color: #ffffff;
+        border-color: #0284c7;
+    }
+    .btn-action-delete {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        background: #fee2e2;
+        color: #b91c1c;
+        border: 1px solid #fecaca;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .btn-action-delete:hover {
+        background: #dc2626;
+        color: #ffffff;
+        border-color: #dc2626;
+    }
+
+    /* ===== Modal Backdrop & Dialog Popup ===== */
+    .holiday-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(4px);
+        z-index: 9999;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+    }
+    .holiday-modal-overlay.active {
+        display: flex;
+    }
+    .holiday-modal-box {
+        background: #ffffff;
+        border-radius: 16px;
+        width: 100%;
+        max-width: 500px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        overflow: hidden;
+        animation: modalSlideIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @@keyframes modalSlideIn {
+        from {
+            opacity: 0;
+            transform: scale(0.95) translateY(-14px);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+    .holiday-modal-head {
+        padding: 16px 20px;
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .holiday-modal-head h3 {
+        margin: 0;
+        font-size: 17px;
+        font-weight: 700;
+        color: #0f172a;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .holiday-modal-close {
+        background: transparent;
+        border: none;
+        font-size: 20px;
+        color: #64748b;
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 6px;
+        line-height: 1;
+    }
+    .holiday-modal-close:hover {
+        background: #e2e8f0;
+        color: #0f172a;
+    }
+    .holiday-modal-body {
+        padding: 20px;
+    }
+    .holiday-modal-foot {
+        padding: 14px 20px;
+        background: #f8fafc;
+        border-top: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+    .form-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 6px;
+        display: block;
+    }
+    .form-control-custom {
+        width: 100%;
+        padding: 9px 12px;
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        font-size: 14px;
+        color: #1e293b;
+        background: #ffffff;
+        box-sizing: border-box;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .form-control-custom:focus {
+        outline: none;
+        border-color: #0284c7;
+        box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+    }
+</style>
+
+<div class="page-head">
+    <div>
+        <h1>Danh mục Ngày nghỉ lễ</h1>
+        <p>
+            Quản lý ngày nghỉ lễ cố định hàng năm và các ngày nghỉ bù/theo năm cụ thể.
+            Hệ thống tự động trừ các ngày nghỉ lễ này vào số ngày làm việc chuẩn của tháng khi tính KPI và theo dõi giờ công.
+        </p>
+    </div>
+    <div class="btn-row">
+        <form method="get" action="@Url.Action("Index")" class="form-inline" style="display:inline-flex; align-items:center; gap:8px;">
+            <label for="yearSelect" style="font-weight:600; margin-bottom:0;">Năm:</label>
+            <select id="yearSelect" name="year" class="form-control" onchange="this.form.submit()" style="width:110px; font-weight:600;">
+                @foreach (var y in years)
+                {
+                    <option value="@y" @(y == selectedYear ? "selected" : "")>@y</option>
+                }
+            </select>
+        </form>
+        <button type="button" class="btn btn-primary" onclick="openCreateModal()">
+            <i class="fa fa-plus"></i> + Thêm ngày nghỉ lễ
+        </button>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success" style="margin-bottom: 16px; border-radius: 8px;">
+        @TempData["Success"]
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger" style="margin-bottom: 16px; border-radius: 8px;">
+        @TempData["Error"]
+    </div>
+}
+
+<!-- Thống kê phân bố ngày lễ trong năm -->
+<div class="holiday-hero-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+        <div>
+            <strong style="font-size: 15px; color: #0f172a;">Tổng cộng năm @selectedYear:</strong>
+            <span class="badge badge-info" style="font-size: 13px; margin-left: 6px; padding: 4px 10px;">@Model.Count ngày nghỉ lễ</span>
+            <span class="muted" style="margin-left: 8px;">(@fixedCount cố định · @compensatoryCount nghỉ bù/theo năm)</span>
+        </div>
+        <div class="muted" style="font-size: 12.5px;">
+            <i class="fa fa-info-circle" style="color: #0284c7;"></i> Ngày lễ rơi vào Thứ 2–Thứ 6 tự động giảm quỹ giờ yêu cầu của tháng
+        </div>
+    </div>
+
+    <div class="holiday-month-grid">
+        @for (int m = 1; m <= 12; m++)
+        {
+            var count = monthlyHolidays.ContainsKey(m) ? monthlyHolidays[m].Count : 0;
+            <div class="month-box @(count > 0 ? "has-holiday" : "")">
+                <div class="m-label">Tháng @m</div>
+                <div class="m-val">@(count > 0 ? count + " ngày" : "—")</div>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Bảng danh sách Ngày nghỉ lễ -->
+<div class="holiday-table-card">
+    <table class="holiday-table">
+        <thead>
+            <tr>
+                <th style="width: 50px; text-align: center;">#</th>
+                <th>Tên ngày nghỉ lễ</th>
+                <th style="width: 190px;">Phân loại</th>
+                <th style="width: 170px;">Thời gian áp dụng</th>
+                <th style="width: 110px; text-align: center;">Năm</th>
+                <th style="width: 130px; text-align: center;">Trạng thái</th>
+                <th>Ghi chú</th>
+                <th style="width: 150px; text-align: right;">Thao tác</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model == null || Model.Count == 0)
+            {
+                <tr>
+                    <td colspan="8" class="text-center muted" style="padding: 40px;">
+                        <div style="font-size: 14px; margin-bottom: 8px;">Chưa có ngày nghỉ lễ nào cho năm @selectedYear.</div>
+                        <button type="button" class="btn btn-primary btn-sm" onclick="openCreateModal()">
+                            <i class="fa fa-plus"></i> Thêm ngày nghỉ lễ đầu tiên
+                        </button>
+                    </td>
+                </tr>
+            }
+            else
+            {
+                int index = 1;
+                foreach (var h in Model)
+                {
+                    <tr>
+                        <td style="text-align: center; color: #94a3b8; font-weight: 600;">@index</td>
+                        <td>
+                            <strong style="color: #0f172a; font-size: 14px;">@h.Name</strong>
+                        </td>
+                        <td>
+                            @if (h.Kind == HolidayKind.AnnualFixed)
+                            {
+                                <span class="badge-fixed">
+                                    <i class="fa fa-repeat"></i> Cố định hàng năm
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge-compensatory">
+                                    <i class="fa fa-calendar-plus-o"></i> Nghỉ bù / Theo năm
+                                </span>
+                            }
+                        </td>
+                        <td>
+                            <span style="font-weight: 700; color: #0284c7; font-size: 13.5px;">@h.DisplayDate</span>
+                        </td>
+                        <td style="text-align: center; color: #64748b;">
+                            @(h.Year.HasValue ? h.Year.Value.ToString() : "Mọi năm")
+                        </td>
+                        <td style="text-align: center;">
+                            <button type="button" class="btn btn-xs @(h.IsActive ? "btn-success" : "btn-default")"
+                                    onclick="toggleActive(@h.Id, this)"
+                                    style="border-radius: 999px; padding: 3px 10px; font-weight: 600;"
+                                    title="Bấm để bật/tắt kích hoạt">
+                                @(h.IsActive ? "Đang áp dụng" : "Tạm tắt")
+                            </button>
+                        </td>
+                        <td class="muted" style="font-size: 13px;">
+                            @(string.IsNullOrWhiteSpace(h.Note) ? "—" : h.Note)
+                        </td>
+                        <td style="text-align: right; white-space: nowrap;">
+                            <button type="button" class="btn-action-edit" onclick='openEditModal(@Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(h)))'>
+                                <i class="fa fa-pencil"></i> Sửa
+                            </button>
+                            <form method="post" action="@Url.Action("Delete")" style="display:inline;" onsubmit="return confirm('Bạn có chắc muốn xoá ngày nghỉ lễ \"@h.Name\" không?');">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@h.Id" />
+                                <input type="hidden" name="returnYear" value="@selectedYear" />
+                                <button type="submit" class="btn-action-delete">
+                                    <i class="fa fa-trash"></i> Xoá
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    index++;
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal Popup Thêm / Sửa ngày nghỉ lễ -->
+<div id="holidayModalOverlay" class="holiday-modal-overlay" onclick="onOverlayClick(event)">
+    <div class="holiday-modal-box">
+        <div class="holiday-modal-head">
+            <h3 id="holidayModalTitle">
+                <i class="fa fa-calendar-check-o" style="color: #0284c7;"></i> Thêm ngày nghỉ lễ
+            </h3>
+            <button type="button" class="holiday-modal-close" onclick="closeHolidayModal()">&times;</button>
+        </div>
+        <form id="holidayForm" method="post" action="@Url.Action("Create")">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="holidayId" name="Id" value="0" />
+            <div class="holiday-modal-body">
+                <div style="margin-bottom: 14px;">
+                    <label class="form-label" for="holidayName">Tên ngày nghỉ lễ <span style="color:#ef4444;">*</span></label>
+                    <input type="text" id="holidayName" name="Name" class="form-control-custom" required placeholder="Ví dụ: Nghỉ bù Quốc khánh 02/09" />
+                </div>
+
+                <div style="margin-bottom: 14px;">
+                    <label class="form-label">Phân loại ngày nghỉ <span style="color:#ef4444;">*</span></label>
+                    <div style="display:flex; gap: 16px; margin-top: 6px;">
+                        <label style="font-weight: 500; color: #334155; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                            <input type="radio" name="Kind" value="1" id="kindAnnual" checked onchange="onKindChanged()" /> Cố định hàng năm
+                        </label>
+                        <label style="font-weight: 500; color: #334155; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                            <input type="radio" name="Kind" value="2" id="kindCompensatory" onchange="onKindChanged()" /> Nghỉ bù / Theo năm
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Trường nhập cho loại cố định hàng năm -->
+                <div id="annualFieldsGroup" style="display:flex; gap: 12px; margin-bottom: 14px;">
+                    <div style="flex:1;">
+                        <label class="form-label" for="holidayDay">Ngày (1 - 31)</label>
+                        <input type="number" id="holidayDay" name="Day" class="form-control-custom" min="1" max="31" placeholder="Ngày" />
+                    </div>
+                    <div style="flex:1;">
+                        <label class="form-label" for="holidayMonth">Tháng (1 - 12)</label>
+                        <input type="number" id="holidayMonth" name="Month" class="form-control-custom" min="1" max="12" placeholder="Tháng" />
+                    </div>
+                </div>
+
+                <!-- Trường nhập cho loại nghỉ bù / ngày cụ thể -->
+                <div id="specificFieldsGroup" style="margin-bottom: 14px; display:none;">
+                    <label class="form-label" for="holidaySpecificDate">Ngày nghỉ cụ thể <span style="color:#ef4444;">*</span></label>
+                    <input type="date" id="holidaySpecificDate" name="specificDateStr" class="form-control-custom" />
+                </div>
+
+                <div style="margin-bottom: 14px;">
+                    <label class="form-label" for="holidayNote">Ghi chú / Quyết định nghỉ</label>
+                    <textarea id="holidayNote" name="Note" class="form-control-custom" rows="2" placeholder="Thông tin thêm (nếu có)"></textarea>
+                </div>
+
+                <div style="margin-top: 8px;">
+                    <label style="font-weight: 600; color: #334155; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="holidayIsActive" name="IsActive" value="true" checked /> Kích hoạt áp dụng ngay
+                    </label>
+                </div>
+            </div>
+            <div class="holiday-modal-foot">
+                <button type="button" class="btn btn-default" onclick="closeHolidayModal()">Đóng</button>
+                <button type="submit" class="btn btn-primary" id="saveHolidayBtn">Lưu ngày nghỉ lễ</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section scripts {
+<script>
+    function onKindChanged() {
+        var isAnnual = document.getElementById('kindAnnual').checked;
+        document.getElementById('annualFieldsGroup').style.display = isAnnual ? 'flex' : 'none';
+        document.getElementById('specificFieldsGroup').style.display = isAnnual ? 'none' : 'block';
+    }
+
+    function openCreateModal() {
+        document.getElementById('holidayModalTitle').innerHTML = '<i class="fa fa-calendar-plus-o" style="color: #0284c7;"></i> Thêm ngày nghỉ lễ';
+        document.getElementById('holidayForm').action = '@Url.Action("Create")';
+        document.getElementById('holidayId').value = '0';
+        document.getElementById('holidayName').value = '';
+        document.getElementById('kindAnnual').checked = true;
+        document.getElementById('holidayDay').value = '';
+        document.getElementById('holidayMonth').value = '';
+        document.getElementById('holidaySpecificDate').value = '';
+        document.getElementById('holidayNote').value = '';
+        document.getElementById('holidayIsActive').checked = true;
+        onKindChanged();
+
+        document.getElementById('holidayModalOverlay').classList.add('active');
+    }
+
+    function openEditModal(item) {
+        document.getElementById('holidayModalTitle').innerHTML = '<i class="fa fa-pencil" style="color: #0284c7;"></i> Sửa ngày nghỉ lễ';
+        document.getElementById('holidayForm').action = '@Url.Action("Edit")';
+        document.getElementById('holidayId').value = item.Id;
+        document.getElementById('holidayName').value = item.Name || '';
+
+        if (item.Kind === 1) {
+            document.getElementById('kindAnnual').checked = true;
+            document.getElementById('holidayDay').value = item.Day || '';
+            document.getElementById('holidayMonth').value = item.Month || '';
+            document.getElementById('holidaySpecificDate').value = '';
+        } else {
+            document.getElementById('kindCompensatory').checked = true;
+            if (item.SpecificDate) {
+                var d = new Date(item.SpecificDate);
+                var formatted = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+                document.getElementById('holidaySpecificDate').value = formatted;
+            }
+        }
+
+        document.getElementById('holidayNote').value = item.Note || '';
+        document.getElementById('holidayIsActive').checked = item.IsActive !== false;
+        onKindChanged();
+
+        document.getElementById('holidayModalOverlay').classList.add('active');
+    }
+
+    function closeHolidayModal() {
+        document.getElementById('holidayModalOverlay').classList.remove('active');
+    }
+
+    function onOverlayClick(e) {
+        if (e.target.id === 'holidayModalOverlay') {
+            closeHolidayModal();
+        }
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeHolidayModal();
+        }
+    });
+
+    function toggleActive(id, btn) {
+        $.post('@Url.Action("ToggleActive")', { id: id }, function (res) {
+            if (res && res.success) {
+                if (res.isActive) {
+                    $(btn).removeClass('btn-default').addClass('btn-success').text('Đang áp dụng');
+                } else {
+                    $(btn).removeClass('btn-success').addClass('btn-default').text('Tạm tắt');
+                }
+            }
+        });
+    }
+</script>
+}

@@ -222,11 +222,15 @@ namespace TTKDGP.ProjectManager.Models
             new PermModule("functions", "Chức năng hệ thống", "Quản trị",
                 new[] { A(View, "Xem"), A(Edit, "Đổi tên / Bật tắt") });
 
+        /// <summary>Danh mục Ngày nghỉ lễ cố định và bù.</summary>
+        public static readonly PermModule Holiday =
+            new PermModule("holiday", "Ngày nghỉ lễ", "Quản trị", Crud());
+
         /// <summary>Toàn bộ module, thứ tự dùng để hiển thị trên màn cấu hình.</summary>
         public static readonly List<PermModule> All = new List<PermModule>
         {
             Home, MyReports, Projects, Members, Assignments, TeamReports, WorkLogs, Catalog,
-            Team, WorkProjects, WorkTasks, WorkReports, Kpi, Leaves, Workload,
+            Team, WorkProjects, WorkTasks, WorkReports, Kpi, Leaves, Workload, Holiday,
             Hrm, HrmDirectory, Notifications, GoConnect, Integrations, Users, Roles, Functions
         };
 
@@ -245,7 +249,7 @@ namespace TTKDGP.ProjectManager.Models
             var codes = new List<string> { Home.Perm(View), Team.Perm(View) };
             codes.AddRange(new[] { MyReports, Projects, Members, Assignments, TeamReports,
                                    Catalog, WorkLogs,
-                                   WorkProjects, WorkTasks, WorkReports, Kpi, Leaves, Workload }
+                                   WorkProjects, WorkTasks, WorkReports, Kpi, Leaves, Workload, Holiday }
                 .SelectMany(m => m.Actions.Select(a => m.Perm(a.Code))));
             return codes;
         }
@@ -384,6 +388,7 @@ namespace TTKDGP.ProjectManager.Models
                         Child("Trạng thái dự án", "ProjectStatuses", Catalog.Perm(View)),
                         Child("Trạng thái tham gia", "WorkStatuses", Catalog.Perm(View)),
                         Child("Vai trò", "MemberRoles", Catalog.Perm(View))),
+                    L("Ngày nghỉ lễ", "Holiday", Holiday.Perm(View)),
                     L("Cấu hình KPI", "KpiConfig", Kpi.Perm("config")),
                     L("Tình trạng hệ thống", "SystemStatus", Users.Perm(View)),
                     L("Thông báo", "Notifications", Notifications.Perm(View)),

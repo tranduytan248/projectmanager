@@ -52,13 +52,15 @@ namespace TTKDGP.ProjectManager.Services
             return count;
         }
 
-        /// <summary>Ngày này có được tính là ngày làm việc không, theo cấu hình cuối tuần.</summary>
+        /// <summary>Ngày này có được tính là ngày làm việc không, theo cấu hình cuối tuần và danh mục ngày nghỉ lễ.</summary>
         public static bool IsWorkingDay(DateTime day)
         {
             var config = Config;
 
             if (day.DayOfWeek == DayOfWeek.Saturday) return config.CountSaturday;
             if (day.DayOfWeek == DayOfWeek.Sunday) return config.CountSunday;
+
+            if (HolidayService.IsHoliday(day)) return false;
 
             return true;
         }

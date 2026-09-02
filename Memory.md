@@ -2,6 +2,31 @@
 
 ---
 
+# [2026-09-02] Tính năng: Quản lý Ngày nghỉ lễ (Lễ cố định & Nghỉ bù) và Tự động tính lại quỹ thời gian làm việc chuẩn trong tháng
+
+## 1. Mô tả yêu cầu
+- Xây dựng module Ngày nghỉ lễ gồm 2 nhóm:
+  1. Ngày nghỉ lễ cố định hàng năm (`AnnualFixed`: ví dụ 01/01 Tết Dương lịch, 30/04 Ngày Giải phóng, 01/05 Quốc tế Lao động, 02/09 Quốc khánh).
+  2. Ngày nghỉ lễ bù / phát sinh theo năm (`Compensatory`: người dùng tự khai báo theo năm cụ thể).
+- Khi trong tháng có phát sinh ngày nghỉ lễ $\rightarrow$ tự động tính lại số ngày làm việc chuẩn (`StandardWorkingDays`) và quỹ giờ yêu cầu trong tháng (`RequiredHours = (StandardDays - LeaveDays) * 8h`).
+
+## 2. Thiết kế Kiến trúc & Xử lý nghiệp vụ
+- **Backend ASP.NET MVC 5**:
+  - `Models/Work/Holiday.cs`: Khai báo model `Holiday` (`Kind`: 1 - AnnualFixed, 2 - Compensatory, `Day`, `Month`, `Year`, `IsActive`, `DisplayDate`).
+  - `Data/Repository.cs`: Khai báo bảng `Holidays`.
+  - `Services/HolidayService.cs`: Tự động seed ngày lễ cơ bản nếu bảng trống; cung cấp `IsHoliday(DateTime day)`, `ForYear(int year)`, `InMonth(int year, int month)` và các hàm CRUD.
+  - `Services/KpiService.cs`: Cập nhật `IsWorkingDay(DateTime day)` $\rightarrow$ kiểm tra `!HolidayService.IsHoliday(day)`. Nếu ngày lễ rơi vào Thứ 7/Chủ Nhật thì không trừ trùng lặp; nếu có ngày nghỉ bù vào Thứ 2 thì ngày đó được trừ vào ngày công chuẩn.
+  - `Models/Permission.cs`: Khai báo PermModule `Holiday` (`holiday.view`, `holiday.create`, `holiday.edit`, `holiday.delete`), đưa vào nhóm **Quản trị** (`Permissions.All`), tích hợp vào `ManagerDefaults`, đặt làm mục menu trực tiếp trong khối **Quản trị** (`L("Ngày nghỉ lễ", "Holiday", Holiday.Perm(View))`).
+  - `Views/Holiday/Index.cshtml`: Giao diện Web quản lý ngày nghỉ lễ thiết kế mới theo chuẩn Design System: Hero Card thống kê 12 tháng phân bố trực quan, bảng danh sách hiện đại với badge loại ngày nghỉ tinh tế, nút Thao tác (Sửa/Xóa) bo góc sắc nét, Modal Popup chuẩn (Backdrop làm mờ `backdrop-filter: blur`, hiệu ứng trượt mượt mà `animation`, hỗ trợ đóng khi bấm ngoài nền hoặc phím `ESC`).
+- **Mobile Flutter (BrewTask)**:
+  - Chức năng quản lý ngày nghỉ lễ thuần túy trên Web Quản trị, hoàn toàn không hiển thị trên ứng dụng di động theo yêu cầu.
+- **Kiểm thử & Linter**:
+  - Flutter tests: 61/61 PASS 100%.
+  - `flutter analyze`: 0 errors, 0 warnings.
+  - Web MSBuild: 0 errors, 0 warnings.
+
+---
+
 # [2026-09-02] Tính năng: Biểu đồ HUD Power Curve Thời gian làm việc & Logtime mỗi ngày trên Dashboard Mobile
 
 ## 1. Mô tả yêu cầu
@@ -2006,3 +2031,22 @@ Nguyên văn: "Tôi ko mún hiển thị bên chỗ Chuông thông báo mà ki�
   - MSBuild Rebuild Solution: Thành công (0 Errors).
   - `flutter test`: 61/61 tests PASS 100%.
   - `flutter analyze`: 0 Errors, 0 Warnings.
+
+---
+
+# [2026-09-02] Cập nhật: Cục pin HUD tính theo thời gian làm việc trong tháng
+
+## 1. Mô tả yêu cầu
+- Người dùng yêu cầu: "Cục pin này tính theo tháng nhan. Tính theo thời gian làm việc trong tháng."
+
+## 2. Triển khai
+- `Mobile-Flutter/lib/features/dashboard/widgets/work_time_hud_chart.dart`:
+  - Thêm thuộc tính `monthlyTargetHours` vào `WorkTimeHUDChart`.
+  - Tính tỷ lệ phần trăm năng lượng pin: `percent = (workTime.totalHoursMonth / targetMonth * 100).clamp(0.0, 100.0)` với `targetMonth` lấy từ `monthlyTargetHours` (hoặc mặc định 176h).
+- `Mobile-Flutter/lib/features/dashboard/dashboard_screen.dart`:
+  - Truyền `monthlyTargetHours: data.kpi?.requiredHours` vào `WorkTimeHUDChart`.
+- Kiểm thử:
+  - `flutter test`: 61/61 tests PASS 100%.
+  - `flutter analyze`: 0 Errors, 0 Warnings.
+  - Hot reload trực tiếp lên thiết bị Emulator.
+
