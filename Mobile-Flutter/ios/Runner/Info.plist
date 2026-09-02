@@ -27,7 +27,15 @@
 		<key>LSRequiresIPhoneOS</key>
 		<true/>
 		<key>NSPhotoLibraryUsageDescription</key>
-		<string>Cho phép chọn ảnh để đính kèm khi gửi trao đổi công việc.</string>
+		<string>Ứng dụng cần truy cập thư viện ảnh để đính kèm hình ảnh và tài liệu vào trao đổi công việc hoặc cập nhật thông tin cá nhân.</string>
+		<key>NSPhotoLibraryAddUsageDescription</key>
+		<string>Ứng dụng cần quyền lưu ảnh và tài liệu công việc vào thư viện ảnh của bạn.</string>
+		<key>NSCameraUsageDescription</key>
+		<string>Ứng dụng cần truy cập máy ảnh để chụp ảnh đính kèm trong trao đổi công việc và cập nhật ảnh đại diện.</string>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>Ứng dụng cần truy cập micro khi quay video đính kèm hoặc gửi ghi âm trong trao đổi công việc.</string>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>Ứng dụng cần truy cập vị trí khi sử dụng để hỗ trợ tính năng chấm công và điểm danh công việc theo địa điểm.</string>
 		<key>UIApplicationSceneManifest</key>
 		<dict>
 			<key>UIApplicationSupportsMultipleScenes</key>

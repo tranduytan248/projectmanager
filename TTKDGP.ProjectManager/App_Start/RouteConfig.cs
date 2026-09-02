@@ -1,4 +1,4 @@
-﻿using System.Web.Mvc;
+using System.Web.Mvc;
 using System.Web.Routing;
 
 namespace TTKDGP.ProjectManager
@@ -57,6 +57,13 @@ namespace TTKDGP.ProjectManager
                 name: "KpiApiList",
                 url: "api/kpi",
                 defaults: new { controller = "Kpi", action = "ApiList" }
+            );
+
+            // Route công khai Chính sách quyền riêng tư cho Google Play & App Store
+            routes.MapRoute(
+                name: "Privacy",
+                url: "privacy",
+                defaults: new { controller = "Home", action = "Privacy" }
             );
 
             routes.MapRoute(
