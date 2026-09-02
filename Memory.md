@@ -2,6 +2,31 @@
 
 ---
 
+# [2026-09-02] Tính năng: Biểu đồ HUD Power Curve Thời gian làm việc & Logtime mỗi ngày trên Dashboard Mobile
+
+## 1. Mô tả yêu cầu
+- Xây dựng biểu đồ hiển thị Tổng thời gian làm việc và Logtime mỗi ngày trên màn hình Dashboard của Mobile App (`Mobile-Flutter`).
+- Thang đo trần mỗi ngày: `Max = 12h` (khớp với `TimeLogRules.MaxHoursPerDay = 12h`).
+- Phân dải màu sắc theo ngưỡng giờ logtime:
+  - $\ge 8.0\text{h}$: Xanh lá (`AppColors.success` / `#4ADE80`)
+  - $6.0\text{h} \le \text{hours} < 8.0\text{h}$: Xanh dương (`AppColors.info` / `#38BDF8`)
+  - $4.0\text{h} \le \text{hours} < 6.0\text{h}$: Màu cam (`#FB923C`)
+  - $0.0\text{h} \le \text{hours} < 4.0\text{h}$: Màu đỏ (`AppColors.danger` / `#F87171`), nếu 0h hiển thị viền/mờ.
+
+## 2. Thiết kế UI/UX & Kỹ thuật
+- **Backend ASP.NET MVC 5**:
+  - `ApiDtos.cs`: Thêm `DailyLogTimeDto`, `WorkTimeDashboardDto` và `DashboardDto.WorkTime`.
+  - `DashboardApiController.cs`: Thêm hàm `BuildMyWorkTime(userId, today)` tổng hợp số giờ làm thực tế theo từng ngày trong tuần (T2 -> CN) và tổng giờ tuần/tháng từ `TimeLogService.TotalOfDay` & `Repository.WorkTimeLogs`.
+- **Mobile Flutter (BrewTask)**:
+  - `dashboard_models.dart`: Thêm `DailyLogTime`, `WorkTimeDashboard` và trường `workTime` trong `DashboardData`.
+  - `widgets/work_time_hud_chart.dart`: Tạo widget `WorkTimeHUDChart` mô phỏng phong cách thiết kế HUD Power Curve kép:
+    - Bên trái: Đồng hồ Pin HUD / Level Gauge trực quan đo tỷ lệ hoàn thành mục tiêu giờ tuần.
+    - Bên phải: 7 cột Capsule Power Curve phân đoạn cho 7 ngày trong tuần, đổi màu theo đúng ngưỡng giờ yêu cầu.
+    - Phía dưới: 3 thẻ chỉ số nhanh (Hôm nay, Tuần này, Tháng này) và thanh chú thích thang đo màu sắc.
+  - Tuân thủ 100% `AppColors`, `AppDimens`, `AppText`, `AppCard`.
+
+---
+
 # [2026-08-23] Tối ưu hoá cơ chế Cache UI Mobile: Chuyển sang Stale-While-Revalidate chuẩn không chặn API
 
 ## 1. Mô tả vấn đề

@@ -20,6 +20,7 @@ import '../notifications/notifications_service.dart';
 import '../projects/project_discussion_service.dart';
 import 'dashboard_models.dart';
 import 'dashboard_service.dart';
+import 'widgets/work_time_hud_chart.dart';
 
 enum _TaskFilter { all, today, upcoming }
 
@@ -111,6 +112,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     onClose: () => setState(() => _showTodayBanner = false),
                   ),
                 ],
+                const SizedBox(height: 16),
+                WorkTimeHUDChart(
+                  workTime: data.workTime ?? WorkTimeDashboard.fallback(),
+                ),
                 if (data.kpi != null) ...[
                   const SizedBox(height: 16),
                   _KpiCard(kpi: data.kpi!),

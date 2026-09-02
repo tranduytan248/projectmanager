@@ -256,6 +256,86 @@ class TeamSummary {
       );
 }
 
+class DailyLogTime {
+  const DailyLogTime({
+    required this.date,
+    required this.dayOfWeek,
+    required this.hours,
+    required this.isToday,
+  });
+
+  final DateTime? date;
+  final String dayOfWeek;
+  final double hours;
+  final bool isToday;
+
+  factory DailyLogTime.fromJson(Map<String, dynamic> json) => DailyLogTime(
+        date: parseAspNetDate(json['Date'] as String?),
+        dayOfWeek: json['DayOfWeek'] as String? ?? '',
+        hours: (json['Hours'] as num?)?.toDouble() ?? 0.0,
+        isToday: json['IsToday'] as bool? ?? false,
+      );
+}
+
+class WorkTimeDashboard {
+  const WorkTimeDashboard({
+    required this.totalHoursWeek,
+    required this.totalHoursMonth,
+    required this.todayHours,
+    required this.targetHoursPerDay,
+    required this.maxHoursPerDay,
+    required this.dailyLogs,
+  });
+
+  final double totalHoursWeek;
+  final double totalHoursMonth;
+  final double todayHours;
+  final double targetHoursPerDay;
+  final double maxHoursPerDay;
+  final List<DailyLogTime> dailyLogs;
+
+  factory WorkTimeDashboard.fromJson(Map<String, dynamic> json) =>
+      WorkTimeDashboard(
+        totalHoursWeek: (json['TotalHoursWeek'] as num?)?.toDouble() ?? 0.0,
+        totalHoursMonth: (json['TotalHoursMonth'] as num?)?.toDouble() ?? 0.0,
+        todayHours: (json['TodayHours'] as num?)?.toDouble() ?? 0.0,
+        targetHoursPerDay:
+            (json['TargetHoursPerDay'] as num?)?.toDouble() ?? 8.0,
+        maxHoursPerDay: (json['MaxHoursPerDay'] as num?)?.toDouble() ?? 12.0,
+        dailyLogs: (json['DailyLogs'] as List<dynamic>? ?? [])
+            .map((e) => DailyLogTime.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+
+  /// Khởi tạo dữ liệu mặc định 7 ngày (T2 - CN) khi server chưa trả WorkTime
+  factory WorkTimeDashboard.fallback() {
+    final now = DateTime.now();
+    final monday = now.subtract(Duration(days: (now.weekday - 1) % 7));
+    const dayNames = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+    final logs = List.generate(7, (i) {
+      final date = monday.add(Duration(days: i));
+      final isToday = date.year == now.year &&
+          date.month == now.month &&
+          date.day == now.day;
+      return DailyLogTime(
+        date: date,
+        dayOfWeek: dayNames[i],
+        hours: 0.0,
+        isToday: isToday,
+      );
+    });
+
+    return WorkTimeDashboard(
+      totalHoursWeek: 0.0,
+      totalHoursMonth: 0.0,
+      todayHours: 0.0,
+      targetHoursPerDay: 8.0,
+      maxHoursPerDay: 12.0,
+      dailyLogs: logs,
+    );
+  }
+}
+
 class DashboardData {
   const DashboardData({
     required this.projectCount,
@@ -265,6 +345,7 @@ class DashboardData {
     required this.taskStats,
     required this.kpi,
     required this.leave,
+    this.workTime,
     required this.canSeeTeam,
     required this.canApproveLeave,
     required this.pendingLeaveApprovalCount,
@@ -278,6 +359,7 @@ class DashboardData {
   final TaskStats taskStats;
   final KpiSummary? kpi;
   final LeaveSummary leave;
+  final WorkTimeDashboard? workTime;
   final bool canSeeTeam;
   final bool canApproveLeave;
   final int pendingLeaveApprovalCount;
@@ -299,6 +381,10 @@ class DashboardData {
             : KpiSummary.fromJson(json['Kpi'] as Map<String, dynamic>),
         leave: LeaveSummary.fromJson(
             json['Leave'] as Map<String, dynamic>? ?? const {}),
+        workTime: json['WorkTime'] == null
+            ? WorkTimeDashboard.fallback()
+            : WorkTimeDashboard.fromJson(
+                json['WorkTime'] as Map<String, dynamic>),
         canSeeTeam: json['CanSeeTeam'] as bool? ?? false,
         canApproveLeave: json['CanApproveLeave'] as bool? ?? false,
         pendingLeaveApprovalCount: json['PendingLeaveApprovalCount'] as int? ?? 0,
