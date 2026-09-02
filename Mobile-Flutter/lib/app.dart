@@ -24,6 +24,13 @@ class TtkdgpApp extends StatelessWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: themeMode,
+      builder: (context, child) {
+        return GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       // Dich cac widget he thong (date picker, time picker...) sang tieng Viet — man hinh tu viet
       // vẫn tự dịch qua AppStrings/AppText nhu binh thuong, day chi anh huong widget cua Flutter.
       localizationsDelegates: const [

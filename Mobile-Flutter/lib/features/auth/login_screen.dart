@@ -229,6 +229,8 @@ class _LoginScreenState extends State<LoginScreen> {
               SafeArea(
                 child: Center(
                   child: SingleChildScrollView(
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 28, vertical: 32),
                     child: ConstrainedBox(
