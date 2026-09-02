@@ -122,16 +122,8 @@
                         </tr>
                         <tr class="sum">
                             <td class="op">=</td>
-                            <td>Điểm chất lượng</td>
+                            <td>Điểm chất lượng (Tỷ lệ giờ công + Việc riêng − Điểm trừ)</td>
                             <td class="val">@Model.MyKpi.QualityPoint.ToString("0.##")</td>
-                        </tr>
-                        <tr class="@(Model.HoursShort > 0 ? "warn-row" : "")">
-                            <td class="op">×</td>
-                            <td>
-                                Tỷ lệ giờ công
-                                <span class="muted">(@Model.MyKpi.WorkedHours.ToString("0.#")/@Model.MyKpi.RequiredHours.ToString("0.#") giờ)</span>
-                            </td>
-                            <td class="val">@Model.MyKpi.AttendanceRate.ToString("0.##")%</td>
                         </tr>
                         <tr class="total">
                             <td class="op">=</td>

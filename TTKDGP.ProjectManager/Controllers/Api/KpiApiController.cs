@@ -280,6 +280,14 @@ namespace TTKDGP.ProjectManager.Controllers.Api
                 }
             }
 
+            foreach (var r in rows)
+            {
+                var totalPenalty = KpiService.SupportLatePenalty(r.SupportLateCount) + KpiService.ExecuteLatePenalty(r.ExecuteLateCount);
+                var raw = r.AttendanceRate + r.AssignedPoint - totalPenalty;
+                r.QualityPoint = Math.Round(raw > 0 ? raw : 0, 2);
+                r.FinalPoint = KpiService.RoundFinal(r.QualityPoint);
+            }
+
             return rows
                 .OrderByDescending(k => k.FinalPoint)
                 .ThenBy(k => k.UserFullName, StringComparer.CurrentCulture)

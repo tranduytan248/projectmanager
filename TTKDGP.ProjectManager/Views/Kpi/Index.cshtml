@@ -184,7 +184,6 @@
                         <th class="center col-hide-sm nowrap">Thực hiện</th>
                         <th class="center col-hide-sm nowrap">Việc riêng</th>
                         <th class="center col-hide-sm nowrap">Điểm trừ</th>
-                        <th class="center col-hide-sm nowrap">Chất lượng</th>
                         <th class="center col-hide-sm nowrap">Giờ công</th>
                         <th class="center col-hide-sm nowrap">Nghỉ phép</th>
                         @if (canGenerate)
@@ -213,7 +212,7 @@
                         var rTotalPenalty = rSupportPenalty + rExecutePenalty;
                         var rGrossSupport = r.SupportPoint + rSupportPenalty;
                         var rGrossExecute = r.ExecutePoint + rExecutePenalty;
-                        var rDisplayQuality = rGrossSupport + rGrossExecute + r.AssignedPoint - rTotalPenalty;
+                        var rDisplayQuality = r.AttendanceRate + r.AssignedPoint - rTotalPenalty;
                         if (rDisplayQuality < 0) { rDisplayQuality = 0; }
 
                         <tr>
@@ -340,10 +339,6 @@
                                 <span class="@(rTotalPenalty > 0 ? "danger-text" : "")">@rTotalPenalty.ToString("0.##")</span>
                                 <div class="cell-sub muted">Hỗ trợ: @rSupportPenalty.ToString("0.##") · Thực hiện: @rExecutePenalty.ToString("0.##")</div>
                             </td>
-                            @* Chat luong = Ho tro (goc) + Thuc hien (goc) + Viec rieng − Diem tru,
-                               dung KHOP voi thu tu cot ben trai — xem rDisplayQuality o dau vong
-                               lap (co chan khong cho am). *@
-                            <td class="center col-hide-sm"><strong>@rDisplayQuality.ToString("0.##")</strong></td>
 
                             @* Giờ công là chỗ điểm bị hạ nhiều nhất — bày cả tỷ lệ lẫn số giờ,
                                và tô cảnh báo ngay khi chưa đủ. *@

@@ -101,7 +101,14 @@ namespace TTKDGP.ProjectManager.Controllers.Api
         {
             var saved = Repository.KpiMonths.FirstOrDefault(
                 k => k.Year == today.Year && k.Month == today.Month && k.UserId == userId);
-            if (saved != null) return saved;
+            if (saved != null)
+            {
+                var penalty = KpiService.SupportLatePenalty(saved.SupportLateCount) + KpiService.ExecuteLatePenalty(saved.ExecuteLateCount);
+                var raw = saved.AttendanceRate + saved.AssignedPoint - penalty;
+                saved.QualityPoint = Math.Round(raw > 0 ? raw : 0, 2);
+                saved.FinalPoint = KpiService.RoundFinal(saved.QualityPoint);
+                return saved;
+            }
 
             var preview = new KpiMonth
             {

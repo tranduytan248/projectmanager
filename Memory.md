@@ -1980,3 +1980,29 @@ Nguyên văn: "Tôi ko mún hiển thị bên chỗ Chuông thông báo mà ki�
   - `app_routes.dart`: Đăng ký route `AppRoutes.projectDiscussionsList`.
 - [ ] **Bước 4, 5, 6, 7 — Review, Bảo mật, Kiểm thử (Tests) và Nghiệm thu UI/UX**.
 
+---
+
+# [2026-09-02] Vấn đề: Cập nhật công thức tính KPI Cuối Cùng = Tỷ lệ giờ công + Việc riêng - Điểm trừ
+
+## 1. Mô tả yêu cầu
+- Người dùng yêu cầu: "KPI cuối cùng sẽ bằng Tỷ lệ giờ công + Việc riêng - Điểm trừ".
+
+## 2. Phân tích & Triển khai
+- Trong hệ thống:
+  - `Tỷ lệ giờ công` = `(WorkingHours / RequiredHours) * 100` = `Hỗ trợ gốc + Thực hiện gốc`.
+  - `Việc riêng` = `AssignedPoint` (điểm cộng % từ các việc riêng hoàn thành đúng hạn).
+  - `Điểm trừ` = `SupportLatePenalty + ExecuteLatePenalty` (điểm trừ do báo cáo trễ).
+  - Trước đây: Nếu thiếu giờ công thì lấy `QualityPoint * (AttendanceRate / 100)` dẫn đến bị phạt nhân đôi.
+  - Công thức mới: `KPI cuối cùng = Tỷ lệ giờ công + Việc riêng - Điểm trừ` (chính là `QualityPoint`, làm tròn về số nguyên, tối thiểu 0).
+- Đã sửa đổi:
+  - `KpiService.cs`: Cập nhật `FinalBeforeRounding(row)` trả về trực tiếp `row.QualityPoint` (không nhân lặp lại `AttendanceRate / 100`).
+  - `KpiController.cs` & `KpiApiController.cs`: Đồng bộ `QualityPoint` và `FinalPoint` trong `BuildRows` để các dòng đã lưu cũ hoặc xem trực tiếp đều hiển thị đúng 100% theo công thức mới.
+  - `DashboardController.cs` & `DashboardApiController.cs`: Đồng bộ `BuildMyKpi` theo công thức mới.
+  - `Views/Kpi/Index.cshtml`: Bỏ cột "Chất lượng" (tránh trùng lặp), cột "KPI CUỐI CÙNG" lấy trực tiếp theo công thức chuẩn.
+  - `Views/Kpi/Detail.cshtml`: Cập nhật bảng diễn giải các bước tính điểm từ Tỷ lệ giờ công (max 100%) + Việc riêng - Điểm trừ = KPI cuối cùng.
+  - `Views/Dashboard/Index.cshtml`: Đồng bộ bảng diễn giải KPI.
+  - `Mobile-Flutter/lib/features/kpi/kpi_detail_screen.dart`: Cập nhật chuỗi diễn giải công thức và cảnh báo thiếu giờ.
+- Kiểm thử:
+  - MSBuild Rebuild Solution: Thành công (0 Errors).
+  - `flutter test`: 61/61 tests PASS 100%.
+  - `flutter analyze`: 0 Errors, 0 Warnings.
