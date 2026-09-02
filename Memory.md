@@ -2,6 +2,27 @@
 
 ---
 
+# [2026-09-02] UI/UX Mobile: Làm nổi bật thông tin đơn vị & Phiên bản (Đăng nhập) và Chuyển màn hình Splash sang màu đen
+
+## 1. Mô tả yêu cầu
+- Màn hình Đăng nhập: Làm nổi bật lại thông tin đơn vị ("Trung tâm KDGP - VNPT KHA") và phiên bản ứng dụng (`_versionLabel`) vốn bị chìm/tối khó đọc trên nền tối.
+- Màn hình Splash: Đổi toàn bộ màu nền màn hình khởi động (Splash Screen) từ màu xanh sang màu đen (`#181818`).
+
+## 2. Giải pháp thực hiện
+- **Màn hình Đăng nhập (`Mobile-Flutter/lib/features/auth/login_screen.dart`)**:
+  - Chuyển `'Trung tâm KDGP - VNPT KHA'` sang `AppColors.textSecondary` (`#CBD5E1`), `FontWeight.w600`, `letterSpacing: 0.5`.
+  - Chuyển `_versionLabel` sang `AppColors.textFaint` (`#94A3B8`), `FontWeight.w500`.
+- **Màn hình Splash Flutter (`Mobile-Flutter/lib/features/auth/splash_screen.dart`)**:
+  - Đổi màu nền `Container` từ `AppTheme.brandBlue` sang `const Color(0xFF181818)`.
+- **Cấu hình Native Splash (`Mobile-Flutter/pubspec.yaml`)**:
+  - Đổi màu `flutter_native_splash` sang `#181818`.
+  - Chạy lệnh `dart run flutter_native_splash:create` tái tạo bộ tài nguyên Android 12+, XML Styles (day/night), iOS Storyboard và Web Manifest.
+- **Kiểm thử & Linter**:
+  - `flutter analyze`: 0 errors, 0 warnings.
+  - `flutter test`: 61/61 tests PASS 100%.
+
+---
+
 # [2026-09-02] Tính năng: Tự động ẩn bàn phím khi bấm ra ngoài phạm vi ô nhập liệu trên Mobile (BrewTask)
 
 ## 1. Mô tả yêu cầu

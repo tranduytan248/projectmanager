@@ -441,15 +441,14 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                             const SizedBox(height: AppDimens.space24),
-                            AppText(
+                            const AppText(
                               'Trung tâm KDGP - VNPT KHA',
                               variant: AppTextVariant.overline,
                               align: TextAlign.center,
                               fontSize: 12,
                               weight: FontWeight.w600,
-                              color: AppColors.textOnPrimary
-                                  .withValues(alpha: 0.6),
-                              letterSpacing: 0,
+                              color: AppColors.textSecondary,
+                              letterSpacing: 0.5,
                             ),
                             if (_versionLabel.isNotEmpty) ...[
                               const SizedBox(height: AppDimens.space4),
@@ -458,8 +457,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 variant: AppTextVariant.caption,
                                 align: TextAlign.center,
                                 fontSize: 11,
-                                color: AppColors.textOnPrimary
-                                    .withValues(alpha: 0.45),
+                                weight: FontWeight.w500,
+                                color: AppColors.textFaint,
                               ),
                             ],
                           ],
