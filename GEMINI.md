@@ -78,10 +78,15 @@ graph TD
 - Rà soát an toàn thông tin: SQL Injection, XSS, Broken Access Control, xác thực Bearer Token, bảo mật dữ liệu nhạy cảm, lộ thông tin cá nhân.
 - Khắc phục triệt để mọi rủi ro an ninh mạng trước khi chuyển sang bước kiểm thử.
 
-### 6. Bước 6 — Kiểm thử & Khắc phục lỗi (`.agents/rules/TESTING.md` & `.agents/agents/test-engineer.md`)
-- Viết/cập nhật unit test và widget test bao phủ các luồng chính và edge cases.
-- **Tự động chạy `flutter test` và `flutter analyze`** (hoặc MSBuild cho Web C#).
-- Nếu phát sinh lỗi: Đọc log lỗi chi tiết, sửa code và chạy lại test liên tục cho đến khi **100% PASS và 0 Errors, 0 Warnings**.
+### 6. Bước 6 — Kiểm thử, Soi Lỗi Toàn diện & Tự Sửa Lỗi (Auto-Fix) (`.agents/agents/TesterPro.md`, `.agents/rules/TESTING.md` & `.agents/agents/test-engineer.md`)
+- **Kích hoạt Agent `TesterPro`**: Đi soi toàn bộ các chức năng sau khi code xong:
+  - *Soi UI/UX & Design System*: Kiểm tra layout, màu sắc lệch chuẩn hệ thống, tràn viền (overflow), touch target < 48dp, thiếu 5 trạng thái giao diện.
+  - *Soi Code ẩu & Logic*: Bắt các lỗi cẩu thả, nuốt exception (`catch` rỗng), thiếu null-check, quên `await`, biến thừa.
+  - *Soi Font chữ & Tiếng Việt*: Soi lỗi encode UTF-8 thiếu BOM, tiếng Việt không dấu hoặc sai chính tả.
+  - *Soi Vi phạm Rules*: Phát hiện dùng trực tiếp widget gốc Flutter (bắt buộc đổi sang `App*`), hard-code màu/kích thước, nối chuỗi SQL.
+  - **TỰ ĐỘNG SỬA (Auto-Fix)**: Phát hiện bất kỳ lỗi nào ở trên $\rightarrow$ **Tự động sửa ngay lập tức mã nguồn** mà không cần đợi nhắc.
+- **Kiểm thử tự động**: Viết/cập nhật test, **chạy `flutter test` và `flutter analyze`** (hoặc MSBuild cho Web C#).
+- Nếu phát sinh lỗi/test fail: Tự động sửa code và chạy lại liên tục cho đến khi **100% PASS và 0 Errors, 0 Warnings**.
 - Kiểm tra trực quan trên Emulator / Trình duyệt.
 
 ### 7. Bước 7 — Nghiệm thu Design UI/UX (`.agents/skills/chuyen-gia-nghiem-thu-design/SKILL.md`)

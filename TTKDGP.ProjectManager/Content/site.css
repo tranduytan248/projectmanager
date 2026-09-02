@@ -99,6 +99,10 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
+button, input, select, textarea {
+    font-family: inherit;
+}
+
 /*
   Thang chữ của Material: tiêu đề giãn chữ âm nhẹ cho đặc, nhãn và chữ nhỏ giãn chữ dương cho dễ
   đọc. Đây là thứ tạo cảm giác "Material" rõ nhất sau bo góc và đổ bóng.
@@ -343,18 +347,23 @@ body.has-sidebar .main, body.has-sidebar .topbar-inner, body.has-sidebar .footer
 .app-download-btn {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
-    padding: 5px 11px;
+    padding: 5px 12px;
+    font-family: inherit;
     font-size: 13px;
-    font-weight: 600;
-    line-height: 1.2;
+    font-weight: 500;
+    letter-spacing: .2px;
+    line-height: 1.4;
     color: var(--text);
     background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-xs);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-pill);
     text-decoration: none;
     cursor: pointer;
+    white-space: nowrap;
     transition: all 0.15s ease-in-out;
+    -webkit-font-smoothing: antialiased;
 }
 
 .app-download-btn:hover {
