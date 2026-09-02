@@ -420,7 +420,9 @@ class ProjectDiscussionService {
         content: summaryText,
         senderName: senderName,
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Lỗi chuẩn bị thông báo thảo luận dự án: $e');
+    }
   }
 
   /// Gọi API Backend ngầm để gửi Push Notification cho các thành viên trong dự án
@@ -439,8 +441,8 @@ class ProjectDiscussionService {
             'SenderName': senderName,
           },
         );
-      } catch (_) {
-        // Nuốt lỗi thông báo để không gián đoạn giao diện chat
+      } catch (e) {
+        debugPrint('Lỗi gửi push notification thảo luận dự án: $e');
       }
     });
   }
