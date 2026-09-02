@@ -32,6 +32,7 @@ Chi tiết đầy đủ nằm trong `.claude/rules/`, phải tuân thủ như qu
 | `code-reviewer` | Agent | Review code (C#, Dart, SQL...) ngay sau khi viết hoặc sửa |
 | `security-auditor` | Agent | Kiểm tra bảo mật cho chức năng nhạy cảm trước khi bàn giao |
 | `test-engineer` | Agent | Viết/chạy/sửa test (xUnit/NUnit cho web, `flutter_test` cho mobile) đến khi xanh |
+| `TesterPro` | Agent | Soi toàn diện sau khi code xong (UI/UX, code ẩu, lỗi font, vi phạm Rules, lệch design) và TỰ SỬA LỖI (Auto-Fix) |
 | `git-push-merge` | Skill | Khi được lệnh đẩy/push code — commit → push nhánh hiện tại → merge `main` → merge `upload-source` → quay lại nhánh ban đầu |
 
 ## Quy trình làm việc bắt buộc
@@ -56,7 +57,8 @@ Chi tiết đầy đủ nằm trong `.claude/rules/`, phải tuân thủ như qu
 - Màn hình hoàn thành hoặc sửa xong → nghiệm thu bằng skill **chuyen-gia-nghiem-thu-design**.
   Kết luận KHÔNG ĐẠT thì phải sửa và nghiệm thu lại — không cho qua, không hạ chuẩn ở vòng sau.
 
-### 4. Khi hoàn thành một tính năng
+### 4. Khi hoàn thành một tính năng (Kiểm thử, Soi lỗi & Auto-Fix)
+- Gọi agent **TesterPro** soi toàn diện mọi ngóc ngách: layout UI, code ẩu, lỗi font, vi phạm Rules (widget gốc Flutter, SQL nối chuỗi), kiểm tra compile và test. Nếu phát hiện lỗi $\rightarrow$ **Tự động sửa code (Auto-Fix)** ngay lập tức.
 - Gọi agent **test-engineer** viết và chạy test cho logic nghiệp vụ quan trọng; test phải xanh
   mới coi là xong. (Lưu ý: phần web hiện **chưa có** project test nào sẵn — dựng cả bộ khung
   test mới nằm ngoài phạm vi hợp lý của một tính năng đơn lẻ, cần thống nhất riêng với người

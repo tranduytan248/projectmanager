@@ -44,7 +44,7 @@ graph TD
 3. **Bước 3 — Thực hiện Code**: Viết code chuẩn xác theo `.agents/rules/` (Controller → Service → Repository cho C#, 100% custom widgets `App*` cho Flutter).
 4. **Bước 4 — Review Code**: Sử dụng `.agents/agents/code-reviewer.md` để review kiến trúc, chất lượng mã nguồn, khắc phục cảnh báo và tối ưu code.
 5. **Bước 5 — Kiểm toán bảo mật**: Sử dụng `.agents/agents/security-auditor.md` để rà soát an toàn thông tin, quyền truy cập, token, SQLi, XSS.
-6. **Bước 6 — Kiểm thử & Sửa lỗi**: Sử dụng `.agents/rules/TESTING.md` và `.agents/agents/test-engineer.md` để viết test, kiểm tra edge cases, chạy `flutter test` và `flutter analyze` (đảm bảo 0 Errors, 0 Warnings, Pass 100%).
+6. **Bước 6 — Kiểm thử, Soi Lỗi Toàn diện & Tự Sửa Lỗi (Auto-Fix)**: Sử dụng `.agents/agents/TesterPro.md`, `.agents/rules/TESTING.md` và `.agents/agents/test-engineer.md`. Agent `TesterPro` tự động soi toàn diện (UI/UX, code ẩu, lỗi font tiếng Việt, vi phạm Rules, lệch chuẩn Design System), **TỰ ĐỘNG SỬA MÃ NGUỒN NGAY (Auto-Fix)** và chạy `flutter test`, `flutter analyze` (đảm bảo 0 Errors, 0 Warnings, Pass 100%).
 7. **Bước 7 — Nghiệm thu Design UI/UX**: Sử dụng `.agents/skills/chuyen-gia-nghiem-thu-design/SKILL.md` để tự nghiệm thu khắt khe 7 tiêu chí thiết kế.
 
 ---

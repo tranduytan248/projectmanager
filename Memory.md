@@ -2,6 +2,20 @@
 
 ---
 
+# [2026-09-02] Thiết lập Agent: TesterPro — Kiểm thử Chuyên sâu & Tự động Sửa lỗi (Auto-Fix)
+
+## 1. Mô tả yêu cầu
+- Xây dựng Agent `TesterPro` (`.agents/agents/TesterPro.md` và `.claude/agents/TesterPro.md`) chuyên trách đi soi toàn diện chức năng sau khi code xong.
+- Trách nhiệm của TesterPro:
+  1. Soi lỗi UI/UX, lệch chuẩn Design System (VS Code Dark Theme trên Mobile, Modern Web trên C# ASP.NET), lỗi tràn viền (overflow), touch target < 48dp, thiếu 5 trạng thái giao diện.
+  2. Soi code ẩu, logic sơ sài, nuốt exception (`catch` rỗng), thiếu null-check, quên `await`, biến thừa / code rác.
+  3. Soi lỗi font tiếng Việt, hiển thị không dấu, encode UTF-8 thiếu BOM.
+  4. Soi vi phạm Rules: Cấm dùng trực tiếp widget gốc Flutter (`CircularProgressIndicator`, `TextField`, `Text`, `Checkbox`, `DropdownButton`, `FloatingActionButton`, `Card`, `ElevatedButton`), bắt buộc 100% `App*`, màu sắc từ `AppColors`, khoảng cách từ `AppDimens`; kiểm soát luồng C# Controller $\rightarrow$ Service $\rightarrow$ Repository, SQL tham số hóa không nối chuỗi.
+  5. **Cơ chế TỰ SỬA (Auto-Fix)**: Khác với reviewer chỉ đưa nhận xét, `TesterPro` phát hiện lỗi sẽ **tự động sửa trực tiếp mã nguồn** và chạy kiểm thử lại đến khi Pass 100%.
+- Cập nhật tài liệu quy trình cốt lõi `GEMINI.md`, `AGENTS.md`, `CLAUDE.md` để bắt buộc kích hoạt `TesterPro` tại Bước 6 của Workflow 7 bước.
+
+---
+
 # [2026-09-02] Tính năng: Quản lý Ngày nghỉ lễ (Lễ cố định & Nghỉ bù) và Tự động tính lại quỹ thời gian làm việc chuẩn trong tháng
 
 ## 1. Mô tả yêu cầu
