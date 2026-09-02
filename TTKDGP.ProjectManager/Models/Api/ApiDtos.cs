@@ -591,6 +591,33 @@ namespace TTKDGP.ProjectManager.Models.Api
         }
     }
 
+    /// <summary>Số giờ logtime của một ngày trong tuần phục vụ vẽ biểu đồ Power Curve HUD.</summary>
+    public class DailyLogTimeDto
+    {
+        public DateTime Date { get; set; }
+        public string DayOfWeek { get; set; }
+        public decimal Hours { get; set; }
+        public bool IsToday { get; set; }
+    }
+
+    /// <summary>Tổng hợp thời gian làm việc và logtime theo tuần/ngày cho Dashboard.</summary>
+    public class WorkTimeDashboardDto
+    {
+        public decimal TotalHoursWeek { get; set; }
+        public decimal TotalHoursMonth { get; set; }
+        public decimal TodayHours { get; set; }
+        public decimal TargetHoursPerDay { get; set; }
+        public decimal MaxHoursPerDay { get; set; }
+        public List<DailyLogTimeDto> DailyLogs { get; set; }
+
+        public WorkTimeDashboardDto()
+        {
+            DailyLogs = new List<DailyLogTimeDto>();
+            TargetHoursPerDay = 8.0m;
+            MaxHoursPerDay = 12.0m;
+        }
+    }
+
     public class DashboardDto
     {
         public int ProjectCount { get; set; }
@@ -605,6 +632,9 @@ namespace TTKDGP.ProjectManager.Models.Api
         /// <summary>Diem KPI thang hien tai; null neu chua dang nhap (khong xay ra qua ApiAuthorize).</summary>
         public KpiSummaryDto Kpi { get; set; }
         public LeaveSummaryDto Leave { get; set; }
+
+        /// <summary>Thoi gian lam viec & Logtime 7 ngay trong tuan phuc vu bieu do Power Curve HUD.</summary>
+        public WorkTimeDashboardDto WorkTime { get; set; }
 
         public bool CanSeeTeam { get; set; }
         public bool CanApproveLeave { get; set; }

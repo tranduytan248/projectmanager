@@ -333,6 +333,133 @@ body.has-sidebar .main, body.has-sidebar .topbar-inner, body.has-sidebar .footer
 .topbar-link:hover { color: var(--primary); background: var(--primary-soft); text-decoration: none; }
 .topbar-link.active { color: var(--primary); background: var(--primary-soft); }
 
+/* ===== Nút Tải Ứng Dụng Mobile (Android & iOS) trên Topbar ===== */
+.topbar-app-downloads {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.app-download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 11px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xs);
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+}
+
+.app-download-btn:hover {
+    text-decoration: none;
+    box-shadow: var(--elev-1);
+    transform: translateY(-1px);
+}
+
+.app-download-android:hover {
+    background: #eef8f2;
+    border-color: #a8dcc4;
+    color: #1a7f52;
+}
+
+.app-download-ios:hover {
+    background: #f0f3f8;
+    border-color: #c6cedd;
+    color: #1a56a8;
+}
+
+.app-download-btn .app-icon {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+}
+
+.app-download-android .app-icon {
+    color: #2ea44f;
+}
+
+.app-download-ios .app-icon {
+    color: #16202c;
+}
+
+/* Modal thông báo iOS đang xét duyệt */
+.app-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease-in-out;
+}
+
+.app-modal-backdrop.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.app-modal-card {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 26px 24px 22px;
+    max-width: 420px;
+    width: 90%;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    transform: scale(0.95);
+    transition: transform 0.2s ease-in-out;
+}
+
+.app-modal-backdrop.show .app-modal-card {
+    transform: scale(1);
+}
+
+.app-modal-icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 14px;
+    background: #f0f3f8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    color: #1a56a8;
+}
+
+.app-modal-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0 0 8px;
+}
+
+.app-modal-desc {
+    font-size: 13.5px;
+    color: var(--text-muted);
+    line-height: 1.55;
+    margin: 0 0 20px;
+}
+
+.app-modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+}
+
 /* Điều hướng đã chuyển hết sang menu dọc, thanh trên chỉ còn khối tài khoản bên phải */
 .user-area { display: flex; align-items: center; gap: 12px; margin-left: auto; }
 
