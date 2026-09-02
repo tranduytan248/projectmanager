@@ -341,7 +341,7 @@ class _HeroScoreCard extends StatelessWidget {
                 const SizedBox(width: AppDimens.space8),
                 Expanded(
                   child: AppText(
-                    'Chất lượng (${row.qualityPoint.toStringAsFixed(1)}đ) × Chuyên cần (${row.attendanceRate}%) = ${row.finalPoint.toStringAsFixed(0)}đ',
+                    'KPI cuối cùng = Tỷ lệ giờ công + Việc riêng − Điểm trừ = ${row.finalPoint.toStringAsFixed(0)}đ',
                     variant: AppTextVariant.caption,
                     fontSize: 11.5,
                     color: AppColors.textSecondary,
@@ -714,7 +714,7 @@ class _AttendanceTab extends StatelessWidget {
                       const SizedBox(width: AppDimens.space8),
                       Expanded(
                         child: AppText(
-                          'Chưa đủ giờ công (thiếu ${row.hoursShort.toStringAsFixed(1)}h). Điểm chất lượng bị nhân tỷ lệ ${row.attendanceRate}%.',
+                          'Chưa đủ giờ công (thiếu ${row.hoursShort.toStringAsFixed(1)}h). Tỷ lệ giờ công đạt ${row.attendanceRate}%.',
                           variant: AppTextVariant.caption,
                           fontSize: 12,
                           color: AppColors.danger,

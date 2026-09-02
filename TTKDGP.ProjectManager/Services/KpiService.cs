@@ -414,9 +414,12 @@ namespace TTKDGP.ProjectManager.Services
             row.AssignedPoint = Math.Round(
                 assigned.Where(t => t.State == TaskStates.Done && t.IsOnTime).Sum(t => t.BonusPercent), 2);
 
-            row.QualityPoint = Math.Round(row.SupportPoint + row.ExecutePoint + row.AssignedPoint, 2);
-
             row.AttendanceRate = AttendanceRate(row);
+
+            var totalPenalty = SupportLatePenalty(row.SupportLateCount) + ExecuteLatePenalty(row.ExecuteLateCount);
+            var rawQuality = row.AttendanceRate + row.AssignedPoint - totalPenalty;
+            row.QualityPoint = Math.Round(rawQuality > 0 ? rawQuality : 0, 2);
+
             row.FinalPoint = RoundFinal(FinalBeforeRounding(row));
         }
 
@@ -429,15 +432,13 @@ namespace TTKDGP.ProjectManager.Services
             return rate >= 100 ? 100 : Math.Round(rate, 2);
         }
 
-        /// <summary>Đủ giờ thì giữ nguyên KPI chất lượng; thiếu giờ thì nhân tỷ lệ ngày công.</summary>
+        /// <summary>
+        /// KPI cuối cùng = Tỷ lệ giờ công (tối đa 100%) + Việc riêng - Điểm trừ (chính là QualityPoint).
+        /// </summary>
         private static decimal FinalBeforeRounding(KpiMonth row)
         {
-            if ((row.WorkingHours ?? 0) >= row.RequiredHours)
-            {
-                return row.QualityPoint;
-            }
-
-            return row.QualityPoint * row.AttendanceRate / 100;
+            var point = row.QualityPoint;
+            return point < 0 ? 0 : point;
         }
     }
 }
