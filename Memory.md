@@ -2,6 +2,19 @@
 
 ---
 
+# [2026-09-02] Tính năng: Tự động ẩn bàn phím khi bấm ra ngoài phạm vi ô nhập liệu trên Mobile (BrewTask)
+
+## 1. Mô tả yêu cầu
+- Khi người dùng đang mở bàn phím ảo (soạn thảo tài khoản/mật khẩu, tìm kiếm, nhập ghi chú, form công việc...), nếu bấm ra ngoài vùng nhập liệu hoặc vuốt màn hình thì bàn phím ảo phải tự động ẩn đi (`unfocus`).
+
+## 2. Giải pháp thực hiện
+- **Toàn cục (`Mobile-Flutter/lib/app.dart`)**: Bổ sung `builder` trong `MaterialApp` bọc toàn bộ `Navigator` bằng `GestureDetector(behavior: HitTestBehavior.translucent, onTap: () => FocusManager.instance.primaryFocus?.unfocus())`. Áp dụng 100% tự động cho mọi màn hình, modal popup, dialog và bottom sheet.
+- **Khung màn hình (`Mobile-Flutter/lib/core/widgets/app_scaffold.dart`)**: Bổ sung `GestureDetector` bọc ngoài `Scaffold` như một lớp bảo vệ đa tầng cho tất cả màn hình dùng `AppScaffold`.
+- **Màn hình đăng nhập & Cuộn (`Mobile-Flutter/lib/features/auth/login_screen.dart`)**: Thêm `keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag` cho `SingleChildScrollView` giúp bàn phím tự ẩn mượt mà khi người dùng vuốt màn hình.
+- **Kiểm thử**: `flutter analyze` (0 errors, 0 warnings), `flutter test` (61/61 tests pass 100%).
+
+---
+
 # [2026-09-02] Thiết lập Agent: TesterPro — Kiểm thử Chuyên sâu & Tự động Sửa lỗi (Auto-Fix)
 
 ## 1. Mô tả yêu cầu
