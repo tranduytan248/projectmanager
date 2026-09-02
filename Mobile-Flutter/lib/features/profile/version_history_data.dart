@@ -36,9 +36,47 @@ class VersionHistoryEntry {
 }
 
 /// Danh sach lich su phien ban hien thi tren man "Cac phien ban cap nhat".
-///
-/// QUAN TRONG: de TRONG that su — noi dung changelog thuc te (dot nao co tinh nang gi, sua loi
-/// gi) se duoc nguoi phu trach cung cap va dien vao day o mot phien lam viec sau, KHONG duoc tu
-/// bia noi dung. Man hinh da duoc dung san de xu ly dung truong hop danh sach rong (xem trang
-/// thai rong trong `version_history_screen.dart`).
-const List<VersionHistoryEntry> versionHistoryEntries = [];
+final List<VersionHistoryEntry> versionHistoryEntries = [
+  VersionHistoryEntry(
+    version: '1.01.001',
+    releasedAt: DateTime(2026, 9, 3),
+    changes: const [
+      VersionHistoryChange(
+        type: VersionChangeType.newFeature,
+        description:
+            'Giao diện Dark Theme mới toanh chuẩn VS Code, cực ngầu và dịu mắt khi chạy việc đêm ☕✨',
+      ),
+      VersionHistoryChange(
+        type: VersionChangeType.newFeature,
+        description:
+            'Bộ đôi tiến độ tròn & thanh ngang mới, theo dõi checklist công việc trực quan hơn 🎯',
+      ),
+      VersionHistoryChange(
+        type: VersionChangeType.newFeature,
+        description:
+            'Nâng cấp trợ năng WCAG 2.2, hỗ trợ đọc màn hình chu đáo hơn cho mọi người dùng 💖',
+      ),
+      VersionHistoryChange(
+        type: VersionChangeType.bugFix,
+        description:
+            'Tối ưu bộ nhớ đệm DataCache, mở app và tải việc siêu tốc, êm ái không độ trễ 🚀',
+      ),
+      VersionHistoryChange(
+        type: VersionChangeType.bugFix,
+        description:
+            'Dọn sạch các lỗi giao diện nhỏ, thao tác bấm chạm mượt mà chuẩn xác từng pixel ✨',
+      ),
+    ],
+  ),
+  VersionHistoryEntry(
+    version: '1.0.0',
+    releasedAt: DateTime(2026, 8, 15),
+    changes: const [
+      VersionHistoryChange(
+        type: VersionChangeType.newFeature,
+        description:
+            'Chào sân BrewTask! Ứng dụng quản lý dự án, công việc và KPI dành riêng cho Tổ NCPT 🎉',
+      ),
+    ],
+  ),
+];

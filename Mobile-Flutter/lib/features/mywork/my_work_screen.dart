@@ -11,6 +11,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/app_app_bar.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_error_state.dart';
+import '../../core/widgets/app_icon_button.dart';
 import '../../core/widgets/app_loading.dart';
 import '../../core/widgets/app_text.dart';
 import '../../core/widgets/app_text_field.dart';
@@ -327,8 +328,8 @@ class _MyWorkScreenState extends State<MyWorkScreen> {
       appBar: AppAppBar(
         title: _title,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
+          AppIconButton(
+            icon: Icons.refresh,
             tooltip: 'Làm mới',
             onPressed: _reload,
           ),

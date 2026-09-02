@@ -560,6 +560,7 @@ class _FilterButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppIconButton(
       icon: PhosphorIconsRegular.slidersHorizontal,
+      tooltip: 'Bộ lọc',
       onPressed: onTap,
       size: 19,
       color: active ? AppColors.textOnPrimary : AppColors.textSecondary,
@@ -613,7 +614,7 @@ class _FilterTag extends StatelessWidget {
         children: [
           AppText(label,
               variant: AppTextVariant.caption,
-              fontSize: 11.5,
+              fontSize: 12,
               weight: FontWeight.w600,
               color: AppTheme.brandBlue),
           // Vung cham 48dp mac dinh se lam phinh to chip — day la hanh dong PHU, tach biet voi
@@ -621,6 +622,7 @@ class _FilterTag extends StatelessWidget {
           // dong (xem ghi chu tuong tu trong checklist_board_screen.dart._FilterTag).
           AppIconButton(
             icon: PhosphorIconsRegular.x,
+            tooltip: 'Bỏ điều kiện lọc này',
             onPressed: onRemove,
             size: 13,
             color: AppTheme.brandBlue,

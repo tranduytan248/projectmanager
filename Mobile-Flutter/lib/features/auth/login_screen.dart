@@ -11,6 +11,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_dimens.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/toast_service.dart';
+import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_icon_button.dart';
 import '../../core/widgets/app_loading.dart';
 import '../../core/widgets/app_scaffold.dart';
@@ -140,15 +141,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: AppDimens.space8),
-              TextButton(
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.textSecondary,
-                ),
+              AppButton(
+                label: 'Để sau',
+                type: AppButtonType.outline,
                 onPressed: () => Navigator.of(dialogCtx).pop(),
-                child: const AppText(
-                  'Để sau',
-                  color: AppColors.textSecondary,
-                ),
               ),
             ],
           ),
@@ -296,6 +292,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 icon: _obscurePassword
                                     ? PhosphorIconsRegular.eyeSlash
                                     : PhosphorIconsRegular.eye,
+                                tooltip: _obscurePassword
+                                    ? 'Hiện mật khẩu'
+                                    : 'Ẩn mật khẩu',
                                 color: AppColors.textSecondary,
                                 size: 20,
                                 onPressed: () => setState(

@@ -87,9 +87,10 @@ class _KpiDetailScreenState extends State<KpiDetailScreen>
           color: AppColors.textSecondary,
         ),
         actions: [
-          TextButton(
+          AppButton(
+            label: 'Hủy',
+            type: AppButtonType.outline,
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const AppText('Hủy', color: AppColors.textSecondary),
           ),
           AppButton(
             label: 'Tính lại',

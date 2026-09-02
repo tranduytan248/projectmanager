@@ -9,6 +9,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_dimens.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/toast_service.dart';
+import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_icon_button.dart';
 import '../../core/widgets/app_loading.dart';
 import '../../core/widgets/app_scaffold.dart';
@@ -165,7 +166,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(
         statusBarColor: Colors.transparent,
-        systemNavigationBarColor: const Color(0xFF181818),
+        systemNavigationBarColor: AppColors.navBackground,
         systemNavigationBarIconBrightness: Brightness.light,
       ),
       child: AppScaffold(
@@ -173,7 +174,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         body: Container(
           width: double.infinity,
           height: double.infinity,
-          color: const Color(0xFF1E1E1E),
+          color: AppColors.background,
           child: Stack(
             children: [
               Positioned(
@@ -252,7 +253,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           'QUẢN LÝ CÔNG VIỆC',
           variant: AppTextVariant.overline,
           fontSize: 12,
-          color: Color(0xFF3794FF),
+          color: AppColors.primary,
           letterSpacing: 3,
         ),
         const SizedBox(height: AppDimens.space24),
@@ -327,16 +328,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFF252526),
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(AppDimens.radiusSm),
-              border: Border.all(color: const Color(0xFF3C3C3C)),
+              border: Border.all(color: AppColors.border),
             ),
             child: AppText(
               _phoneController.text.trim(),
               variant: AppTextVariant.heading,
               fontSize: 16,
               align: TextAlign.center,
-              color: const Color(0xFF3794FF),
+              color: AppColors.primary,
               weight: FontWeight.w700,
             ),
           ),
@@ -371,44 +372,26 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
                   child: AppText(
                     _resendSecondsLeft > 0
-                        ? 'Gửi lại (${_resendSecondsLeft}s)'
-                        : 'Gửi lại mã',
-                    variant: AppTextVariant.caption,
-                    weight: FontWeight.w700,
+                        ? 'Gửi lại sau (${_resendSecondsLeft}s)'
+                        : 'Gửi lại mã OTP',
+                    variant: AppTextVariant.body,
+                    fontSize: 13,
                     color: canResend
-                        ? const Color(0xFF3794FF)
+                        ? AppColors.primary
                         : AppColors.textSecondary.withValues(alpha: 0.5),
+                    weight: canResend ? FontWeight.w600 : FontWeight.w400,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: AppDimens.space24),
-          _PrimaryDarkButton(
-            label: 'XÁC NHẬN',
-            isLoading: _isSubmitting,
-            onPressed: _confirmOtp,
-          ),
-          const SizedBox(height: AppDimens.space16),
-          InkWell(
-            onTap: _isSubmitting ? null : _backToPhoneStep,
-            borderRadius: BorderRadius.circular(AppDimens.radiusSm),
-            child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(PhosphorIconsRegular.pencilSimple, size: 14, color: Color(0xFF3794FF)),
-                  SizedBox(width: 4),
-                  AppText(
-                    'Đổi số điện thoại',
-                    variant: AppTextVariant.caption,
-                    fontSize: 13,
-                    color: Color(0xFF3794FF),
-                    weight: FontWeight.w600,
-                  ),
-                ],
-              ),
+          const SizedBox(height: AppDimens.space8),
+          Center(
+            child: AppButton(
+              label: 'Đổi số điện thoại khác',
+              icon: PhosphorIconsRegular.pencilSimple,
+              type: AppButtonType.outline,
+              onPressed: _isSubmitting ? null : _backToPhoneStep,
             ),
           ),
         ],
@@ -484,7 +467,7 @@ class _PrimaryDarkButton extends StatelessWidget {
       height: 50,
       child: FilledButton(
         style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFF007ACC),
+          backgroundColor: AppColors.primaryDark,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppDimens.radiusMd),
@@ -539,9 +522,9 @@ class _ForgotPasswordField extends StatelessWidget {
       onFieldSubmitted: onFieldSubmitted,
       validator: validator,
       prefixIcon: icon,
-      fillColor: const Color(0xFF252526),
-      borderColor: const Color(0xFF3C3C3C),
-      focusedBorderColor: const Color(0xFF007ACC),
+      fillColor: AppColors.surface,
+      borderColor: AppColors.border,
+      focusedBorderColor: AppColors.primary,
       textColor: AppColors.textPrimary,
       labelColor: AppColors.textSecondary,
       iconColor: AppColors.textSecondary,

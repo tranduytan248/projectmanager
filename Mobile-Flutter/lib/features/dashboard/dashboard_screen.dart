@@ -404,6 +404,7 @@ class _NotificationBellState extends State<_NotificationBell> {
           children: [
             AppIconButton(
               icon: PhosphorIconsRegular.bellSimple,
+              tooltip: 'Thông báo',
               onPressed: () => Nav.toNamed(context, AppRoutes.notifications),
               color: AppTheme.brandBlue,
               size: 22,
@@ -471,6 +472,7 @@ class _TodayBanner extends StatelessWidget {
           ),
           AppIconButton(
             icon: PhosphorIconsRegular.x,
+            tooltip: 'Đóng thông báo',
             onPressed: onClose,
             color: AppColors.textOnPrimary,
             size: 18,
