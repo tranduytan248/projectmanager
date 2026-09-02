@@ -154,7 +154,7 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppDimens.space24),
             _SettingsGroup(
               title: 'Cá nhân',
               children: [
@@ -328,18 +328,21 @@ class _SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = danger ? AppTheme.statusDanger : AppColors.textPrimary;
+    final color = danger ? AppColors.danger : AppColors.textPrimary;
 
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDimens.space16,
+          vertical: AppDimens.space16,
+        ),
         child: Row(
           children: [
             PhosphorIcon(icon,
                 size: 20,
-                color: danger ? AppTheme.statusDanger : AppTheme.brandBlue),
-            const SizedBox(width: 16),
+                color: danger ? AppColors.danger : AppColors.primary),
+            const SizedBox(width: AppDimens.space16),
             Expanded(
               child: AppText(label,
                   variant: AppTextVariant.body,

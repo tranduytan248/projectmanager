@@ -19,9 +19,11 @@ class WorkTimeHUDChart extends StatelessWidget {
   const WorkTimeHUDChart({
     super.key,
     required this.workTime,
+    this.monthlyTargetHours,
   });
 
   final WorkTimeDashboard workTime;
+  final double? monthlyTargetHours;
 
   /// Hàm trả về màu sắc theo ngưỡng giờ quy định
   static Color getHourColor(double hours) {
@@ -48,10 +50,12 @@ class WorkTimeHUDChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Mục tiêu tuần 40 giờ (5 ngày x 8h)
-    const weeklyTarget = 40.0;
+    // Mục tiêu giờ công làm việc trong tháng (lấy từ KPI hoặc mặc định 176h = 22 ngày x 8h)
+    final targetMonth = (monthlyTargetHours != null && monthlyTargetHours! > 0)
+        ? monthlyTargetHours!
+        : 176.0;
     final percent =
-        (workTime.totalHoursWeek / weeklyTarget * 100).clamp(0.0, 100.0);
+        (workTime.totalHoursMonth / targetMonth * 100).clamp(0.0, 100.0);
 
     return AppCard(
       padding: const EdgeInsets.all(AppDimens.space16),

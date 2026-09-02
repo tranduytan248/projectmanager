@@ -1,10 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Hosting;
 using TTKDGP.ProjectManager.Models;
+using TTKDGP.ProjectManager.Models.Work;
 
 namespace TTKDGP.ProjectManager.Data
 {
@@ -115,6 +116,12 @@ namespace TTKDGP.ProjectManager.Data
 
         private static readonly Lazy<SqlStore<PermissionSetting>> _permissionSettings =
             new Lazy<SqlStore<PermissionSetting>>(() => new SqlStore<PermissionSetting>("PermissionSettings"));
+
+        private static readonly Lazy<SqlStore<Holiday>> _holidays =
+            new Lazy<SqlStore<Holiday>>(() => new SqlStore<Holiday>("Holidays"));
+
+        /// <summary>Danh mục Ngày nghỉ lễ cố định và nghỉ bù.</summary>
+        public static SqlStore<Holiday> Holidays { get { return _holidays.Value; } }
 
         /// <summary>Dự án trong bộ quản lý công việc.</summary>
         public static SqlStore<WorkProject> WorkProjects { get { return _workProjects.Value; } }

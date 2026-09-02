@@ -966,5 +966,32 @@ namespace TTKDGP.ProjectManager.Models.Api
             AssignedTasks = new List<KpiTaskItemDto>();
         }
     }
+
+    public class HolidayDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public int Kind { get; set; }
+        public string KindName { get; set; }
+        public int? Day { get; set; }
+        public int? Month { get; set; }
+        public DateTime? SpecificDate { get; set; }
+        public int? Year { get; set; }
+        public string Note { get; set; }
+        public bool IsActive { get; set; }
+        public string DisplayDate { get; set; }
+    }
+
+    public class HolidayListDto
+    {
+        public int Year { get; set; }
+        public int TotalCount { get; set; }
+        public List<HolidayDto> Holidays { get; set; }
+
+        public HolidayListDto()
+        {
+            Holidays = new List<HolidayDto>();
+        }
+    }
 }
 
