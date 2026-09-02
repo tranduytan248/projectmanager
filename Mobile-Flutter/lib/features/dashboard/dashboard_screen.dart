@@ -12,6 +12,7 @@ import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_card.dart';
 import '../../core/widgets/app_icon_button.dart';
 import '../../core/widgets/app_loading.dart';
+import '../../core/widgets/app_progress_circle.dart';
 import '../../core/widgets/app_text.dart';
 import '../../shared/widgets/app_bottom_nav.dart';
 import '../app_routes.dart';
@@ -511,29 +512,21 @@ class _KpiCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              SizedBox(
-                width: 64,
-                height: 64,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    CircularProgressIndicator(
-                      value: kpi.scorePercent / 100,
-                      strokeWidth: 6,
-                      backgroundColor: rankColor.withValues(alpha: 0.12),
-                      valueColor: AlwaysStoppedAnimation(rankColor),
-                    ),
-                    AppText(
-                      kpi.finalPoint.toStringAsFixed(1),
-                      variant: AppTextVariant.body,
-                      fontSize: 15,
-                      weight: FontWeight.w800,
-                      color: rankColor,
-                    ),
-                  ],
+              AppProgressCircle(
+                value: kpi.scorePercent / 100,
+                size: 64,
+                strokeWidth: 6,
+                color: rankColor,
+                backgroundColor: rankColor.withValues(alpha: 0.12),
+                child: AppText(
+                  kpi.finalPoint.toStringAsFixed(1),
+                  variant: AppTextVariant.body,
+                  fontSize: 15,
+                  weight: FontWeight.w800,
+                  color: rankColor,
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: AppDimens.space16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

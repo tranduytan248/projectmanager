@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_dimens.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/app_app_bar.dart';
+import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_card.dart';
 import '../../core/widgets/app_checkbox.dart';
 import '../../core/widgets/app_dropdown.dart';
@@ -114,14 +115,15 @@ class _PrivateTasksScreenState extends State<PrivateTasksScreen> {
         title: const AppText('Xác nhận xóa việc', variant: AppTextVariant.heading),
         content: AppText('Bạn có chắc chắn muốn xóa việc riêng "${item.title}"?'),
         actions: [
-          TextButton(
+          AppButton(
+            label: 'Hủy',
+            type: AppButtonType.outline,
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const AppText('Hủy'),
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
+          AppButton(
+            label: 'Xóa',
+            type: AppButtonType.danger,
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const AppText('Xóa', color: AppColors.textOnPrimary),
           ),
         ],
       ),
@@ -135,7 +137,7 @@ class _PrivateTasksScreenState extends State<PrivateTasksScreen> {
     } else {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result.error ?? 'Không thể xóa việc riêng.')),
+        SnackBar(content: AppText(result.error ?? 'Không thể xóa việc riêng.')),
       );
     }
   }

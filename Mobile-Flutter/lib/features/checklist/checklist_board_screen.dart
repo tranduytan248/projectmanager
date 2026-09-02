@@ -14,6 +14,8 @@ import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_dropdown.dart';
 import '../../core/widgets/app_icon_button.dart';
 import '../../core/widgets/app_loading.dart';
+import '../../core/widgets/app_progress_bar.dart';
+import '../../core/widgets/app_progress_circle.dart';
 import '../../core/widgets/app_scaffold.dart';
 import '../../core/widgets/app_text.dart';
 import '../../core/widgets/app_text_field.dart';
@@ -244,26 +246,18 @@ class _ChecklistBoardScreenState extends State<ChecklistBoardScreen> {
               ],
             ),
           ),
-          SizedBox(
-            width: 52,
-            height: 52,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                CircularProgressIndicator(
-                  value: data.donePercent / 100,
-                  strokeWidth: 5,
-                  backgroundColor: AppTheme.brandBlue.withValues(alpha: 0.12),
-                  valueColor: const AlwaysStoppedAnimation(AppTheme.brandBlueDark),
-                ),
-                AppText('${data.donePercent}%',
-                    variant: AppTextVariant.overline,
-                    fontSize: 11,
-                    weight: FontWeight.w800,
-                    color: AppTheme.brandBlueDark,
-                    letterSpacing: 0),
-              ],
-            ),
+          AppProgressCircle(
+            value: data.donePercent / 100,
+            size: 52,
+            strokeWidth: 5,
+            color: AppTheme.brandBlueDark,
+            backgroundColor: AppTheme.brandBlue.withValues(alpha: 0.12),
+            child: AppText('${data.donePercent}%',
+                variant: AppTextVariant.overline,
+                fontSize: 11,
+                weight: FontWeight.w800,
+                color: AppTheme.brandBlueDark,
+                letterSpacing: 0),
           ),
         ],
       ),
@@ -272,10 +266,10 @@ class _ChecklistBoardScreenState extends State<ChecklistBoardScreen> {
         '${data.doneCount}/${data.totalCount} xong'
         '${data.overdueCount > 0 ? ' · ${data.overdueCount} quá hạn' : ''}',
         variant: AppTextVariant.caption,
-        fontSize: 12.5,
+        fontSize: 12,
         color: AppColors.textSecondary,
       ),
-      const SizedBox(height: 14),
+      const SizedBox(height: AppDimens.space16),
       Row(
         children: [
           Expanded(
@@ -287,7 +281,7 @@ class _ChecklistBoardScreenState extends State<ChecklistBoardScreen> {
               onChanged: (v) => setState(() => _query = v),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppDimens.space8),
           AppIconButton(
             icon: PhosphorIconsRegular.slidersHorizontal,
             tooltip: 'Bộ lọc',
@@ -298,7 +292,7 @@ class _ChecklistBoardScreenState extends State<ChecklistBoardScreen> {
         ],
       ),
       if (_hasActiveFilter) ...[
-        const SizedBox(height: 10),
+        const SizedBox(height: AppDimens.space12),
         Wrap(
           spacing: 6,
           runSpacing: 6,
@@ -344,13 +338,13 @@ class _ChecklistBoardScreenState extends State<ChecklistBoardScreen> {
           ],
         ),
       ],
-      const SizedBox(height: 14),
+      const SizedBox(height: AppDimens.space16),
       AppText('${tasks.length}/${data.tasks.length} việc khớp',
           variant: AppTextVariant.overline,
-          fontSize: 11.5,
+          fontSize: 12,
           color: AppColors.textSecondary,
           letterSpacing: 0),
-      const SizedBox(height: 8),
+      const SizedBox(height: AppDimens.space8),
     ];
   }
 
@@ -478,7 +472,7 @@ class _FilterTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.only(left: 10, right: 4, top: 4, bottom: 4),
+      padding: const EdgeInsets.only(left: AppDimens.space12, right: AppDimens.space4, top: AppDimens.space4, bottom: AppDimens.space4),
       decoration: BoxDecoration(
         color: AppTheme.brandBlueSoft,
         borderRadius: BorderRadius.circular(999),
@@ -488,7 +482,7 @@ class _FilterTag extends StatelessWidget {
         children: [
           AppText(label,
               variant: AppTextVariant.caption,
-              fontSize: 11.5,
+              fontSize: 12,
               weight: FontWeight.w600,
               color: AppTheme.brandBlue),
           // Vung cham 48dp mac dinh se lam phinh to chip — day la hanh dong PHU, tach biet voi
@@ -562,21 +556,21 @@ class _ChecklistFilterSheetState extends State<_ChecklistFilterSheet> {
             children: [
               const AppText('Bộ lọc checklist',
                   variant: AppTextVariant.body, fontSize: 16, weight: FontWeight.w700),
-              const SizedBox(height: 18),
+              const SizedBox(height: AppDimens.space16),
               AppDropdown<String>(
                 label: 'Trạng thái',
                 value: _state,
                 items: {for (final s in widget.states) s: taskStateLabel(s)},
                 onChanged: (v) => setState(() => _state = v),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: AppDimens.space16),
               AppDropdown<String>(
                 label: 'Loại việc',
                 value: _kind,
                 items: {for (final k in widget.kinds) k: _kindLabel(k)},
                 onChanged: (v) => setState(() => _kind = v),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: AppDimens.space16),
               AppDropdown<String>(
                 label: 'Người thực hiện',
                 value: _assignee,
@@ -586,7 +580,7 @@ class _ChecklistFilterSheetState extends State<_ChecklistFilterSheet> {
                 },
                 onChanged: (v) => setState(() => _assignee = v),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: AppDimens.space16),
               AppDropdown<String>(
                 label: 'Hạn hoàn thành',
                 value: _due,
@@ -597,7 +591,7 @@ class _ChecklistFilterSheetState extends State<_ChecklistFilterSheet> {
                 },
                 onChanged: (v) => setState(() => _due = v),
               ),
-              const SizedBox(height: 22),
+              const SizedBox(height: AppDimens.space24),
               Row(
                 children: [
                   Expanded(
@@ -671,16 +665,16 @@ class _TaskRow extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     variant: AppTextVariant.body,
-                    fontSize: 13.5,
+                    fontSize: 14,
                     weight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppDimens.space8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: AppDimens.space8, vertical: AppDimens.space4),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(AppDimens.radiusSm),
                   ),
                   child: AppText(taskStateLabel(task.state),
                       variant: AppTextVariant.overline,
@@ -691,16 +685,16 @@ class _TaskRow extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppDimens.space8),
             Row(
               children: [
                 if (task.assigneeName?.isNotEmpty == true) ...[
                   const PhosphorIcon(PhosphorIconsRegular.userCircle,
                       size: 13, color: AppColors.textFaint),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: AppDimens.space4),
                   AppText(task.assigneeName!,
-                      variant: AppTextVariant.caption, fontSize: 11.5, color: AppColors.textSecondary),
-                  const SizedBox(width: 10),
+                      variant: AppTextVariant.caption, fontSize: 12, color: AppColors.textSecondary),
+                  const SizedBox(width: AppDimens.space8),
                 ],
                 if (highPriority)
                   Container(
@@ -711,7 +705,7 @@ class _TaskRow extends StatelessWidget {
                     ),
                     child: const AppText('Ưu tiên cao',
                         variant: AppTextVariant.overline,
-                        fontSize: 9.5,
+                        fontSize: 10,
                         weight: FontWeight.w700,
                         color: AppTheme.statusDanger,
                         letterSpacing: 0),
@@ -721,22 +715,20 @@ class _TaskRow extends StatelessWidget {
                   AppText(
                     DateFormat('dd/MM').format(task.dueDate!),
                     variant: AppTextVariant.caption,
-                    fontSize: 11.5,
+                    fontSize: 12,
                     weight: FontWeight.w600,
                     color: task.isOverdue ? AppTheme.statusDanger : AppColors.textSecondary,
                   ),
               ],
             ),
             if (task.state != 'HoanThanh' && task.state != 'Huy') ...[
-              const SizedBox(height: 8),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: LinearProgressIndicator(
-                  value: task.progress / 100,
-                  minHeight: 5,
-                  backgroundColor: AppTheme.brandBlue.withValues(alpha: 0.1),
-                  valueColor: const AlwaysStoppedAnimation(AppTheme.brandBlueDark),
-                ),
+              const SizedBox(height: AppDimens.space8),
+              AppProgressBar(
+                value: task.progress / 100,
+                height: 5,
+                color: AppTheme.brandBlueDark,
+                backgroundColor: AppTheme.brandBlue.withValues(alpha: 0.1),
+                borderRadius: AppDimens.radiusSm,
               ),
             ],
           ],
@@ -997,14 +989,12 @@ class _KanbanCard extends StatelessWidget {
             ],
             if (task.state != 'HoanThanh' && task.state != 'Huy') ...[
               const SizedBox(height: AppDimens.space4),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: LinearProgressIndicator(
-                  value: task.progress / 100,
-                  minHeight: 4,
-                  backgroundColor: AppTheme.brandBlue.withValues(alpha: 0.1),
-                  valueColor: const AlwaysStoppedAnimation(AppTheme.brandBlueDark),
-                ),
+              AppProgressBar(
+                value: task.progress / 100,
+                height: 4,
+                color: AppTheme.brandBlueDark,
+                backgroundColor: AppTheme.brandBlue.withValues(alpha: 0.1),
+                borderRadius: AppDimens.radiusSm,
               ),
             ],
           ],
