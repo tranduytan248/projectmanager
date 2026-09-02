@@ -363,6 +363,7 @@
     <Content Include="Views\Discussions\Index.cshtml" />
     <Content Include="Views\Discussions\_Panel.cshtml" />
     <Content Include="Views\Home\Privacy.cshtml" />
+    <Content Include="Views\Home\Support.cshtml" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

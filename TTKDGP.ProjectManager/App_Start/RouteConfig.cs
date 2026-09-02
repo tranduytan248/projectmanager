@@ -59,11 +59,17 @@ namespace TTKDGP.ProjectManager
                 defaults: new { controller = "Kpi", action = "ApiList" }
             );
 
-            // Route công khai Chính sách quyền riêng tư cho Google Play & App Store
+            // Route công khai Chính sách quyền riêng tư & Hỗ trợ cho Google Play & App Store
             routes.MapRoute(
                 name: "Privacy",
                 url: "privacy",
                 defaults: new { controller = "Home", action = "Privacy" }
+            );
+
+            routes.MapRoute(
+                name: "Support",
+                url: "support",
+                defaults: new { controller = "Home", action = "Support" }
             );
 
             routes.MapRoute(
