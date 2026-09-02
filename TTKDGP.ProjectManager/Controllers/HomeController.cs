@@ -112,6 +112,16 @@ namespace TTKDGP.ProjectManager.Controllers
         }
 
         /// <summary>
+        /// Trang hỗ trợ & trợ giúp người dùng của ứng dụng BrewTask (yêu cầu của App Store / Google Play).
+        /// Công khai, không yêu cầu đăng nhập.
+        /// </summary>
+        [AllowAnonymous]
+        public ActionResult Support()
+        {
+            return View();
+        }
+
+        /// <summary>
         /// Trang tài liệu tích hợp API — công khai như trang tổng hợp, ai cần tích hợp
         /// cũng xem được mà không phải đăng nhập.
         /// </summary>
