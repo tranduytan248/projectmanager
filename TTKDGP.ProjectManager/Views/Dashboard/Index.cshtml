@@ -32,6 +32,128 @@
     </div>
 </div>
 
+@* ----- Biểu đồ HUD Power Curve Thời gian làm việc & Logtime mỗi ngày (Đồng bộ với Mobile BrewTask) ----- *@
+@if (Model.MyWorkTime != null)
+{
+    var wt = Model.MyWorkTime;
+    var targetWeek = wt.TargetHoursPerDay * 5; // 40h chuẩn tuần
+    var weekPct = targetWeek > 0 ? (int)Math.Round(wt.TotalHoursWeek * 100 / targetWeek) : 0;
+    var weekDialPct = weekPct > 100 ? 100 : weekPct;
+    var gaugeTone = weekPct >= 100 ? "score-dial" : (weekPct >= 60 ? "score-dial tone-warn" : "score-dial tone-late");
+    var gaugeBadge = weekPct >= 100 ? "badge-active" : (weekPct >= 60 ? "badge-waiting" : "badge-danger");
+    var gaugeText = weekPct >= 100 ? "Đạt mục tiêu" : (weekPct >= 60 ? "Tiến độ tốt" : "Đang tích lũy");
+
+    var todayHours = wt.TodayHours;
+    var todayTone = todayHours >= 8.0m ? "tone-ok" : (todayHours >= 6.0m ? "tone-primary" : (todayHours >= 4.0m ? "tone-warn" : (todayHours > 0 ? "tone-late" : "tone-idle")));
+    var todayStatus = todayHours >= 8.0m ? "Đạt chuẩn" : (todayHours >= 6.0m ? "Khá" : (todayHours >= 4.0m ? "Trung bình" : (todayHours > 0 ? "Ít" : "Chưa ghi")));
+
+    <div class="card hud-card">
+        <div class="hud-header">
+            <div class="hud-title-wrap">
+                <div class="hud-icon" title="Theo dõi giờ công trực tiếp">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="hud-title">Thời gian làm việc &amp; Logtime</h2>
+                    <div class="hud-subtitle">Theo dõi giờ công tuần &amp; từng ngày (Trần 12h/ngày · Mục tiêu 40h/tuần)</div>
+                </div>
+            </div>
+            <div class="hud-today-badge @todayTone">
+                <span class="hud-today-dot"></span>
+                <span>Hôm nay: <strong>@todayHours.ToString("0.#")h</strong> · @todayStatus</span>
+            </div>
+        </div>
+
+        <div class="hud-body">
+            <!-- Cột 1: Tiến độ giờ tuần -->
+            <div class="hud-gauge-pane">
+                <div class="@gaugeTone" style="--dial: @(weekDialPct)%">
+                    <div class="score-dial-inner">
+                        <strong>@(weekPct)%</strong>
+                        <em>@wt.TotalHoursWeek.ToString("0.#")/40h</em>
+                    </div>
+                </div>
+                <div class="hud-gauge-meta">
+                    <div class="hud-gauge-label">Giờ công tuần này</div>
+                    <span class="hud-gauge-badge @gaugeBadge">@gaugeText</span>
+                </div>
+            </div>
+
+            <!-- Cột 2: 7 Capsule Bars -->
+            <div class="hud-chart-pane">
+                <div class="hud-bars-grid">
+                    <div class="hud-target-guide" title="Định mức 8h tiêu chuẩn"></div>
+                    @foreach (var log in wt.DailyLogs)
+                    {
+                        var fillPct = Math.Min(100, (int)Math.Round(log.Hours / 12.0m * 100));
+                        var barTone = log.Hours >= 8.0m ? "bar-ok" : (log.Hours >= 6.0m ? "bar-primary" : (log.Hours >= 4.0m ? "bar-warn" : (log.Hours > 0 ? "bar-late" : "bar-empty")));
+                        var dayStatus = log.Hours >= 8.0m ? "Đạt chuẩn" : (log.Hours >= 6.0m ? "Khá" : (log.Hours >= 4.0m ? "Trung bình" : (log.Hours > 0 ? "Ít" : "Chưa ghi")));
+
+                        <div class="hud-day-col @(log.IsToday ? "is-today" : "")"
+                             title="@(log.DayOfWeek), @log.Date.ToString("dd/MM/yyyy"): @log.Hours.ToString("0.#") giờ · @dayStatus">
+                            <div class="hud-day-name">
+                                <span>@log.DayOfWeek</span>
+                                <span class="hud-day-date">@log.Date.ToString("dd/MM")</span>
+                            </div>
+                            <div class="hud-bar-track-wrap">
+                                <div class="hud-bar-track">
+                                    <div class="hud-bar-fill @barTone" style="height: @(fillPct)%"></div>
+                                </div>
+                            </div>
+                            <div class="hud-day-hours">
+                                @(log.Hours > 0 ? log.Hours.ToString("0.#") + "h" : "0h")
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="hud-legend">
+                    <span class="hud-legend-item"><span class="legend-dot bar-ok"></span> &ge; 8h Đạt chuẩn</span>
+                    <span class="hud-legend-item"><span class="legend-dot bar-primary"></span> 6–8h Khá</span>
+                    <span class="hud-legend-item"><span class="legend-dot bar-warn"></span> 4–6h Trung bình</span>
+                    <span class="hud-legend-item"><span class="legend-dot bar-late"></span> &lt; 4h Ít</span>
+                    <span class="hud-legend-item"><span class="legend-dot bar-empty"></span> 0h Chưa ghi</span>
+                </div>
+            </div>
+
+            <!-- Cột 3: Thẻ tóm tắt -->
+            <div class="hud-stats-pane">
+                <div class="hud-stat-tile">
+                    <div class="hud-stat-label">Hôm nay</div>
+                    <div class="hud-stat-val @(wt.TodayHours >= 8.0m ? "text-ok" : (wt.TodayHours > 0 ? "text-warn" : "text-late"))">
+                        <strong>@wt.TodayHours.ToString("0.#")</strong> <small>giờ</small>
+                    </div>
+                    <div class="hud-stat-sub">
+                        @(wt.TodayHours >= 8.0m ? "Đạt định mức ngày" : (wt.TodayHours > 0 ? "Còn thiếu " + (8.0m - wt.TodayHours).ToString("0.#") + "h" : "Chưa log giờ hôm nay"))
+                    </div>
+                </div>
+
+                <div class="hud-stat-tile">
+                    <div class="hud-stat-label">Tuần này</div>
+                    <div class="hud-stat-val @(wt.TotalHoursWeek >= 40.0m ? "text-ok" : "")">
+                        <strong>@wt.TotalHoursWeek.ToString("0.#")</strong> <small>/ 40h</small>
+                    </div>
+                    <div class="hud-stat-sub">
+                        @(wt.TotalHoursWeek >= 40.0m ? "Đã đạt mục tiêu tuần" : "Còn thiếu " + (40.0m - wt.TotalHoursWeek > 0 ? (40.0m - wt.TotalHoursWeek).ToString("0.#") + "h" : "0h"))
+                    </div>
+                </div>
+
+                <div class="hud-stat-tile">
+                    <div class="hud-stat-label">Tháng @Model.Month/@Model.Year</div>
+                    <div class="hud-stat-val">
+                        <strong>@wt.TotalHoursMonth.ToString("0.#")</strong> <small>giờ</small>
+                    </div>
+                    <div class="hud-stat-sub">
+                        Tổng giờ thực tế đã ghi nhận
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @* Khối KPI cá nhân bày đúng như màn Chi tiết KPI của Quản lý Tổ: vòng điểm bên trái, ngày công
    bên phải. Hai màn nói về cùng một con số nên phải nhìn giống nhau — người xem điểm của mình
    rồi được quản lý mở màn kia ra trao đổi thì không phải học lại cách đọc. *@

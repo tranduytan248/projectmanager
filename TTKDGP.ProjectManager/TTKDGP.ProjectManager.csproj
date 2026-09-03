@@ -229,6 +229,8 @@
     <Compile Include="Controllers\HolidayController.cs" />
     <Compile Include="Controllers\Api\HolidayApiController.cs" />
     <Compile Include="Models\DiscussionViewModels.cs" />
+    <Compile Include="Models\Work\TimesheetViewModels.cs" />
+    <Compile Include="Controllers\TimesheetController.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -370,6 +372,9 @@
     <Content Include="Views\Holiday\Index.cshtml" />
     <Content Include="Views\Home\Privacy.cshtml" />
     <Content Include="Views\Home\Support.cshtml" />
+    <Content Include="Views\Timesheet\Index.cshtml" />
+    <Content Include="Views\Timesheet\Team.cshtml" />
+    <Content Include="Views\Timesheet\_DayDetailModal.cshtml" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

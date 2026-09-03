@@ -1,0 +1,271 @@
+﻿@model TTKDGP.ProjectManager.Models.TeamTimesheetViewModel
+@using TTKDGP.ProjectManager.Models
+@{
+    ViewBag.Title = "Bảng chấm công Tổ";
+    var today = Model.Today;
+    int metCount = Model.Members.Count(m => m.TotalHours >= m.RequiredHours && m.RequiredHours > 0);
+    int underCount = Model.Members.Count - metCount;
+}
+
+<div class="page-head">
+    <div>
+        <h1>Bảng chấm công Tổ</h1>
+        <p>Tháng @Model.Month/@Model.Year · Ma trận theo dõi thời gian làm việc toàn thể nhân sự Tổ NCPT</p>
+    </div>
+    <div class="btn-row">
+        @using (Html.BeginForm("Team", "Timesheet", FormMethod.Get, new { @class = "inline-filter" }))
+        {
+            <select name="month" onchange="this.form.submit()">
+                @for (var m = 1; m <= 12; m++)
+                {
+                    <option value="@m" selected="@(Model.Month == m)">Tháng @m</option>
+                }
+            </select>
+            <select name="year" onchange="this.form.submit()">
+                @for (var y = Model.Today.Year - 2; y <= Model.Today.Year + 1; y++)
+                {
+                    <option value="@y" selected="@(Model.Year == y)">@y</option>
+                }
+            </select>
+        }
+        <a class="btn btn-default" href="@Url.Action("Index", "Timesheet", new { year = Model.Year, month = Model.Month })">
+            &larr; Nhật ký cá nhân
+        </a>
+    </div>
+</div>
+
+@* 4 Thẻ thống kê toàn tổ *@
+<div class="stats" style="margin-bottom: 24px;">
+    <div class="stat stat-primary">
+        <div class="stat-value">
+            @Model.TeamTotalHours.ToString("0.#") <span style="font-size: 15px; font-weight: 500; color: var(--text-muted);">giờ</span>
+        </div>
+        <div class="stat-label">Tổng giờ công cả Tổ</div>
+        <div class="stat-sub">Tháng @Model.Month/@Model.Year toàn Tổ</div>
+    </div>
+
+    <div class="stat">
+        <div class="stat-value">
+            @Model.Members.Count <span style="font-size: 15px; font-weight: 500; color: var(--text-muted);">người</span>
+        </div>
+        <div class="stat-label">Quy mô nhân sự theo dõi</div>
+        <div class="stat-sub">
+            Trung bình: @(Model.Members.Count > 0 ? (Model.TeamTotalHours / Model.Members.Count).ToString("0.#") : "0") giờ/người
+        </div>
+    </div>
+
+    <div class="stat stat-ok">
+        <div class="stat-value">
+            @metCount <span style="font-size: 15px; font-weight: 500; color: var(--text-muted);">nhân sự</span>
+        </div>
+        <div class="stat-label">Đạt định mức tháng (&ge; 100%)</div>
+        <div class="stat-sub">Đã hoàn thành đủ giờ yêu cầu</div>
+    </div>
+
+    <div class="stat @(underCount > 0 ? "stat-warn" : "")">
+        <div class="stat-value">
+            @underCount <span style="font-size: 15px; font-weight: 500; color: var(--text-muted);">nhân sự</span>
+        </div>
+        <div class="stat-label">Chưa đủ giờ công</div>
+        <div class="stat-sub">Cần bổ sung hoặc đang tích lũy</div>
+    </div>
+</div>
+
+@* Bảng Ma trận Chấm công (Heatmap Timesheet Matrix) *@
+<div class="card" style="padding: 0; overflow: hidden;">
+    <div class="card-head" style="padding: 16px 20px;">
+        <div>
+            <span>Ma trận giờ công tháng @Model.Month/@Model.Year</span>
+            <span class="muted" style="margin-left: 8px;">(Bấm vào ô có số giờ để xem chi tiết công việc)</span>
+        </div>
+        <div class="hud-legend" style="border: none; padding: 0;">
+            <span class="hud-legend-item"><span class="legend-dot bar-ok"></span> &ge; 8h</span>
+            <span class="hud-legend-item"><span class="legend-dot bar-warn"></span> 4–8h</span>
+            <span class="hud-legend-item"><span class="legend-dot bar-late"></span> &lt; 4h</span>
+            <span class="hud-legend-item"><span class="legend-dot" style="background:#8b5cf6;"></span> Nghỉ phép</span>
+            <span class="hud-legend-item"><span class="legend-dot bar-empty"></span> 0h</span>
+        </div>
+    </div>
+
+    <div class="timesheet-matrix-wrap">
+        <table class="timesheet-matrix-table">
+            <thead>
+                <tr>
+                    <th class="sticky-col col-stt">STT</th>
+                    <th class="sticky-col col-name">Họ và tên</th>
+                    @for (int d = 1; d <= Model.DaysInMonth; d++)
+                    {
+                        var curDate = new DateTime(Model.Year, Model.Month, d);
+                        var isToday = (curDate == today);
+                        var isWeekend = (curDate.DayOfWeek == DayOfWeek.Saturday || curDate.DayOfWeek == DayOfWeek.Sunday);
+                        var isHoliday = TTKDGP.ProjectManager.Services.HolidayService.IsHoliday(curDate);
+                        string dayOfWeekStr = "T" + (((int)curDate.DayOfWeek == 0) ? "CN" : ((int)curDate.DayOfWeek + 1).ToString());
+                        if (curDate.DayOfWeek == DayOfWeek.Sunday) { dayOfWeekStr = "CN"; }
+
+                        <th class="col-day @(isToday ? "th-today" : "") @(isWeekend ? "th-weekend" : "") @(isHoliday ? "th-holiday" : "")"
+                            title="@curDate.ToString("dd/MM/yyyy") (@dayOfWeekStr)@(isHoliday ? " - Nghỉ lễ" : "")">
+                            <div class="th-day-num">@d</div>
+                            <div class="th-day-dow">@dayOfWeekStr</div>
+                        </th>
+                    }
+                    <th class="col-total" title="Tổng giờ thực tế đã ghi trong tháng">Tổng giờ</th>
+                    <th class="col-target" title="Giờ chuẩn yêu cầu (sau trừ phép)">Định mức</th>
+                    <th class="col-rate" title="Tỷ lệ đạt được">Tỷ lệ</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{ int stt = 1; }
+                @foreach (var row in Model.Members)
+                {
+                    <tr>
+                        <td class="sticky-col col-stt">@(stt++)</td>
+                        <td class="sticky-col col-name" title="@row.FullName (@row.UserName)">
+                            <strong>@row.FullName</strong>
+                        </td>
+                        @for (int d = 1; d <= Model.DaysInMonth; d++)
+                        {
+                            var cell = row.Days[d];
+                            string cellClass = "";
+                            string displayText = "—";
+                            string titleText = string.Format("{0:dd/MM/yyyy}: ", cell.Date);
+
+                            if (cell.IsLeave)
+                            {
+                                cellClass = "cell-leave";
+                                displayText = "P";
+                                titleText += string.Format("Nghỉ phép ({0})", cell.LeaveKind);
+                                if (cell.Hours > 0)
+                                {
+                                    displayText = cell.Hours.ToString("0.#") + "P";
+                                    titleText += string.Format(" · Đã ghi {0:0.#}h", cell.Hours);
+                                }
+                            }
+                            else if (cell.Hours >= 8.0m)
+                            {
+                                cellClass = "cell-ok";
+                                displayText = cell.Hours.ToString("0.#");
+                                titleText += string.Format("{0:0.#} giờ (Đạt chuẩn)", cell.Hours);
+                            }
+                            else if (cell.Hours >= 4.0m)
+                            {
+                                cellClass = "cell-warn";
+                                displayText = cell.Hours.ToString("0.#");
+                                titleText += string.Format("{0:0.#} giờ (Chưa đủ)", cell.Hours);
+                            }
+                            else if (cell.Hours > 0)
+                            {
+                                cellClass = "cell-late";
+                                displayText = cell.Hours.ToString("0.#");
+                                titleText += string.Format("{0:0.#} giờ (Ít)", cell.Hours);
+                            }
+                            else
+                            {
+                                if (cell.IsWeekend || cell.IsHoliday)
+                                {
+                                    cellClass = "cell-weekend";
+                                    displayText = "";
+                                    titleText += cell.IsHoliday ? "Nghỉ lễ" : "Cuối tuần";
+                                }
+                                else
+                                {
+                                    cellClass = "cell-empty";
+                                    displayText = "—";
+                                    titleText += "Chưa ghi giờ (0h)";
+                                }
+                            }
+
+                            if (cell.IsToday)
+                            {
+                                cellClass += " cell-today";
+                            }
+
+                            <td class="cell-day @cellClass"
+                                title="@titleText"
+                                @if (cell.Hours > 0)
+                                {
+                                    <text>onclick="openDayDetailModal(@row.UserId, '@cell.Date.ToString("yyyy-MM-dd")')" style="cursor: pointer;"</text>
+                                }>
+                                <span>@displayText</span>
+                            </td>
+                        }
+                        <td class="col-total">
+                            <strong class="@(row.TotalHours >= row.RequiredHours && row.RequiredHours > 0 ? "ok-text" : "")">
+                                @row.TotalHours.ToString("0.#")
+                            </strong>
+                        </td>
+                        <td class="col-target muted">
+                            @row.RequiredHours.ToString("0.#")
+                        </td>
+                        <td class="col-rate">
+                            <span class="@(row.AttendanceRate >= 100 ? "badge badge-active" : (row.AttendanceRate >= 80 ? "badge badge-doing" : "badge badge-waiting"))">
+                                @row.AttendanceRate.ToString("0.#")%
+                            </span>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr class="tr-footer">
+                    <td class="sticky-col col-stt" colspan="2" style="text-align: right; font-weight: 700;">
+                        Tổng giờ toàn Tổ:
+                    </td>
+                    @for (int d = 1; d <= Model.DaysInMonth; d++)
+                    {
+                        var dailySum = Model.TeamDailyTotal.ContainsKey(d) ? Model.TeamDailyTotal[d] : 0m;
+                        <td class="cell-day @(dailySum > 0 ? "cell-foot-has" : "cell-foot-empty")">
+                            @(dailySum > 0 ? dailySum.ToString("0.#") : "")
+                        </td>
+                    }
+                    <td class="col-total" style="font-weight: 700; color: var(--primary);">
+                        @Model.TeamTotalHours.ToString("0.#")
+                    </td>
+                    <td colspan="2"></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+@* Modal Container xem chi tiết công việc trong ngày *@
+<div id="dayDetailModal" class="modal-backdrop" style="display: none;">
+    <div class="modal" style="max-width: 760px; background: var(--surface);" id="dayDetailModalContent">
+        <div class="modal-body" style="text-align: center; padding: 40px;">
+            <div class="spinner"></div>
+            <p class="muted" style="margin-top: 12px;">Đang tải chi tiết công việc...</p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openDayDetailModal(userId, dateStr) {
+            var modal = $('#dayDetailModal');
+            var content = $('#dayDetailModalContent');
+            content.html('<div class="modal-body" style="text-align: center; padding: 40px;"><p class="muted">Đang tải chi tiết công việc...</p></div>');
+            modal.css('display', 'flex');
+
+            $.ajax({
+                url: '@Url.Action("DayDetail", "Timesheet")',
+                type: 'GET',
+                data: { userId: userId, date: dateStr },
+                success: function (html) {
+                    content.html(html);
+                },
+                error: function (xhr) {
+                    content.html('<div class="modal-head"><h3 class="modal-title">Lỗi tải dữ liệu</h3><button class="modal-close" onclick="closeDayDetailModal()">&times;</button></div><div class="modal-body"><p class="danger-text">' + (xhr.responseText || 'Không thể tải chi tiết.') + '</p></div><div class="modal-foot"><button class="btn btn-default" onclick="closeDayDetailModal()">Đóng</button></div>');
+                }
+            });
+        }
+
+        function closeDayDetailModal() {
+            $('#dayDetailModal').css('display', 'none');
+        }
+
+        $(document).on('keydown', function (e) {
+            if (e.key === 'Escape') closeDayDetailModal();
+        });
+        $('#dayDetailModal').on('click', function (e) {
+            if (e.target === this) closeDayDetailModal();
+        });
+    </script>
+}

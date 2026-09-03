@@ -262,7 +262,7 @@ else
                                 : (parts[parts.Length - 2].Substring(0, 1) + parts[parts.Length - 1].Substring(0, 1)).ToUpper();
                         }
 
-                        <tr class="rowlink" data-pri="@priKey"
+                        <tr class="rowlink" data-pri="@priKey" data-task-id="@t.Id"
                             data-modal-url="@Url.Action("Detail", "Checklist", new { id = t.Id })"
                             data-modal-title="Chi tiết công việc"
                             data-modal-size="lg">
@@ -478,4 +478,21 @@ else
         </div>
     }
 </div>
+}
+
+@section Scripts {
+    <script>
+        $(function () {
+            var params = new URLSearchParams(window.location.search);
+            var highlightId = params.get('highlightTaskId') || params.get('taskId');
+            if (highlightId && window.AppModal) {
+                var $targetRow = $('tr[data-task-id="' + highlightId + '"]');
+                if ($targetRow.length) {
+                    $targetRow.css('background-color', 'rgba(56, 189, 248, 0.15)');
+                    $('html, body').animate({ scrollTop: $targetRow.offset().top - 120 }, 300);
+                }
+                window.AppModal.open('@Url.Action("Detail", "Checklist")/' + highlightId, 'Chi tiết công việc', 'lg');
+            }
+        });
+    </script>
 }

@@ -1,0 +1,84 @@
+﻿@model TTKDGP.ProjectManager.Models.TimesheetDayDetailViewModel
+
+<div class="modal-head">
+    <div>
+        <h3 class="modal-title" style="margin: 0;">@Model.UserFullName</h3>
+        <div class="muted" style="font-size: 12.5px; margin-top: 2px;">
+            Ngày @Model.Date.ToString("dd/MM/yyyy") · Tổng cộng: <strong class="@(Model.TotalHours >= 8.0m ? "ok-text" : "text-warn")">@Model.TotalHours.ToString("0.#") giờ</strong>
+        </div>
+    </div>
+    <button type="button" class="modal-close" onclick="closeDayDetailModal()">&times;</button>
+</div>
+
+<div class="modal-body" style="max-height: 480px; overflow-y: auto;">
+    @if (Model.Entries.Count == 0)
+    {
+        <div class="empty-state" style="padding: 30px;">
+            <p>Không có lượt ghi giờ công nào trong ngày này.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="data" style="width: 100%;">
+                <thead>
+                    <tr>
+                        <th style="width: 85px; text-align: center;">Mã việc</th>
+                        <th class="wrap-text">Công việc</th>
+                        <th class="col-project" style="width: 160px;">Dự án</th>
+                        <th style="width: 75px; text-align: right;">Giờ</th>
+                        <th class="wrap-text">Nội dung</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.Entries)
+                    {
+                        var log = row.Log;
+                        var t = row.Task;
+                        var p = row.Project;
+
+                        <tr>
+                            <td class="center">
+                                @if (t != null && !string.IsNullOrEmpty(t.Code))
+                                {
+                                    <a href="@Url.Action("Detail", "MyWork", new { id = t.Id })" target="_blank" class="task-code" title="Đi thẳng tới chi tiết công việc: @t.Code">
+                                        @t.Code
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="muted">—</span>
+                                }
+                            </td>
+                            <td class="wrap-text">
+                                @if (t != null)
+                                {
+                                    <a href="@Url.Action("Detail", "MyWork", new { id = t.Id })" target="_blank" style="font-weight: 500;" title="Đi thẳng tới chi tiết công việc">
+                                        @t.Title
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="muted">#@log.TaskId (đã xóa)</span>
+                                }
+                            </td>
+                            <td class="col-project">
+                                @(p != null ? p.Name : "—")
+                            </td>
+                            <td class="num">
+                                <strong class="ok-text">@log.Hours.ToString("0.#")</strong>h
+                            </td>
+                            <td class="wrap-text">
+                                @(string.IsNullOrWhiteSpace(log.Note) ? "—" : log.Note)
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<div class="modal-foot">
+    <button type="button" class="btn btn-default" onclick="closeDayDetailModal()">Đóng</button>
+</div>

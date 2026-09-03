@@ -1,10 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web.Mvc;
 using TTKDGP.ProjectManager.Data;
 using TTKDGP.ProjectManager.Infrastructure;
 using TTKDGP.ProjectManager.Models;
+using TTKDGP.ProjectManager.Models.Api;
 using TTKDGP.ProjectManager.Services;
 
 namespace TTKDGP.ProjectManager.Controllers
@@ -60,6 +61,7 @@ namespace TTKDGP.ProjectManager.Controllers
                 MyTasks = BuildMyTasks(mineInMonth, today),
                 MyKpi = BuildMyKpi(userId, viewMonth),
                 MyLeave = BuildMyLeave(userId, viewMonth),
+                MyWorkTime = TimeLogService.BuildMyWorkTime(userId, today),
                 StateChart = BuildStateChart(mineInMonth),
                 TrendChart = BuildTrendChart(mine, viewMonth),
 
@@ -364,10 +366,13 @@ namespace TTKDGP.ProjectManager.Controllers
             }
         }
 
+        public WorkTimeDashboardDto MyWorkTime { get; set; }
+
         public DashboardViewModel()
         {
             MyTasks = new DashboardMyTasks();
             MyLeave = new DashboardMyLeave();
+            MyWorkTime = new WorkTimeDashboardDto();
         }
     }
 
