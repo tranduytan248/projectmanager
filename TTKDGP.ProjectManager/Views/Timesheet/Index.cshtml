@@ -1,0 +1,401 @@
+﻿@model TTKDGP.ProjectManager.Models.MyTimesheetViewModel
+@using TTKDGP.ProjectManager.Models
+@using TTKDGP.ProjectManager.Infrastructure
+@{
+    ViewBag.Title = "Nhật ký giờ công";
+    var canSeeTeam = TTKDGP.ProjectManager.Models.Permissions.UserHas(ViewBag.CurrentUser != null ? ((AppIdentity)ViewBag.CurrentUser).Role : null, Permissions.Team.Perm(Permissions.View));
+}
+
+<div class="page-head">
+    <div>
+        <h1>Nhật ký giờ công của tôi</h1>
+        <p>Tháng @Model.Month/@Model.Year · Tổng hợp các lượt ghi giờ làm việc thực tế</p>
+    </div>
+    <div class="btn-row">
+        @using (Html.BeginForm("Index", "Timesheet", FormMethod.Get, new { @class = "inline-filter" }))
+        {
+            <select name="month" onchange="this.form.submit()">
+                @for (var m = 1; m <= 12; m++)
+                {
+                    <option value="@m" selected="@(Model.Month == m)">Tháng @m</option>
+                }
+            </select>
+            <select name="year" onchange="this.form.submit()">
+                @for (var y = Model.Today.Year - 2; y <= Model.Today.Year + 1; y++)
+                {
+                    <option value="@y" selected="@(Model.Year == y)">@y</option>
+                }
+            </select>
+        }
+        <button type="button" class="btn btn-primary" onclick="openQuickLogModal()">
+            + Ghi giờ công nhanh
+        </button>
+        @if (canSeeTeam)
+        {
+            <a class="btn btn-default" href="@Url.Action("Team", "Timesheet", new { year = Model.Year, month = Model.Month })">
+                Bảng chấm công Tổ &rarr;
+            </a>
+        }
+    </div>
+</div>
+
+@* 4 Thẻ chỉ số tổng quan *@
+<div class="stats" style="margin-bottom: 24px;">
+    <div class="stat @(Model.TotalHours >= Model.RequiredHours && Model.RequiredHours > 0 ? "stat-ok" : "stat-warn")">
+        <div class="stat-value">
+            @Model.TotalHours.ToString("0.#") <span style="font-size: 15px; font-weight: 500; color: var(--text-muted);">/ @Model.RequiredHours.ToString("0.#")h</span>
+        </div>
+        <div class="stat-label">Tổng giờ tháng @Model.Month</div>
+        <div class="stat-sub">
+            @if (Model.RequiredHours > 0)
+            {
+                if (Model.TotalHours >= Model.RequiredHours)
+                {
+                    <span class="ok-text">Đã đạt định mức giờ tháng</span>
+                }
+                else
+                {
+                    <span class="danger-text">Còn thiếu @((Model.RequiredHours - Model.TotalHours).ToString("0.#")) giờ</span>
+                }
+            }
+            else
+            {
+                <span>Định mức 8h × @Model.StandardDays ngày</span>
+            }
+        </div>
+    </div>
+
+    <div class="stat stat-ok">
+        <div class="stat-value">
+            @Model.DaysMetTarget <span style="font-size: 15px; font-weight: 500; color: var(--text-muted);">ngày</span>
+        </div>
+        <div class="stat-label">Ngày đạt chuẩn (&ge; 8h)</div>
+        <div class="stat-sub">Đạt hoặc vượt định mức ngày</div>
+    </div>
+
+    <div class="stat @(Model.DaysUnderTarget > 0 ? "stat-warn" : "")">
+        <div class="stat-value">
+            @Model.DaysUnderTarget <span style="font-size: 15px; font-weight: 500; color: var(--text-muted);">ngày</span>
+        </div>
+        <div class="stat-label">Ngày thiếu giờ (&lt; 8h)</div>
+        <div class="stat-sub">Có logtime nhưng chưa đủ 8h</div>
+    </div>
+
+    <div class="stat">
+        <div class="stat-value">
+            @Model.LeaveDays.ToString("0.##") <span style="font-size: 15px; font-weight: 500; color: var(--text-muted);">ngày</span>
+        </div>
+        <div class="stat-label">Nghỉ phép đã duyệt</div>
+        <div class="stat-sub">Đã trừ vào giờ yêu cầu</div>
+    </div>
+</div>
+
+@* Bảng chi tiết các lượt logtime *@
+<div class="card">
+    <div class="card-head">
+        <span>Lịch sử các lượt ghi giờ công tháng @Model.Month/@Model.Year</span>
+        <span class="muted">@Model.Rows.Count lượt ghi</span>
+    </div>
+
+    @if (Model.Rows.Count == 0)
+    {
+        <div class="empty-state">
+            <p>Chưa có lượt ghi giờ công nào trong tháng @Model.Month/@Model.Year.</p>
+            <button type="button" class="btn btn-primary" onclick="openQuickLogModal()">Ghi giờ công đầu tiên</button>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="data" id="timesheetTable" style="width: 100%;">
+                <thead>
+                    <tr>
+                        <th style="width: 110px;">Ngày làm</th>
+                        <th style="width: 60px; text-align: center;">Thứ</th>
+                        <th style="width: 90px; text-align: center;">Mã việc</th>
+                        <th class="wrap-text">Nội dung công việc</th>
+                        <th class="col-project" style="width: 180px;">Dự án</th>
+                        <th style="width: 90px; text-align: right;">Số giờ</th>
+                        <th class="wrap-text">Ghi chú thực hiện</th>
+                        <th style="width: 120px; text-align: center;">Thời điểm ghi</th>
+                        <th style="width: 70px; text-align: center;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.Rows)
+                    {
+                        var log = row.Log;
+                        var t = row.Task;
+                        var p = row.Project;
+                        string dayOfWeekStr = "T" + (((int)log.WorkDate.DayOfWeek == 0) ? "CN" : ((int)log.WorkDate.DayOfWeek + 1).ToString());
+                        if (log.WorkDate.DayOfWeek == DayOfWeek.Sunday) { dayOfWeekStr = "CN"; }
+
+                        <tr>
+                            <td>
+                                <strong>@log.WorkDate.ToString("dd/MM/yyyy")</strong>
+                                @if (log.WorkDate.Date == Model.Today.Date)
+                                {
+                                    <span class="badge badge-active" style="font-size: 10px; margin-left: 4px;">Hôm nay</span>
+                                }
+                            </td>
+                            <td class="center"><span class="muted">@dayOfWeekStr</span></td>
+                            <td class="center">
+                                @if (t != null && !string.IsNullOrWhiteSpace(t.Code))
+                                {
+                                    <a href="@Url.Action("Detail", "MyWork", new { id = t.Id })"
+                                       target="_blank" class="task-code" title="Đi thẳng tới chi tiết công việc: @t.Code">@t.Code</a>
+                                }
+                                else
+                                {
+                                    <span class="muted">—</span>
+                                }
+                            </td>
+                            <td class="wrap-text">
+                                @if (t != null)
+                                {
+                                    <a href="@Url.Action("Detail", "MyWork", new { id = t.Id })"
+                                       target="_blank"
+                                       title="Đi thẳng tới chi tiết công việc" style="font-weight: 500;">
+                                        @t.Title
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="muted">Công việc #@log.TaskId (đã xoá)</span>
+                                }
+                            </td>
+                            <td class="col-project">
+                                @if (p != null)
+                                {
+                                    <span>@p.Name</span>
+                                }
+                                else
+                                {
+                                    <span class="muted">—</span>
+                                }
+                            </td>
+                            <td class="num">
+                                <strong class="@(log.Hours >= 8.0m ? "ok-text" : (log.Hours >= 4.0m ? "text-primary" : "text-warn"))" style="font-size: 14px;">
+                                    @log.Hours.ToString("0.#")
+                                </strong>
+                                <small class="muted">h</small>
+                            </td>
+                            <td class="wrap-text">
+                                @if (!string.IsNullOrWhiteSpace(log.Note))
+                                {
+                                    <span>@log.Note</span>
+                                }
+                                else
+                                {
+                                    <span class="muted">—</span>
+                                }
+                            </td>
+                            <td class="center muted" style="font-size: 12px;">
+                                @log.CreatedAt.ToString("dd/MM HH:mm")
+                            </td>
+                            <td class="center actions">
+                                @if (row.CanDelete)
+                                {
+                                    <button type="button" class="btn btn-sm btn-outline-danger"
+                                            title="Xoá lượt ghi giờ này"
+                                            onclick="confirmDeleteLog(@log.Id, '@log.Hours.ToString("0.#")', '@log.WorkDate.ToString("dd/MM/yyyy")')">
+                                        Xoá
+                                    </button>
+                                }
+                                else
+                                {
+                                    <span class="muted" title="@row.DeleteBlockedReason" style="cursor: not-allowed;">—</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@* Modal Ghi giờ công nhanh *@
+<div id="quickLogModal" class="modal-backdrop" style="display: none;">
+    <div class="modal" style="max-width: 620px; background: var(--surface);">
+        <div class="modal-head">
+            <h3 class="modal-title" style="margin: 0;">Ghi giờ công nhanh</h3>
+            <button type="button" class="modal-close" onclick="closeQuickLogModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="quickLogError" class="alert alert-danger" style="display: none; margin-bottom: 14px;"></div>
+
+            <div class="form-required-note">
+                Các trường có dấu <span class="req-mark">*</span> là bắt buộc nhập.
+            </div>
+
+            <div class="form-grid">
+                <div class="form-field full">
+                    <label for="quickTaskId" class="is-required">
+                        Công việc đang thực hiện <span class="req-mark" aria-hidden="true">*</span>
+                    </label>
+                    <select id="quickTaskId" class="form-control select2" style="width: 100%;">
+                        <option value="">-- Chọn công việc --</option>
+                        @foreach (var task in Model.MyOpenTasks)
+                        {
+                            string capInfo = task.RemainingHours > 0 ? string.Format("Còn {0:0.#}h", task.RemainingHours) : "Chưa có trần";
+                            string label = string.Format("{0}{1} ({2} · {3})",
+                                !string.IsNullOrEmpty(task.TaskCode) ? "[" + task.TaskCode + "] " : "",
+                                task.TaskTitle,
+                                task.ProjectName,
+                                capInfo);
+                            <option value="@task.TaskId">@label</option>
+                        }
+                    </select>
+                    <span class="hint">Chỉ hiển thị các công việc được giao cho bạn chưa hoàn thành trong dự án.</span>
+                </div>
+
+                <div class="form-field">
+                    <label for="quickWorkDate" class="is-required">
+                        Ngày làm việc <span class="req-mark" aria-hidden="true">*</span>
+                    </label>
+                    <input type="date" id="quickWorkDate" class="form-control"
+                           value="@Model.Today.ToString("yyyy-MM-dd")"
+                           max="@Model.Today.ToString("yyyy-MM-dd")" />
+                    <span class="hint">Không log giờ cho ngày trong tương lai.</span>
+                </div>
+
+                <div class="form-field">
+                    <label for="quickHours" class="is-required">
+                        Số giờ ghi nhận <span class="req-mark" aria-hidden="true">*</span>
+                    </label>
+                    <input type="number" id="quickHours" class="form-control"
+                           step="0.5" min="0.5" max="12" value="2" />
+                    <span class="hint">Hỗ trợ số lẻ (ví dụ: 1.5, 4...). Tối đa 12h/ngày.</span>
+                </div>
+
+                <div class="form-field full">
+                    <label for="quickNote">
+                        Nội dung / Ghi chú công việc đã làm <span class="muted" style="font-weight: 400; font-size: 12px;">(Không bắt buộc)</span>
+                    </label>
+                    <textarea id="quickNote" class="form-control" rows="3"
+                              placeholder="Mô tả ngắn gọn những việc bạn đã giải quyết trong số giờ này..."></textarea>
+                    <span class="hint">Ghi ngắn gọn để Tổ trưởng và Quản lý nắm nội dung khi duyệt chấm công.</span>
+                </div>
+            </div>
+        </div>
+        <div class="modal-foot">
+            <button type="button" class="btn btn-default" onclick="closeQuickLogModal()">Hủy</button>
+            <button type="button" id="btnSubmitQuickLog" class="btn btn-primary" onclick="submitQuickLog()">
+                Ghi nhận giờ công
+            </button>
+        </div>
+    </div>
+</div>
+
+@* Token bảo vệ POST *@
+@Html.AntiForgeryToken()
+
+@section Scripts {
+    <script>
+        function openQuickLogModal() {
+            $('#quickLogError').hide();
+            $('#quickLogModal').css('display', 'flex');
+
+            // Đảm bảo select2 gắn kết đúng với modal cha
+            if (!$('#quickTaskId').data('select2')) {
+                $('#quickTaskId').select2({
+                    dropdownParent: $('#quickLogModal'),
+                    width: '100%'
+                });
+            }
+        }
+
+        function closeQuickLogModal() {
+            $('#quickLogModal').css('display', 'none');
+        }
+
+        function submitQuickLog() {
+            var taskId = $('#quickTaskId').val();
+            var workDate = $('#quickWorkDate').val();
+            var hours = $('#quickHours').val();
+            var note = $('#quickNote').val();
+            var token = $('input[name="__RequestVerificationToken"]').val();
+
+            if (!taskId) {
+                showError('Vui lòng chọn công việc.');
+                return;
+            }
+            if (!workDate) {
+                showError('Vui lòng chọn ngày làm việc.');
+                return;
+            }
+            if (!hours || parseFloat(hours) <= 0) {
+                showError('Vui lòng nhập số giờ hợp lệ.');
+                return;
+            }
+
+            var btn = $('#btnSubmitQuickLog');
+            btn.prop('disabled', true).text('Đang lưu...');
+
+            $.ajax({
+                url: '@Url.Action("QuickLog", "Timesheet")',
+                type: 'POST',
+                data: {
+                    __RequestVerificationToken: token,
+                    taskId: taskId,
+                    workDate: workDate,
+                    hours: hours,
+                    note: note
+                },
+                success: function (res) {
+                    if (res && res.ok) {
+                        alert(res.message || 'Ghi giờ công thành công!');
+                        location.reload();
+                    } else {
+                        showError(res && res.message ? res.message : 'Có lỗi xảy ra khi lưu giờ công.');
+                        btn.prop('disabled', false).text('Ghi nhận giờ công');
+                    }
+                },
+                error: function (xhr) {
+                    showError(xhr.responseText || 'Không thể kết nối máy chủ.');
+                    btn.prop('disabled', false).text('Ghi nhận giờ công');
+                }
+            });
+        }
+
+        function showError(msg) {
+            var err = $('#quickLogError');
+            err.text(msg).show();
+        }
+
+        function confirmDeleteLog(logId, hours, date) {
+            if (!confirm('Bạn có chắc muốn xoá lượt ghi ' + hours + ' giờ ngày ' + date + ' không?')) {
+                return;
+            }
+
+            var token = $('input[name="__RequestVerificationToken"]').val();
+            $.ajax({
+                url: '@Url.Action("DeleteLog", "Timesheet")',
+                type: 'POST',
+                data: {
+                    __RequestVerificationToken: token,
+                    logId: logId
+                },
+                success: function (res) {
+                    if (res && res.ok) {
+                        location.reload();
+                    } else {
+                        alert(res && res.message ? res.message : 'Không thể xoá lượt ghi này.');
+                    }
+                },
+                error: function (xhr) {
+                    alert(xhr.responseText || 'Lỗi khi xoá.');
+                }
+            });
+        }
+
+        // Đóng modal khi bấm phím ESC hoặc bấm ra ngoài nền
+        $(document).on('keydown', function (e) {
+            if (e.key === 'Escape') closeQuickLogModal();
+        });
+        $('#quickLogModal').on('click', function (e) {
+            if (e.target === this) closeQuickLogModal();
+        });
+    </script>
+}

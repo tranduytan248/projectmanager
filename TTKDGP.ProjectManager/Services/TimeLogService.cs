@@ -1,8 +1,9 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using TTKDGP.ProjectManager.Data;
 using TTKDGP.ProjectManager.Models;
+using TTKDGP.ProjectManager.Models.Api;
 
 namespace TTKDGP.ProjectManager.Services
 {
@@ -288,6 +289,55 @@ namespace TTKDGP.ProjectManager.Services
             }
 
             return model;
+        }
+
+        /// <summary>
+        /// Tổng hợp thời gian làm việc và logtime từng ngày trong tuần hiện tại (Thứ 2 - Chủ Nhật)
+        /// phục vụ hiển thị biểu đồ Power Curve HUD trên Dashboard Web và Mobile.
+        /// </summary>
+        public static WorkTimeDashboardDto BuildMyWorkTime(int userId, DateTime today)
+        {
+            // Xác định Thứ 2 đầu tuần hiện tại
+            int diff = (7 + (today.DayOfWeek - DayOfWeek.Monday)) % 7;
+            var monday = today.AddDays(-diff).Date;
+
+            var dailyLogs = new List<DailyLogTimeDto>();
+            decimal totalWeek = 0m;
+
+            string[] dayLabels = { "T2", "T3", "T4", "T5", "T6", "T7", "CN" };
+
+            for (int i = 0; i < 7; i++)
+            {
+                var d = monday.AddDays(i);
+                var hours = TotalOfDay(userId, d);
+                totalWeek += hours;
+
+                string dayLabel = i < dayLabels.Length ? dayLabels[i] : "CN";
+
+                dailyLogs.Add(new DailyLogTimeDto
+                {
+                    Date = d,
+                    DayOfWeek = dayLabel,
+                    Hours = hours,
+                    IsToday = d.Date == today.Date
+                });
+            }
+
+            var monthStart = new DateTime(today.Year, today.Month, 1);
+            var monthEnd = monthStart.AddMonths(1);
+            var totalMonth = Repository.WorkTimeLogs.All()
+                .Where(l => l.UserId == userId && l.WorkDate >= monthStart && l.WorkDate < monthEnd)
+                .Sum(l => (decimal?)l.Hours) ?? 0m;
+
+            return new WorkTimeDashboardDto
+            {
+                TotalHoursWeek = totalWeek,
+                TotalHoursMonth = totalMonth,
+                TodayHours = TotalOfDay(userId, today),
+                TargetHoursPerDay = 8.0m,
+                MaxHoursPerDay = TimeLogRules.MaxHoursPerDay,
+                DailyLogs = dailyLogs
+            };
         }
     }
 }

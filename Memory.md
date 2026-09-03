@@ -2,6 +2,85 @@
 
 ---
 
+# [2026-09-03] Tính năng: Trung tâm Nhật ký Giờ công (Timesheet Hub cá nhân & Bảng ma trận chấm công Tổ)
+
+## 1. Mô tả vấn đề
+Xây dựng module Quản lý Giờ công & Bảng chấm công tập trung trên Website ASP.NET MVC 5:
+- Màn hình cá nhân "Nhật ký giờ công của tôi" (`/Timesheet`): Xem tổng hợp lịch sử logtime theo tháng, ghi giờ công nhanh (chọn task trong combobox mà không cần mở Checklist), sửa/xóa dòng log an toàn.
+- Màn hình Quản lý "Bảng chấm công Tổ" (`/Timesheet/Team`): Bảng ma trận nhiệt (Hàng: Nhân viên, Cột: Ngày 1..31 trong tháng) hiển thị màu sắc theo ngưỡng giờ làm việc thực tế, nhận diện ngày nghỉ phép, ngày lễ và cuối tuần.
+
+## 2. Phân tích ban đầu
+- **Bối cảnh**: Hiện tại, nhân viên chỉ có thể ghi giờ công hoặc xem lại lịch sử bằng cách mở từng thẻ công việc trong màn hình Checklist của từng dự án. Không có một trang tập trung để xem tổng thể: "Tháng này tôi đã log những ngày nào, bao nhiêu giờ, vào những việc gì, còn ngày nào thiếu giờ?". Quản lý cũng chưa có Bảng ma trận chấm công để theo dõi tình hình làm việc hàng ngày của cả tổ.
+- **Mục tiêu**: Xây dựng module Timesheet Hub hoàn chỉnh phục vụ cả nhân viên thực thi và Quản lý Tổ.
+- **Phạm vi**:
+  - *In-scope*: Xây dựng `TimesheetViewModels.cs`, `TimesheetController.cs`, `Views/Timesheet/Index.cshtml`, `Views/Timesheet/Team.cshtml`, bổ sung menu điều hướng trong `Permission.cs`, bổ sung CSS bảng Timesheet và heatmap matrix trong `Content/site.css`. Tích hợp quy tắc chặn trần 12h/ngày, trần việc từ `TimeLogService`.
+  - *Out-scope*: Thay đổi cơ chế chấm điểm KPI trong `KpiService`.
+- **Các bên liên quan**: Toàn bộ nhân viên Tổ NCPT (ghi và tra cứu giờ công), Quản lý Tổ (theo dõi ma trận chấm công toàn tổ).
+- **Ràng buộc**:
+  - Bảo toàn 100% UTF-8 có BOM cho file `.cs` và `.cshtml`.
+  - Tuân thủ cấu trúc phân tầng Controller $\rightarrow$ Service $\rightarrow$ Repository.
+  - Ma trận chấm công phải tối ưu truy vấn dữ liệu (nạp một lần trong bộ nhớ theo tháng).
+  - Giao diện đồng bộ với Design System của Web (`site.css`).
+- **Rủi ro & Giả định**:
+  - Tháng có thể có 28, 29, 30 hoặc 31 ngày; cần vẽ đúng số cột ngày theo từng tháng/năm được chọn.
+  - Khi nhân viên nghỉ phép cả ngày hoặc nửa ngày, ô ma trận phải hiển thị ký hiệu nghỉ phép thay vì báo 0h vi phạm.
+- **Phương án khả dĩ**:
+  - Tạo `TimesheetController` độc lập với 2 actions chính `Index` (cá nhân) và `Team` (quản lý tổ).
+
+## 3. Checklist công việc
+- [x] Tạo file model `Models/Work/TimesheetViewModels.cs` chứa các ViewModel cho màn hình cá nhân và màn hình ma trận chấm công tổ.
+- [x] Xây dựng `Controllers/TimesheetController.cs` kế thừa `BaseController`, triển khai các action: `Index`, `QuickLog`, `DeleteLog`, `Team`, `DayDetail`.
+- [x] Cập nhật menu điều hướng trong `Models/Permission.cs` (Nhật ký giờ công ở khối Cá nhân, Chấm công Tổ ở khối Quản lý Tổ).
+- [x] Xây dựng View `Views/Timesheet/Index.cshtml` (Giao diện Nhật ký cá nhân, thống kê tháng, bảng lịch sử, modal ghi giờ nhanh).
+- [x] Xây dựng View `Views/Timesheet/Team.cshtml` (Giao diện Bảng ma trận chấm công Tổ, tô màu theo ngưỡng giờ, tooltip, popup xem chi tiết ngày).
+- [x] Thêm CSS cho Timesheet và Ma trận nhiệt trong `Content/site.css` (bảng sticky, màu sắc, responsive).
+- [x] Đảm bảo mã hóa UTF-8 có BOM cho tất cả file mới và sửa đổi.
+- [x] Biên dịch MSBuild C#, kiểm tra 0 Errors, 0 Warnings, chạy kiểm tra hồi quy mobile test (`flutter test`, `flutter analyze`).
+
+## 4. Kết quả nghiệm thu & Tinh chỉnh UI
+- **Backend C# (.NET Framework 4.8)**: Biên dịch MSBuild thành công 100%, 0 Errors, 0 Warnings, bảo toàn UTF-8 có BOM. Đã chạy publish vào `build/app` thành công.
+- **Mobile Flutter (BrewTask)**: `flutter analyze` 0 issues, `flutter test` 79/79 tests PASS 100%.
+- **Chức năng Cá nhân (`/Timesheet/Index`)**: Xem tổng hợp logtime theo tháng, 4 thẻ chỉ số tháng dàn đều 4 cột (`.stats`), bảng chi tiết `table.data` phủ trọn 100% chiều ngang, chức năng Ghi giờ công nhanh qua modal với đầy đủ ràng buộc (trần 12h/ngày, trần task cap), xóa lượt log an toàn.
+- **Chức năng Quản lý Tổ (`/Timesheet/Team`)**: Bảng ma trận nhiệt (Heatmap Matrix) 1..31 ngày với `table-layout: fixed`, STT (38px), Họ tên (160px), các cột ngày 1..31 đồng đều 34px, tô màu tự động theo số giờ làm việc, hiển thị ngày nghỉ phép (P), cuối tuần và ngày lễ; bấm ô ngày mở modal xem chi tiết công việc với nền trắng đục và bóng nổi chuẩn Material.
+- **Biểu đồ HUD Dashboard**: Đã loại bỏ nhãn "Hôm nay" phía trên cột thứ để 7 cột ngày (T2 - CN) có cùng cấu trúc 2 dòng (`T5` và `03/09`), đường đáy và đỉnh cân bằng hoàn hảo, cột hôm nay được đánh dấu bằng viền bo mềm và tên ngày màu primary.
+
+---
+
+# [2026-09-03] Tính năng: Biểu đồ HUD Power Curve Thời gian làm việc & Logtime mỗi ngày trên Web Dashboard
+
+## 1. Mô tả vấn đề
+Xây dựng biểu đồ hiển thị Tổng thời gian làm việc và Logtime mỗi ngày trong tuần (T2 - CN) trên màn hình Dashboard của Website (ASP.NET MVC 5), đồng bộ trải nghiệm trực quan với ứng dụng di động BrewTask.
+
+## 2. Phân tích ban đầu
+- **Bối cảnh**: Ứng dụng mobile BrewTask vừa được tích hợp biểu đồ HUD Power Curve thời gian làm việc & logtime 7 ngày trong tuần rất trực quan. Trong khi đó trên Web (`Dashboard/Index.cshtml`), người dùng chỉ có một thanh tiến trình tổng giờ cả tháng mà không xem được số giờ chi tiết của từng ngày trong tuần, khiến họ khó biết hôm nay đã đủ 8h chưa trước mốc 17h gửi SMS nhắc nhở.
+- **Mục tiêu**: Đưa widget Biểu đồ HUD Power Curve (7 ngày trong tuần T2..CN, chỉ số Hôm nay, Tuần này, Tháng này, thang đo ngưỡng màu $\ge 8\text{h}$ xanh lá, $6-8\text{h}$ xanh dương, $4-6\text{h}$ cam, $< 4\text{h}$ đỏ) lên màn hình Tổng quan Web.
+- **Phạm vi**:
+  - *In-scope*: Tái sử dụng/chuẩn hóa logic tính toán `WorkTimeDashboardDto` và `DailyLogTimeDto` trong backend C#; tích hợp dữ liệu vào `DashboardViewModel`; thiết kế widget HUD đẹp mắt, hiện đại trên Web với CSS chuẩn Material Design hiện có; hiển thị cột ngày phân đoạn theo giờ (Max 12h), tooltip chi tiết khi di chuột vào từng ngày, đồng bộ thang màu nhận diện.
+  - *Out-scope*: Thay đổi quy tắc chặn giờ công trong `TimeLogRules` hoặc can thiệp vào các API mobile hiện tại.
+- **Các bên liên quan**: Toàn thể nhân viên và quản lý truy cập Web.
+- **Ràng buộc**:
+  - Tối ưu truy vấn dữ liệu giờ công trong tuần/tháng từ `WorkTimeLogs` (không gây chậm tải trang Dashboard).
+  - Tương thích tốt trên màn hình máy tính rộng (Desktop) cũng như màn hình nhỏ (Responsive tablet/mobile browser).
+  - Giữ vững chuẩn thiết kế của Web (`site.css`, Material elevation, tokens).
+- **Rủi ro & Giả định**:
+  - Cần đảm bảo giao diện hiển thị gọn gàng, không phá vỡ bố cục 2 cột hiện tại của trang Dashboard.
+- **Phương án khả dĩ**:
+  - Đặt Widget HUD Power Curve thành một Card toàn chiều rộng (Full-width card) ngay dưới phần tiêu đề trang và trên khối 2 cột chính, tạo ấn tượng trực quan tức thì ngay khi đăng nhập.
+
+## 3. Checklist công việc
+- [x] Chuẩn hóa hàm `BuildMyWorkTime` trong `TimeLogService.cs` để dùng chung cho cả Web và Mobile API.
+- [x] Bổ sung thuộc tính `MyWorkTime` trong `DashboardViewModel` và gọi nạp dữ liệu trong `DashboardController.cs`.
+- [x] Thiết kế khối giao diện HUD Power Curve trong `Views/Dashboard/Index.cshtml` (Đồng hồ Level Gauge / tiến độ tuần bên trái, 7 cột Capsule Power Curve các ngày trong tuần ở giữa, 3 thẻ tóm tắt Hôm nay - Tuần này - Tháng này và chú giải thang màu).
+- [x] Viết CSS cho widget HUD trong `Content/site.css` (cột năng lượng, hiệu ứng hover, thang màu chuẩn, responsive).
+- [x] Biên dịch MSBuild, kiểm tra 0 Errors, 0 Warnings, kiểm tra hồi quy mobile test (`flutter test`, `flutter analyze`).
+
+## 4. Kết quả nghiệm thu
+- **Backend C# (.NET Framework 4.8)**: Biên dịch MSBuild thành công 100%, 0 Errors, 0 Warnings, bảo toàn UTF-8 có BOM.
+- **Mobile Flutter (BrewTask)**: `flutter analyze` 0 issues, `flutter test` 79/79 tests PASS 100%.
+- **UI/UX Web**: Widget HUD Power Curve tích hợp gọn gàng, trực quan ngay dưới tiêu đề trang Dashboard; hiển thị chuẩn xác 7 ngày trong tuần, vạch định mức 8h, đo trần 12h, 4 dải màu nhận diện đồng bộ với mobile, responsive đầy đủ trên Desktop/Tablet/Mobile browser.
+
+---
+
 # [2026-09-03] Tính năng: Thông báo SMS tổng số giờ Logtime trong ngày lúc 17h
 
 ## 1. Phân tích ban đầu

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -340,6 +340,7 @@ namespace TTKDGP.ProjectManager.Models
                     // viec rieng (WorkTasks.Perm(View)) nhu 2 muc tren, vi day la du lieu cua
                     // chinh minh chu khong phai du lieu nghiep vu can duoc cap quyen.
                     L("Lịch công việc", "Calendar", ""),
+                    L("Nhật ký giờ công", "Timesheet", ""),
                     L("Dự án của tôi", "MyWork", WorkTasks.Perm(View), "Projects"),
                     L("Nghỉ phép của tôi", "Leaves", Leaves.Perm(View), "My")
                 }
@@ -354,6 +355,7 @@ namespace TTKDGP.ProjectManager.Models
                 {
                     L("Bảng điều khiển Tổ", "TeamDashboard", Team.Perm(View)),
                     L("Lịch công tác Tổ", "TeamCalendar", Team.Perm(View)),
+                    L("Chấm công Tổ", "Timesheet", Team.Perm(View), "Team"),
                     L("Dự án", "WorkProjects", WorkProjects.Perm(View)),
                     L("Giao việc riêng", "PrivateTasks", WorkTasks.Perm(Create)),
                     L("Duyệt nghỉ phép", "Leaves", Leaves.Perm("approve"), "Approve"),
