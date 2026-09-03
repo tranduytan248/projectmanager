@@ -1,4 +1,51 @@
-# Memory.md — Nhật ký tri thức của dự án
+﻿# Memory.md — Nhật ký tri thức của dự án
+
+---
+
+# [2026-09-03] Tính năng: Báo cáo Tuần Dự Án Timeline theo Tuần/Năm & Tự Động Tổng Hợp Tiến Độ
+
+## 1. Mô tả vấn đề
+Nâng cấp khối Báo cáo tuần trong trang Chi tiết Dự án (`WorkProjects/Details.cshtml`):
+- Dạng Timeline theo tuần/năm: Cho phép chọn năm và lướt qua dải các tuần từ Tuần 1 đến Tuần 52/53, hiển thị trực quan trạng thái từng tuần (Đã nộp đúng hạn, Trễ hạn, Bản nháp, Chưa nộp).
+- Báo cáo tổng hợp các nội dung đã thực hiện, tiến độ và giờ công ghi nhận trong tuần (chi tiết theo từng nhân sự).
+- Auto tổng hợp: Tự động gom dữ liệu từ `WorkTasks` và `WorkTimeLogs` để điền sẵn vào biểu mẫu báo cáo tuần cho PM.
+
+## 2. Kết quả triển khai
+- Đã tạo: `ProjectWeeklyReportViewModels.cs`, `ProjectWeeklyReportService.cs`, `_WeeklyReportTimeline.cshtml`.
+- Đã cập nhật: `WorkProjectsController.cs`, `LegacyImportModels.cs`, `Details.cshtml`, `TTKDGP.ProjectManager.csproj`.
+- Kiểm thử: MSBuild biên dịch thành công, Unit test Reflection đạt 100%, Flutter test đạt 79/79 pass.
+
+---
+
+# [2026-09-03] Tính năng: Báo cáo Tiến độ Dự án Tổng hợp & Phân bổ Khối lượng (Project Progress Hub)
+
+## 1. Mô tả vấn đề
+Xây dựng phân hệ Báo cáo Tiến độ Dự án & Giám sát Danh mục (`/ProjectProgress`) trên Website ASP.NET MVC 5 dành cho Quản lý Tổ và PM:
+- Tổng hợp toàn diện tiến độ của tất cả các dự án trong tổ.
+- So sánh song song Tiến độ công việc (% tasks Done) và Tiến độ thời gian (% Time Elapsed) với nhãn đánh giá sức khỏe dự án (Đúng hạn, Nguy cơ, Trễ hạn).
+- Phân bổ nguồn lực & khối lượng công việc theo nhân sự (nhận diện nhân sự quá tải vs nhân sự rảnh việc).
+- Cảnh báo các đầu việc trễ hạn nghiêm trọng nhất trên toàn hệ thống để lãnh đạo kịp thời can thiệp.
+- Hỗ trợ kết xuất báo cáo Excel `.xlsx` phục vụ giao ban tuần.
+
+## 2. Phân tích ban đầu
+- **Bối cảnh**: Quản lý hiện chỉ có `WorkProjects` (quản lý CRUD) và `TeamDashboard` (hôm nay ai làm gì), chưa có một góc nhìn điều hành cấp cao (Portfolio Progress Health) để nắm bắt dự án nào đang chậm, tiến độ so với thời hạn ra sao, và nhân sự nào đang bị quá tải công việc.
+- **Mục tiêu**: Xây dựng module Project Progress Hub tập trung, giao diện trực quan, đồng bộ Design System của dự án.
+- **Phạm vi**:
+  - *In-scope*: Xây dựng `ProjectProgressViewModels.cs`, `ProjectProgressController.cs`, `Views/ProjectProgress/Index.cshtml`, bổ sung mục menu vào `Models/Permission.cs`, tính toán tỷ lệ tiến độ kép (Task Done % vs Time Elapsed %), phân tích tải công việc nhân sự, xuất file Excel bằng `SpreadsheetFile.cs`.
+  - *Out-scope*: Thay đổi cơ sở dữ liệu hoặc logic của `WorkProjectsController`.
+- **Ràng buộc**:
+  - UTF-8 có BOM cho file `.cs` và `.cshtml`.
+  - Tuân thủ quy chuẩn `table.data`, `.stats` / `.stat`, không hardcode màu sắc, tái sử dụng các dịch vụ `WorkService`, `TimeLogService`.
+
+## 3. Checklist công việc
+- [ ] Tạo file model `Models/Work/ProjectProgressViewModels.cs`.
+- [ ] Xây dựng `Controllers/ProjectProgressController.cs` với action `Index` và `Export`.
+- [ ] Xây dựng View `Views/ProjectProgress/Index.cshtml`.
+- [ ] Thêm CSS chuyên dụng cho thanh tiến độ kép và sức khỏe dự án trong `Content/site.css`.
+- [ ] Bổ sung mục "Tiến độ dự án" vào menu Quản lý Tổ trong `Models/Permission.cs`.
+- [ ] Đăng ký file mới vào `TTKDGP.ProjectManager.csproj`.
+- [ ] Đảm bảo UTF-8 có BOM cho tất cả file.
+- [ ] Biên dịch MSBuild và kiểm thử tự động (`flutter test`, `flutter analyze`).
 
 ---
 

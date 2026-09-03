@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -111,7 +111,8 @@ namespace TTKDGP.ProjectManager.Controllers
                 Files = Repository.WorkProjectFiles.All()
                     .Where(f => f.ProjectId == id)
                     .OrderByDescending(f => f.CreatedAt)
-                    .ToList()
+                    .ToList(),
+                WeeklyReportModel = ProjectWeeklyReportService.BuildViewModel(id, year, week, CanEditProject(id))
             };
 
             return View(model);
@@ -885,6 +886,40 @@ namespace TTKDGP.ProjectManager.Controllers
 
             Notify(string.Format("Đã xoá giai đoạn tham gia của \"{0}\".", assignment.UserFullName));
             return RedirectToAction("Members", new { id = id });
+        }
+
+        // ---------- Báo cáo tuần Timeline & Auto Tổng Hợp ----------
+
+        [HttpGet]
+        [AppAuthorize(Permission = "wtasks.view")]
+        public ActionResult WeeklyReportTimeline(int id, int? year, int? week)
+        {
+            var project = Repository.WorkProjects.Find(id);
+            if (project == null || !CanViewProject(id)) return HttpNotFound();
+
+            var model = ProjectWeeklyReportService.BuildViewModel(id, year, week, CanEditProject(id));
+            if (model == null) return HttpNotFound();
+
+            return PartialView("_WeeklyReportTimeline", model);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "wtasks.view")]
+        public ActionResult SaveWeeklyReport(int projectId, int year, int week, string currentWork, string difficulties, string nextWeekNote, bool isSubmit)
+        {
+            var project = Repository.WorkProjects.Find(projectId);
+            if (project == null || !CanViewProject(projectId)) return HttpNotFound();
+
+            var canEdit = CanEditProject(projectId);
+            if (!canEdit)
+            {
+                return Json(new { ok = false, error = "Chỉ PM của dự án hoặc Quản lý Tổ mới có quyền lưu/nộp báo cáo tuần." });
+            }
+
+            var report = ProjectWeeklyReportService.SaveReport(projectId, year, week, currentWork, difficulties, nextWeekNote, isSubmit, CurrentUserId, CurrentUser.FullName);
+
+            return Json(new { ok = true, isSubmitted = report.IsSubmitted, isOnTime = report.IsOnTime });
         }
 
         private static bool Has(string source, string keyword)
