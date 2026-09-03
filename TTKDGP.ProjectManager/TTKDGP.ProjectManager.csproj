@@ -186,6 +186,8 @@
     <Compile Include="Models\Work\WorkTimeLog.cs" />
     <Compile Include="Models\Work\TimeLogViewModels.cs" />
     <Compile Include="Models\Work\WorkWeekReport.cs" />
+    <Compile Include="Models\Work\ProjectWeeklyReportViewModels.cs" />
+    <Compile Include="Services\ProjectWeeklyReportService.cs" />
     <Compile Include="Models\Work\KpiSheet.cs" />
     <Compile Include="Models\Work\KpiMonth.cs" />
     <Compile Include="Models\Work\KpiConfig.cs" />
@@ -335,6 +337,7 @@
     <Content Include="Views\WorkProjects\Members.cshtml" />
     <Content Include="Views\WorkProjects\ImportLegacy.cshtml" />
     <Content Include="Views\WorkProjects\Details.cshtml" />
+    <Content Include="Views\WorkProjects\_WeeklyReportTimeline.cshtml" />
     <Content Include="Views\WorkProjects\_EditForm.cshtml" />
     <Content Include="Views\WorkProjects\_EndMemberForm.cshtml" />
     <Content Include="Views\WorkProjects\_AddMemberForm.cshtml" />

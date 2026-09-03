@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 
 namespace TTKDGP.ProjectManager.Models
@@ -48,6 +48,7 @@ namespace TTKDGP.ProjectManager.Models
 
         public WorkWeekReport CurrentReport { get; set; }
         public List<WorkWeekReport> RecentReports { get; set; }
+        public ProjectWeeklyReportViewModel WeeklyReportModel { get; set; }
 
         /// <summary>Tài liệu đính kèm của dự án, file mới nhất trước.</summary>
         public List<WorkProjectFile> Files { get; set; }

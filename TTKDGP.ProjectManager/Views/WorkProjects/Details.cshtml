@@ -386,68 +386,8 @@
     </div>
 }
 
-<div class="card">
-    <div class="card-head">
-        Báo cáo tuần
-        <span class="muted">— tuần hiện tại @Model.Week/@Model.Year</span>
-    </div>
-    <div class="card-body">
-        <div class="form-static">
-            @if (Model.CurrentReport != null && Model.CurrentReport.IsSubmitted)
-            {
-                <span class="badge badge-active">
-                    Đã nộp @(Model.CurrentReport.IsOnTime ? "đúng hạn" : "trễ hạn")
-                </span>
-                <span class="muted">lúc @Model.CurrentReport.SubmittedAt.Value.ToString("dd/MM/yyyy HH:mm")</span>
-            }
-            else if (Model.CurrentReport != null)
-            {
-                <span class="badge">Còn bản nháp</span>
-            }
-            else
-            {
-                <span class="badge badge-inactive">Chưa nộp báo cáo tuần này</span>
-            }
-        </div>
-    </div>
-
-    @if (Model.RecentReports.Count > 0)
-    {
-        <div class="table-wrap">
-            <table class="data">
-                <thead>
-                    <tr><th>Tuần</th><th>Khoảng ngày</th><th>Nộp lúc</th><th>Đúng hạn</th></tr>
-                </thead>
-                <tbody>
-                    @foreach (var r in Model.RecentReports)
-                    {
-                        <tr>
-                            <td>Tuần @r.Week/@r.Year</td>
-                            <td class="muted nowrap">
-                                @WeekHelper.FirstDayOfWeek(r.Year, r.Week).ToString("dd/MM")
-                                &ndash; @WeekHelper.LastDayOfWeek(r.Year, r.Week).ToString("dd/MM/yyyy")
-                            </td>
-                            <td class="nowrap">
-                                @(r.IsSubmitted ? r.SubmittedAt.Value.ToString("dd/MM/yyyy HH:mm") : "Chưa nộp")
-                            </td>
-                            <td>
-                                @if (!r.IsSubmitted)
-                                {
-                                    <span class="muted">—</span>
-                                }
-                                else if (r.IsOnTime)
-                                {
-                                    <span class="badge badge-active">Đúng hạn</span>
-                                }
-                                else
-                                {
-                                    <span class="badge badge-inactive">Trễ hạn</span>
-                                }
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    }
-</div>
+@* Báo cáo tuần dự án dạng Timeline theo tuần/năm và Tự động tổng hợp *@
+@if (Model.WeeklyReportModel != null)
+{
+    @Html.Partial("_WeeklyReportTimeline", Model.WeeklyReportModel)
+}

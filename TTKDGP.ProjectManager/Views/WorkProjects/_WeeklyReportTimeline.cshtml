@@ -1,0 +1,281 @@
+﻿@model TTKDGP.ProjectManager.Models.ProjectWeeklyReportViewModel
+
+<div id="weeklyReportContainer" class="card weekly-report-card">
+    <div class="card-head" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-weight: 700; font-size: 16px;">Báo cáo tổng hợp theo tuần</span>
+            <span class="muted" style="font-size: 13px;">· Tuần @Model.SelectedWeek/@Model.SelectedYear (@Model.WeekStartDate.ToString("dd/MM") &ndash; @Model.WeekEndDate.ToString("dd/MM/yyyy"))</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <label style="font-size: 12px; margin: 0; color: var(--muted);">Chọn năm:</label>
+            <select class="form-control" style="width: 90px; padding: 4px 8px; height: 32px; font-size: 13px;" onchange="loadWeeklyReportTimeline(@Model.ProjectId, this.value, @Model.SelectedWeek)">
+                @foreach (var y in Model.AvailableYears)
+                {
+                    <option value="@y" selected="@(y == Model.SelectedYear)">@y</option>
+                }
+            </select>
+            <button type="button" class="btn btn-default btn-sm" onclick="loadWeeklyReportTimeline(@Model.ProjectId, @Model.SelectedYear, @(Math.Max(1, Model.SelectedWeek - 1)))" title="Tuần trước">&larr;</button>
+            <button type="button" class="btn btn-default btn-sm" onclick="loadWeeklyReportTimeline(@Model.ProjectId, @Model.SelectedYear, @(Math.Min(53, Model.SelectedWeek + 1)))" title="Tuần sau">&rarr;</button>
+        </div>
+    </div>
+
+    @* Dải Timeline các tuần trong năm *@
+    <div class="weekly-timeline-wrap" style="padding: 14px 16px; border-bottom: 1px solid var(--border); overflow-x: auto; background: rgba(0,0,0,0.03);">
+        <div class="weekly-timeline-strip" style="display: flex; gap: 8px; min-width: max-content; padding-bottom: 4px;">
+            @foreach (var w in Model.Timeline)
+            {
+                var isSelected = w.Week == Model.SelectedWeek;
+                var nodeClass = "timeline-week-node";
+                if (isSelected) { nodeClass += " active"; }
+                if (w.IsCurrentWeek) { nodeClass += " current-week"; }
+
+                <div class="@nodeClass" onclick="loadWeeklyReportTimeline(@Model.ProjectId, @w.Year, @w.Week)" style="cursor: pointer;">
+                    <div class="node-week-title">Tuần @w.Week</div>
+                    <div class="node-dates">@w.StartDate.ToString("dd/MM")-@w.EndDate.ToString("dd/MM")</div>
+                    <div class="node-status">
+                        @if (w.TotalHours > 0 || w.CompletedTaskCount > 0)
+                        {
+                            <span class="badge-dot dot-info" title="Có dữ liệu (@w.TotalHours.ToString("0.#")h, @w.CompletedTaskCount việc xong)"></span>
+                            <span style="font-size: 10px; color: var(--muted); margin-left: 2px;">@w.TotalHours.ToString("0.#")h</span>
+                        }
+                        else
+                        {
+                            <span class="badge-dot dot-muted" title="Không có phát sinh"></span>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    @* Nội dung chi tiết tuần được chọn *@
+    <div class="card-body">
+        @* Thanh tóm tắt chỉ số nhanh *@
+        <div class="weekly-summary-bar" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 20px; padding: 12px 16px; background: var(--bg); border-radius: 8px; border: 1px solid var(--border);">
+            <div style="display: flex; gap: 24px; align-items: center; flex-wrap: wrap;">
+                <div>
+                    <span class="muted" style="font-size: 11.5px; text-transform: uppercase;">Tiến độ tổng thể</span><br />
+                    <strong style="color: #4ade80; font-size: 16px;">@Model.ProjectOverallProgress%</strong>
+                </div>
+                <div>
+                    <span class="muted" style="font-size: 11.5px; text-transform: uppercase;">Giờ công tuần này</span><br />
+                    <strong style="color: var(--primary); font-size: 16px;">@Model.TotalLogHoursThisWeek.ToString("0.#")</strong>h
+                </div>
+                <div>
+                    <span class="muted" style="font-size: 11.5px; text-transform: uppercase;">Việc hoàn thành trong tuần</span><br />
+                    <strong class="ok-text" style="font-size: 16px;">@Model.CompletedCount</strong> việc
+                </div>
+                <div>
+                    <span class="muted" style="font-size: 11.5px; text-transform: uppercase;">Đang triển khai</span><br />
+                    <strong style="font-size: 16px;">@Model.InProgressCount</strong> việc
+                </div>
+            </div>
+
+            <div>
+                <button type="button" class="btn btn-default btn-sm" onclick="copyWeeklySummaryText()" style="display: inline-flex; align-items: center; gap: 6px;">
+                    <span>📋 Sao chép tóm tắt tuần</span>
+                </button>
+            </div>
+        </div>
+
+        @* Chi tiết công việc và nhân sự tham gia trong tuần *@
+        <div class="weekly-details-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+            @* Cột trái: Đầu việc hoàn thành và đang làm *@
+            <div style="border: 1px solid var(--border); border-radius: 8px; padding: 14px; background: var(--surface);">
+                <h4 style="margin: 0 0 10px 0; font-size: 14px; display: flex; justify-content: space-between; align-items: center;">
+                    <span>📌 Công việc thực hiện trong tuần</span>
+                    <span class="badge badge-active" style="font-size: 11px;">@Model.CompletedCount xong · @Model.InProgressCount đang làm</span>
+                </h4>
+
+                @if (Model.CompletedTasks.Count == 0 && Model.InProgressTasks.Count == 0)
+                {
+                    <div class="muted" style="padding: 24px; text-align: center; font-size: 13px;">Không có đầu việc nào phát sinh trong tuần này.</div>
+                }
+                else
+                {
+                    <div style="max-height: 280px; overflow-y: auto; font-size: 13px;">
+                        @if (Model.CompletedTasks.Count > 0)
+                        {
+                            <div style="font-weight: 600; color: #4ade80; margin-bottom: 6px;">✓ Đã hoàn thành (@Model.CompletedTasks.Count việc):</div>
+                            <ul style="margin: 0 0 14px 0; padding-left: 18px; line-height: 1.6;">
+                                @foreach (var t in Model.CompletedTasks)
+                                {
+                                    <li>
+                                        @if (!string.IsNullOrEmpty(t.Code))
+                                        {
+                                            <a href="@Url.Action("Detail", "MyWork", new { id = t.Id })" target="_blank" class="task-code" style="font-size: 11px; margin-right: 4px;">@t.Code</a>
+                                        }
+                                        <a href="@Url.Action("Detail", "MyWork", new { id = t.Id })" target="_blank" style="font-weight: 500;">@t.Title</a>
+                                        <span class="muted" style="font-size: 11.5px;">(@(string.IsNullOrEmpty(t.AssigneeName) ? "Chưa giao" : t.AssigneeName))</span>
+                                        @if (t.HoursThisWeek > 0)
+                                        {
+                                            <span class="muted" style="font-size: 11.5px;">— @t.HoursThisWeek.ToString("0.#")h</span>
+                                        }
+                                    </li>
+                                }
+                            </ul>
+                        }
+
+                        @if (Model.InProgressTasks.Count > 0)
+                        {
+                            <div style="font-weight: 600; color: #38bdf8; margin-bottom: 6px;">⏳ Đang triển khai (@Model.InProgressTasks.Count việc):</div>
+                            <ul style="margin: 0; padding-left: 18px; line-height: 1.6;">
+                                @foreach (var t in Model.InProgressTasks.Take(10))
+                                {
+                                    <li>
+                                        @if (!string.IsNullOrEmpty(t.Code))
+                                        {
+                                            <a href="@Url.Action("Detail", "MyWork", new { id = t.Id })" target="_blank" class="task-code" style="font-size: 11px; margin-right: 4px;">@t.Code</a>
+                                        }
+                                        <a href="@Url.Action("Detail", "MyWork", new { id = t.Id })" target="_blank">@t.Title</a>
+                                        <span class="badge" style="font-size: 10.5px; padding: 1px 5px;">@t.Progress%</span>
+                                        <span class="muted" style="font-size: 11.5px;">(@(string.IsNullOrEmpty(t.AssigneeName) ? "Chưa giao" : t.AssigneeName))</span>
+                                        @if (t.DueDate.HasValue)
+                                        {
+                                            <span class="muted" style="font-size: 11.5px;">— Hạn: @t.DueDate.Value.ToString("dd/MM")</span>
+                                        }
+                                    </li>
+                                }
+                                @if (Model.InProgressTasks.Count > 10)
+                                {
+                                    <li class="muted">... và @(Model.InProgressTasks.Count - 10) đầu việc khác đang xử lý.</li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                }
+            </div>
+
+            @* Cột phải: Giờ công theo nhân sự *@
+            <div style="border: 1px solid var(--border); border-radius: 8px; padding: 14px; background: var(--surface);">
+                <h4 style="margin: 0 0 10px 0; font-size: 14px; display: flex; justify-content: space-between; align-items: center;">
+                    <span>⏱️ Giờ công ghi nhận (@Model.TotalLogHoursThisWeek.ToString("0.#")h)</span>
+                    <span class="muted" style="font-size: 12px;">@Model.MemberHours.Count nhân sự</span>
+                </h4>
+
+                @if (Model.MemberHours.Count == 0)
+                {
+                    <div class="muted" style="padding: 24px; text-align: center; font-size: 13px;">Chưa có lượt logtime nào trong tuần này.</div>
+                }
+                else
+                {
+                    <div style="max-height: 280px; overflow-y: auto;">
+                        <table class="data" style="width: 100%; font-size: 12.5px;">
+                            <thead>
+                                <tr>
+                                    <th>Nhân sự</th>
+                                    <th style="text-align: right;">Giờ công</th>
+                                    <th>Đầu việc tham gia</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var m in Model.MemberHours)
+                                {
+                                    <tr>
+                                        <td><strong>@m.FullName</strong></td>
+                                        <td style="text-align: right; font-weight: 700; color: var(--primary);">@m.TotalHours.ToString("0.#")h</td>
+                                        <td class="muted" style="font-size: 11.5px;">@m.TaskCount việc</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+
+        @* Khối Tóm tắt Tự động tổng hợp tuần *@
+        <div style="border: 1px solid var(--border); border-radius: 8px; padding: 16px; background: var(--surface);">
+            <h4 style="margin: 0 0 10px 0; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                <span>📊 Tóm tắt nội dung tự động tổng hợp — Tuần @Model.SelectedWeek/@Model.SelectedYear</span>
+            </h4>
+            <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 14px; font-size: 13px; line-height: 1.6; white-space: pre-wrap; font-family: inherit;">@Model.SuggestedCurrentWork
+
+@Model.SuggestedNextWeekNote</div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .weekly-report-card {
+        margin-top: 24px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        border: 1px solid var(--border);
+    }
+    .timeline-week-node {
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        text-align: center;
+        min-width: 95px;
+        transition: all 0.2s ease;
+    }
+    .timeline-week-node:hover {
+        border-color: var(--primary);
+        transform: translateY(-2px);
+    }
+    .timeline-week-node.active {
+        background: rgba(56, 189, 248, 0.12);
+        border-color: #38bdf8;
+        box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+    }
+    .timeline-week-node.current-week {
+        border-left: 3px solid #38bdf8;
+    }
+    .node-week-title {
+        font-weight: 700;
+        font-size: 12.5px;
+        color: var(--text);
+    }
+    .node-dates {
+        font-size: 11px;
+        color: var(--muted);
+        margin: 2px 0 4px;
+    }
+    .badge-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+    .dot-info { background: #38bdf8; box-shadow: 0 0 6px #38bdf8; }
+    .dot-muted { background: #94a3b8; }
+</style>
+
+<script>
+    function copyWeeklySummaryText() {
+        var text = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.SuggestedCurrentWork + "\n\n" + Model.SuggestedNextWeekNote));
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(function() {
+                alert('Đã sao chép nội dung tóm tắt tuần vào bộ nhớ tạm!');
+            });
+        } else {
+            var textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            alert('Đã sao chép nội dung tóm tắt tuần vào bộ nhớ tạm!');
+        }
+    }
+
+    function loadWeeklyReportTimeline(projectId, year, week) {
+        var container = $('#weeklyReportContainer');
+        container.css('opacity', '0.6');
+
+        $.ajax({
+            url: '@Url.Action("WeeklyReportTimeline", "WorkProjects")',
+            type: 'GET',
+            data: { id: projectId, year: year, week: week },
+            success: function (html) {
+                container.replaceWith(html);
+            },
+            error: function () {
+                container.css('opacity', '1');
+                alert('Không thể tải dữ liệu báo cáo tuần.');
+            }
+        });
+    }
+</script>
