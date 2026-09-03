@@ -87,6 +87,39 @@ namespace TTKDGP.ProjectManager.Controllers
             return RedirectToAction("Index");
         }
 
+        /// <summary>
+        /// Gửi ngay lượt thông báo tổng giờ LogTime qua SMS cho nhân sự, không chờ tới 17h.
+        /// Ghi nhật ký là lượt THỦ CÔNG nên không chiếm chỗ của lượt tự động lúc 17h.
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [AppAuthorize(Permission = "notifications.send")]
+        public ActionResult SendDailyLogTimeSms()
+        {
+            var now = DateTime.Now;
+            var log = DailyLogTimeSmsService.Run(now, true, CurrentUser.Name);
+
+            if (log.PmCount == 0)
+            {
+                Notify(log.Error ?? "Không có nhân sự nào trong danh sách cần gửi.");
+            }
+            else if (log.Success && log.NoEmailCount > 0)
+            {
+                Notify(string.Format("Đã gửi {0} tin SMS thông báo LogTime. Còn {1} người chưa có số điện thoại.",
+                    log.SentCount, log.NoEmailCount));
+            }
+            else if (log.Success)
+            {
+                Notify(string.Format("Đã gửi {0} tin SMS thông báo tổng giờ LogTime.", log.SentCount));
+            }
+            else
+            {
+                NotifyError("Gửi tin nhắn thất bại: " + log.Error);
+            }
+
+            return RedirectToAction("Index");
+        }
+
         /// <summary>Gửi một mail thử để kiểm tra cấu hình SMTP.</summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -206,6 +239,11 @@ namespace TTKDGP.ProjectManager.Controllers
                 TaskSmsAfternoonHour = AppSettings.Reminder.TaskSmsAfternoonHour,
                 SmsReady = AppSettings.Sms.IsConfigured,
                 TaskSmsPreview = TaskDueSmsService.Build(now),
+                LogTimeSmsEnabled = AppSettings.Reminder.LogTimeSmsEnabled,
+                LogTimeSmsHour = AppSettings.Reminder.LogTimeSmsHour,
+                LogTimeStandardHours = AppSettings.Reminder.LogTimeStandardHours,
+                LogTimeFcmPushEnabled = AppSettings.Reminder.LogTimeFcmPushEnabled,
+                LogTimeSmsPreview = DailyLogTimeSmsService.Build(now),
                 History = Repository.ReminderLogs.All()
                     .OrderByDescending(l => l.SentAt)
                     .Take(20)

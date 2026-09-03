@@ -84,8 +84,28 @@ namespace TTKDGP.ProjectManager.Infrastructure
             }
 
             sent += RunTaskDueSms(now);
+            sent += RunLogTimeDailySms(now);
 
             return sent;
+        }
+
+        /// <summary>
+        /// Thông báo tổng số giờ Logtime trong ngày qua SMS vào lúc 17h mỗi ngày làm việc.
+        /// Tự động bỏ qua Thứ 7, Chủ Nhật và các ngày nghỉ lễ.
+        /// </summary>
+        private static int RunLogTimeDailySms(DateTime now)
+        {
+            if (!AppSettings.Reminder.LogTimeSmsEnabled) return 0;
+            if (!DailyLogTimeSmsService.IsWorkingDay(now)) return 0;
+
+            var hour = AppSettings.Reminder.LogTimeSmsHour;
+            if (now.Hour >= hour && !DailyLogTimeSmsService.AlreadySent(now))
+            {
+                DailyLogTimeSmsService.Run(now, false, null);
+                return 1;
+            }
+
+            return 0;
         }
 
         /// <summary>

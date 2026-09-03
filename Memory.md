@@ -2,6 +2,54 @@
 
 ---
 
+# [2026-09-03] Tính năng: Thông báo SMS tổng số giờ Logtime trong ngày lúc 17h
+
+## 1. Phân tích ban đầu
+- **Bối cảnh**: Hệ thống ASP.NET MVC 5 quản lý công việc và nhân sự Tổ NCPT. Hiện tại đã có cơ chế Logtime trong `WorkTimeLogs`, có hạ tầng tổng đài SMS tích hợp qua `SmsClient.cs` (`https://vnptkhanhhoa.cenit.vn/api/Util/SendSms`) và bộ lập lịch chạy ngầm `ReminderScheduler.cs` (đang có nhắc việc hết hạn lúc 8h và 17h qua `TaskDueSmsService.cs`).
+- **Mục tiêu**: Tự động thông báo qua tin nhắn SMS tới từng nhân sự vào lúc 17h mỗi ngày về tổng số giờ họ đã ghi nhận (logtime) trong ngày đó, giúp nhân sự theo dõi và hoàn thành đủ định mức giờ làm việc hoặc kịp thời log bù trước khi kết thúc ngày.
+- **Phạm vi**:
+  - *In-scope*: Dịch vụ tính toán tổng giờ logtime theo nhân sự trong ngày; xây dựng module gửi SMS định kỳ lúc 17h qua `ReminderScheduler`; cấu hình linh hoạt trong `Web.config`; giao diện xem trước (preview) và nút "Gửi thử ngay" trên trang Quản lý thông báo Web (`NotificationsController`).
+  - *Out-scope*: Thay đổi quy tắc tính điểm KPI hoặc can thiệp vào các luồng nhập logtime hiện có.
+- **Các bên liên quan**: Toàn bộ nhân viên Tổ NCPT (người nhận tin SMS), Quản lý/Admin (theo dõi và kiểm tra lịch sử gửi tin).
+- **Ràng buộc**:
+  - Hạ tầng SMS Gateway chỉ chấp nhận tiếng Việt không dấu (chuẩn SMS Brandname/viễn thông để tránh lỗi mã hóa và cước tin).
+  - Không gửi lặp lại nếu đã gửi thành công trong ngày; tự động bỏ qua nếu là ngày nghỉ cuối tuần hoặc ngày lễ.
+  - Phải có số điện thoại hợp lệ trong hồ sơ nhân sự (`User.Phone`).
+- **Rủi ro & Giả định**:
+  - Một số nhân viên chưa cập nhật số điện thoại trong hệ thống.
+  - Trường hợp nhân sự có tổng giờ logtime = 0h (chưa log) hoặc log thiếu so với 8h tiêu chuẩn cần có thông điệp nhắc nhở phù hợp.
+- **Phương án khả dĩ**:
+  - *Phương án A*: Xây dựng service `LogTimeDailySmsService` độc lập trong backend web C#, tích hợp vào `ReminderScheduler` lúc 17h00 các ngày làm việc, gửi SMS thông báo số giờ thực tế đã log (kèm nhắc nhở nếu chưa đủ 8h). Có màn hình quản trị xem trước trên Web.
+  - *Phương án B*: Kết hợp gửi đồng thời cả tin nhắn SMS viễn thông và thông báo đẩy (Push Notification Firebase FCM) lên ứng dụng di động BrewTask để nhân viên nhận thông báo ngay trên app.
+
+## 2. Quyết định nghiệp vụ & Xác nhận từ người dùng
+- **Tiền tố thương hiệu tin nhắn**: Đổi từ `[PM-NCPT]` thành **`[BrewTask]`** cho toàn bộ tin nhắn SMS và tiêu đề thông báo mobile.
+- **Kênh thông báo đa nền tảng**: Kích hoạt gửi song song cả **SMS viễn thông** (qua tổng đài CenIT/VNPT) và **FCM Push Notification** tới app mobile BrewTask.
+- **Lịch gửi ngày nghỉ**: **KHÔNG áp dụng** quy tắc bỏ qua Thứ 7, Chủ Nhật và ngày lễ $\rightarrow$ **Gửi đều đặn vào lúc 17h00 TẤT CẢ CÁC NGÀY TRONG TUẦN** (cờ cấu hình `Reminder:LogTimeSkipWeekendsAndHolidays = false`).
+
+## 3. Giải pháp thực hiện
+- **Service chuyên trách (`TTKDGP.ProjectManager/Services/DailyLogTimeSmsService.cs`)**:
+  - `IsWorkingDay`: Trả về `true` mọi ngày trong tuần khi `LogTimeSkipWeekendsAndHolidays = false`.
+  - `BuildSmsMessage`: Tiền tố `[BrewTask]`, định dạng 3 kịch bản: $\ge 8\text{h}$ (đủ), $< 8\text{h}$ (chưa đủ), $0\text{h}$ (chưa log).
+  - `BuildMobilePushBody`: Dựng thông báo tiếng Việt có dấu, gửi ngầm không chặn qua `FcmPushService.SendToUser`.
+  - `Run`: Điều phối gửi SMS + FCM push, lưu nhật ký chi tiết vào `Repository.ReminderLogs` với `ReminderKind.DailyLogTimeSms`.
+  - `AlreadySent`: Chống gửi lặp trong cùng một ngày.
+- **Lập lịch ngầm (`ReminderScheduler.cs`)**: Tích hợp `RunLogTimeDailySms(DateTime now)` kiểm tra và tự kích hoạt lúc 17h hàng ngày.
+- **Cấu hình (`Web.config` & `AppSettings.cs`)**: Quản lý các tham số `Reminder:LogTimeSmsEnabled`, `Reminder:LogTimeSmsHour`, `Reminder:LogTimeStandardHours`, `Reminder:LogTimeFcmPushEnabled`, `Reminder:LogTimeSkipWeekendsAndHolidays`.
+- **Giao diện Quản trị Web (`NotificationsController.cs` & `Views/Notifications/Index.cshtml`)**:
+  - Khối card quản trị hiển thị trạng thái, mốc giờ 17h, định mức 8h, ngày xét duyệt.
+  - Bảng thống kê trực quan (Đạt định mức, Chưa đủ, Chưa log, Chưa có SĐT) và danh sách xem trước nội dung SMS cụ thể từng người.
+  - Nút bấm `Gửi tin LogTime ngay` (POST) có confirm dialog và phân quyền an toàn.
+
+## 4. Kiểm thử & Nghiệm thu
+- **MSBuild C# (.NET Framework 4.8)**: Biên dịch thành công 100%, 0 Errors, 0 Warnings, bảo toàn UTF-8 có BOM.
+- **Unit Test Reflection**:
+  - Kiểm thử prefix `[BrewTask]` trên 3 kịch bản tin nhắn $\rightarrow$ PASS 100%.
+  - Kiểm thử `IsWorkingDay` với Thứ Bảy & Chủ Nhật (kỳ vọng `True`) $\rightarrow$ PASS 100%.
+- **Kiểm tra hồi quy Mobile Flutter**: `flutter analyze` (0 issues), `flutter test` (79/79 tests PASS 100%).
+
+---
+
 # [2026-09-02] UI/UX Mobile: Làm nổi bật thông tin đơn vị & Phiên bản (Đăng nhập) và Chuyển màn hình Splash sang màu đen
 
 ## 1. Mô tả yêu cầu

@@ -137,6 +137,7 @@
     <Compile Include="Models\ReminderModels.cs" />
     <Compile Include="Services\ReminderService.cs" />
     <Compile Include="Services\TaskDueSmsService.cs" />
+    <Compile Include="Services\DailyLogTimeSmsService.cs" />
     <Compile Include="Services\PasswordResetService.cs" />
     <Compile Include="Services\UserPhoneSyncService.cs" />
     <Compile Include="Services\GoConnectService.cs" />

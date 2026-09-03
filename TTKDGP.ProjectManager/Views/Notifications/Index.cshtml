@@ -277,6 +277,175 @@
     </div>
 </div>
 
+@* Thông báo SMS tổng số giờ Logtime trong ngày lúc 17h *@
+<div class="card">
+    <div class="card-head">
+        <span>Thông báo SMS giờ công (Logtime)</span>
+        <span class="muted" style="font-weight:400">
+            @Model.LogTimeSmsHour giờ hàng ngày · Tất cả các ngày trong tuần
+        </span>
+    </div>
+    <div class="card-body">
+        <div class="form-grid">
+            <div>
+                <strong>Trạng thái:</strong><br />
+                @if (Model.LogTimeSmsEnabled && Model.SmsReady)
+                {
+                    <span class="badge badge-active">Đang bật</span>
+                }
+                else if (!Model.LogTimeSmsEnabled)
+                {
+                    <span class="badge badge-inactive">Đang tắt</span>
+                }
+                else
+                {
+                    <span class="badge badge-waiting">Chưa gửi được</span>
+                }
+            </div>
+            <div>
+                <strong>Ngày đang xét:</strong><br />
+                @Model.LogTimeSmsPreview.Day.ToString("dd/MM/yyyy")
+                <span class="muted"> — gửi mọi ngày (kể cả T7/CN/Lễ)</span>
+            </div>
+            <div>
+                <strong>Định mức chuẩn:</strong><br />
+                @(Model.LogTimeStandardHours.ToString("0.##"))h / ngày
+            </div>
+            <div>
+                <strong>Kênh thông báo:</strong><br />
+                @(Model.LogTimeFcmPushEnabled ? "SMS Viễn thông + Mobile Push (App BrewTask)" : "Chỉ gửi SMS")
+            </div>
+            <div class="full">
+                <strong>Nội dung mẫu (SMS viễn thông không dấu &lt; 160 ký tự):</strong><br />
+                <div style="font-size:13px;line-height:1.6;margin-top:4px;color:#cbd5e1">
+                    <div>• <em>Đủ định mức (&ge; @Model.LogTimeStandardHours.ToString("0.##")h):</em> <code style="color:#38bdf8">[BrewTask] Hom nay @Model.LogTimeSmsPreview.Day.ToString("dd/MM") ban da logtime du @Model.LogTimeStandardHours.ToString("0.##")h/@Model.LogTimeStandardHours.ToString("0.##")h. Cam on ban da tich cuc lam viec!</code></div>
+                    <div>• <em>Chưa đủ giờ:</em> <code style="color:#fbbf24">[BrewTask] Hom nay @Model.LogTimeSmsPreview.Day.ToString("dd/MM") ban da logtime 4h/@Model.LogTimeStandardHours.ToString("0.##")h. Vui long kiem tra va log bo sung truoc khi ket thuc ca!</code></div>
+                    <div>• <em>Chưa log (0h):</em> <code style="color:#f87171">[BrewTask] Hom nay @Model.LogTimeSmsPreview.Day.ToString("dd/MM") ban chua logtime gio cong nao (0h/@Model.LogTimeStandardHours.ToString("0.##")h). Vui long cap nhat gio lam truoc khi ve!</code></div>
+                </div>
+            </div>
+        </div>
+
+        @if (!Model.SmsReady)
+        {
+            <div class="alert alert-danger" style="margin-top:16px;margin-bottom:0">
+                <strong>Chưa gửi được tin.</strong> Cần <code>Sms:Enabled</code> = <code>true</code>
+                và <code>Sms:GatewayUrl</code> trỏ đúng tổng đài SMS.
+            </div>
+        }
+
+        <hr />
+
+        <div class="stats" style="margin-bottom:16px">
+            <div class="stat">
+                <div class="stat-value">@Model.LogTimeSmsPreview.TotalCount</div>
+                <div class="stat-label">Nhân sự xét gửi</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" style="color:#4ade80">@Model.LogTimeSmsPreview.SufficientCount</div>
+                <div class="stat-label">Đạt định mức (&ge; @Model.LogTimeStandardHours.ToString("0.##")h)</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" style="color:#fbbf24">@Model.LogTimeSmsPreview.UnderCount</div>
+                <div class="stat-label">Chưa đủ định mức</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" style="color:#f87171">@Model.LogTimeSmsPreview.ZeroCount</div>
+                <div class="stat-label">Chưa log giờ nào (0h)</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">@Model.LogTimeSmsPreview.NoPhoneCount</div>
+                <div class="stat-label">Chưa có SĐT</div>
+            </div>
+        </div>
+
+        @if (Model.LogTimeSmsPreview.Recipients.Count == 0)
+        {
+            <p class="muted">
+                @(Model.LogTimeSmsPreview.IsWorkingDay
+                    ? "Không có nhân sự nào trong danh sách nhận tin hôm nay."
+                    : "Hôm nay là ngày nghỉ hoặc ngày lễ nên lịch không gửi tin.")
+            </p>
+        }
+        else
+        {
+            if (Model.LogTimeSmsPreview.NoPhoneCount > 0)
+            {
+                <div class="alert alert-danger">
+                    Có @Model.LogTimeSmsPreview.NoPhoneCount nhân sự chưa có số điện thoại trong hệ thống nên sẽ không nhận được tin SMS.
+                    Vào màn hình <a href="@Url.Action("Index", "Users")">Người dùng</a> hoặc chạy
+                    <a href="@Url.Action("SyncPhones", "Users")">Đồng bộ số điện thoại từ HRM</a> để cập nhật.
+                </div>
+            }
+
+            <div class="table-wrap">
+                <table class="data">
+                    <thead>
+                        <tr>
+                            <th>Nhân viên</th>
+                            <th>Số điện thoại</th>
+                            <th class="num">Giờ đã log</th>
+                            <th>Định mức</th>
+                            <th>Nội dung SMS sẽ gửi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in Model.LogTimeSmsPreview.Recipients.OrderByDescending(x => x.TotalHours))
+                        {
+                            <tr>
+                                <td><strong>@r.FullName</strong></td>
+                                <td class="nowrap">
+                                    @if (r.CanSendSms)
+                                    {
+                                        <text>@r.Phone</text>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-waiting">Chưa có số</span>
+                                    }
+                                </td>
+                                <td class="num">
+                                    <strong style="color: @(r.IsSufficient ? "#4ade80" : (r.TotalHours > 0 ? "#fbbf24" : "#f87171"))">
+                                        @r.TotalHours.ToString("0.##")h
+                                    </strong>
+                                </td>
+                                <td>
+                                    @if (r.IsSufficient)
+                                    {
+                                        <span class="badge badge-active">Đạt chuẩn</span>
+                                    }
+                                    else if (r.TotalHours > 0)
+                                    {
+                                        <span class="badge" style="background:#854d0e;color:#fef08a">Chưa đủ</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge" style="background:#991b1b;color:#fecaca">Chưa log</span>
+                                    }
+                                </td>
+                                <td style="font-size:12px;max-width:380px" class="muted">
+                                    @r.SmsContent
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        <div class="form-actions">
+            @using (Html.BeginForm("SendDailyLogTimeSms", "Notifications", FormMethod.Post, new { @class = "inline-form" }))
+            {
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-primary"
+                        @(Model.SmsReady && Model.LogTimeSmsPreview.SendableCount > 0 ? "" : "disabled=disabled")
+                        onclick="return confirm('Gửi tin nhắn SMS thông báo LogTime ngay cho @Model.LogTimeSmsPreview.SendableCount nhân viên?');">
+                    Gửi tin LogTime ngay
+                </button>
+            }
+        </div>
+    </div>
+</div>
+
 <div class="card">
     <div class="card-head">
         <span>Mail riêng cho từng thành viên</span>
