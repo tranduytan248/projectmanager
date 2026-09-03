@@ -34,7 +34,12 @@ namespace TTKDGP.ProjectManager.Models
         TaskDueSmsMorning = 5,
 
         /// <summary>Nhắc hạn công việc qua SMS, lượt buổi CHIỀU của cùng ngày.</summary>
-        TaskDueSmsAfternoon = 6
+        TaskDueSmsAfternoon = 6,
+
+        /// <summary>
+        /// Thông báo tổng số giờ logtime trong ngày qua SMS vào lúc 17h chiều.
+        /// </summary>
+        DailyLogTimeSms = 7
     }
 
     /// <summary>Một dự án mà thành viên còn phải báo cáo, kèm nơi gửi báo cáo.</summary>
@@ -218,6 +223,7 @@ namespace TTKDGP.ProjectManager.Models
                     case ReminderKind.FridayMemberEmails: return "Thứ Sáu · mail";
                     case ReminderKind.TaskDueSmsMorning: return "Hạn công việc · SMS sáng";
                     case ReminderKind.TaskDueSmsAfternoon: return "Hạn công việc · SMS chiều";
+                    case ReminderKind.DailyLogTimeSms: return "Giờ công LogTime · SMS 17h";
                     default: return "Thứ Bảy · nhóm (đã bỏ)";
                 }
             }
@@ -235,11 +241,11 @@ namespace TTKDGP.ProjectManager.Models
 
         /// <summary>
         /// Kỳ đếm theo SỐ NGƯỜI NHẬN (đã gửi / cần gửi) thay vì theo số PM — gồm kỳ gửi mail
-        /// riêng cho từng thành viên và các kỳ nhắn tin nhắc hạn công việc.
+        /// riêng cho từng thành viên, các kỳ nhắn tin nhắc hạn công việc và SMS logtime.
         /// </summary>
         public bool IsEmailKind
         {
-            get { return Kind == ReminderKind.FridayMemberEmails || IsTaskSmsKind; }
+            get { return Kind == ReminderKind.FridayMemberEmails || IsTaskSmsKind || Kind == ReminderKind.DailyLogTimeSms; }
         }
     }
 
@@ -302,6 +308,13 @@ namespace TTKDGP.ProjectManager.Models
 
         /// <summary>Xem trước: hôm nay ai có việc đến hạn, ai chưa có số điện thoại.</summary>
         public Services.TaskDueSmsService.Preview TaskSmsPreview { get; set; }
+
+        // ----- Thông báo tổng số giờ Logtime bằng SMS (17h hàng ngày) -----
+        public bool LogTimeSmsEnabled { get; set; }
+        public int LogTimeSmsHour { get; set; }
+        public decimal LogTimeStandardHours { get; set; }
+        public bool LogTimeFcmPushEnabled { get; set; }
+        public Services.DailyLogTimeSmsService.Preview LogTimeSmsPreview { get; set; }
 
         public List<ReminderLog> History { get; set; }
 

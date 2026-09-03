@@ -29,6 +29,15 @@ namespace TTKDGP.ProjectManager.Infrastructure
             return bool.TryParse(Get(key), out result) ? result : fallback;
         }
 
+        private static decimal GetDecimal(string key, decimal fallback)
+        {
+            decimal result;
+            var str = Get(key);
+            if (string.IsNullOrWhiteSpace(str)) return fallback;
+            str = str.Replace(',', '.');
+            return decimal.TryParse(str, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out result) ? result : fallback;
+        }
+
         /// <summary>Tách chuỗi nhiều giá trị ngăn cách bởi dấu phẩy.</summary>
         private static List<string> GetList(string key, string fallback)
         {
@@ -284,6 +293,28 @@ namespace TTKDGP.ProjectManager.Infrastructure
 
             /// <summary>Giờ nhắc buổi chiều.</summary>
             public static int TaskSmsAfternoonHour { get { return Clamp(GetInt("Reminder:TaskSmsAfternoonHour", 17)); } }
+
+            /// <summary>
+            /// Thông báo tổng số giờ Logtime trong ngày qua SMS vào lúc 17h mỗi ngày làm việc.
+            /// </summary>
+            public static bool LogTimeSmsEnabled { get { return GetBool("Reminder:LogTimeSmsEnabled", false); } }
+
+            /// <summary>Giờ gửi tin nhắn thông báo Logtime hàng ngày (mặc định 17h).</summary>
+            public static int LogTimeSmsHour { get { return Clamp(GetInt("Reminder:LogTimeSmsHour", 17)); } }
+
+            /// <summary>Định mức giờ làm việc chuẩn trong ngày để đối chiếu (mặc định 8h).</summary>
+            public static decimal LogTimeStandardHours { get { return Math.Max(1m, GetDecimal("Reminder:LogTimeStandardHours", 8m)); } }
+
+            /// <summary>Gửi cho toàn bộ nhân sự đang hoạt động hay chỉ người có logtime.</summary>
+            public static bool LogTimeSendAllActiveUsers { get { return GetBool("Reminder:LogTimeSendAllActiveUsers", true); } }
+
+            /// <summary>Gửi kèm Push Notification tới app BrewTask cùng thời điểm.</summary>
+            public static bool LogTimeFcmPushEnabled { get { return GetBool("Reminder:LogTimeFcmPushEnabled", true); } }
+
+            /// <summary>
+            /// Bỏ qua ngày nghỉ (T7, CN, lễ) hay gửi tất cả các ngày trong tuần. Mặc định là false (gửi mọi ngày).
+            /// </summary>
+            public static bool LogTimeSkipWeekendsAndHolidays { get { return GetBool("Reminder:LogTimeSkipWeekendsAndHolidays", false); } }
 
             public static string TriggerKey { get { return Get("Reminder:TriggerKey"); } }
 
