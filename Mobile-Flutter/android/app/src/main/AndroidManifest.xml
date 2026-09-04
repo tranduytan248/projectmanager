@@ -12,6 +12,12 @@
     <!-- Ứng dụng nội bộ không chứa quảng cáo, loại bỏ quyền AD_ID do Firebase tự merge -->
     <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove"/>
 
+    <!-- Tuân thủ chính sách Google Play Store (Photo/Video Picker Policy cho Android 13+ API 33+):
+         Loại bỏ các quyền media diện rộng do thư viện bên thứ 3 (open_filex) tự động khai báo -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" tools:node="remove"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" tools:node="remove"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" tools:node="remove"/>
+
     <application
         android:label="BrewTask - Quản Lý Công Việc"
         android:name="${applicationName}"

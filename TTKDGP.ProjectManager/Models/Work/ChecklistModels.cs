@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 
 namespace TTKDGP.ProjectManager.Models
@@ -87,8 +87,11 @@ namespace TTKDGP.ProjectManager.Models
     {
         public WorkProject Project { get; set; }
 
-        /// <summary>Sửa được cả dự án (PM hoặc Quản lý Tổ) — quyết định các nút thêm mới, import.</summary>
+        /// <summary>Sửa được cả dự án (PM hoặc Quản lý Tổ) — quyết định các nút import, file mẫu.</summary>
         public bool CanEdit { get; set; }
+
+        /// <summary>Được tạo mục công việc mới trong dự án (PM, Quản lý Tổ, hoặc thành viên có vai trò BA / Tester).</summary>
+        public bool CanCreateTask { get; set; }
 
         /// <summary>Kiểu hiển thị đang chọn, xem <see cref="TaskViews"/>.</summary>
         public string View { get; set; }

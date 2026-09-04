@@ -77,9 +77,8 @@
         </div>
 
         <div class="pagehead-acts">
-            @if (Model.CanEdit)
+            @if (Model.CanCreateTask || Model.CanEdit)
             {
-                var canImport = ViewBag.Can is Func<string, bool> && ((Func<string, bool>)ViewBag.Can)("wtasks.import");
                 <a class="btn btn-primary" href="@Url.Action("Edit", "Checklist", new { projectId = Model.Project.Id })"
                    data-modal-url="@Url.Action("Edit", "Checklist", new { projectId = Model.Project.Id })"
                    data-modal-title="Thêm mục checklist">
@@ -88,6 +87,10 @@
                         <path d="M8 3v10M3 8h10" stroke-linecap="round"/>
                     </svg>
                     Thêm mục</a>
+            }
+            @if (Model.CanEdit)
+            {
+                var canImport = ViewBag.Can is Func<string, bool> && ((Func<string, bool>)ViewBag.Can)("wtasks.import");
                 if (canImport)
                 {
                     <a class="btn btn-default" href="#"

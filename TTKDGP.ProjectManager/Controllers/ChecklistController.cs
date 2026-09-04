@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -65,6 +65,7 @@ namespace TTKDGP.ProjectManager.Controllers
             {
                 Project = project,
                 CanEdit = canEditAll,
+                CanCreateTask = CanCreateTaskInProject(projectId),
                 View = TaskViews.Parse(view),
                 AllRows = allRows,
                 Users = WorkService.ActiveUsers(),
@@ -734,8 +735,8 @@ namespace TTKDGP.ProjectManager.Controllers
             }
             else
             {
-                // Thêm việc mới là quyền của PM và Quản lý Tổ.
-                if (!CanEditProject(projectId)) return HttpNotFound();
+                // Thêm việc mới là quyền của PM, Quản lý Tổ hoặc thành viên có vai trò BA / Tester trong dự án.
+                if (!CanCreateTaskInProject(projectId)) return HttpNotFound();
 
                 task = new WorkTask
                 {
@@ -770,7 +771,7 @@ namespace TTKDGP.ProjectManager.Controllers
                 if (current == null || current.ProjectId != model.ProjectId) return HttpNotFound();
                 if (!CanEditTask(current)) return HttpNotFound();
             }
-            else if (!CanEditProject(model.ProjectId))
+            else if (!CanCreateTaskInProject(model.ProjectId))
             {
                 return HttpNotFound();
             }

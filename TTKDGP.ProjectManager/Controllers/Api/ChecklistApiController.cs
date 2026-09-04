@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
@@ -39,6 +39,7 @@ namespace TTKDGP.ProjectManager.Controllers.Api
                 ProjectName = project.Name,
                 PmName = project.PmName,
                 CanEdit = CanEditProject(projectId),
+                CanCreateTask = CanCreateTaskInProject(projectId),
                 TotalCount = tasks.Count,
                 DoneCount = tasks.Count(t => t.State == TaskStates.Done),
                 OverdueCount = tasks.Count(t => t.IsOverdue),
@@ -528,7 +529,7 @@ namespace TTKDGP.ProjectManager.Controllers.Api
             string description, string[] todos)
         {
             var project = Repository.WorkProjects.Find(projectId);
-            if (project == null || !CanEditProject(projectId)) return HttpNotFound();
+            if (project == null || !CanCreateTaskInProject(projectId)) return HttpNotFound();
 
             if (string.IsNullOrWhiteSpace(title)) return BadRequest("Vui lòng nhập tên công việc.");
             if (!dueDate.HasValue) return BadRequest("Vui lòng nhập hạn hoàn thành.");
