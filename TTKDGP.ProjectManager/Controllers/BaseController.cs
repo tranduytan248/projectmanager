@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Web.Mvc;
 using TTKDGP.ProjectManager.Data;
@@ -80,6 +80,40 @@ namespace TTKDGP.ProjectManager.Controllers
         protected bool CanEditProject(int projectId)
         {
             return IsTeamManager || Can(Permissions.WorkProjects.Perm("edit")) || Can(Permissions.WorkProjects.Perm("create")) || IsPmOf(projectId);
+        }
+
+        /// <summary>
+        /// Người dùng hiện tại có vai trò BA hoặc Tester đang hoạt động (chưa rời) trong dự án không.
+        /// </summary>
+        protected bool IsBaOrTesterOf(int projectId)
+        {
+            if (projectId <= 0 || CurrentUserId <= 0) return false;
+
+            var userId = CurrentUserId;
+            var assignments = Repository.WorkAssignments.All()
+                .Where(a => a.ProjectId == projectId && a.UserId == userId && a.IsActive)
+                .ToList();
+
+            foreach (var a in assignments)
+            {
+                if (string.IsNullOrWhiteSpace(a.Role)) continue;
+                var r = a.Role.Trim().ToLowerInvariant();
+                if (r == "ba" || r.Contains("phân tích") || r.Contains("business analyst")
+                    || r == "tester" || r == "test" || r.Contains("kiểm thử") || r == "qc" || r == "qa")
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Được tạo đầu việc mới trong dự án này không:
+        /// hoặc là PM/Quản lý Tổ/có quyền quản lý dự án (CanEditProject), hoặc là thành viên giữ vai trò BA / Tester trong dự án.
+        /// </summary>
+        protected bool CanCreateTaskInProject(int projectId)
+        {
+            return CanEditProject(projectId) || IsBaOrTesterOf(projectId);
         }
 
         /// <summary>

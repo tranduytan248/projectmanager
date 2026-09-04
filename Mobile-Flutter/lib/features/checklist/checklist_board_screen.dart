@@ -362,7 +362,7 @@ class _ChecklistBoardScreenState extends State<ChecklistBoardScreen> {
           FutureBuilder<ChecklistData>(
             future: _future,
             builder: (context, snapshot) {
-              if (!snapshot.hasData || !snapshot.data!.canEdit) {
+              if (!snapshot.hasData || !(snapshot.data!.canCreateTask || snapshot.data!.canEdit)) {
                 return const SizedBox.shrink();
               }
               return AppIconButton(

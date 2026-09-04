@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Web.Mvc;
 
@@ -277,11 +277,11 @@ namespace TTKDGP.ProjectManager.Models.Api
         public string ProjectName { get; set; }
         public string PmName { get; set; }
 
-        /// <summary>Nguoi nay co sua duoc TOAN BO dau viec cua du an khong (PM/Quan ly To) — quyet
-        /// dinh co hien nut "Them muc" hay khong. Tung dau viec van co the tu sua duoc du co la
-        /// false (neu la nguoi duoc giao chinh viec do) — xem TaskDto rieng khong mang co nay,
-        /// mobile ban dau chi doc/them, chua co sua/xoa ngay tren danh sach.</summary>
+        /// <summary>Nguoi nay co sua duoc TOAN BO dau viec cua du an khong (PM/Quan ly To).</summary>
         public bool CanEdit { get; set; }
+
+        /// <summary>Nguoi nay co duoc tao moi dau viec trong du an khong (PM/Quan ly To hoac thanh vien co vai tro BA / Tester).</summary>
+        public bool CanCreateTask { get; set; }
 
         public int TotalCount { get; set; }
         public int DoneCount { get; set; }

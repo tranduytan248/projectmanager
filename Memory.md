@@ -1,4 +1,60 @@
-﻿# Memory.md — Nhật ký tri thức của dự án
+# Memory.md — Nhật ký tri thức của dự án
+
+---
+
+# [2026-09-04] Tính năng: Phân quyền tạo task cho vai trò BA và Tester trong dự án
+
+## 1. Yêu cầu & Bối cảnh
+- **Yêu cầu mới**: Đối với vai trò `BA` hoặc `Tester` trong một dự án, người này được phép tạo task mới thuộc dự án đó (áp dụng đồng bộ cả trên Web ASP.NET MVC và ứng dụng Mobile Flutter BrewTask).
+- **Phạm vi quyền hạn**:
+  - BA / Tester chỉ được quyền tạo task trong dự án mà họ đang tham gia (`IsActive == true`).
+  - Quyền quản trị dự án (sửa thông tin dự án, đổi PM, xoá thành viên, import checklist từ file) vẫn giữ nguyên thuộc về PM dự án và Quản lý Tổ.
+
+## 2. Giải pháp kỹ thuật
+- **Backend ASP.NET MVC**:
+  - `BaseController`: Bổ sung `IsBaOrTesterOf(int projectId)` kiểm tra phân công hiệu lực (`IsActive`) có `Role` là `BA` hoặc `Tester` (chuẩn hóa không phân biệt hoa thường, linh hoạt nhận diện các từ khóa `ba`, `phân tích`, `tester`, `kiểm thử`, `qa`, `qc`).
+  - `BaseController.CanCreateTaskInProject(int projectId)`: Trả về `true` nếu là PM dự án, Quản lý Tổ (`CanEditProject`) HOẶC là `IsBaOrTesterOf(projectId)`.
+  - `ChecklistController`: Action `Index` gán `CanCreateTask = CanCreateTaskInProject(projectId)`; Action `Edit` (GET/POST) kiểm tra `CanCreateTaskInProject` khi thêm mới (`Id == 0`).
+  - `Views/Checklist/Index.cshtml`: Nút "Thêm mục" hiển thị khi `Model.CanCreateTask || Model.CanEdit`.
+  - `ApiDtos.ChecklistDto`: Bổ sung `CanCreateTask`.
+  - `ChecklistApiController`: Action `Index` trả về `CanCreateTask`; Action `Create` kiểm tra `CanCreateTaskInProject(projectId)`.
+- **Mobile Flutter (BrewTask)**:
+  - `checklist_models.dart`: Thêm `canCreateTask` vào `ChecklistData` (fallback về `canEdit` khi gọi API cũ).
+  - `checklist_board_screen.dart`: Nút `+` (Thêm mới) trên AppBar hiển thị khi `snapshot.data!.canCreateTask || snapshot.data!.canEdit`.
+
+## 3. Kiểm thử & Nghiệm thu
+- MSBuild biên dịch thành công 0 lỗi.
+- `flutter analyze`: 0 issues.
+- `flutter test`: 82/82 tests PASS (đã thêm bộ test `test/features/checklist/checklist_models_test.dart`).
+
+---
+
+# [2026-09-04] Cập nhật điều chuyển Task dự án 43 trên DB 30.10
+
+## 1. Mô tả thao tác
+Chuyển toàn bộ các task đang ở trạng thái `Chưa Bắt Đầu` (`ChuaBatDau`) trong Dự án `43` (Quản lý thi đua khen thưởng) được giao cho Nguyễn Trí Dũng (UserId=16) và Phan Lương Bằng (UserId=18) sang cho Nguyễn Ngọc Châu Hoàng (UserId=4), đồng thời cập nhật Hạn hoàn thành (`DueDate`) thành `10/09/2026`.
+
+## 2. Kết quả thực thi
+- Tổng số task cập nhật: **63 task** (29 task từ Nguyễn Trí Dũng + 34 task từ Phan Lương Bằng).
+- Cập nhật thành công qua transaction an toàn trên SQL Server `10.57.30.10`.
+- Các task ở trạng thái `Hoàn thành` (47 task của Dũng, 41 task của Bằng) và `Tạm dừng` (1 task của Bằng) được giữ nguyên vẹn.
+- Đã touch `Web.config` để reload cache ASP.NET `SqlStore`.
+
+---
+
+# [2026-09-03] Khắc phục lỗi Google Play Console: Photo/Video Picker Policy (Android 13+ API 33+)
+
+## 1. Mô tả vấn đề
+Google Play Console từ chối bản phát hành Version Code 6 với lỗi:
+`Issue found: Use alternative system pickers for the photos / videos`
+`Remove READ_MEDIA_IMAGES and READ_MEDIA_VIDEO from all version codes...`
+
+## 2. Nguyên nhân & Giải pháp
+- **Nguyên nhân**: Thư viện `open_filex` tự động chèn các quyền `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, `READ_MEDIA_AUDIO` vào merged manifest. Google Play không cho phép khai báo các quyền media diện rộng này với các ứng dụng không phải ứng dụng quản lý ảnh/video chuyên dụng.
+- **Giải pháp**:
+  - Thêm `tools:node="remove"` trong `Mobile-Flutter/android/app/src/main/AndroidManifest.xml` cho các quyền `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, `READ_MEDIA_AUDIO`.
+  - Nâng phiên bản ứng dụng lên **`1.01.001+7`** (versionCode: `7`).
+  - Đóng gói file App Bundle mới (`app-release.aab`). Đã kiểm tra merged manifest xác nhận 100% không còn quyền `READ_MEDIA_*`.
 
 ---
 
