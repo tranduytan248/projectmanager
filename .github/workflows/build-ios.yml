@@ -2,13 +2,6 @@ name: Build iOS (BrewTask)
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - mobile
-      - main
-    paths:
-      - 'Mobile-Flutter/**'
-      - '.github/workflows/build-ios.yml'
 
 concurrency:
   group: ios-build-${{ github.ref }}
