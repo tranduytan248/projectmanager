@@ -257,6 +257,16 @@ const privacyPolicySections = [
       'Được quyền bật/tắt quyền nhận thông báo đẩy trên thiết bị hoặc yêu cầu quản trị viên hỗ trợ giải đáp các vấn đề liên quan đến dữ liệu cá nhân.',
     ],
   ),
+  PolicySection(
+    title: 'Xóa tài khoản & Quyền xóa dữ liệu',
+    icon: PhosphorIconsRegular.userMinus,
+    items: [
+      'Người dùng có toàn quyền chủ động gửi yêu cầu xóa tài khoản trực tiếp ngay trong ứng dụng tại màn hình Cá nhân > Yêu cầu xóa tài khoản.',
+      'Khi gửi yêu cầu, phiên làm việc hiện tại và token xác thực trên toàn bộ thiết bị sẽ bị thu hồi ngay lập tức để bảo vệ dữ liệu cá nhân.',
+      'Thông tin định danh và tài khoản đăng nhập sẽ được vô hiệu hóa và xóa khỏi hệ thống bởi Quản trị viên.',
+      'Các dữ liệu nghiệp vụ dự án và công việc đã hoàn thành sẽ được lưu trữ ẩn theo quy chế quản lý tài sản và bảo mật thông tin nội bộ của đơn vị.',
+    ],
+  ),
 ];
 
 /// Dữ liệu toàn diện: Điều khoản sử dụng (Terms of Service)

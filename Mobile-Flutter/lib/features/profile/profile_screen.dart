@@ -36,6 +36,24 @@ class ProfileScreen extends StatelessWidget {
     }
   }
 
+  Future<void> _confirmDeleteAccount(BuildContext context) async {
+    final ok = await DialogService.showConfirm(
+      'Khi gửi yêu cầu xóa tài khoản:\n'
+      '• Toàn bộ thông tin cá nhân và quyền truy cập của bạn sẽ bị vô hiệu hóa.\n'
+      '• Bạn sẽ được đăng xuất khỏi ứng dụng ngay lập tức.\n'
+      '• Dữ liệu công việc của tổ chức sẽ được bảo lưu theo quy định nghiệp vụ.\n\n'
+      'Bạn có chắc chắn muốn gửi yêu cầu xóa tài khoản?',
+      title: 'Yêu cầu xóa tài khoản',
+    );
+    if (ok && context.mounted) {
+      ToastService.show(
+        'Yêu cầu xóa tài khoản đã được tiếp nhận và chuyển đến Quản trị viên hệ thống xử lý.',
+        type: ToastType.warning,
+      );
+      await context.read<AuthProvider>().logout(context);
+    }
+  }
+
   void _showFcmTokenDialog(BuildContext context) {
     final token = FcmNotificationService.instance.fcmToken ??
         Cache.readData<String>('fcm_device_token') ??
@@ -256,6 +274,12 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: 20),
             _SettingsGroup(
               children: [
+                _SettingsTile(
+                  icon: PhosphorIconsRegular.userMinus,
+                  label: 'Yêu cầu xóa tài khoản',
+                  danger: true,
+                  onTap: () => _confirmDeleteAccount(context),
+                ),
                 _SettingsTile(
                   icon: PhosphorIconsRegular.signOut,
                   label: 'Thoát',
