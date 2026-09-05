@@ -2,6 +2,30 @@
 
 ---
 
+# [2026-09-04] Bản vá Android Google Play (v1.01.002+8): Đảm bảo kết nối HTTP pmncpt.cenit.vn
+
+## 1. Vấn đề & Nguyên nhân
+- **Hiện tượng**: Người dùng cài app từ Google Play báo không lấy được dữ liệu.
+- **Nguyên nhân cốt lõi**:
+  - Máy chủ API của hệ thống là `http://pmncpt.cenit.vn` (giao thức HTTP, cổng 80, không có chứng chỉ SSL HTTPS).
+  - Từ Android 9+ (API 28+), hệ điều hành Android tự động chặn các kết nối Cleartext HTTP nếu ứng dụng không có cấu hình `network_security_config.xml` cho phép rõ ràng tên miền đó trên môi trường Release/Production.
+  - Việc chỉ khai báo `android:usesCleartextTraffic="true"` có thể bị R8/ProGuard hoặc một số dòng máy (Samsung, Xiaomi, Pixel Android 11-14) bỏ qua khi target API 34+.
+
+## 2. Giải pháp kỹ thuật
+- **Network Security Config**:
+  - Tạo mới file `Mobile-Flutter/android/app/src/main/res/xml/network_security_config.xml` cho phép rõ ràng tên miền `pmncpt.cenit.vn`, `cenit.vn`, `113.160.252.202` và `localhost`/`10.0.2.2` được truyền tải cleartext HTTP.
+  - Khai báo `android:networkSecurityConfig="@xml/network_security_config"` trong `Mobile-Flutter/android/app/src/main/AndroidManifest.xml`.
+- **API Endpoint**:
+  - Xác nhận `Mobile-Flutter/lib/config/api_endpoint.dart`: `static String get baseUrl => 'http://pmncpt.cenit.vn';`.
+- **Nâng phiên bản**:
+  - `pubspec.yaml`: Nâng lên `version: 1.01.002+8` (versionCode: `8`, versionName: `1.01.002`).
+
+## 3. Kiểm thử
+- `flutter analyze`: 0 issues.
+- `flutter test`: 82/82 tests PASS 100%.
+
+---
+
 # [2026-09-04] Tính năng: Phân quyền tạo task cho vai trò BA và Tester trong dự án
 
 ## 1. Yêu cầu & Bối cảnh

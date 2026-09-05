@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Cho phép kết nối Cleartext HTTP tới máy chủ API pmncpt.cenit.vn trên mọi phiên bản Android -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">pmncpt.cenit.vn</domain>
+        <domain includeSubdomains="true">cenit.vn</domain>
+        <domain includeSubdomains="true">113.160.252.202</domain>
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <domain includeSubdomains="true">localhost</domain>
+    </domain-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
