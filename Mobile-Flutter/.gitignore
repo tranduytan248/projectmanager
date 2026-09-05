@@ -35,3 +35,6 @@ ios/Flutter/Flutter.podspec
 *.mobileprovision.txt
 *.p12.txt
 *.base64.txt
+Version-build-ios/
+certificates/
+*.zip

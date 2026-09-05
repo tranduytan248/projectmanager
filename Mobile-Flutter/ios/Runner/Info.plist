@@ -32,6 +32,12 @@
 		<string>Ứng dụng cần truy cập thư viện ảnh để bạn có thể chọn hình ảnh, tài liệu đính kèm vào nội dung trao đổi công việc và cập nhật ảnh đại diện hồ sơ cá nhân.</string>
 		<key>NSPhotoLibraryAddUsageDescription</key>
 		<string>Ứng dụng cần quyền lưu ảnh để lưu hình ảnh, tài liệu công việc vào thư viện ảnh của thiết bị khi bạn chọn tải về.</string>
+		<key>NSCameraUsageDescription</key>
+		<string>Ứng dụng cần sử dụng máy ảnh để chụp ảnh đại diện hồ sơ và chụp ảnh tài liệu, tiến độ công việc đính kèm vào nội dung trao đổi nhiệm vụ.</string>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>Ứng dụng cần sử dụng micro khi quay video đính kèm hoặc gửi âm thanh trao đổi trong công việc.</string>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>Ứng dụng cần truy cập vị trí khi sử dụng để hỗ trợ tính năng chấm công và điểm danh công việc theo địa điểm.</string>
 		<key>NSAppTransportSecurity</key>
 		<dict>
 			<key>NSAllowsArbitraryLoads</key>
