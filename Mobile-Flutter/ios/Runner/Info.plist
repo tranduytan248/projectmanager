@@ -26,16 +26,36 @@
 		<string>$(FLUTTER_BUILD_NUMBER)</string>
 		<key>LSRequiresIPhoneOS</key>
 		<true/>
+		<key>ITSAppUsesNonExemptEncryption</key>
+		<false/>
 		<key>NSPhotoLibraryUsageDescription</key>
-		<string>Ứng dụng cần truy cập thư viện ảnh để đính kèm hình ảnh và tài liệu vào trao đổi công việc hoặc cập nhật thông tin cá nhân.</string>
+		<string>Ứng dụng cần truy cập thư viện ảnh để bạn có thể chọn hình ảnh, tài liệu đính kèm vào nội dung trao đổi công việc và cập nhật ảnh đại diện hồ sơ cá nhân.</string>
 		<key>NSPhotoLibraryAddUsageDescription</key>
-		<string>Ứng dụng cần quyền lưu ảnh và tài liệu công việc vào thư viện ảnh của bạn.</string>
-		<key>NSCameraUsageDescription</key>
-		<string>Ứng dụng cần truy cập máy ảnh để chụp ảnh đính kèm trong trao đổi công việc và cập nhật ảnh đại diện.</string>
-		<key>NSMicrophoneUsageDescription</key>
-		<string>Ứng dụng cần truy cập micro khi quay video đính kèm hoặc gửi ghi âm trong trao đổi công việc.</string>
-		<key>NSLocationWhenInUseUsageDescription</key>
-		<string>Ứng dụng cần truy cập vị trí khi sử dụng để hỗ trợ tính năng chấm công và điểm danh công việc theo địa điểm.</string>
+		<string>Ứng dụng cần quyền lưu ảnh để lưu hình ảnh, tài liệu công việc vào thư viện ảnh của thiết bị khi bạn chọn tải về.</string>
+		<key>NSAppTransportSecurity</key>
+		<dict>
+			<key>NSAllowsArbitraryLoads</key>
+			<false/>
+			<key>NSExceptionDomains</key>
+			<dict>
+				<key>pmncpt.cenit.vn</key>
+				<dict>
+					<key>NSIncludesSubdomains</key>
+					<true/>
+					<key>NSTemporaryExceptionAllowsInsecureHTTPLoads</key>
+					<true/>
+					<key>NSTemporaryExceptionMinimumTLSVersion</key>
+					<string>TLSv1.2</string>
+				</dict>
+				<key>cenit.vn</key>
+				<dict>
+					<key>NSIncludesSubdomains</key>
+					<true/>
+					<key>NSTemporaryExceptionAllowsInsecureHTTPLoads</key>
+					<true/>
+				</dict>
+			</dict>
+		</dict>
 		<key>UIApplicationSceneManifest</key>
 		<dict>
 			<key>UIApplicationSupportsMultipleScenes</key>
