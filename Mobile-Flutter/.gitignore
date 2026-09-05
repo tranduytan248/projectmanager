@@ -24,6 +24,14 @@ ios/Flutter/Flutter.podspec
 .vscode/
 *.swp
 
-# Secrets/env
+# Secrets/env & Apple Certificates
 .env
 *.g.dart
+*.p12
+*.mobileprovision
+*.cer
+*.certSigningRequest
+*.p8
+*.mobileprovision.txt
+*.p12.txt
+*.base64.txt
