@@ -2995,8 +2995,45 @@ table.data tbody tr.row-due-danger > td:first-child::before { background: var(--
     padding: 10px 12px;
     line-height: 1.55;
     border-radius: 0 0 var(--radius-xs) var(--radius-xs);
+    transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 .rich-area:focus { outline: none; box-shadow: 0 0 0 3px var(--primary-soft); }
+.rich-area.rich-area-dragover {
+    background-color: var(--primary-soft);
+    outline: 2px dashed var(--primary);
+}
+
+/* Ảnh trong ô soạn thảo và trang chi tiết */
+.rich-area img, .rich-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+    margin: 8px 0;
+    display: inline-block;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.rich-content img {
+    cursor: zoom-in;
+}
+.rich-content img:hover {
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
+}
+
+/* Badge trạng thái đang tải ảnh lên */
+.rich-img-uploading {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: var(--bg-soft);
+    color: var(--text-muted);
+    font-size: 12.5px;
+    border: 1px dashed var(--border);
+    margin: 4px 0;
+    user-select: none;
+}
 
 /* Nội dung HTML đã lọc, hiển thị ở trang chi tiết. */
 .rich-content { line-height: 1.6; overflow-wrap: break-word; }

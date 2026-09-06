@@ -22,11 +22,15 @@ namespace TTKDGP.ProjectManager.Infrastructure
         private static readonly HashSet<string> AllowedTags = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "p", "div", "br", "b", "strong", "i", "em", "u", "s", "strike",
-            "ul", "ol", "li", "blockquote", "h3", "h4", "a"
+            "ul", "ol", "li", "blockquote", "h3", "h4", "a", "img"
         };
 
         private static readonly Regex HrefPattern = new Regex(
             "href\\s*=\\s*(\"(?<v>[^\"]*)\"|'(?<v>[^']*)'|(?<v>[^\\s>]+))",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        private static readonly Regex SrcPattern = new Regex(
+            "src\\s*=\\s*(\"(?<v>[^\"]*)\"|'(?<v>[^']*)'|(?<v>[^\\s>]+))",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary>
@@ -64,6 +68,12 @@ namespace TTKDGP.ProjectManager.Infrastructure
             }
 
             var result = sb.ToString().Trim();
+
+            // Nếu có chứa ảnh thì giữ nguyên mô tả, không coi là rỗng
+            if (result.IndexOf("<img", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return result;
+            }
 
             // Chỉ còn thẻ rỗng (kiểu "<div><br /></div>") thì coi như không có mô tả.
             var textOnly = Regex.Replace(result, "<[^>]+>", string.Empty);
@@ -137,6 +147,15 @@ namespace TTKDGP.ProjectManager.Infrastructure
 
             if (name == "br") return "<br />";
 
+            if (name == "img")
+            {
+                var src = SafeImgSrc(body);
+                if (src == null) return string.Empty;
+
+                return "<img src=\"" + HttpUtility.HtmlAttributeEncode(src)
+                     + "\" class=\"rich-img\" style=\"max-width:100%;height:auto;border-radius:6px;margin:6px 0;\" loading=\"lazy\" />";
+            }
+
             if (name == "a")
             {
                 var href = SafeHref(body);
@@ -162,6 +181,29 @@ namespace TTKDGP.ProjectManager.Infrastructure
             if (value.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
                 || value.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
                 || value.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase))
+            {
+                return value;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Lấy src nếu là liên kết http/https hoặc đường dẫn thư mục nội bộ /Uploads/ hoặc data:image/;
+        /// mọi giao thức nguy hiểm (javascript:, vbscript:...) đều bị loại bỏ chống tấn công XSS.
+        /// </summary>
+        private static string SafeImgSrc(string tagBody)
+        {
+            var match = SrcPattern.Match(tagBody);
+            if (!match.Success) return null;
+
+            var value = HttpUtility.HtmlDecode(match.Groups["v"].Value).Trim();
+            if (value.Length == 0) return null;
+
+            if (value.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+                || value.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+                || value.StartsWith("/Uploads/", StringComparison.OrdinalIgnoreCase)
+                || value.StartsWith("data:image/", StringComparison.OrdinalIgnoreCase))
             {
                 return value;
             }
