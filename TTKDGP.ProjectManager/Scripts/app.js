@@ -462,6 +462,7 @@
         { cmd: 'insertUnorderedList', html: '&bull; Danh sách', title: 'Danh sách chấm' },
         { cmd: 'insertOrderedList', html: '1. Danh sách', title: 'Danh sách đánh số' },
         { cmd: 'link', html: '&#128279; Liên kết', title: 'Chèn liên kết' },
+        { cmd: 'image', html: '&#128247; Ảnh', title: 'Chèn ảnh (hoặc dán Ctrl+V trực tiếp vào ô)' },
         { cmd: 'removeFormat', html: 'X&#818;', title: 'Xoá định dạng' }
     ];
 
@@ -490,6 +491,7 @@
             var $wrap = $('<div class="rich-editor"></div>').insertAfter($ta);
             var $bar = $('<div class="rich-toolbar"></div>').appendTo($wrap);
             var $area = $('<div class="rich-area" contenteditable="true"></div>').appendTo($wrap);
+            var $fileInput = $('<input type="file" accept="image/*" style="display:none;" />').appendTo($wrap);
 
             // Dữ liệu cũ là chữ thường: mã hoá rồi đổi xuống dòng thành <br> để không mất dòng.
             var value = ta.value || '';
@@ -497,6 +499,62 @@
                 value = $('<div></div>').text(value).html().replace(/\r?\n/g, '<br />');
             }
             $area.html(value);
+
+            function sync() { ta.value = $area.html(); }
+
+            // Hàm xử lý upload ảnh lên Firebase Storage và chèn thẻ img vào trình soạn thảo
+            function uploadAndInsert(file) {
+                if (!file || !file.type || file.type.indexOf('image/') !== 0) return;
+
+                // Tạo ID tạm thời cho phần tử đang tải
+                var tempId = 'img_loading_' + Math.random().toString(36).substring(2, 10);
+                var loadingHtml = '<span id="' + tempId + '" class="rich-img-uploading" contenteditable="false">⏳ Đang tải ảnh lên...</span>&nbsp;';
+
+                $area.trigger('focus');
+                var sel = window.getSelection();
+                if (sel && sel.rangeCount > 0) {
+                    document.execCommand('insertHTML', false, loadingHtml);
+                } else {
+                    $area.append(loadingHtml);
+                }
+
+                var fd = new FormData();
+                fd.append('file', file);
+
+                $.ajax({
+                    url: '/Upload/Image',
+                    type: 'POST',
+                    data: fd,
+                    processData: false,
+                    contentType: false,
+                    dataType: 'json'
+                }).done(function (res) {
+                    var $temp = $('#' + tempId);
+                    if (res && res.success && res.url) {
+                        var imgHtml = '<img src="' + res.url + '" class="rich-img" loading="lazy" /><br />';
+                        if ($temp.length) {
+                            $temp.replaceWith(imgHtml);
+                        } else {
+                            $area.append(imgHtml);
+                        }
+                        sync();
+                    } else {
+                        if ($temp.length) $temp.remove();
+                        window.alert((res && res.message) ? res.message : 'Không thể tải ảnh lên.');
+                    }
+                }).fail(function () {
+                    var $temp = $('#' + tempId);
+                    if ($temp.length) $temp.remove();
+                    window.alert('Lỗi kết nối máy chủ khi tải ảnh.');
+                });
+            }
+
+            $fileInput.on('change', function () {
+                if (this.files && this.files.length) {
+                    uploadAndInsert(this.files[0]);
+                    this.value = '';
+                }
+            });
 
             BUTTONS.forEach(function (b) {
                 $('<button type="button" class="rich-btn"></button>')
@@ -506,13 +564,56 @@
                     .on('mousedown', function (e) { e.preventDefault(); })
                     .on('click', function () {
                         $area.trigger('focus');
-                        if (b.cmd === 'link') { insertLink(); } else { document.execCommand(b.cmd, false, null); }
+                        if (b.cmd === 'link') {
+                            insertLink();
+                        } else if (b.cmd === 'image') {
+                            $fileInput.trigger('click');
+                        } else {
+                            document.execCommand(b.cmd, false, null);
+                        }
                         sync();
                     })
                     .appendTo($bar);
             });
 
-            function sync() { ta.value = $area.html(); }
+            // Lắng nghe sự kiện PASTE để cho phép dán ảnh (Ctrl+V) trực tiếp từ clipboard
+            $area.on('paste', function (e) {
+                var ev = e.originalEvent || e;
+                var cd = ev.clipboardData;
+                if (!cd || !cd.items) return;
+
+                for (var i = 0; i < cd.items.length; i++) {
+                    var item = cd.items[i];
+                    if (item.type && item.type.indexOf('image') !== -1) {
+                        ev.preventDefault();
+                        var file = item.getAsFile();
+                        if (file) {
+                            uploadAndInsert(file);
+                        }
+                        return;
+                    }
+                }
+            });
+
+            // Hỗ trợ kéo thả (drag & drop) file ảnh trực tiếp vào ô soạn thảo
+            $area.on('dragover', function (e) {
+                e.preventDefault();
+                $area.addClass('rich-area-dragover');
+            });
+            $area.on('dragleave drop', function () {
+                $area.removeClass('rich-area-dragover');
+            });
+            $area.on('drop', function (e) {
+                var ev = e.originalEvent || e;
+                var dt = ev.dataTransfer;
+                if (dt && dt.files && dt.files.length) {
+                    var file = dt.files[0];
+                    if (file.type && file.type.indexOf('image') !== -1) {
+                        ev.preventDefault();
+                        uploadAndInsert(file);
+                    }
+                }
+            });
 
             $area.on('input blur', sync);
             if (ta.form) $(ta.form).on('submit', sync);
@@ -910,5 +1011,13 @@
             mark($pick);
             $pick.closest('form').submit();
         });
+    });
+
+    // Bấm vào ảnh trong khối rich-content để mở xem ảnh gốc kích thước đầy đủ
+    $(document).on('click', '.rich-content img', function () {
+        var src = $(this).attr('src');
+        if (src) {
+            window.open(src, '_blank');
+        }
     });
 })(jQuery);
