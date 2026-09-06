@@ -1,7 +1,7 @@
 name: ttkdgp_mobile
 description: BrewTask - Quan Ly Cong Viec. Ung dung di dong cho he thong quan ly du an & nhan su TTKDGP.
 publish_to: 'none'
-version: 1.01.002+8
+version: 1.01.002+9
 
 environment:
   sdk: '>=3.3.0 <4.0.0'

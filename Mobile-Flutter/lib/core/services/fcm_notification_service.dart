@@ -145,6 +145,25 @@ class FcmNotificationService {
   Future<void> _fetchAndStoreToken() async {
     try {
       if (kIsWeb || Firebase.apps.isEmpty) return;
+
+      // Trên nền tảng iOS, APNs Token từ Apple phải sẵn sàng thì Firebase mới có thể sinh ra FCM Registration Token.
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        String? apnsToken = await _messaging.getAPNSToken();
+        int retryCount = 0;
+        while (apnsToken == null && retryCount < 5) {
+          retryCount++;
+          debugPrint('[FCM] Đang chờ APNs Token từ Apple (lần $retryCount/5)...');
+          await Future.delayed(const Duration(seconds: 2));
+          apnsToken = await _messaging.getAPNSToken();
+        }
+        if (apnsToken == null) {
+          debugPrint(
+              '[FCM] Chưa nhận được APNs Token từ Apple sau 10s. Vui lòng kiểm tra quyền Push Notifications và cấu hình APNs trên Firebase.');
+          return;
+        }
+        debugPrint('[FCM] APNs Token nhận thành công từ Apple.');
+      }
+
       _fcmToken = await _messaging.getToken();
       if (_fcmToken != null) {
         debugPrint('====================================================');
@@ -152,8 +171,8 @@ class FcmNotificationService {
         debugPrint('====================================================');
         Cache.saveData('fcm_device_token', _fcmToken!);
       }
-    } catch (e) {
-      debugPrint('[FCM] Không lấy được FCM token: $e');
+    } catch (e, stack) {
+      debugPrint('[FCM] Không lấy được FCM token: $e\n$stack');
     }
   }
 
