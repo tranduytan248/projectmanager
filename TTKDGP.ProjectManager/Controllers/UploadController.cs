@@ -50,7 +50,7 @@ namespace TTKDGP.ProjectManager.Controllers
 
             try
             {
-                var url = await FirebaseStorageService.UploadImageAsync(file.InputStream, file.FileName, file.ContentType);
+                var url = await ImageStorageService.SaveAndOptimizeImageAsync(file.InputStream, file.FileName, file.ContentType);
                 return Json(new { success = true, url = url });
             }
             catch (Exception ex)
