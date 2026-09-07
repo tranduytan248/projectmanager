@@ -1,11 +1,17 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Net;
 using System.Net.Http;
+using System.Net.WebSockets;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Hosting;
 using Microsoft.Playwright;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using TTKDGP.ProjectManager.Data;
 
@@ -27,8 +33,11 @@ namespace TTKDGP.ProjectManager.Infrastructure
     /// cổng CAS của VNPT (id.vnpt.com.vn → hrm.vnpt.vn): điền username/mật khẩu (lấy từ secrets.config) →
     /// bấm Đăng nhập → nếu hệ thống hỏi OTP thì chờ chủ tài khoản trả lời qua Telegram → lưu phiên.
     ///
-    /// Mặc định sử dụng Obscura (Rust) để tiết kiệm ~95% RAM (chỉ tốn ~20MB so với 400MB của Chromium)
-    /// và tích hợp sẵn chế độ Stealth chống chặn bot. Tự động fallback sang Chromium nếu Obscura lỗi.
+    /// Mặc định sử dụng Obscura (Rust) kết nối trực tiếp qua giao thức CDP WebSocket:
+    /// - Cực nhẹ (~18MB RAM thay vì 400-500MB của Chromium).
+    /// - Không phụ thuộc Node.js hay Playwright driver (loại bỏ hoàn toàn lỗi treo/timeout 25s trên IIS).
+    /// - Tích hợp sẵn chế độ Stealth chống chặn bot.
+    /// - Tự động fallback sang Playwright/Chromium nếu Obscura bị tắt hoặc lỗi.
     /// </summary>
     public static class HrmCasAutoLogin
     {
@@ -36,6 +45,7 @@ namespace TTKDGP.ProjectManager.Infrastructure
         private static TaskCompletionSource<string> _otpWaiter;
         private static CancellationTokenSource _currentCts;
         private static IBrowser _activeBrowser;
+        private static ObscuraCdpClient _activeCdpClient;
         private static Process _obscuraProcess;
 
         public static HrmState State { get; private set; }
@@ -84,6 +94,17 @@ namespace TTKDGP.ProjectManager.Infrastructure
             }
             catch { }
             _otpWaiter = null;
+
+            try
+            {
+                if (_activeCdpClient != null)
+                {
+                    var c = _activeCdpClient;
+                    _activeCdpClient = null;
+                    c.Dispose();
+                }
+            }
+            catch { }
 
             try
             {
@@ -154,7 +175,7 @@ namespace TTKDGP.ProjectManager.Infrastructure
             if (proc == null) return null;
 
             var ready = false;
-            for (var i = 0; i < 16; i++)
+            for (var i = 0; i < 20; i++)
             {
                 ct.ThrowIfCancellationRequested();
                 if (proc.HasExited) break;
@@ -197,13 +218,11 @@ namespace TTKDGP.ProjectManager.Infrastructure
         private static readonly string[] SubmitSelectors =
         {
             "button[name='submit']",
-            "button:has-text('ĐĂNG NHẬP')",
-            "button:has-text('Đăng nhập')",
+            "button[type='submit']",
             "input[type='submit']"
         };
 
         // Đã xác nhận trên trang thật: ô OTP là #passOTP (name="validate_pass_otp").
-        // Giữ thêm vài mẫu dự phòng phòng khi giao diện đổi.
         private static readonly string[] OtpInputSelectors =
         {
             "#passOTP",
@@ -218,10 +237,8 @@ namespace TTKDGP.ProjectManager.Infrastructure
         private static readonly string[] OtpSubmitSelectors =
         {
             "button[onclick*='submitForm']",
-            "button:has-text('ĐĂNG NHẬP')",
-            "button:has-text('Đăng nhập')",
-            "button:has-text('Xác nhận')",
-            "button[type='submit']"
+            "button[type='submit']",
+            "input[type='submit']"
         };
 
         /// <summary>Chạy một phiên đăng nhập. Trả về true nếu vào được hrm.vnpt.vn.</summary>
@@ -278,6 +295,7 @@ namespace TTKDGP.ProjectManager.Infrastructure
             {
                 _otpWaiter = null;
                 _currentCts = null;
+                _activeCdpClient = null;
                 _activeBrowser = null;
                 try
                 {
@@ -292,7 +310,241 @@ namespace TTKDGP.ProjectManager.Infrastructure
 
         private static async Task<bool> RunCoreAsync(Action<string> notify, CancellationToken ct)
         {
-            SetState(HrmState.LoggingIn, "Đang mở trình duyệt và điền đăng nhập...");
+            // 1. Ưu tiên chạy bằng engine Obscura (Rust CDP) nếu được cấu hình và file binary tồn tại
+            if (AppSettings.Hrm.UseObscura && File.Exists(ObscuraExePath()))
+            {
+                try
+                {
+                    return await RunObscuraLoginAsync(notify, ct);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    if (notify != null)
+                    {
+                        notify("⚠️ Engine Obscura gặp lỗi (" + ex.Message + "), đang thử chuyển sang Chromium tiêu chuẩn...");
+                    }
+                }
+            }
+
+            // 2. Fallback về Chromium Playwright nếu Obscura bị tắt hoặc khởi chạy thất bại
+            return await RunPlaywrightLoginAsync(notify, ct);
+        }
+
+        #region Obscura Rust Engine CDP Flow (Siêu nhẹ, Native WebSocket C#)
+
+        private static async Task<bool> RunObscuraLoginAsync(Action<string> notify, CancellationToken ct)
+        {
+            SetState(HrmState.LoggingIn, "Đang mở trình duyệt Obscura và điền thông tin đăng nhập...");
+            var port = AppSettings.Hrm.ObscuraPort;
+
+            if (notify != null) notify("① Đang khởi động engine Obscura (Rust, ~20MB RAM, stealth)...");
+            var obscuraProc = await StartObscuraServerAsync(port, ct);
+            _obscuraProcess = obscuraProc;
+
+            var wsUrl = string.Format("ws://127.0.0.1:{0}/devtools/browser", port);
+            var client = await ObscuraCdpClient.ConnectAsync(wsUrl, ct);
+            _activeCdpClient = client;
+
+            try
+            {
+                if (notify != null) notify("② Đang mở trang đăng nhập CAS VNPT...");
+                await client.NavigateAsync(AppSettings.Hrm.LoginUrl, ct);
+
+                // Chờ ô username xuất hiện (tối đa 20s)
+                var found = await client.WaitAnyVisibleAsync(UsernameSelectors, 20000, ct);
+                if (!found)
+                {
+                    throw new Exception("Không tìm thấy ô đăng nhập trên trang CAS VNPT sau khi tải trang.");
+                }
+
+                await client.FillFirstAsync(UsernameSelectors, AppSettings.Hrm.Username, ct);
+                await client.FillFirstAsync(PasswordSelectors, AppSettings.Hrm.Password, ct);
+
+                if (notify != null) notify("③ Đã điền tên đăng nhập và mật khẩu, đang bấm Đăng nhập...");
+                await client.ClickFirstAsync(SubmitSelectors, ct);
+
+                // Sau khi submit, thăm dò xem trang có yêu cầu OTP hay đã chuyển hướng thành công
+                var outcome = await WaitAfterSubmitObscuraAsync(client, 20000, ct);
+
+                if (outcome == SubmitOutcome.Otp)
+                {
+                    SetState(HrmState.AwaitingOtp, "Đã gửi thông tin đăng nhập, đang chờ OTP.");
+                    var minutes = Math.Max(1, AppSettings.Hrm.OtpTimeoutSeconds / 60);
+                    if (notify != null)
+                    {
+                        notify(string.Format("🔐 Hệ thống HRM yêu cầu OTP.\nTrả lời mã vào đây trong ~{0} phút.", minutes));
+                    }
+
+                    var otp = await WaitForOtpAsync(TimeSpan.FromSeconds(AppSettings.Hrm.OtpTimeoutSeconds), ct);
+                    if (otp == null)
+                    {
+                        SetState(HrmState.Failed, "Hết thời gian chờ OTP.");
+                        if (notify != null) notify("⏰ Hết thời gian chờ OTP, đã huỷ phiên. Gõ /signin để thử lại.");
+                        return false;
+                    }
+
+                    SetState(HrmState.Verifying, "Đang nhập OTP...");
+                    await client.FillFirstAsync(OtpInputSelectors, otp, ct);
+
+                    // Chờ 3 giây sau khi điền OTP rồi mới bấm, cho trang kịp xử lý/bật nút trước khi submit
+                    await Task.Delay(3000, ct);
+
+                    await client.ClickFirstAsync(OtpSubmitSelectors, ct);
+
+                    outcome = await WaitAfterSubmitObscuraAsync(client, 20000, ct);
+                }
+
+                if (outcome != SubmitOutcome.LeftCasDomain)
+                {
+                    await SaveDebugObscuraAsync(client, "khong-vao-duoc-hrm");
+                    SetState(HrmState.Failed, "Không xác nhận được đăng nhập thành công.");
+                    if (notify != null)
+                    {
+                        notify("❌ Đăng nhập không thành công — không rời khỏi được trang CAS. "
+                             + "Kiểm tra lại username/mật khẩu hoặc OTP. "
+                             + "(Ảnh gỡ lỗi đã lưu ở App_Data\\hrm-debug)");
+                    }
+                    return false;
+                }
+
+                // Rời khỏi domain CAS, điều hướng thẳng vào https://hrm.vnpt.vn/web
+                try
+                {
+                    await client.NavigateAsync("https://hrm.vnpt.vn/web", ct);
+                }
+                catch { }
+
+                // Chờ 15 giây cho Odoo SPA hoàn tất nạp phiên làm việc
+                await Task.Delay(15000, ct);
+
+                // Lưu cookies vào hrm_session.json
+                var cookies = await client.GetCookiesAsync(ct);
+                var sessionFile = SessionFilePath();
+                Directory.CreateDirectory(Path.GetDirectoryName(sessionFile));
+
+                var storageState = new JObject
+                {
+                    ["cookies"] = cookies,
+                    ["origins"] = new JArray()
+                };
+                File.WriteAllText(sessionFile, storageState.ToString(Formatting.Indented), Encoding.UTF8);
+
+                var finalUrl = await client.GetUrlAsync(ct);
+                SetState(HrmState.Success, "Đăng nhập thành công. URL: " + finalUrl);
+                if (notify != null)
+                {
+                    notify(string.Format(
+                        "✅ Đã đăng nhập HRM thành công lúc {0:HH:mm dd/MM}.\n🌐 Đang ở: {1}\nPhiên đã được lưu lại (Engine Obscura ~20MB RAM).",
+                        DateTime.Now, finalUrl));
+                }
+
+                // Tự động đồng bộ danh bạ Odoo qua HttpClient Native
+                await SyncDirectoryAsync(notify, ct);
+
+                return true;
+            }
+            catch
+            {
+                await SaveDebugObscuraAsync(client, "loi-thao-tac-obscura");
+                throw;
+            }
+            finally
+            {
+                _activeCdpClient = null;
+                if (client != null)
+                {
+                    try { client.Dispose(); } catch { }
+                }
+                if (obscuraProc != null && !obscuraProc.HasExited)
+                {
+                    try { obscuraProc.Kill(); } catch { }
+                }
+                _obscuraProcess = null;
+            }
+        }
+
+        private static async Task<SubmitOutcome> WaitAfterSubmitObscuraAsync(ObscuraCdpClient client, int timeoutMs, CancellationToken ct)
+        {
+            const int step = 250;
+            var elapsed = 0;
+            var casHost = new Uri(AppSettings.Hrm.LoginUrl).Host;
+
+            while (elapsed < timeoutMs)
+            {
+                ct.ThrowIfCancellationRequested();
+                var currentUrl = await client.GetUrlAsync(ct);
+                var currentHost = SafeHost(currentUrl);
+
+                if (!string.IsNullOrEmpty(currentHost) && !string.Equals(currentHost, casHost, StringComparison.OrdinalIgnoreCase))
+                {
+                    return SubmitOutcome.LeftCasDomain;
+                }
+
+                foreach (var selector in OtpInputSelectors)
+                {
+                    try
+                    {
+                        if (await client.IsVisibleAsync(selector, ct))
+                        {
+                            return SubmitOutcome.Otp;
+                        }
+                    }
+                    catch { }
+                }
+
+                await Task.Delay(step, ct);
+                elapsed += step;
+            }
+
+            return SubmitOutcome.Unknown;
+        }
+
+        private static async Task SaveDebugObscuraAsync(ObscuraCdpClient client, string reason)
+        {
+            if (client == null) return;
+
+            string baseName;
+            try
+            {
+                var dir = MapAppData("hrm-debug");
+                Directory.CreateDirectory(dir);
+                var stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
+                baseName = Path.Combine(dir, reason + "-" + stamp);
+            }
+            catch { return; }
+
+            try
+            {
+                var html = await client.GetContentAsync(CancellationToken.None);
+                if (!string.IsNullOrEmpty(html))
+                {
+                    File.WriteAllText(baseName + ".html", html, Encoding.UTF8);
+                }
+            }
+            catch { }
+
+            try
+            {
+                var bytes = await client.CaptureScreenshotAsync(CancellationToken.None);
+                if (bytes != null && bytes.Length > 0)
+                {
+                    File.WriteAllBytes(baseName + ".png", bytes);
+                }
+            }
+            catch { }
+        }
+
+        #endregion
+
+        #region Fallback Chromium Playwright Flow
+
+        private static async Task<bool> RunPlaywrightLoginAsync(Action<string> notify, CancellationToken ct)
+        {
+            SetState(HrmState.LoggingIn, "Đang mở trình duyệt Chromium và điền đăng nhập...");
             ConfigureBrowsersPath();
 
             var createPlaywrightTask = Playwright.CreateAsync();
@@ -305,54 +557,25 @@ namespace TTKDGP.ProjectManager.Infrastructure
             {
                 ct.ThrowIfCancellationRequested();
                 IBrowser browser = null;
-                Process obscuraProc = null;
                 IPage page = null;
 
                 try
                 {
-                    // 1. Thử dùng engine Obscura nếu được cấu hình và file binary tồn tại
-                    if (AppSettings.Hrm.UseObscura && File.Exists(ObscuraExePath()))
+                    if (notify != null) notify("① Đang khởi động trình duyệt Chromium bảo mật...");
+                    var launchOptions = new BrowserTypeLaunchOptions
                     {
-                        try
-                        {
-                            if (notify != null) notify("① Đang khởi động engine Obscura (Rust, ~20MB RAM, stealth)...");
-                            var port = AppSettings.Hrm.ObscuraPort;
-                            obscuraProc = await StartObscuraServerAsync(port, ct);
-                            _obscuraProcess = obscuraProc;
+                        Headless = AppSettings.Hrm.Headless,
+                        Args = new[] { "--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage" },
+                        Timeout = 35000
+                    };
 
-                            var connectTask = playwright.Chromium.ConnectOverCDPAsync(string.Format("http://127.0.0.1:{0}", port));
-                            if (await Task.WhenAny(connectTask, Task.Delay(15000, ct)) == connectTask)
-                            {
-                                browser = await connectTask;
-                                if (notify != null) notify("⚡ Kết nối Obscura thành công!");
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            if (notify != null) notify("⚠️ Obscura không khởi động được (" + ex.Message + "), chuyển sang Chromium...");
-                        }
+                    var launchBrowserTask = playwright.Chromium.LaunchAsync(launchOptions);
+                    if (await Task.WhenAny(launchBrowserTask, Task.Delay(35000, ct)) != launchBrowserTask)
+                    {
+                        throw new TimeoutException("Khởi chạy trình duyệt Chromium quá thời gian (35s).");
                     }
 
-                    // 2. Fallback về Chromium tiêu chuẩn nếu chưa kết nối được Obscura
-                    if (browser == null)
-                    {
-                        if (notify != null) notify("① Đang khởi động trình duyệt Chromium bảo mật...");
-                        var launchOptions = new BrowserTypeLaunchOptions
-                        {
-                            Headless = AppSettings.Hrm.Headless,
-                            Args = new[] { "--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage" },
-                            Timeout = 30000
-                        };
-
-                        var launchBrowserTask = playwright.Chromium.LaunchAsync(launchOptions);
-                        if (await Task.WhenAny(launchBrowserTask, Task.Delay(35000, ct)) != launchBrowserTask)
-                        {
-                            throw new TimeoutException("Khởi chạy trình duyệt Chromium quá thời gian (35s).");
-                        }
-
-                        browser = await launchBrowserTask;
-                    }
-
+                    browser = await launchBrowserTask;
                     _activeBrowser = browser;
 
                     var context = browser.Contexts.Count > 0 ? browser.Contexts[0] : await browser.NewContextAsync();
@@ -361,26 +584,25 @@ namespace TTKDGP.ProjectManager.Infrastructure
 
                     if (notify != null) notify("② Đang tải trang đăng nhập CAS VNPT...");
                     await page.GotoAsync(AppSettings.Hrm.LoginUrl,
-                            new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 60000 });
+                        new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 60000 });
 
-                        ct.ThrowIfCancellationRequested();
-                        await FillFirstAsync(page, UsernameSelectors, AppSettings.Hrm.Username, "ô tên đăng nhập", ct);
-                        await FillFirstAsync(page, PasswordSelectors, AppSettings.Hrm.Password, "ô mật khẩu", ct);
-                        if (notify != null) notify("③ Đã điền tên đăng nhập và mật khẩu, đang bấm Đăng nhập...");
+                    ct.ThrowIfCancellationRequested();
+                    await FillFirstPlaywrightAsync(page, UsernameSelectors, AppSettings.Hrm.Username, "ô tên đăng nhập", ct);
+                    await FillFirstPlaywrightAsync(page, PasswordSelectors, AppSettings.Hrm.Password, "ô mật khẩu", ct);
+                    if (notify != null) notify("③ Đã điền tên đăng nhập và mật khẩu, đang bấm Đăng nhập...");
 
-                    await ClickFirstAsync(page, SubmitSelectors, "nút Đăng nhập", ct);
+                    await ClickFirstPlaywrightAsync(page, SubmitSelectors, "nút Đăng nhập", ct);
 
-                    // Sau khi bấm submit, chờ một trong ba khả năng: có ô OTP hiện ra, rời khỏi
-                    // domain CAS (id.vnpt.com.vn) coi như qua bước mật khẩu, hoặc lỗi sai thông tin.
-                    var outcome = await WaitAfterSubmitAsync(page, 20000, ct);
+                    var outcome = await WaitAfterSubmitPlaywrightAsync(page, 20000, ct);
 
                     if (outcome == SubmitOutcome.Otp)
                     {
                         SetState(HrmState.AwaitingOtp, "Đã gửi thông tin đăng nhập, đang chờ OTP.");
                         var minutes = Math.Max(1, AppSettings.Hrm.OtpTimeoutSeconds / 60);
                         if (notify != null)
-                            notify(string.Format(
-                                "🔐 Hệ thống HRM yêu cầu OTP.\nTrả lời mã vào đây trong ~{0} phút.", minutes));
+                        {
+                            notify(string.Format("🔐 Hệ thống HRM yêu cầu OTP.\nTrả lời mã vào đây trong ~{0} phút.", minutes));
+                        }
 
                         var otp = await WaitForOtpAsync(TimeSpan.FromSeconds(AppSettings.Hrm.OtpTimeoutSeconds), ct);
                         if (otp == null)
@@ -391,41 +613,34 @@ namespace TTKDGP.ProjectManager.Infrastructure
                         }
 
                         SetState(HrmState.Verifying, "Đang nhập OTP...");
-                        await FillFirstAsync(page, OtpInputSelectors, otp, "ô nhập OTP", ct);
+                        await FillFirstPlaywrightAsync(page, OtpInputSelectors, otp, "ô nhập OTP", ct);
 
-                        // Chờ 3 giây sau khi điền OTP rồi mới bấm, theo đúng yêu cầu — cho trang
-                        // kịp xử lý/bật nút trước khi submit.
                         await Task.Delay(3000, ct);
 
-                        await ClickFirstAsync(page, OtpSubmitSelectors, "nút xác nhận OTP", ct);
+                        await ClickFirstPlaywrightAsync(page, OtpSubmitSelectors, "nút xác nhận OTP", ct);
 
-                        outcome = await WaitAfterSubmitAsync(page, 20000, ct);
+                        outcome = await WaitAfterSubmitPlaywrightAsync(page, 20000, ct);
                     }
 
                     if (outcome != SubmitOutcome.LeftCasDomain)
                     {
-                        await SaveDebugAsync(page, "khong-vao-duoc-hrm");
+                        await SaveDebugPlaywrightAsync(page, "khong-vao-duoc-hrm");
                         SetState(HrmState.Failed, "Không xác nhận được đăng nhập thành công.");
                         if (notify != null)
+                        {
                             notify("❌ Đăng nhập không thành công — không rời khỏi được trang CAS. "
-                                   + "Kiểm tra lại username/mật khẩu hoặc OTP. "
-                                   + "(Ảnh gỡ lỗi đã lưu ở App_Data\\hrm-debug)");
+                                 + "Kiểm tra lại username/mật khẩu hoặc OTP. "
+                                 + "(Ảnh gỡ lỗi đã lưu ở App_Data\\hrm-debug)");
+                        }
                         return false;
                     }
 
-                    // Rời khỏi domain CAS mới chỉ là vừa nhận ticket (URL dạng
-                    // hrm.vnpt.vn/web/login?...&ticket=ST-...) — SPA của HRM cần thêm chút thời
-                    // gian xử lý ticket rồi mới tự chuyển vào /web. Ép chuyển thẳng cho chắc thay
-                    // vì chờ SPA tự điều hướng, rồi để nguyên trang 15 giây cho nó xử lý xong.
                     try
                     {
                         await page.GotoAsync("https://hrm.vnpt.vn/web",
                             new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 30000 });
                     }
-                    catch
-                    {
-                        // Điều hướng lỗi thì thôi, vẫn báo URL thật đang đứng ở đâu bên dưới.
-                    }
+                    catch { }
                     await Task.Delay(15000, ct);
 
                     var sessionFile = SessionFilePath();
@@ -435,17 +650,19 @@ namespace TTKDGP.ProjectManager.Infrastructure
                     var finalUrl = page.Url;
                     SetState(HrmState.Success, "Đăng nhập thành công. URL: " + finalUrl);
                     if (notify != null)
+                    {
                         notify(string.Format(
                             "✅ Đã đăng nhập HRM thành công lúc {0:HH:mm dd/MM}.\n🌐 Đang ở: {1}\nPhiên đã được lưu lại.",
                             DateTime.Now, finalUrl));
+                    }
 
-                    await TryFetchDanhBaAsync(page, notify);
+                    await SyncDirectoryAsync(notify, ct);
 
                     return true;
                 }
                 catch
                 {
-                    await SaveDebugAsync(page, "loi-thao-tac");
+                    await SaveDebugPlaywrightAsync(page, "loi-thao-tac");
                     throw;
                 }
                 finally
@@ -455,22 +672,11 @@ namespace TTKDGP.ProjectManager.Infrastructure
                     {
                         try { await browser.CloseAsync(); } catch { }
                     }
-                    if (obscuraProc != null && !obscuraProc.HasExited)
-                    {
-                        try { obscuraProc.Kill(); } catch { }
-                    }
-                    _obscuraProcess = null;
                 }
             }
         }
 
-        private enum SubmitOutcome { LeftCasDomain, Otp, Unknown }
-
-        /// <summary>
-        /// Sau khi bấm nút đăng nhập/OTP, thăm dò xem trang đã rời khỏi domain CAS (thành công)
-        /// hay đang hiện ô nhập OTP, trong thời gian chờ cho phép.
-        /// </summary>
-        private static async Task<SubmitOutcome> WaitAfterSubmitAsync(IPage page, int timeoutMs, CancellationToken ct)
+        private static async Task<SubmitOutcome> WaitAfterSubmitPlaywrightAsync(IPage page, int timeoutMs, CancellationToken ct)
         {
             const int step = 250;
             var elapsed = 0;
@@ -489,9 +695,7 @@ namespace TTKDGP.ProjectManager.Infrastructure
                     {
                         if (await page.Locator(selector).First.IsVisibleAsync()) return SubmitOutcome.Otp;
                     }
-                    catch
-                    {
-                    }
+                    catch { }
                 }
 
                 await Task.Delay(step, ct);
@@ -500,6 +704,76 @@ namespace TTKDGP.ProjectManager.Infrastructure
 
             return SubmitOutcome.Unknown;
         }
+
+        private static async Task<ILocator> WaitAnyPlaywrightAsync(IPage page, string[] selectors, int timeoutMs, string what, CancellationToken ct)
+        {
+            const int step = 250;
+            var elapsed = 0;
+
+            while (true)
+            {
+                ct.ThrowIfCancellationRequested();
+                foreach (var selector in selectors)
+                {
+                    var locator = page.Locator(selector).First;
+                    try
+                    {
+                        if (await locator.IsVisibleAsync()) return locator;
+                    }
+                    catch { }
+                }
+
+                if (elapsed >= timeoutMs) throw new Exception("Chờ mãi không thấy " + what + " trên trang.");
+                await Task.Delay(step, ct);
+                elapsed += step;
+            }
+        }
+
+        private static async Task FillFirstPlaywrightAsync(IPage page, string[] selectors, string value, string what, CancellationToken ct)
+        {
+            var locator = await WaitAnyPlaywrightAsync(page, selectors, 20000, what, ct);
+            await locator.FillAsync(value, new LocatorFillOptions { Timeout = 5000 });
+        }
+
+        private static async Task ClickFirstPlaywrightAsync(IPage page, string[] selectors, string what, CancellationToken ct)
+        {
+            var locator = await WaitAnyPlaywrightAsync(page, selectors, 20000, what, ct);
+            await locator.ClickAsync(new LocatorClickOptions { Timeout = 5000 });
+        }
+
+
+
+        private static async Task SaveDebugPlaywrightAsync(IPage page, string reason)
+        {
+            if (page == null) return;
+
+            string baseName;
+            try
+            {
+                var dir = MapAppData("hrm-debug");
+                Directory.CreateDirectory(dir);
+                var stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
+                baseName = Path.Combine(dir, reason + "-" + stamp);
+            }
+            catch { return; }
+
+            try
+            {
+                var html = await page.ContentAsync();
+                File.WriteAllText(baseName + ".html", html, Encoding.UTF8);
+            }
+            catch { }
+
+            try
+            {
+                await page.ScreenshotAsync(new PageScreenshotOptions { Path = baseName + ".png" });
+            }
+            catch { }
+        }
+
+        #endregion
+
+        private enum SubmitOutcome { LeftCasDomain, Otp, Unknown }
 
         private static string SafeHost(string url)
         {
@@ -531,44 +805,6 @@ namespace TTKDGP.ProjectManager.Infrastructure
             return null;
         }
 
-        private static async Task<ILocator> WaitAnyAsync(IPage page, string[] selectors, int timeoutMs, string what, CancellationToken ct)
-        {
-            const int step = 250;
-            var elapsed = 0;
-
-            while (true)
-            {
-                ct.ThrowIfCancellationRequested();
-                foreach (var selector in selectors)
-                {
-                    var locator = page.Locator(selector).First;
-                    try
-                    {
-                        if (await locator.IsVisibleAsync()) return locator;
-                    }
-                    catch
-                    {
-                    }
-                }
-
-                if (elapsed >= timeoutMs) throw new Exception("Chờ mãi không thấy " + what + " trên trang.");
-                await Task.Delay(step, ct);
-                elapsed += step;
-            }
-        }
-
-        private static async Task FillFirstAsync(IPage page, string[] selectors, string value, string what, CancellationToken ct)
-        {
-            var locator = await WaitAnyAsync(page, selectors, 20000, what, ct);
-            await locator.FillAsync(value, new LocatorFillOptions { Timeout = 5000 });
-        }
-
-        private static async Task ClickFirstAsync(IPage page, string[] selectors, string what, CancellationToken ct)
-        {
-            var locator = await WaitAnyAsync(page, selectors, 20000, what, ct);
-            await locator.ClickAsync(new LocatorClickOptions { Timeout = 5000 });
-        }
-
         private static void ConfigureBrowsersPath()
         {
             var current = Environment.GetEnvironmentVariable("PLAYWRIGHT_BROWSERS_PATH");
@@ -579,175 +815,172 @@ namespace TTKDGP.ProjectManager.Infrastructure
             Environment.SetEnvironmentVariable("PLAYWRIGHT_BROWSERS_PATH", dir);
         }
 
-        private static string SessionFilePath()
+        public static string SessionFilePath()
         {
             return Path.Combine(MapAppData(""), "hrm_session.json");
         }
 
-        /// <summary>
-        /// Gọi API "danh bạ" (vnpt.hr.danhba.view) ngay TRONG trang đang mở bằng fetch() của
-        /// chính trình duyệt — cookie phiên tự động đi kèm vì cùng origin, không cần trích cookie
-        /// ra ngoài. Server giới hạn mỗi lần gọi tối đa <see cref="DanhBaPageSize"/> bản ghi (đúng
-        /// bằng "limit" quan sát được trong curl thật), nên phải phân trang bằng "offset" và gộp
-        /// lại cho tới khi đủ "length" (tổng số bản ghi khớp domain) server trả về ở trang đầu.
-        /// Sau khi gộp xong: lưu thẳng vào CSDL qua <see cref="HrmDirectorySync"/> rồi báo số bản
-        /// ghi qua Telegram — KHÔNG lưu JSON thô ra file nữa (dữ liệu đã có trong CSDL, giữ thêm
-        /// bản file chỉ là trùng lặp và có thể tồn đọng dữ liệu nhân sự trên đĩa không cần thiết).
-        ///
-        /// department_id=5741 lấy nguyên theo ví dụ curl bạn cung cấp (đơn vị của chính tài khoản
-        /// đăng nhập) — nếu cần tổng quát hoá cho tài khoản khác thì phải đọc động từ phiên, không
-        /// khai cứng ở đây.
-        /// </summary>
         private const int DanhBaPageSize = 80;
-
-        // Chặn vòng lặp phân trang chạy vô hạn nếu "length" server trả về sai lệch — 500 trang x
-        // 80 bản ghi/trang = 40.000 bản ghi, dư sức cho toàn bộ danh bạ VNPT.
         private const int DanhBaMaxPages = 500;
 
-        private static async Task TryFetchDanhBaAsync(IPage page, Action<string> notify)
+        /// <summary>
+        /// Đồng bộ danh bạ nhân sự VNPT (vnpt.hr.danhba.view) trực tiếp qua HTTPS JSON-RPC API của Odoo
+        /// sử dụng cookies phiên làm việc từ file hrm_session.json.
+        /// Chạy trực tiếp từ C# HttpClient: nhanh, ổn định, không phụ thuộc vào việc nạp trang của trình duyệt.
+        /// </summary>
+        public static async Task<bool> SyncDirectoryAsync(Action<string> notify, CancellationToken ct = default(CancellationToken))
         {
-            const string script = @"
-                async (args) => {
-                    const pageSize = args.pageSize;
-                    const maxPages = args.maxPages;
+            var sessionFile = SessionFilePath();
+            if (!File.Exists(sessionFile))
+            {
+                if (notify != null) notify("⚠️ Chưa có file phiên đăng nhập (hrm_session.json). Hãy gõ /signin để đăng nhập trước.");
+                return false;
+            }
 
-                    // uid thật của tài khoản đang đăng nhập — Odoo web client (Odoo 14+) gắn
-                    // sẵn vào window.odoo.session_info (một số bản cũ dùng __session_info__)
-                    // ngay khi /web tải xong. Không khai cứng vì mỗi tài khoản một uid khác nhau.
-                    const sessionInfo = (window.odoo && (odoo.session_info || odoo.__session_info__)) || {};
-                    const context = {
-                        tz: 'Asia/Ho_Chi_Minh', lang: 'vi_VN',
-                        search_default_nvct: 1, loai: 'danhba',
-                        non_display_department: 'non_display_department',
-                        view_from_action: 'vnpt_hr_danhba_view',
-                        domain_ctv: [['department_id', '!=', false], ['status', '!=', 'exit']],
-                        human_resource: 'HR', option_deptree: '0'
-                    };
-                    if (sessionInfo.uid) context.uid = sessionInfo.uid;
-
-                    const baseParams = {
-                        model: 'vnpt.hr.danhba.view',
-                        domain: [
-                            ['department_id', '!=', false],
-                            ['status', '!=', 'exit'],
-                            ['department_id', 'child_of', 5741]
-                        ],
-                        fields: ['vnpt_ma_nhan_vien', 'name', 'mobile_phone', 'work_email',
-                                 'department_id', 'job_id', 'vitri_congviec',
-                                 'vitri_congviec_code', 'birthday', 'gioi_tinh', 'is_congtacvien'],
-                        sort: 'department_code ASC, vitri_congviec_code ASC, vnpt_ma_nhan_vien ASC',
-                        context: context
-                    };
-
-                    let all = [];
-                    let total = null;
-                    let offset = 0;
-
-                    for (let page = 0; page < maxPages; page++) {
-                        const res = await fetch('/web/dataset/search_read', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-Requested-With': 'XMLHttpRequest'
-                            },
-                            body: JSON.stringify({
-                                jsonrpc: '2.0',
-                                method: 'call',
-                                params: Object.assign({}, baseParams, { limit: pageSize, offset: offset }),
-                                id: Date.now() + offset
-                            })
-                        });
-                        const data = await res.json();
-
-                        if (data.error) return JSON.stringify(data);
-
-                        const records = (data.result && data.result.records) || [];
-                        if (total === null) total = data.result ? data.result.length : records.length;
-
-                        all = all.concat(records);
-                        offset += pageSize;
-
-                        if (records.length < pageSize || all.length >= total) break;
-                    }
-
-                    return JSON.stringify({ jsonrpc: '2.0', result: { length: total, records: all } });
-                }";
-
+            JArray cookies;
             try
             {
-                var json = await page.EvaluateAsync<string>(script,
-                    new { pageSize = DanhBaPageSize, maxPages = DanhBaMaxPages });
-
+                var json = File.ReadAllText(sessionFile, Encoding.UTF8);
                 var parsed = JObject.Parse(json);
-                var records = parsed["result"] != null ? parsed["result"]["records"] as JArray : null;
-                var error = parsed["error"];
+                cookies = parsed["cookies"] as JArray;
+            }
+            catch (Exception ex)
+            {
+                if (notify != null) notify("⚠️ Lỗi đọc file phiên: " + ex.Message);
+                return false;
+            }
 
-                if (error != null)
-                {
-                    if (notify != null) notify("⚠️ Gọi API danh bạ lỗi: " + error["message"]);
-                    return;
-                }
+            if (cookies == null || cookies.Count == 0)
+            {
+                if (notify != null) notify("⚠️ Phiên đăng nhập rỗng. Hãy gửi /signin để đăng nhập lại.");
+                return false;
+            }
 
-                var count = records != null ? records.Count : 0;
-                var total = parsed["result"] != null ? (int?)parsed["result"]["length"] : null;
-                var warnTruncated = total.HasValue && count < total.Value
-                    ? string.Format(" ⚠️ Chưa đủ so với tổng {0} (chạm giới hạn {1} trang) — kiểm tra lại.", total, DanhBaMaxPages)
-                    : string.Empty;
-
-                if (notify != null)
-                    notify(string.Format("📇 Đã lấy danh bạ: {0}/{1} bản ghi.{2}",
-                        count, total.HasValue ? total.Value.ToString() : count.ToString(), warnTruncated));
-
-                if (records != null && records.Count > 0)
+            var handler = new HttpClientHandler();
+            var cookieContainer = new CookieContainer();
+            foreach (var c in cookies)
+            {
+                var domain = c["domain"]?.ToString().TrimStart('.');
+                var name = c["name"]?.ToString();
+                var val = c["value"]?.ToString();
+                var path = c["path"]?.ToString() ?? "/";
+                if (!string.IsNullOrEmpty(domain) && !string.IsNullOrEmpty(name))
                 {
                     try
                     {
-                        HrmDirectorySync.SaveRecords(records, notify);
+                        var ck = new System.Net.Cookie(name, val);
+                        if (!string.IsNullOrEmpty(path)) ck.Path = path;
+                        if (!string.IsNullOrEmpty(domain)) ck.Domain = domain;
+                        cookieContainer.Add(ck);
                     }
-                    catch (Exception ex)
+                    catch { }
+                }
+            }
+            handler.CookieContainer = cookieContainer;
+
+            try
+            {
+                ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls;
+                ServicePointManager.ServerCertificateValidationCallback = (s, cert, chain, ssl) => true;
+
+                using (var client = new HttpClient(handler))
+                {
+                    client.Timeout = TimeSpan.FromSeconds(60);
+                    client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36");
+                    client.DefaultRequestHeaders.Add("X-Requested-With", "XMLHttpRequest");
+
+                    var offset = 0;
+                    var all = new JArray();
+                    int? total = null;
+
+                    for (var page = 0; page < DanhBaMaxPages; page++)
                     {
-                        if (notify != null) notify("⚠️ Lưu danh bạ vào CSDL lỗi: " + ex.Message);
+                        ct.ThrowIfCancellationRequested();
+
+                        var payload = new
+                        {
+                            jsonrpc = "2.0",
+                            method = "call",
+                            @params = new
+                            {
+                                model = "vnpt.hr.danhba.view",
+                                domain = new object[]
+                                {
+                                    new object[] { "department_id", "!=", false },
+                                    new object[] { "status", "!=", "exit" },
+                                    new object[] { "department_id", "child_of", 5741 }
+                                },
+                                fields = new[]
+                                {
+                                    "vnpt_ma_nhan_vien", "name", "mobile_phone", "work_email",
+                                    "department_id", "job_id", "vitri_congviec",
+                                    "vitri_congviec_code", "birthday", "gioi_tinh", "is_congtacvien"
+                                },
+                                sort = "department_code ASC, vitri_congviec_code ASC, vnpt_ma_nhan_vien ASC",
+                                limit = DanhBaPageSize,
+                                offset = offset
+                            },
+                            id = page + 1
+                        };
+
+                        var content = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");
+                        var res = await client.PostAsync("https://hrm.vnpt.vn/web/dataset/search_read", content, ct);
+                        var resStr = await res.Content.ReadAsStringAsync();
+
+                        var resObj = JObject.Parse(resStr);
+                        if (resObj["error"] != null)
+                        {
+                            var errMsg = resObj["error"]?["message"]?.ToString() ?? "Không rõ";
+                            if (notify != null) notify("⚠️ Máy chủ HRM trả về lỗi: " + errMsg);
+                            break;
+                        }
+
+                        var records = resObj["result"]?["records"] as JArray ?? new JArray();
+                        if (!total.HasValue)
+                        {
+                            total = resObj["result"]?["length"]?.Value<int>() ?? records.Count;
+                        }
+
+                        foreach (var r in records)
+                        {
+                            all.Add(r);
+                        }
+
+                        offset += DanhBaPageSize;
+
+                        if (records.Count < DanhBaPageSize || (total.HasValue && all.Count >= total.Value))
+                        {
+                            break;
+                        }
                     }
+
+                    var count = all.Count;
+                    var totalRecords = total ?? count;
+
+                    if (notify != null)
+                    {
+                        notify(string.Format("📇 Đã lấy danh bạ: {0}/{1} bản ghi.", count, totalRecords));
+                    }
+
+                    if (all.Count > 0)
+                    {
+                        try
+                        {
+                            HrmDirectorySync.SaveRecords(all, notify);
+                        }
+                        catch (Exception ex)
+                        {
+                            if (notify != null) notify("⚠️ Lưu danh bạ vào CSDL lỗi: " + ex.Message);
+                        }
+                    }
+
+                    return all.Count > 0;
                 }
             }
             catch (Exception ex)
             {
-                if (notify != null) notify("⚠️ Gọi API danh bạ lỗi: " + ex.Message);
-            }
-        }
-
-        private static async Task SaveDebugAsync(IPage page, string reason)
-        {
-            if (page == null) return;
-
-            string baseName;
-            try
-            {
-                var dir = MapAppData("hrm-debug");
-                Directory.CreateDirectory(dir);
-                var stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
-                baseName = Path.Combine(dir, reason + "-" + stamp);
-            }
-            catch
-            {
-                return;
-            }
-
-            try
-            {
-                var html = await page.ContentAsync();
-                File.WriteAllText(baseName + ".html", html);
-            }
-            catch
-            {
-            }
-
-            try
-            {
-                await page.ScreenshotAsync(new PageScreenshotOptions { Path = baseName + ".png" });
-            }
-            catch
-            {
+                if (notify != null) notify("⚠️ Lỗi trong quá trình đồng bộ danh bạ: " + ex.Message);
+                return false;
             }
         }
 
@@ -764,6 +997,272 @@ namespace TTKDGP.ProjectManager.Infrastructure
             State = state;
             LastMessage = message;
             LastChangedAt = DateTime.Now;
+        }
+    }
+
+    /// <summary>
+    /// Client điều khiển trình duyệt Obscura thuần C# qua giao thức Chrome DevTools Protocol (CDP) WebSocket.
+    /// Không cần Node.js, không cần Playwright, hoàn toàn không bị deadlock hay timeout trên IIS Express.
+    /// </summary>
+    public class ObscuraCdpClient : IDisposable
+    {
+        private readonly ClientWebSocket _ws = new ClientWebSocket();
+        private readonly ConcurrentDictionary<int, TaskCompletionSource<JObject>> _pending = new ConcurrentDictionary<int, TaskCompletionSource<JObject>>();
+        private int _idCounter = 0;
+        private string _sessionId;
+        private CancellationTokenSource _readCts;
+
+        public static async Task<ObscuraCdpClient> ConnectAsync(string browserWsUrl, CancellationToken ct)
+        {
+            var client = new ObscuraCdpClient();
+            await client._ws.ConnectAsync(new Uri(browserWsUrl), ct);
+            client._readCts = new CancellationTokenSource();
+            var ignore = client.ReceiveLoopAsync(client._readCts.Token);
+
+            // 1. Tạo Target trang mới
+            var createTargetRes = await client.SendAsync("Target.createTarget", new { url = "about:blank" }, ct);
+            var targetId = createTargetRes["result"]?["targetId"]?.ToString();
+            if (string.IsNullOrEmpty(targetId))
+            {
+                throw new Exception("Không thể tạo Target trên Obscura CDP");
+            }
+
+            // 2. Attach vào Target để lấy sessionId điều khiển
+            var attachRes = await client.SendAsync("Target.attachToTarget", new { targetId = targetId, flatten = true }, ct);
+            client._sessionId = attachRes["result"]?["sessionId"]?.ToString();
+
+            // 3. Kích hoạt Page, Runtime và Network domain
+            await client.SendToSessionAsync("Page.enable", new { }, ct);
+            await client.SendToSessionAsync("Runtime.enable", new { }, ct);
+            await client.SendToSessionAsync("Network.enable", new { }, ct);
+
+            return client;
+        }
+
+        private async Task ReceiveLoopAsync(CancellationToken ct)
+        {
+            var buffer = new byte[65536];
+            var ms = new MemoryStream();
+            try
+            {
+                while (!ct.IsCancellationRequested && _ws.State == WebSocketState.Open)
+                {
+                    ms.SetLength(0);
+                    WebSocketReceiveResult result;
+                    do
+                    {
+                        result = await _ws.ReceiveAsync(new ArraySegment<byte>(buffer), ct);
+                        if (result.MessageType == WebSocketMessageType.Close) return;
+                        ms.Write(buffer, 0, result.Count);
+                    } while (!result.EndOfMessage);
+
+                    var jsonStr = Encoding.UTF8.GetString(ms.ToArray());
+                    try
+                    {
+                        var msg = JObject.Parse(jsonStr);
+                        var idToken = msg["id"];
+                        if (idToken != null && idToken.Type == JTokenType.Integer)
+                        {
+                            var id = idToken.Value<int>();
+                            TaskCompletionSource<JObject> tcs;
+                            if (_pending.TryRemove(id, out tcs))
+                            {
+                                tcs.TrySetResult(msg);
+                            }
+                        }
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+        }
+
+        public async Task<JObject> SendAsync(string method, object parameters = null, CancellationToken ct = default(CancellationToken))
+        {
+            var id = Interlocked.Increment(ref _idCounter);
+            var tcs = new TaskCompletionSource<JObject>(TaskCreationOptions.RunContinuationsAsynchronously);
+            _pending[id] = tcs;
+
+            var payload = new JObject
+            {
+                ["id"] = id,
+                ["method"] = method
+            };
+            if (parameters != null)
+            {
+                payload["params"] = JObject.FromObject(parameters);
+            }
+
+            var json = payload.ToString(Formatting.None);
+            var bytes = Encoding.UTF8.GetBytes(json);
+            await _ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, ct);
+
+            using (var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(30)))
+            using (var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token))
+            using (linked.Token.Register(() => tcs.TrySetCanceled()))
+            {
+                return await tcs.Task;
+            }
+        }
+
+        public async Task<JObject> SendToSessionAsync(string method, object parameters = null, CancellationToken ct = default(CancellationToken))
+        {
+            var id = Interlocked.Increment(ref _idCounter);
+            var tcs = new TaskCompletionSource<JObject>(TaskCreationOptions.RunContinuationsAsynchronously);
+            _pending[id] = tcs;
+
+            var payload = new JObject
+            {
+                ["id"] = id,
+                ["sessionId"] = _sessionId,
+                ["method"] = method
+            };
+            if (parameters != null)
+            {
+                payload["params"] = JObject.FromObject(parameters);
+            }
+
+            var json = payload.ToString(Formatting.None);
+            var bytes = Encoding.UTF8.GetBytes(json);
+            await _ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, ct);
+
+            using (var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(45)))
+            using (var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token))
+            using (linked.Token.Register(() => tcs.TrySetCanceled()))
+            {
+                return await tcs.Task;
+            }
+        }
+
+        public async Task NavigateAsync(string url, CancellationToken ct)
+        {
+            await SendToSessionAsync("Page.navigate", new { url = url }, ct);
+        }
+
+        public async Task<JToken> EvaluateAsync(string expression, CancellationToken ct)
+        {
+            var res = await SendToSessionAsync("Runtime.evaluate", new
+            {
+                expression = expression,
+                awaitPromise = true,
+                returnByValue = true
+            }, ct);
+
+            return res["result"]?["result"]?["value"];
+        }
+
+        public async Task<T> EvaluateAsync<T>(string expression, CancellationToken ct)
+        {
+            var val = await EvaluateAsync(expression, ct);
+            if (val == null) return default(T);
+            return val.ToObject<T>();
+        }
+
+        public async Task<string> GetUrlAsync(CancellationToken ct)
+        {
+            var res = await EvaluateAsync<string>("window.location.href", ct);
+            return res ?? string.Empty;
+        }
+
+        public async Task<string> GetContentAsync(CancellationToken ct)
+        {
+            var res = await EvaluateAsync<string>("document.documentElement ? document.documentElement.outerHTML : ''", ct);
+            return res ?? string.Empty;
+        }
+
+        public async Task<byte[]> CaptureScreenshotAsync(CancellationToken ct)
+        {
+            var res = await SendToSessionAsync("Page.captureScreenshot", new { format = "png" }, ct);
+            var b64 = res["result"]?["data"]?.ToString();
+            if (string.IsNullOrEmpty(b64)) return null;
+            return Convert.FromBase64String(b64);
+        }
+
+        public async Task<JArray> GetCookiesAsync(CancellationToken ct)
+        {
+            var res = await SendToSessionAsync("Network.getCookies", new { }, ct);
+            return (res["result"]?["cookies"] as JArray) ?? new JArray();
+        }
+
+        public async Task<bool> IsVisibleAsync(string selector, CancellationToken ct)
+        {
+            var escaped = JsonConvert.ToString(selector);
+            var exp = string.Format(@"(function() {{
+                var el = document.querySelector({0});
+                if (!el) return false;
+                var style = window.getComputedStyle(el);
+                return style && style.display !== 'none' && style.visibility !== 'hidden' && el.offsetWidth > 0 && el.offsetHeight > 0;
+            }})()", escaped);
+
+            var res = await EvaluateAsync<bool?>(exp, ct);
+            return res.GetValueOrDefault();
+        }
+
+        public async Task<bool> WaitAnyVisibleAsync(string[] selectors, int timeoutMs, CancellationToken ct)
+        {
+            const int step = 250;
+            var elapsed = 0;
+            while (elapsed < timeoutMs)
+            {
+                ct.ThrowIfCancellationRequested();
+                foreach (var sel in selectors)
+                {
+                    if (await IsVisibleAsync(sel, ct)) return true;
+                }
+                await Task.Delay(step, ct);
+                elapsed += step;
+            }
+            return false;
+        }
+
+        public async Task<bool> FillFirstAsync(string[] selectors, string value, CancellationToken ct)
+        {
+            var selsJson = JsonConvert.SerializeObject(selectors);
+            var valJson = JsonConvert.ToString(value ?? string.Empty);
+
+            var exp = string.Format(@"(function() {{
+                var sels = {0};
+                for (var i = 0; i < sels.length; i++) {{
+                    var el = document.querySelector(sels[i]);
+                    if (el) {{
+                        el.focus();
+                        el.value = {1};
+                        el.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                        el.dispatchEvent(new Event('change', {{ bubbles: true }}));
+                        return true;
+                    }}
+                }}
+                return false;
+            }})()", selsJson, valJson);
+
+            var res = await EvaluateAsync<bool?>(exp, ct);
+            return res.GetValueOrDefault();
+        }
+
+        public async Task<bool> ClickFirstAsync(string[] selectors, CancellationToken ct)
+        {
+            var selsJson = JsonConvert.SerializeObject(selectors);
+            var exp = string.Format(@"(function() {{
+                var sels = {0};
+                for (var i = 0; i < sels.length; i++) {{
+                    var el = document.querySelector(sels[i]);
+                    if (el) {{
+                        el.click();
+                        return true;
+                    }}
+                }}
+                return false;
+            }})()", selsJson);
+
+            var res = await EvaluateAsync<bool?>(exp, ct);
+            return res.GetValueOrDefault();
+        }
+
+        public void Dispose()
+        {
+            try { _readCts?.Cancel(); } catch { }
+            try { _readCts?.Dispose(); } catch { }
+            try { _ws?.Dispose(); } catch { }
         }
     }
 }
