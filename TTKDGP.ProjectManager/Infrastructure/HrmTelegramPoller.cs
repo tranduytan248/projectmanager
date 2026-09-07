@@ -24,7 +24,7 @@ namespace TTKDGP.ProjectManager.Infrastructure
 
         public static void Start()
         {
-            if (!AppSettings.Hrm.IsConfigured) return;
+            if (!AppSettings.Hrm.Enabled) return;
 
             lock (Sync)
             {
@@ -47,10 +47,15 @@ namespace TTKDGP.ProjectManager.Infrastructure
 
         private static async Task LoopAsync(CancellationToken ct)
         {
-            var token = AppSettings.Hrm.BotToken;
-
             while (!ct.IsCancellationRequested)
             {
+                var token = AppSettings.Hrm.BotToken;
+                if (string.IsNullOrWhiteSpace(token))
+                {
+                    try { await Task.Delay(5000, ct); } catch { break; }
+                    continue;
+                }
+
                 try
                 {
                     TelegramResult result;
@@ -99,23 +104,112 @@ namespace TTKDGP.ProjectManager.Infrastructure
                 return;
             }
 
-            // 3. Lệnh Đăng nhập (/signin, signin, /login, /sigin...)
+            // 3. Lệnh Đồng bộ danh bạ (/sync, sync, /dongbo)
+            if (IsSyncCommand(text))
+            {
+                Reply("🔄 Đang kết nối máy chủ HRM để đồng bộ danh bạ nhân sự...");
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        await HrmCasAutoLogin.SyncDirectoryAsync(Reply);
+                    }
+                    catch (Exception ex)
+                    {
+                        Reply("❌ Lỗi đồng bộ: " + ex.Message);
+                    }
+                });
+                return;
+            }
+
+            // 4. Lệnh Đăng nhập (/signin, signin, /login, /sigin...)
             if (IsSignInCommand(text))
             {
                 BeginLogin();
                 return;
             }
 
-            // 4. Lệnh Trợ giúp / Hướng dẫn
+            // 5. Lệnh Kiểm tra trạng thái (/status, status, /tt, tt)
+            if (IsStatusCommand(text))
+            {
+                ReportStatus();
+                return;
+            }
+
+            // 6. Lệnh Trợ giúp / Hướng dẫn
             if (IsHelpCommand(text))
             {
-                Reply("🤖 *Bot Hỗ Trợ Đăng Nhập HRM VNPT*\n\n"
+                Reply("🤖 <b>Bot Hỗ Trợ Đăng Nhập HRM VNPT</b>\n\n"
                     + "Các lệnh khả dụng:\n"
-                    + "• `/signin` : Bắt đầu phiên đăng nhập HRM tự động\n"
-                    + "• `/reset` : Hủy/reset phiên đăng nhập nếu bị treo hoặc kẹt\n"
+                    + "• <code>/status</code> : Xem tình trạng phiên & số lượng nhân sự đã lưu\n"
+                    + "• <code>/sync</code> : Đồng bộ ngay danh bạ nhân sự từ phiên đã lưu\n"
+                    + "• <code>/signin</code> : Bắt đầu phiên đăng nhập HRM tự động qua CAS\n"
+                    + "• <code>/reset</code> : Hủy/reset phiên nếu bị kẹt hoặc treo\n"
                     + "• Khi nhận được thông báo hỏi OTP, chỉ cần gửi mã số OTP vào đây.");
                 return;
             }
+
+            // 7. Tin nhắn không rõ lệnh -> Hướng dẫn người dùng
+            Reply("🤖 Bot đã nhận được tin nhắn của bạn nhưng chưa hiểu lệnh.\n\n"
+                + "Bạn hãy chọn một trong các lệnh sau:\n"
+                + "• <code>/status</code> : Xem trạng thái hệ thống & danh bạ\n"
+                + "• <code>/sync</code> : Đồng bộ lại danh bạ nhân sự HRM\n"
+                + "• <code>/signin</code> : Đăng nhập tài khoản HRM CAS\n"
+                + "• <code>/help</code> : Xem hướng dẫn chi tiết");
+        }
+
+        private static void ReportStatus()
+        {
+            var sessionFile = HrmCasAutoLogin.SessionFilePath();
+            var hasSession = System.IO.File.Exists(sessionFile);
+            var sessionTime = hasSession ? System.IO.File.GetLastWriteTime(sessionFile).ToString("HH:mm:ss dd/MM/yyyy") : "Chưa có";
+
+            int empCount = 0, deptCount = 0, jobCount = 0;
+            try
+            {
+                using (var conn = Db.Open())
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT (SELECT COUNT(*) FROM employee_hrm) AS e, (SELECT COUNT(*) FROM department_hrm) AS d, (SELECT COUNT(*) FROM job_hrm) AS j";
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            empCount = Convert.ToInt32(reader["e"]);
+                            deptCount = Convert.ToInt32(reader["d"]);
+                            jobCount = Convert.ToInt32(reader["j"]);
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            Reply(string.Format(
+                "📊 <b>Báo Cáo Trạng Thái Hệ Thống HRM</b>\n\n" +
+                "• Trạng thái đăng nhập: <code>{0}</code>\n" +
+                "• Phiên lưu gần nhất: <b>{1}</b>\n" +
+                "• Dữ liệu trong CSDL SQL Server:\n" +
+                "   🏢 Đơn vị / Phòng ban: <b>{2}</b>\n" +
+                "   💼 Chức danh công việc: <b>{3}</b>\n" +
+                "   👤 Nhân sự nhân viên: <b>{4}</b> người\n\n" +
+                "Gõ <code>/sync</code> để cập nhật mới nhất từ HRM, hoặc <code>/signin</code> nếu cần đăng nhập lại.",
+                HrmCasAutoLogin.State, sessionTime, deptCount, jobCount, empCount));
+        }
+
+        private static bool IsStatusCommand(string text)
+        {
+            return text.Equals("/status", StringComparison.OrdinalIgnoreCase)
+                || text.Equals("status", StringComparison.OrdinalIgnoreCase)
+                || text.Equals("/tt", StringComparison.OrdinalIgnoreCase)
+                || text.Equals("tt", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsSyncCommand(string text)
+        {
+            return text.Equals("/sync", StringComparison.OrdinalIgnoreCase)
+                || text.Equals("sync", StringComparison.OrdinalIgnoreCase)
+                || text.Equals("/dongbo", StringComparison.OrdinalIgnoreCase)
+                || text.Equals("dongbo", StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool IsResetCommand(string text)
