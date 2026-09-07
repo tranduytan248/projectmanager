@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -85,17 +85,65 @@ namespace TTKDGP.ProjectManager.Infrastructure
             var text = (update.Text ?? string.Empty).Trim();
             if (text.Length == 0) return;
 
+            // 1. Khi đang chờ OTP
             if (HrmCasAutoLogin.IsAwaitingOtp && LooksLikeOtp(text))
             {
                 if (HrmCasAutoLogin.SubmitOtp(text)) Reply("Đã nhận OTP, đang xác nhận đăng nhập...");
                 return;
             }
 
-            if (text.Equals("/signin", StringComparison.OrdinalIgnoreCase))
+            // 2. Lệnh Hủy / Reset phiên bị treo
+            if (IsResetCommand(text))
+            {
+                HrmCasAutoLogin.ForceReset(Reply);
+                return;
+            }
+
+            // 3. Lệnh Đăng nhập (/signin, signin, /login, /sigin...)
+            if (IsSignInCommand(text))
             {
                 BeginLogin();
                 return;
             }
+
+            // 4. Lệnh Trợ giúp / Hướng dẫn
+            if (IsHelpCommand(text))
+            {
+                Reply("🤖 *Bot Hỗ Trợ Đăng Nhập HRM VNPT*\n\n"
+                    + "Các lệnh khả dụng:\n"
+                    + "• `/signin` : Bắt đầu phiên đăng nhập HRM tự động\n"
+                    + "• `/reset` : Hủy/reset phiên đăng nhập nếu bị treo hoặc kẹt\n"
+                    + "• Khi nhận được thông báo hỏi OTP, chỉ cần gửi mã số OTP vào đây.");
+                return;
+            }
+        }
+
+        private static bool IsResetCommand(string text)
+        {
+            return text.Equals("/reset", StringComparison.OrdinalIgnoreCase)
+                || text.Equals("reset", StringComparison.OrdinalIgnoreCase)
+                || text.Equals("/cancel", StringComparison.OrdinalIgnoreCase)
+                || text.Equals("cancel", StringComparison.OrdinalIgnoreCase)
+                || text.Equals("/stop", StringComparison.OrdinalIgnoreCase)
+                || text.Equals("stop", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsSignInCommand(string text)
+        {
+            return text.Equals("/signin", StringComparison.OrdinalIgnoreCase)
+                || text.Equals("signin", StringComparison.OrdinalIgnoreCase)
+                || text.Equals("/login", StringComparison.OrdinalIgnoreCase)
+                || text.Equals("login", StringComparison.OrdinalIgnoreCase)
+                || text.Equals("/sigin", StringComparison.OrdinalIgnoreCase)
+                || text.Equals("sigin", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsHelpCommand(string text)
+        {
+            return text.Equals("/help", StringComparison.OrdinalIgnoreCase)
+                || text.Equals("help", StringComparison.OrdinalIgnoreCase)
+                || text.Equals("/start", StringComparison.OrdinalIgnoreCase)
+                || text.Equals("start", StringComparison.OrdinalIgnoreCase);
         }
 
         private static void BeginLogin()
@@ -104,8 +152,17 @@ namespace TTKDGP.ProjectManager.Infrastructure
                 || HrmCasAutoLogin.State == HrmState.AwaitingOtp
                 || HrmCasAutoLogin.State == HrmState.Verifying)
             {
-                Reply("Đang có một phiên đăng nhập khác chạy dở, chờ xong đã.");
-                return;
+                // Nếu phiên trước đã chạy quá 2 phút mà chưa xong -> coi như bị treo, tự động ForceReset
+                if ((DateTime.Now - HrmCasAutoLogin.LastChangedAt).TotalMinutes >= 2.0)
+                {
+                    Reply("⚠️ Phiên trước đó chạy quá 2 phút, đã tự động dọn dẹp để bắt đầu phiên mới...");
+                    HrmCasAutoLogin.ForceReset(null);
+                }
+                else
+                {
+                    Reply("Đang có một phiên đăng nhập khác chạy dở. Nếu bị kẹt, bạn hãy gửi /reset để hủy phiên.");
+                    return;
+                }
             }
 
             Reply("Đang mở trình duyệt, điền tên đăng nhập và mật khẩu...");

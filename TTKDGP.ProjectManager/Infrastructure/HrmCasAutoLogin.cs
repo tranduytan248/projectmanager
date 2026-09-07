@@ -1,5 +1,7 @@
-using System;
+﻿using System;
+using System.Diagnostics;
 using System.IO;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Hosting;
@@ -21,22 +23,20 @@ namespace TTKDGP.ProjectManager.Infrastructure
     }
 
     /// <summary>
-    /// Điều khiển trình duyệt nền (Playwright/Chromium) để đăng nhập cổng CAS của VNPT
-    /// (id.vnpt.com.vn → hrm.vnpt.vn): điền username/mật khẩu (lấy từ secrets.config) → bấm
-    /// Đăng nhập → nếu hệ thống hỏi OTP thì chờ chủ tài khoản trả lời qua Telegram → lưu phiên.
+    /// Điều khiển trình duyệt nền (Obscura Rust engine hoặc Playwright/Chromium) để đăng nhập
+    /// cổng CAS của VNPT (id.vnpt.com.vn → hrm.vnpt.vn): điền username/mật khẩu (lấy từ secrets.config) →
+    /// bấm Đăng nhập → nếu hệ thống hỏi OTP thì chờ chủ tài khoản trả lời qua Telegram → lưu phiên.
     ///
-    /// Đây là hệ thống HOÀN TOÀN KHÁC với <see cref="GoConnectAutoLogin"/> (goconnect.vnpt.vn,
-    /// đăng nhập bằng số điện thoại + OTP, không có mật khẩu). Cổng này dùng usernam/mật khẩu
-    /// CAS chuẩn, nên không dùng chung mã với GoConnect dù cấu trúc chạy nền giống nhau.
-    ///
-    /// Lưu ý selector: trang OTP (nếu có) thuộc hrm.vnpt.vn — mã dưới đây đoán theo các mẫu
-    /// input phổ biến (numeric, maxlength ngắn, placeholder chứa "OTP"/"mã"). Nếu giao diện
-    /// thật khác, ảnh + HTML gỡ lỗi được lưu ở App_Data\hrm-debug để chỉnh lại selector.
+    /// Mặc định sử dụng Obscura (Rust) để tiết kiệm ~95% RAM (chỉ tốn ~20MB so với 400MB của Chromium)
+    /// và tích hợp sẵn chế độ Stealth chống chặn bot. Tự động fallback sang Chromium nếu Obscura lỗi.
     /// </summary>
     public static class HrmCasAutoLogin
     {
         private static readonly SemaphoreSlim Gate = new SemaphoreSlim(1, 1);
         private static TaskCompletionSource<string> _otpWaiter;
+        private static CancellationTokenSource _currentCts;
+        private static IBrowser _activeBrowser;
+        private static Process _obscuraProcess;
 
         public static HrmState State { get; private set; }
         public static string LastMessage { get; private set; }
@@ -57,6 +57,139 @@ namespace TTKDGP.ProjectManager.Infrastructure
             var waiter = _otpWaiter;
             if (waiter == null || waiter.Task.IsCompleted) return false;
             return waiter.TrySetResult((otp ?? string.Empty).Trim());
+        }
+
+        /// <summary>
+        /// Ép huỷ phiên đăng nhập hiện tại nếu đang chạy hoặc bị kẹt, giải phóng Semaphore và đưa trạng thái về Idle.
+        /// </summary>
+        public static void ForceReset(Action<string> notify)
+        {
+            try
+            {
+                if (_currentCts != null)
+                {
+                    _currentCts.Cancel();
+                    _currentCts.Dispose();
+                    _currentCts = null;
+                }
+            }
+            catch { }
+
+            try
+            {
+                if (_otpWaiter != null && !_otpWaiter.Task.IsCompleted)
+                {
+                    _otpWaiter.TrySetCanceled();
+                }
+            }
+            catch { }
+            _otpWaiter = null;
+
+            try
+            {
+                if (_activeBrowser != null)
+                {
+                    var b = _activeBrowser;
+                    _activeBrowser = null;
+                    Task.Run(async () =>
+                    {
+                        try { await b.CloseAsync(); } catch { }
+                    });
+                }
+            }
+            catch { }
+
+            try
+            {
+                if (_obscuraProcess != null && !_obscuraProcess.HasExited)
+                {
+                    _obscuraProcess.Kill();
+                }
+            }
+            catch { }
+            _obscuraProcess = null;
+
+            SetState(HrmState.Idle, "Đã được reset thủ công.");
+
+            try
+            {
+                if (Gate.CurrentCount == 0)
+                {
+                    Gate.Release();
+                }
+            }
+            catch { }
+
+            if (notify != null)
+            {
+                notify("🔄 Đã reset phiên đăng nhập HRM thành công. Bạn có thể gửi /signin để bắt đầu lại.");
+            }
+        }
+
+        private static string ObscuraExePath()
+        {
+            return Path.Combine(MapAppData("obscura"), "obscura.exe");
+        }
+
+        private static async Task<Process> StartObscuraServerAsync(int port, CancellationToken ct)
+        {
+            var exePath = ObscuraExePath();
+            if (!File.Exists(exePath)) return null;
+
+            if (await IsCdpPortAvailableAsync(port, 1000))
+            {
+                return null; // Server đã chạy sẵn từ trước
+            }
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = exePath,
+                Arguments = string.Format("serve --port {0} --host 127.0.0.1 --stealth --allow-private-network --quiet", port),
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                WorkingDirectory = Path.GetDirectoryName(exePath)
+            };
+
+            var proc = Process.Start(psi);
+            if (proc == null) return null;
+
+            var ready = false;
+            for (var i = 0; i < 16; i++)
+            {
+                ct.ThrowIfCancellationRequested();
+                if (proc.HasExited) break;
+                if (await IsCdpPortAvailableAsync(port, 500))
+                {
+                    ready = true;
+                    break;
+                }
+                await Task.Delay(500, ct);
+            }
+
+            if (!ready)
+            {
+                try { proc.Kill(); } catch { }
+                return null;
+            }
+
+            return proc;
+        }
+
+        private static async Task<bool> IsCdpPortAvailableAsync(int port, int timeoutMs)
+        {
+            try
+            {
+                using (var client = new HttpClient())
+                {
+                    client.Timeout = TimeSpan.FromMilliseconds(timeoutMs);
+                    var res = await client.GetAsync(string.Format("http://127.0.0.1:{0}/json/version", port));
+                    return res.IsSuccessStatusCode;
+                }
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private static readonly string[] UsernameSelectors = { "#username", "input[name='username']" };
@@ -102,13 +235,38 @@ namespace TTKDGP.ProjectManager.Infrastructure
 
             if (!await Gate.WaitAsync(0))
             {
-                if (notify != null) notify("Đang có một phiên đăng nhập khác chạy dở, thử lại sau.");
-                return false;
+                // Nếu phiên cũ đã chạy quá 2 phút, tự động dọn dẹp để không làm kẹt
+                if ((DateTime.Now - LastChangedAt).TotalMinutes >= 2.0)
+                {
+                    ForceReset(null);
+                    if (!await Gate.WaitAsync(0))
+                    {
+                        if (notify != null) notify("Đang có một phiên đăng nhập khác chạy dở. Gõ /reset nếu cần hủy phiên.");
+                        return false;
+                    }
+                }
+                else
+                {
+                    if (notify != null) notify("Đang có một phiên đăng nhập khác chạy dở. Gõ /reset nếu cần hủy phiên.");
+                    return false;
+                }
             }
+
+            var cts = new CancellationTokenSource();
+            _currentCts = cts;
 
             try
             {
-                return await RunCoreAsync(notify);
+                var totalTimeout = TimeSpan.FromSeconds(AppSettings.Hrm.OtpTimeoutSeconds + 120);
+                cts.CancelAfter(totalTimeout);
+
+                return await RunCoreAsync(notify, cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                SetState(HrmState.Failed, "Phiên đăng nhập đã bị hủy hoặc hết hạn thời gian.");
+                if (notify != null) notify("⏰ Phiên đăng nhập đã kết thúc (hết thời gian hoặc được reset). Gõ /signin để thử lại.");
+                return false;
             }
             catch (Exception ex)
             {
@@ -119,41 +277,102 @@ namespace TTKDGP.ProjectManager.Infrastructure
             finally
             {
                 _otpWaiter = null;
-                Gate.Release();
+                _currentCts = null;
+                _activeBrowser = null;
+                try
+                {
+                    if (Gate.CurrentCount == 0)
+                    {
+                        Gate.Release();
+                    }
+                }
+                catch { }
             }
         }
 
-        private static async Task<bool> RunCoreAsync(Action<string> notify)
+        private static async Task<bool> RunCoreAsync(Action<string> notify, CancellationToken ct)
         {
             SetState(HrmState.LoggingIn, "Đang mở trình duyệt và điền đăng nhập...");
             ConfigureBrowsersPath();
 
-            using (var playwright = await Playwright.CreateAsync())
+            var createPlaywrightTask = Playwright.CreateAsync();
+            if (await Task.WhenAny(createPlaywrightTask, Task.Delay(25000, ct)) != createPlaywrightTask)
             {
-                var browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
-                {
-                    Headless = AppSettings.Hrm.Headless
-                });
+                throw new TimeoutException("Khởi tạo Playwright driver quá thời gian (25s).");
+            }
 
+            using (var playwright = await createPlaywrightTask)
+            {
+                ct.ThrowIfCancellationRequested();
+                IBrowser browser = null;
+                Process obscuraProc = null;
                 IPage page = null;
+
                 try
                 {
-                    var context = await browser.NewContextAsync();
-                    page = await context.NewPageAsync();
+                    // 1. Thử dùng engine Obscura nếu được cấu hình và file binary tồn tại
+                    if (AppSettings.Hrm.UseObscura && File.Exists(ObscuraExePath()))
+                    {
+                        try
+                        {
+                            if (notify != null) notify("① Đang khởi động engine Obscura (Rust, ~20MB RAM, stealth)...");
+                            var port = AppSettings.Hrm.ObscuraPort;
+                            obscuraProc = await StartObscuraServerAsync(port, ct);
+                            _obscuraProcess = obscuraProc;
+
+                            var connectTask = playwright.Chromium.ConnectOverCDPAsync(string.Format("http://127.0.0.1:{0}", port));
+                            if (await Task.WhenAny(connectTask, Task.Delay(15000, ct)) == connectTask)
+                            {
+                                browser = await connectTask;
+                                if (notify != null) notify("⚡ Kết nối Obscura thành công!");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            if (notify != null) notify("⚠️ Obscura không khởi động được (" + ex.Message + "), chuyển sang Chromium...");
+                        }
+                    }
+
+                    // 2. Fallback về Chromium tiêu chuẩn nếu chưa kết nối được Obscura
+                    if (browser == null)
+                    {
+                        if (notify != null) notify("① Đang khởi động trình duyệt Chromium bảo mật...");
+                        var launchOptions = new BrowserTypeLaunchOptions
+                        {
+                            Headless = AppSettings.Hrm.Headless,
+                            Args = new[] { "--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage" },
+                            Timeout = 30000
+                        };
+
+                        var launchBrowserTask = playwright.Chromium.LaunchAsync(launchOptions);
+                        if (await Task.WhenAny(launchBrowserTask, Task.Delay(35000, ct)) != launchBrowserTask)
+                        {
+                            throw new TimeoutException("Khởi chạy trình duyệt Chromium quá thời gian (35s).");
+                        }
+
+                        browser = await launchBrowserTask;
+                    }
+
+                    _activeBrowser = browser;
+
+                    var context = browser.Contexts.Count > 0 ? browser.Contexts[0] : await browser.NewContextAsync();
+                    page = context.Pages.Count > 0 ? context.Pages[0] : await context.NewPageAsync();
                     page.SetDefaultTimeout(30000);
 
+                    if (notify != null) notify("② Đang tải trang đăng nhập CAS VNPT...");
                     await page.GotoAsync(AppSettings.Hrm.LoginUrl,
-                        new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 60000 });
+                            new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 60000 });
 
-                    await FillFirstAsync(page, UsernameSelectors, AppSettings.Hrm.Username, "ô tên đăng nhập");
-                    await FillFirstAsync(page, PasswordSelectors, AppSettings.Hrm.Password, "ô mật khẩu");
-                    if (notify != null) notify("① Đã điền tên đăng nhập và mật khẩu, đang bấm Đăng nhập...");
+                        ct.ThrowIfCancellationRequested();
+                        await FillFirstAsync(page, UsernameSelectors, AppSettings.Hrm.Username, "ô tên đăng nhập", ct);
+                        await FillFirstAsync(page, PasswordSelectors, AppSettings.Hrm.Password, "ô mật khẩu", ct);
+                        if (notify != null) notify("③ Đã điền tên đăng nhập và mật khẩu, đang bấm Đăng nhập...");
 
-                    await ClickFirstAsync(page, SubmitSelectors, "nút Đăng nhập");
+                    await ClickFirstAsync(page, SubmitSelectors, "nút Đăng nhập", ct);
 
                     // Sau khi bấm submit, chờ một trong ba khả năng: có ô OTP hiện ra, rời khỏi
                     // domain CAS (id.vnpt.com.vn) coi như qua bước mật khẩu, hoặc lỗi sai thông tin.
-                    var outcome = await WaitAfterSubmitAsync(page, 20000);
+                    var outcome = await WaitAfterSubmitAsync(page, 20000, ct);
 
                     if (outcome == SubmitOutcome.Otp)
                     {
@@ -163,7 +382,7 @@ namespace TTKDGP.ProjectManager.Infrastructure
                             notify(string.Format(
                                 "🔐 Hệ thống HRM yêu cầu OTP.\nTrả lời mã vào đây trong ~{0} phút.", minutes));
 
-                        var otp = await WaitForOtpAsync(TimeSpan.FromSeconds(AppSettings.Hrm.OtpTimeoutSeconds));
+                        var otp = await WaitForOtpAsync(TimeSpan.FromSeconds(AppSettings.Hrm.OtpTimeoutSeconds), ct);
                         if (otp == null)
                         {
                             SetState(HrmState.Failed, "Hết thời gian chờ OTP.");
@@ -172,15 +391,15 @@ namespace TTKDGP.ProjectManager.Infrastructure
                         }
 
                         SetState(HrmState.Verifying, "Đang nhập OTP...");
-                        await FillFirstAsync(page, OtpInputSelectors, otp, "ô nhập OTP");
+                        await FillFirstAsync(page, OtpInputSelectors, otp, "ô nhập OTP", ct);
 
                         // Chờ 3 giây sau khi điền OTP rồi mới bấm, theo đúng yêu cầu — cho trang
                         // kịp xử lý/bật nút trước khi submit.
-                        await Task.Delay(3000);
+                        await Task.Delay(3000, ct);
 
-                        await ClickFirstAsync(page, OtpSubmitSelectors, "nút xác nhận OTP");
+                        await ClickFirstAsync(page, OtpSubmitSelectors, "nút xác nhận OTP", ct);
 
-                        outcome = await WaitAfterSubmitAsync(page, 20000);
+                        outcome = await WaitAfterSubmitAsync(page, 20000, ct);
                     }
 
                     if (outcome != SubmitOutcome.LeftCasDomain)
@@ -207,7 +426,7 @@ namespace TTKDGP.ProjectManager.Infrastructure
                     {
                         // Điều hướng lỗi thì thôi, vẫn báo URL thật đang đứng ở đâu bên dưới.
                     }
-                    await Task.Delay(15000);
+                    await Task.Delay(15000, ct);
 
                     var sessionFile = SessionFilePath();
                     Directory.CreateDirectory(Path.GetDirectoryName(sessionFile));
@@ -231,7 +450,16 @@ namespace TTKDGP.ProjectManager.Infrastructure
                 }
                 finally
                 {
-                    await browser.CloseAsync();
+                    _activeBrowser = null;
+                    if (browser != null)
+                    {
+                        try { await browser.CloseAsync(); } catch { }
+                    }
+                    if (obscuraProc != null && !obscuraProc.HasExited)
+                    {
+                        try { obscuraProc.Kill(); } catch { }
+                    }
+                    _obscuraProcess = null;
                 }
             }
         }
@@ -242,7 +470,7 @@ namespace TTKDGP.ProjectManager.Infrastructure
         /// Sau khi bấm nút đăng nhập/OTP, thăm dò xem trang đã rời khỏi domain CAS (thành công)
         /// hay đang hiện ô nhập OTP, trong thời gian chờ cho phép.
         /// </summary>
-        private static async Task<SubmitOutcome> WaitAfterSubmitAsync(IPage page, int timeoutMs)
+        private static async Task<SubmitOutcome> WaitAfterSubmitAsync(IPage page, int timeoutMs, CancellationToken ct)
         {
             const int step = 250;
             var elapsed = 0;
@@ -250,6 +478,7 @@ namespace TTKDGP.ProjectManager.Infrastructure
 
             while (elapsed < timeoutMs)
             {
+                ct.ThrowIfCancellationRequested();
                 var currentHost = SafeHost(page.Url);
                 if (!string.Equals(currentHost, casHost, StringComparison.OrdinalIgnoreCase))
                     return SubmitOutcome.LeftCasDomain;
@@ -265,7 +494,7 @@ namespace TTKDGP.ProjectManager.Infrastructure
                     }
                 }
 
-                await Task.Delay(step);
+                await Task.Delay(step, ct);
                 elapsed += step;
             }
 
@@ -278,25 +507,38 @@ namespace TTKDGP.ProjectManager.Infrastructure
             catch { return string.Empty; }
         }
 
-        private static async Task<string> WaitForOtpAsync(TimeSpan timeout)
+        private static async Task<string> WaitForOtpAsync(TimeSpan timeout, CancellationToken ct)
         {
             var waiter = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
             _otpWaiter = waiter;
 
-            var completed = await Task.WhenAny(waiter.Task, Task.Delay(timeout));
-            var otp = completed == waiter.Task ? waiter.Task.Result : null;
+            using (var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
+            {
+                linkedCts.CancelAfter(timeout);
+                var tcs = new TaskCompletionSource<bool>();
+                using (linkedCts.Token.Register(() => tcs.TrySetResult(true)))
+                {
+                    var completed = await Task.WhenAny(waiter.Task, tcs.Task);
+                    if (completed == waiter.Task && waiter.Task.Status == TaskStatus.RanToCompletion)
+                    {
+                        _otpWaiter = null;
+                        return waiter.Task.Result;
+                    }
+                }
+            }
 
             _otpWaiter = null;
-            return otp;
+            return null;
         }
 
-        private static async Task<ILocator> WaitAnyAsync(IPage page, string[] selectors, int timeoutMs, string what)
+        private static async Task<ILocator> WaitAnyAsync(IPage page, string[] selectors, int timeoutMs, string what, CancellationToken ct)
         {
             const int step = 250;
             var elapsed = 0;
 
             while (true)
             {
+                ct.ThrowIfCancellationRequested();
                 foreach (var selector in selectors)
                 {
                     var locator = page.Locator(selector).First;
@@ -310,20 +552,20 @@ namespace TTKDGP.ProjectManager.Infrastructure
                 }
 
                 if (elapsed >= timeoutMs) throw new Exception("Chờ mãi không thấy " + what + " trên trang.");
-                await Task.Delay(step);
+                await Task.Delay(step, ct);
                 elapsed += step;
             }
         }
 
-        private static async Task FillFirstAsync(IPage page, string[] selectors, string value, string what)
+        private static async Task FillFirstAsync(IPage page, string[] selectors, string value, string what, CancellationToken ct)
         {
-            var locator = await WaitAnyAsync(page, selectors, 20000, what);
+            var locator = await WaitAnyAsync(page, selectors, 20000, what, ct);
             await locator.FillAsync(value, new LocatorFillOptions { Timeout = 5000 });
         }
 
-        private static async Task ClickFirstAsync(IPage page, string[] selectors, string what)
+        private static async Task ClickFirstAsync(IPage page, string[] selectors, string what, CancellationToken ct)
         {
-            var locator = await WaitAnyAsync(page, selectors, 20000, what);
+            var locator = await WaitAnyAsync(page, selectors, 20000, what, ct);
             await locator.ClickAsync(new LocatorClickOptions { Timeout = 5000 });
         }
 

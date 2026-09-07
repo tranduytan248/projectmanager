@@ -545,6 +545,12 @@ namespace TTKDGP.ProjectManager.Infrastructure
             /// <summary>Thời gian chờ chủ tài khoản trả lời OTP trước khi huỷ phiên (giây).</summary>
             public static int OtpTimeoutSeconds { get { return Math.Max(30, GetInt("Hrm:OtpTimeoutSeconds", 180)); } }
 
+            /// <summary>Sử dụng headless engine Obscura (Rust) thay cho Chromium nặng.</summary>
+            public static bool UseObscura { get { return GetBool("Hrm:UseObscura", true); } }
+
+            /// <summary>Cổng WebSocket/HTTP cho Obscura CDP server.</summary>
+            public static int ObscuraPort { get { return GetInt("Hrm:ObscuraPort", 9222); } }
+
             /// <summary>Đủ điều kiện chạy: đã bật, có username/mật khẩu, có bot và chat id.</summary>
             public static bool IsConfigured
             {
