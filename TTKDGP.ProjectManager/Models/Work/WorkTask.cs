@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Web.Mvc;
 
@@ -326,7 +327,7 @@ namespace TTKDGP.ProjectManager.Models
         [AllowHtml]
         public string Content { get; set; }
 
-        // ---------- File đính kèm (mỗi lượt trao đổi tối đa một file) ----------
+        // ---------- File đính kèm (hỗ trợ nhiều file đính kèm cho mỗi lượt trao đổi) ----------
 
         /// <summary>Tên file lưu trên đĩa (ngẫu nhiên, giữ đuôi). NULL nghĩa là không đính kèm.</summary>
         public string AttachmentFile { get; set; }
@@ -336,9 +337,53 @@ namespace TTKDGP.ProjectManager.Models
 
         public long AttachmentSize { get; set; }
 
+        /// <summary>Chuỗi JSON lưu danh sách các file đính kèm khi có nhiều file.</summary>
+        public string AttachmentsJson { get; set; }
+
+        /// <summary>Danh sách các tệp đính kèm của lượt trao đổi này.</summary>
+        public List<CommentAttachmentItem> Attachments
+        {
+            get
+            {
+                var list = new List<CommentAttachmentItem>();
+                if (!string.IsNullOrWhiteSpace(AttachmentsJson))
+                {
+                    try
+                    {
+                        list = Newtonsoft.Json.JsonConvert.DeserializeObject<List<CommentAttachmentItem>>(AttachmentsJson)
+                               ?? new List<CommentAttachmentItem>();
+                    }
+                    catch { }
+                }
+
+                // Tương thích ngược với các bình luận cũ chỉ có 1 file trong AttachmentFile
+                if (list.Count == 0 && !string.IsNullOrWhiteSpace(AttachmentFile))
+                {
+                    list.Add(new CommentAttachmentItem
+                    {
+                        StoredName = AttachmentFile,
+                        OriginalName = AttachmentName,
+                        Size = AttachmentSize
+                    });
+                }
+                return list;
+            }
+            set
+            {
+                if (value != null && value.Count > 0)
+                {
+                    AttachmentsJson = Newtonsoft.Json.JsonConvert.SerializeObject(value);
+                }
+                else
+                {
+                    AttachmentsJson = null;
+                }
+            }
+        }
+
         public bool HasAttachment
         {
-            get { return !string.IsNullOrEmpty(AttachmentFile); }
+            get { return !string.IsNullOrEmpty(AttachmentFile) || !string.IsNullOrEmpty(AttachmentsJson); }
         }
 
         public DateTime CreatedAt { get; set; }
@@ -422,5 +467,15 @@ namespace TTKDGP.ProjectManager.Models
         public string Description { get; set; }
 
         public DateTime CreatedAt { get; set; }
+    }
+
+    /// <summary>
+    /// Thông tin của một tệp đính kèm trong lượt trao đổi.
+    /// </summary>
+    public class CommentAttachmentItem
+    {
+        public string StoredName { get; set; }
+        public string OriginalName { get; set; }
+        public long Size { get; set; }
     }
 }

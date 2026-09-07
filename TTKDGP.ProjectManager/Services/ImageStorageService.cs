@@ -11,7 +11,8 @@ namespace TTKDGP.ProjectManager.Services
 {
     /// <summary>
     /// Dịch vụ quản lý và tối ưu hóa hình ảnh tải lên máy chủ nội bộ.
-    /// Tự động nén dung lượng, thu nhỏ kích thước hợp lý (giữ nguyên độ sắc nét)
+    /// Lưu vào thư mục App_Data/task_images/{taskId}/ được phân quyền an toàn,
+    /// tự động nén dung lượng, thu nhỏ kích thước hợp lý (giữ nguyên độ sắc nét)
     /// và xử lý hướng xoay EXIF, giúp tiết kiệm đến 90% dung lượng đĩa cứng máy chủ.
     /// </summary>
     public static class ImageStorageService
@@ -20,13 +21,14 @@ namespace TTKDGP.ProjectManager.Services
         private const long JpegQuality = 82L;  // Mức chất lượng nén ảnh JPEG tối ưu (mắt thường không phân biệt được)
 
         /// <summary>
-        /// Xử lý nén, tối ưu hóa và lưu ảnh vào thư mục máy chủ.
+        /// Xử lý nén, tối ưu hóa và lưu ảnh vào thư mục App_Data/task_images/{taskId}/ của máy chủ.
         /// </summary>
         /// <param name="inputStream">Luồng dữ liệu ảnh tải lên</param>
         /// <param name="originalFileName">Tên file gốc</param>
         /// <param name="contentType">MIME type</param>
-        /// <returns>Đường dẫn URL ảnh tương đối để chèn vào nội dung</returns>
-        public static async Task<string> SaveAndOptimizeImageAsync(Stream inputStream, string originalFileName, string contentType)
+        /// <param name="taskId">Mã công việc (nếu có, dùng để phân cấp thư mục theo task)</param>
+        /// <returns>Đường dẫn URL an toàn để chèn vào thẻ img</returns>
+        public static async Task<string> SaveAndOptimizeImageAsync(Stream inputStream, string originalFileName, string contentType, int? taskId = null)
         {
             if (inputStream == null || inputStream.Length == 0)
             {
@@ -39,24 +41,8 @@ namespace TTKDGP.ProjectManager.Services
             ms.Position = 0;
 
             var ext = Path.GetExtension(originalFileName)?.ToLowerInvariant() ?? ".png";
-            var now = DateTime.UtcNow;
-            var subFolder = string.Format("task_images/{0:yyyyMM}", now);
-            var relativeDir = "/Uploads/" + subFolder;
-            var physicalDir = HostingEnvironment.MapPath("~" + relativeDir);
-            if (string.IsNullOrWhiteSpace(physicalDir))
-            {
-                var asmDir = Path.GetDirectoryName(typeof(ImageStorageService).Assembly.Location) ?? "";
-                var rootDir = asmDir.EndsWith("\\bin", StringComparison.OrdinalIgnoreCase)
-                    ? Directory.GetParent(asmDir).FullName
-                    : asmDir;
-                physicalDir = Path.Combine(rootDir, relativeDir.TrimStart('/').Replace('/', '\\'));
-            }
-
-            if (!Directory.Exists(physicalDir))
-            {
-                Directory.CreateDirectory(physicalDir);
-            }
-
+            var taskFolder = (taskId.HasValue && taskId.Value > 0) ? taskId.Value.ToString() : "temp";
+            var physicalDir = GetPhysicalDir(taskFolder);
             var fileId = Guid.NewGuid().ToString("N");
 
             // Thử xử lý nén và tối ưu hóa bằng System.Drawing
@@ -129,7 +115,7 @@ namespace TTKDGP.ProjectManager.Services
                         }
                     }
 
-                    return relativeDir + "/" + fileName;
+                    return string.Format("/Upload/Image/{0}/{1}", taskFolder, fileName);
                 }
             }
             catch
@@ -140,12 +126,65 @@ namespace TTKDGP.ProjectManager.Services
                 var fallbackName = fileId + ext;
                 var fallbackPath = Path.Combine(physicalDir, fallbackName);
                 File.WriteAllBytes(fallbackPath, ms.ToArray());
-                return relativeDir + "/" + fallbackName;
+                return string.Format("/Upload/Image/{0}/{1}", taskFolder, fallbackName);
             }
             finally
             {
                 ms.Dispose();
             }
+        }
+
+        /// <summary>
+        /// Lấy thư mục vật lý lưu ảnh trong App_Data/task_images/{taskFolder}/
+        /// </summary>
+        public static string GetPhysicalDir(string taskFolder)
+        {
+            if (string.IsNullOrWhiteSpace(taskFolder) || taskFolder.IndexOfAny(new[] { '/', '\\' }) >= 0 || taskFolder.Contains(".."))
+            {
+                taskFolder = "temp";
+            }
+
+            var relativeDir = "~/App_Data/task_images/" + taskFolder;
+            var physicalDir = HostingEnvironment.MapPath(relativeDir);
+            if (string.IsNullOrWhiteSpace(physicalDir))
+            {
+                var asmDir = Path.GetDirectoryName(typeof(ImageStorageService).Assembly.Location) ?? "";
+                var rootDir = asmDir.EndsWith("\\bin", StringComparison.OrdinalIgnoreCase)
+                    ? Directory.GetParent(asmDir).FullName
+                    : asmDir;
+                physicalDir = Path.Combine(rootDir, "App_Data", "task_images", taskFolder);
+            }
+
+            if (!Directory.Exists(physicalDir))
+            {
+                Directory.CreateDirectory(physicalDir);
+            }
+
+            return physicalDir;
+        }
+
+        /// <summary>
+        /// Đường dẫn vật lý của một ảnh đã lưu trong App_Data để phục vụ xem ảnh an toàn.
+        /// </summary>
+        public static string GetImagePhysicalPath(string taskFolder, string fileName)
+        {
+            if (string.IsNullOrWhiteSpace(fileName) || fileName.IndexOfAny(new[] { '/', '\\' }) >= 0 || fileName.Contains(".."))
+            {
+                return null;
+            }
+
+            var dir = GetPhysicalDir(taskFolder);
+            var path = Path.Combine(dir, fileName);
+            if (File.Exists(path)) return path;
+
+            // Thử tìm trong thư mục temp nếu tìm theo taskId chưa thấy
+            if (!string.Equals(taskFolder, "temp", StringComparison.OrdinalIgnoreCase))
+            {
+                var tempPath = Path.Combine(GetPhysicalDir("temp"), fileName);
+                if (File.Exists(tempPath)) return tempPath;
+            }
+
+            return null;
         }
 
         private static bool ImageHasAlpha(Image img)

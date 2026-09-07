@@ -521,6 +521,14 @@
                 var fd = new FormData();
                 fd.append('file', file);
 
+                // Tìm taskId từ form cha hoặc context (nếu có) để gom ảnh vào thư mục riêng của task
+                var taskId = $wrap.closest('form').find('input[name="id"], input[name="Id"], input[name="TaskId"], input[name="taskId"]').val()
+                    || $wrap.closest('[data-task-id]').data('task-id')
+                    || '';
+                if (taskId) {
+                    fd.append('taskId', taskId);
+                }
+
                 $.ajax({
                     url: '/Upload/Image',
                     type: 'POST',

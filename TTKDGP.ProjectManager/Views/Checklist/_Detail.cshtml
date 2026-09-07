@@ -266,7 +266,7 @@
 
         <div class="chat-send-row">
             <div class="chat-attach">
-                <input type="file" id="chatFile" name="file" class="chat-file-input"
+                <input type="file" id="chatFile" name="files" class="chat-file-input" multiple
                        accept=".png,.jpg,.jpeg,.gif,.webp,.bmp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.md,.zip,.rar,.7z" />
                 <label for="chatFile" class="btn btn-default btn-sm">&#128206; Đính kèm</label>
                 <span id="chatFileName" class="chat-file-name"></span>
@@ -278,7 +278,7 @@
 
         <span class="hint">
             Gõ <strong>&#64;</strong> để nhắc người tham gia · Ctrl+Enter để gửi ·
-            đính kèm tài liệu/ảnh/file nén tối đa 10 MB
+            đính kèm tài liệu/ảnh/file nén tối đa 10 MB mỗi file (có thể chọn nhiều file)
         </span>
     </form>
 </div>
@@ -500,17 +500,23 @@
         }
 
         $file.on('change', function () {
-            var f = this.files && this.files[0];
-            if (!f) { clearFile(); return; }
+            var files = this.files;
+            if (!files || files.length === 0) { clearFile(); return; }
 
             // Chặn file quá cỡ ngay tại chỗ, khỏi đẩy cả chục MB lên rồi mới bị từ chối.
-            if (f.size > maxFileBytes) {
-                alert('File đính kèm vượt quá 10 MB.');
-                clearFile();
-                return;
+            for (var i = 0; i < files.length; i++) {
+                if (files[i].size > maxFileBytes) {
+                    alert('File "' + files[i].name + '" vượt quá 10 MB.');
+                    clearFile();
+                    return;
+                }
             }
 
-            $fileName.text(f.name);
+            if (files.length === 1) {
+                $fileName.text(files[0].name);
+            } else {
+                $fileName.text(files.length + ' file được chọn');
+            }
             $fileClear.show();
         });
 
