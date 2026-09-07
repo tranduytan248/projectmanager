@@ -687,11 +687,10 @@ namespace TTKDGP.ProjectManager.Controllers
         }
 
         /// <summary>
-        /// Tải file đính kèm của một lượt trao đổi. Kiểm quyền theo ĐÚNG đầu việc chứa nó — ai
-        /// xem được việc thì tải được file; nội dung đã thu hồi thì file cũng khoá theo.
+        /// Tải hoặc xem trực tuyến file đính kèm của một lượt trao đổi. Kiểm quyền theo ĐÚNG đầu việc chứa nó.
         /// </summary>
         [AppAuthorize(Permission = "wtasks.view")]
-        public ActionResult Attachment(int commentId, string fileName = null)
+        public ActionResult Attachment(int commentId, string fileName = null, bool download = false)
         {
             var comment = Repository.WorkComments.Find(commentId);
             if (comment == null || comment.IsDeleted || !comment.HasAttachment) return HttpNotFound();
@@ -722,6 +721,13 @@ namespace TTKDGP.ProjectManager.Controllers
 
             var path = CommentAttachments.FullPath(targetStored, comment.TaskId);
             if (path == null) return HttpNotFound();
+
+            // Nếu người dùng chỉ muốn xem trực tiếp (không ép tải về) và là tệp hình ảnh: trả về inline để hiển thị trên trình duyệt / Lightbox
+            if (!download && CommentAttachments.IsImage(targetDisplay))
+            {
+                var contentType = CommentAttachments.GetContentType(targetDisplay);
+                return File(path, contentType);
+            }
 
             // Luôn trả kiểu tải-về chung chung: trình duyệt tải file chứ không thực thi/nhúng.
             return File(path, "application/octet-stream",

@@ -378,10 +378,9 @@ namespace TTKDGP.ProjectManager.Controllers.Api
         }
 
         /// <summary>Mirror ChecklistController.Attachment — ai xem duoc dau viec chua binh luan
-        /// nay thi tai duoc file. Luon tra octet-stream de trinh duyet/thiet bi TAI VE chu khong
-        /// nhung/thuc thi, dung y het ly do bao mat ben web.</summary>
+        /// nay thi tai duoc file. Ho tro xem inline voi file anh.</summary>
         [HttpGet]
-        public ActionResult Attachment(int commentId, string fileName = null)
+        public ActionResult Attachment(int commentId, string fileName = null, bool download = false)
         {
             var comment = Repository.WorkComments.Find(commentId);
             if (comment == null || comment.IsDeleted || !comment.HasAttachment) return HttpNotFound();
@@ -412,6 +411,12 @@ namespace TTKDGP.ProjectManager.Controllers.Api
 
             var path = CommentAttachments.FullPath(targetStored, comment.TaskId);
             if (path == null) return HttpNotFound();
+
+            if (!download && CommentAttachments.IsImage(targetDisplay))
+            {
+                var contentType = CommentAttachments.GetContentType(targetDisplay);
+                return File(path, contentType);
+            }
 
             return File(path, "application/octet-stream",
                 string.IsNullOrWhiteSpace(targetDisplay) ? "tep-dinh-kem" : targetDisplay);

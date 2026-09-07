@@ -300,17 +300,23 @@ namespace TTKDGP.ProjectManager.Controllers
         }
 
         /// <summary>
-        /// Tải file đính kèm của một ĐẦU VIỆC (file giao kèm lúc giao việc riêng). Ai xem được
+        /// Tải hoặc xem file đính kèm của một ĐẦU VIỆC (file giao kèm lúc giao việc riêng). Ai xem được
         /// việc thì tải được; chưa đăng nhập sẽ bị đưa qua màn đăng nhập trước.
         /// </summary>
         [AppAuthorize(Permission = "wtasks.view")]
-        public ActionResult Attachment(int id)
+        public ActionResult Attachment(int id, bool download = false)
         {
             var task = Repository.WorkTasks.Find(id);
             if (task == null || !CanSeeTask(task) || !task.HasAttachment) return HttpNotFound();
 
             var path = CommentAttachments.FullPath(task.AttachmentFile, task.Id);
             if (path == null) return HttpNotFound();
+
+            if (!download && CommentAttachments.IsImage(task.AttachmentName))
+            {
+                var contentType = CommentAttachments.GetContentType(task.AttachmentName);
+                return File(path, contentType);
+            }
 
             // Luôn trả kiểu tải-về chung chung: trình duyệt tải file chứ không thực thi/nhúng.
             return File(path, "application/octet-stream",

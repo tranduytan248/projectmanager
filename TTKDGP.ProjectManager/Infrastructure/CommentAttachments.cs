@@ -55,6 +55,33 @@ namespace TTKDGP.ProjectManager.Infrastructure
                    ext.Equals(".m4v", StringComparison.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// Lấy MIME Content-Type phù hợp để phục vụ trực tuyến (inline) trên trình duyệt hoặc Lightbox.
+        /// </summary>
+        public static string GetContentType(string fileNameOrExt)
+        {
+            if (string.IsNullOrWhiteSpace(fileNameOrExt)) return "application/octet-stream";
+            var ext = Path.GetExtension(fileNameOrExt);
+            if (string.IsNullOrEmpty(ext)) ext = fileNameOrExt;
+            ext = ext.ToLowerInvariant();
+            switch (ext)
+            {
+                case ".png": return "image/png";
+                case ".jpg":
+                case ".jpeg": return "image/jpeg";
+                case ".gif": return "image/gif";
+                case ".webp": return "image/webp";
+                case ".bmp": return "image/bmp";
+                case ".svg": return "image/svg+xml";
+                case ".pdf": return "application/pdf";
+                case ".mp4": return "video/mp4";
+                case ".mov": return "video/quicktime";
+                case ".webm": return "video/webm";
+                case ".m4v": return "video/x-m4v";
+                default: return "application/octet-stream";
+            }
+        }
+
         private static string RootFolder()
         {
             var appData = HostingEnvironment.MapPath("~/App_Data/attachments");

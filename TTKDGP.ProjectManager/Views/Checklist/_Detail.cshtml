@@ -123,12 +123,34 @@
 
         @if (Model.HasAttachment)
         {
+            var isImg = CommentAttachments.IsImage(Model.AttachmentName);
+            var viewUrl = Url.Action("Attachment", "MyWork", new { id = Model.Id, download = false });
+            var downUrl = Url.Action("Attachment", "MyWork", new { id = Model.Id, download = true });
             <div class="form-static">
                 <span class="form-static-label">File đính kèm</span>
-                <a class="chat-file" href="@Url.Action("Attachment", "MyWork", new { id = Model.Id })">
-                    <span class="chat-file-icon">&#128206;</span>
-                    <span class="chat-file-label">@Model.AttachmentName</span>
-                </a>
+                @if (isImg)
+                {
+                    <div class="chat-file-img-item" style="margin-top:4px;">
+                        <a class="chat-img-thumb js-preview-img" href="@viewUrl" data-img-url="@viewUrl" data-img-name="@Model.AttachmentName" data-img-down="@downUrl" title="Nhấp để xem ảnh lớn">
+                            <img src="@viewUrl" alt="@Model.AttachmentName" loading="lazy" />
+                            <span class="chat-img-zoom-hint" title="Xem ảnh">🔍</span>
+                        </a>
+                        <div class="chat-file-img-meta">
+                            <a class="chat-file chat-file-image js-preview-img" href="@viewUrl" data-img-url="@viewUrl" data-img-name="@Model.AttachmentName" data-img-down="@downUrl" title="Nhấp để xem ảnh lớn">
+                                <span class="chat-file-icon">🖼️</span>
+                                <span class="chat-file-label">@Model.AttachmentName</span>
+                            </a>
+                            <a class="chat-file-down-link" href="@downUrl" title="Tải file về máy" download>⬇️ Tải về</a>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <a class="chat-file" href="@downUrl" target="_blank" download>
+                        <span class="chat-file-icon">&#128206;</span>
+                        <span class="chat-file-label">@Model.AttachmentName</span>
+                    </a>
+                }
             </div>
         }
     </div>

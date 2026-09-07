@@ -1021,11 +1021,157 @@
         });
     });
 
-    // Bấm vào ảnh trong khối rich-content để mở xem ảnh gốc kích thước đầy đủ
-    $(document).on('click', '.rich-content img', function () {
+    // =========================================================================
+    // Image Lightbox Modal: Xem trước ảnh toàn màn hình với hiệu ứng mượt mà
+    // =========================================================================
+    var AppLightbox = (function () {
+        var $lightbox = null;
+        var $img = null;
+        var $title = null;
+        var $btnDownload = null;
+        var $btnExternal = null;
+        var $loading = null;
+
+        function init() {
+            if ($lightbox && $lightbox.length) return;
+            var html = [
+                '<div id="appImageLightbox" class="app-lightbox" style="display:none;" tabindex="-1" role="dialog" aria-modal="true">',
+                '  <div class="app-lightbox-backdrop"></div>',
+                '  <div class="app-lightbox-container">',
+                '    <div class="app-lightbox-header">',
+                '      <div class="app-lightbox-title" id="appLightboxTitle">',
+                '        <span class="app-lightbox-icon">🖼️</span>',
+                '        <span class="app-lightbox-filename" title=""></span>',
+                '      </div>',
+                '      <div class="app-lightbox-actions">',
+                '        <a href="#" id="appLightboxDownload" class="app-lightbox-btn" title="Tải ảnh về máy" download>',
+                '          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+                '          <span>Tải về</span>',
+                '        </a>',
+                '        <a href="#" id="appLightboxExternal" class="app-lightbox-btn" title="Mở trong tab mới" target="_blank">',
+                '          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>',
+                '        </a>',
+                '        <button type="button" id="appLightboxClose" class="app-lightbox-btn app-lightbox-close" title="Đóng (Esc)">',
+                '          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+                '        </button>',
+                '      </div>',
+                '    </div>',
+                '    <div class="app-lightbox-body">',
+                '      <div class="app-lightbox-loading" id="appLightboxLoading"><div class="app-lightbox-spinner"></div></div>',
+                '      <img src="" alt="" id="appLightboxImg" class="app-lightbox-img" />',
+                '    </div>',
+                '  </div>',
+                '</div>'
+            ].join('');
+
+            $('body').append(html);
+
+            $lightbox = $('#appImageLightbox');
+            $img = $('#appLightboxImg');
+            $title = $('#appLightboxTitle .app-lightbox-filename');
+            $btnDownload = $('#appLightboxDownload');
+            $btnExternal = $('#appLightboxExternal');
+            $loading = $('#appLightboxLoading');
+
+            // Đóng bằng nút close hoặc backdrop
+            $lightbox.on('click', '#appLightboxClose, .app-lightbox-backdrop', function (e) {
+                e.preventDefault();
+                close();
+            });
+
+            // Click vào vùng ngoài ảnh trong body cũng đóng
+            $lightbox.on('click', '.app-lightbox-body', function (e) {
+                if (e.target === this) {
+                    close();
+                }
+            });
+
+            // Bấm ESC để đóng
+            $(document).on('keydown', function (e) {
+                if (e.key === 'Escape' || e.keyCode === 27) {
+                    if ($lightbox && $lightbox.is(':visible')) {
+                        close();
+                    }
+                }
+            });
+        }
+
+        function open(imgUrl, fileName, downloadUrl) {
+            if (!imgUrl) return;
+            init();
+
+            var name = fileName || imgUrl.split('/').pop().split('?')[0] || 'Hình ảnh';
+            $title.text(name).attr('title', name);
+
+            var down = downloadUrl;
+            if (!down) {
+                down = imgUrl.indexOf('?') >= 0 ? (imgUrl + '&download=true') : (imgUrl + '?download=true');
+            }
+            $btnDownload.attr('href', down).attr('download', name);
+            $btnExternal.attr('href', imgUrl);
+
+            $loading.show();
+            $img.hide().attr('src', '');
+
+            // Nạp ảnh
+            var imageLoader = new Image();
+            imageLoader.onload = function () {
+                $img.attr('src', imgUrl).fadeIn(150);
+                $loading.hide();
+            };
+            imageLoader.onerror = function () {
+                $loading.html('<div class="text-danger" style="padding:20px; color:#ff7b72;">Không thể tải hình ảnh này.</div>');
+            };
+            imageLoader.src = imgUrl;
+
+            $lightbox.fadeIn(180);
+            $('body').addClass('app-lightbox-open');
+        }
+
+        function close() {
+            if (!$lightbox) return;
+            $lightbox.fadeOut(150, function () {
+                $img.attr('src', '');
+                $('body').removeClass('app-lightbox-open');
+            });
+        }
+
+        return {
+            open: open,
+            close: close
+        };
+    })();
+
+    window.AppLightbox = AppLightbox;
+
+    // Bắt sự kiện click vào mọi ảnh hoặc link xem ảnh có class .js-preview-img hoặc [data-preview-img="true"]
+    $(document).on('click', '.js-preview-img, [data-preview-img="true"]', function (e) {
+        e.preventDefault();
+        var $el = $(this);
+        var imgUrl = $el.data('img-url') || $el.attr('href');
+        var imgName = $el.data('img-name') || $el.attr('title') || $el.text().trim();
+        var imgDown = $el.data('img-down') || '';
+        AppLightbox.open(imgUrl, imgName, imgDown);
+    });
+
+    // Bấm vào ảnh trong khối rich-content để mở xem trong Lightbox thay vì mở tab trắng
+    $(document).on('click', '.rich-content img', function (e) {
         var src = $(this).attr('src');
         if (src) {
-            window.open(src, '_blank');
+            e.preventDefault();
+            var alt = $(this).attr('alt') || 'Hình ảnh';
+            AppLightbox.open(src, alt);
+        }
+    });
+
+    // Bấm vào ảnh trong màn Thảo luận (Discussions)
+    $(document).on('click', '.chat-img-link, .chat-msg-img', function (e) {
+        var $link = $(this).closest('.chat-img-link');
+        var src = $link.length ? $link.attr('href') : $(this).attr('src');
+        if (src) {
+            e.preventDefault();
+            var name = $(this).attr('alt') || $link.attr('title') || 'Hình ảnh';
+            AppLightbox.open(src, name);
         }
     });
 })(jQuery);

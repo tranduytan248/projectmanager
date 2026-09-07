@@ -48,21 +48,67 @@ else
                         <div class="chat-files-list">
                             @foreach (var att in attList)
                             {
-                                <a class="chat-file" href="@Url.Action("Attachment", "Checklist", new { commentId = c.Id, fileName = att.StoredName })" target="_blank">
-                                    <span class="chat-file-icon">&#128206;</span>
-                                    <span class="chat-file-label">@att.OriginalName</span>
-                                    <span class="muted">(@CommentAttachments.SizeLabel(att.Size))</span>
-                                </a>
+                                var isImg = CommentAttachments.IsImage(att.OriginalName);
+                                var viewUrl = Url.Action("Attachment", "Checklist", new { commentId = c.Id, fileName = att.StoredName, download = false });
+                                var downUrl = Url.Action("Attachment", "Checklist", new { commentId = c.Id, fileName = att.StoredName, download = true });
+                                if (isImg)
+                                {
+                                    <div class="chat-file-img-item">
+                                        <a class="chat-img-thumb js-preview-img" href="@viewUrl" data-img-url="@viewUrl" data-img-name="@att.OriginalName" data-img-down="@downUrl" title="Nhấp để xem ảnh lớn">
+                                            <img src="@viewUrl" alt="@att.OriginalName" loading="lazy" />
+                                            <span class="chat-img-zoom-hint" title="Xem ảnh">🔍</span>
+                                        </a>
+                                        <div class="chat-file-img-meta">
+                                            <a class="chat-file chat-file-image js-preview-img" href="@viewUrl" data-img-url="@viewUrl" data-img-name="@att.OriginalName" data-img-down="@downUrl" title="Nhấp để xem ảnh lớn">
+                                                <span class="chat-file-icon">🖼️</span>
+                                                <span class="chat-file-label">@att.OriginalName</span>
+                                                <span class="muted">(@CommentAttachments.SizeLabel(att.Size))</span>
+                                            </a>
+                                            <a class="chat-file-down-link" href="@downUrl" title="Tải file về máy" download>⬇️ Tải về</a>
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <a class="chat-file" href="@downUrl" target="_blank" download>
+                                        <span class="chat-file-icon">&#128206;</span>
+                                        <span class="chat-file-label">@att.OriginalName</span>
+                                        <span class="muted">(@CommentAttachments.SizeLabel(att.Size))</span>
+                                    </a>
+                                }
                             }
                         </div>
                     }
                     else if (!string.IsNullOrEmpty(c.AttachmentFile))
                     {
-                        <a class="chat-file" href="@Url.Action("Attachment", "Checklist", new { commentId = c.Id })" target="_blank">
-                            <span class="chat-file-icon">&#128206;</span>
-                            <span class="chat-file-label">@c.AttachmentName</span>
-                            <span class="muted">(@CommentAttachments.SizeLabel(c.AttachmentSize))</span>
-                        </a>
+                        var isImg = CommentAttachments.IsImage(c.AttachmentName);
+                        var viewUrl = Url.Action("Attachment", "Checklist", new { commentId = c.Id, download = false });
+                        var downUrl = Url.Action("Attachment", "Checklist", new { commentId = c.Id, download = true });
+                        if (isImg)
+                        {
+                            <div class="chat-file-img-item">
+                                <a class="chat-img-thumb js-preview-img" href="@viewUrl" data-img-url="@viewUrl" data-img-name="@c.AttachmentName" data-img-down="@downUrl" title="Nhấp để xem ảnh lớn">
+                                    <img src="@viewUrl" alt="@c.AttachmentName" loading="lazy" />
+                                    <span class="chat-img-zoom-hint" title="Xem ảnh">🔍</span>
+                                </a>
+                                <div class="chat-file-img-meta">
+                                    <a class="chat-file chat-file-image js-preview-img" href="@viewUrl" data-img-url="@viewUrl" data-img-name="@c.AttachmentName" data-img-down="@downUrl" title="Nhấp để xem ảnh lớn">
+                                        <span class="chat-file-icon">🖼️</span>
+                                        <span class="chat-file-label">@c.AttachmentName</span>
+                                        <span class="muted">(@CommentAttachments.SizeLabel(c.AttachmentSize))</span>
+                                    </a>
+                                    <a class="chat-file-down-link" href="@downUrl" title="Tải file về máy" download>⬇️ Tải về</a>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <a class="chat-file" href="@downUrl" target="_blank" download>
+                                <span class="chat-file-icon">&#128206;</span>
+                                <span class="chat-file-label">@c.AttachmentName</span>
+                                <span class="muted">(@CommentAttachments.SizeLabel(c.AttachmentSize))</span>
+                            </a>
+                        }
                     }
                 }
             }
