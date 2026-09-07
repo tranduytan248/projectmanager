@@ -194,7 +194,7 @@ namespace TTKDGP.ProjectManager.Controllers.Api
         /// Noi dung da thu hoi thi khong tra Content.</summary>
         public static TaskCommentDto ToDto(WorkComment comment, int currentUserId, bool canModerate)
         {
-            return new TaskCommentDto
+            var dto = new TaskCommentDto
             {
                 Id = comment.Id,
                 AuthorName = comment.AuthorName,
@@ -205,6 +205,31 @@ namespace TTKDGP.ProjectManager.Controllers.Api
                 AttachmentName = comment.IsDeleted ? null : comment.AttachmentName,
                 CanRecall = !comment.IsDeleted && (comment.UserId == currentUserId || canModerate)
             };
+
+            if (!comment.IsDeleted && comment.HasAttachment)
+            {
+                var attList = comment.Attachments;
+                if (attList != null && attList.Count > 0)
+                {
+                    dto.Attachments = attList.Select(a => new CommentAttachmentDto
+                    {
+                        StoredName = a.StoredName,
+                        OriginalName = a.OriginalName,
+                        Size = a.Size
+                    }).ToList();
+                }
+                else if (!string.IsNullOrEmpty(comment.AttachmentFile))
+                {
+                    dto.Attachments.Add(new CommentAttachmentDto
+                    {
+                        StoredName = comment.AttachmentFile,
+                        OriginalName = comment.AttachmentName,
+                        Size = comment.AttachmentSize
+                    });
+                }
+            }
+
+            return dto;
         }
 
         /// <summary>Nguoi co the bi @nhac — y het cach ChecklistController.BuildComments dung

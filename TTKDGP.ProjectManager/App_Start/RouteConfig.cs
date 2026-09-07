@@ -72,6 +72,13 @@ namespace TTKDGP.ProjectManager
                 defaults: new { controller = "Home", action = "Support" }
             );
 
+            // Phục vụ ảnh mô tả an toàn từ App_Data/task_images/{taskFolder}/{fileName}
+            routes.MapRoute(
+                name: "UploadImage",
+                url: "Upload/Image/{taskFolder}/{fileName}",
+                defaults: new { controller = "Upload", action = "ViewImage" }
+            );
+
             routes.MapRoute(
                 name: "Default",
                 url: "{controller}/{action}/{id}",

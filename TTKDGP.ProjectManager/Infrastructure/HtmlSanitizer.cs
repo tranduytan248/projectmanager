@@ -202,6 +202,7 @@ namespace TTKDGP.ProjectManager.Infrastructure
 
             if (value.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
                 || value.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+                || value.StartsWith("/Upload/", StringComparison.OrdinalIgnoreCase)
                 || value.StartsWith("/Uploads/", StringComparison.OrdinalIgnoreCase)
                 || value.StartsWith("data:image/", StringComparison.OrdinalIgnoreCase))
             {

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -614,10 +614,32 @@ namespace TTKDGP.ProjectManager.Controllers
         // action. An toàn vì HtmlSanitizer.Clean ngay bên dưới lọc về danh sách thẻ trắng.
         [ValidateInput(false)]
         [AppAuthorize(Permission = "wtasks.view")]
-        public ActionResult Comment(int id, string content, HttpPostedFileBase file)
+        public ActionResult Comment(int id, string content, IEnumerable<HttpPostedFileBase> files, HttpPostedFileBase file = null)
         {
             var task = Repository.WorkTasks.Find(id);
             if (task == null || !CanSeeTask(task)) return HttpNotFound();
+
+            // Thu thập tất cả các file tải lên từ tham số hoặc Request.Files
+            var uploadedFiles = new List<HttpPostedFileBase>();
+            if (files != null)
+            {
+                uploadedFiles.AddRange(files.Where(f => f != null && f.ContentLength > 0));
+            }
+            if (file != null && file.ContentLength > 0 && !uploadedFiles.Contains(file))
+            {
+                uploadedFiles.Add(file);
+            }
+            if (uploadedFiles.Count == 0 && Request.Files != null && Request.Files.Count > 0)
+            {
+                for (int i = 0; i < Request.Files.Count; i++)
+                {
+                    var f = Request.Files[i];
+                    if (f != null && f.ContentLength > 0 && !uploadedFiles.Contains(f))
+                    {
+                        uploadedFiles.Add(f);
+                    }
+                }
+            }
 
             // Nội dung soạn bằng trình soạn thảo (HTML) — lọc về tập thẻ an toàn TRƯỚC khi lưu,
             // vì chỗ hiển thị dùng Html.Raw. Clean trả null khi chỉ có thẻ rỗng, nên kiểm "có
@@ -625,7 +647,7 @@ namespace TTKDGP.ProjectManager.Controllers
             // "<div><br></div>", tính là có nội dung thì sẽ lưu một dòng trao đổi trống trơn.
             var cleaned = HtmlSanitizer.Clean(content);
             var hasText = !string.IsNullOrWhiteSpace(cleaned);
-            var hasFile = file != null && file.ContentLength > 0;
+            var hasFile = uploadedFiles.Count > 0;
 
             if (hasText || hasFile)
             {
@@ -639,7 +661,7 @@ namespace TTKDGP.ProjectManager.Controllers
                 };
 
                 string error;
-                if (!CommentAttachments.TrySave(file, comment, out error))
+                if (!CommentAttachments.TrySave(uploadedFiles, comment, out error))
                 {
                     Response.StatusCode = 400;
                     Response.TrySkipIisCustomErrors = true;
@@ -669,7 +691,7 @@ namespace TTKDGP.ProjectManager.Controllers
         /// xem được việc thì tải được file; nội dung đã thu hồi thì file cũng khoá theo.
         /// </summary>
         [AppAuthorize(Permission = "wtasks.view")]
-        public ActionResult Attachment(int commentId)
+        public ActionResult Attachment(int commentId, string fileName = null)
         {
             var comment = Repository.WorkComments.Find(commentId);
             if (comment == null || comment.IsDeleted || !comment.HasAttachment) return HttpNotFound();
@@ -677,12 +699,33 @@ namespace TTKDGP.ProjectManager.Controllers
             var task = Repository.WorkTasks.Find(comment.TaskId);
             if (task == null || !CanSeeTask(task)) return HttpNotFound();
 
-            var path = CommentAttachments.FullPath(comment.AttachmentFile);
+            string targetStored = null;
+            string targetDisplay = null;
+
+            if (!string.IsNullOrWhiteSpace(fileName))
+            {
+                var item = comment.Attachments.FirstOrDefault(a => string.Equals(a.StoredName, fileName, StringComparison.OrdinalIgnoreCase));
+                if (item != null)
+                {
+                    targetStored = item.StoredName;
+                    targetDisplay = item.OriginalName;
+                }
+            }
+
+            if (targetStored == null)
+            {
+                targetStored = comment.AttachmentFile;
+                targetDisplay = comment.AttachmentName;
+            }
+
+            if (string.IsNullOrWhiteSpace(targetStored)) return HttpNotFound();
+
+            var path = CommentAttachments.FullPath(targetStored, comment.TaskId);
             if (path == null) return HttpNotFound();
 
             // Luôn trả kiểu tải-về chung chung: trình duyệt tải file chứ không thực thi/nhúng.
             return File(path, "application/octet-stream",
-                string.IsNullOrWhiteSpace(comment.AttachmentName) ? "tep-dinh-kem" : comment.AttachmentName);
+                string.IsNullOrWhiteSpace(targetDisplay) ? "tep-dinh-kem" : targetDisplay);
         }
 
         /// <summary>Thu hồi nội dung. Không xoá cứng để mạch hội thoại không đứt quãng.</summary>
@@ -961,7 +1004,37 @@ namespace TTKDGP.ProjectManager.Controllers
             foreach (var c in Repository.WorkComments.All()
                          .Where(c => deletingIds.Contains(c.TaskId) && c.HasAttachment))
             {
-                CommentAttachments.Delete(c.AttachmentFile);
+                var attList = c.Attachments;
+                if (attList != null && attList.Count > 0)
+                {
+                    foreach (var att in attList)
+                    {
+                        CommentAttachments.Delete(att.StoredName, c.TaskId);
+                    }
+                }
+                else
+                {
+                    CommentAttachments.Delete(c.AttachmentFile, c.TaskId);
+                }
+            }
+            foreach (var delId in deletingIds)
+            {
+                try
+                {
+                    var appDataAtt = System.Web.Hosting.HostingEnvironment.MapPath("~/App_Data/attachments");
+                    if (!string.IsNullOrEmpty(appDataAtt))
+                    {
+                        var attDir = System.IO.Path.Combine(appDataAtt, delId.ToString());
+                        if (System.IO.Directory.Exists(attDir)) System.IO.Directory.Delete(attDir, true);
+                    }
+                    var appDataImg = System.Web.Hosting.HostingEnvironment.MapPath("~/App_Data/task_images");
+                    if (!string.IsNullOrEmpty(appDataImg))
+                    {
+                        var imgDir = System.IO.Path.Combine(appDataImg, delId.ToString());
+                        if (System.IO.Directory.Exists(imgDir)) System.IO.Directory.Delete(imgDir, true);
+                    }
+                }
+                catch { }
             }
 
             // Dọn luôn giờ công đã ghi: để sót dòng mồ côi thì tổng giờ theo NGÀY của người đó

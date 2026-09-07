@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
@@ -315,14 +316,35 @@ namespace TTKDGP.ProjectManager.Controllers.Api
         /// ChecklistController.Comment ben web.</summary>
         [HttpPost]
         [ValidateInput(false)]
-        public ActionResult Comment(int id, string content, HttpPostedFileBase file)
+        public ActionResult Comment(int id, string content, IEnumerable<HttpPostedFileBase> files, HttpPostedFileBase file = null)
         {
             var task = Repository.WorkTasks.Find(id);
             if (task == null || !CanSeeTask(task)) return HttpNotFound();
 
+            var uploadedFiles = new List<HttpPostedFileBase>();
+            if (files != null)
+            {
+                uploadedFiles.AddRange(files.Where(f => f != null && f.ContentLength > 0));
+            }
+            if (file != null && file.ContentLength > 0 && !uploadedFiles.Contains(file))
+            {
+                uploadedFiles.Add(file);
+            }
+            if (uploadedFiles.Count == 0 && Request.Files != null && Request.Files.Count > 0)
+            {
+                for (int i = 0; i < Request.Files.Count; i++)
+                {
+                    var f = Request.Files[i];
+                    if (f != null && f.ContentLength > 0 && !uploadedFiles.Contains(f))
+                    {
+                        uploadedFiles.Add(f);
+                    }
+                }
+            }
+
             var cleaned = HtmlSanitizer.Clean(content);
             var hasText = !string.IsNullOrWhiteSpace(cleaned);
-            var hasFile = file != null && file.ContentLength > 0;
+            var hasFile = uploadedFiles.Count > 0;
 
             if (!hasText && !hasFile) return BadRequest("Vui lòng nhập nội dung.");
 
@@ -336,7 +358,7 @@ namespace TTKDGP.ProjectManager.Controllers.Api
             };
 
             string error;
-            if (!CommentAttachments.TrySave(file, comment, out error))
+            if (!CommentAttachments.TrySave(uploadedFiles, comment, out error))
             {
                 return BadRequest(error);
             }
@@ -359,7 +381,7 @@ namespace TTKDGP.ProjectManager.Controllers.Api
         /// nay thi tai duoc file. Luon tra octet-stream de trinh duyet/thiet bi TAI VE chu khong
         /// nhung/thuc thi, dung y het ly do bao mat ben web.</summary>
         [HttpGet]
-        public ActionResult Attachment(int commentId)
+        public ActionResult Attachment(int commentId, string fileName = null)
         {
             var comment = Repository.WorkComments.Find(commentId);
             if (comment == null || comment.IsDeleted || !comment.HasAttachment) return HttpNotFound();
@@ -367,11 +389,32 @@ namespace TTKDGP.ProjectManager.Controllers.Api
             var task = Repository.WorkTasks.Find(comment.TaskId);
             if (task == null || !CanSeeTask(task)) return HttpNotFound();
 
-            var path = CommentAttachments.FullPath(comment.AttachmentFile);
+            string targetStored = null;
+            string targetDisplay = null;
+
+            if (!string.IsNullOrWhiteSpace(fileName))
+            {
+                var item = comment.Attachments.FirstOrDefault(a => string.Equals(a.StoredName, fileName, StringComparison.OrdinalIgnoreCase));
+                if (item != null)
+                {
+                    targetStored = item.StoredName;
+                    targetDisplay = item.OriginalName;
+                }
+            }
+
+            if (targetStored == null)
+            {
+                targetStored = comment.AttachmentFile;
+                targetDisplay = comment.AttachmentName;
+            }
+
+            if (string.IsNullOrWhiteSpace(targetStored)) return HttpNotFound();
+
+            var path = CommentAttachments.FullPath(targetStored, comment.TaskId);
             if (path == null) return HttpNotFound();
 
             return File(path, "application/octet-stream",
-                string.IsNullOrWhiteSpace(comment.AttachmentName) ? "tep-dinh-kem" : comment.AttachmentName);
+                string.IsNullOrWhiteSpace(targetDisplay) ? "tep-dinh-kem" : targetDisplay);
         }
 
         /// <summary>Mirror ChecklistController.RecallComment — chi chinh chu, PM du an hoac Quan

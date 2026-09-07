@@ -243,11 +243,28 @@
                         }
                         if (c.HasAttachment)
                         {
-                            <a class="chat-file" href="@Url.Action("Attachment", "Checklist", new { commentId = c.Id })">
-                                <span class="chat-file-icon">&#128206;</span>
-                                <span class="chat-file-label">@c.AttachmentName</span>
-                                <span class="muted">(@TTKDGP.ProjectManager.Infrastructure.CommentAttachments.SizeLabel(c.AttachmentSize))</span>
-                            </a>
+                            var attList = c.Attachments;
+                            if (attList != null && attList.Count > 0)
+                            {
+                                <div class="chat-files-list">
+                                    @foreach (var att in attList)
+                                    {
+                                        <a class="chat-file" href="@Url.Action("Attachment", "Checklist", new { commentId = c.Id, fileName = att.StoredName })" target="_blank">
+                                            <span class="chat-file-icon">&#128206;</span>
+                                            <span class="chat-file-label">@att.OriginalName</span>
+                                            <span class="muted">(@TTKDGP.ProjectManager.Infrastructure.CommentAttachments.SizeLabel(att.Size))</span>
+                                        </a>
+                                    }
+                                </div>
+                            }
+                            else if (!string.IsNullOrEmpty(c.AttachmentFile))
+                            {
+                                <a class="chat-file" href="@Url.Action("Attachment", "Checklist", new { commentId = c.Id })" target="_blank">
+                                    <span class="chat-file-icon">&#128206;</span>
+                                    <span class="chat-file-label">@c.AttachmentName</span>
+                                    <span class="muted">(@TTKDGP.ProjectManager.Infrastructure.CommentAttachments.SizeLabel(c.AttachmentSize))</span>
+                                </a>
+                            }
                         }
                     }
                 </div>
@@ -267,9 +284,9 @@
             </div>
             <div class="form-field">
                 <label for="file">File đính kèm</label>
-                <input type="file" id="file" name="file"
+                <input type="file" id="file" name="files" multiple
                        accept=".png,.jpg,.jpeg,.gif,.webp,.bmp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.md,.zip,.rar,.7z" />
-                <span class="hint">Tài liệu, ảnh hoặc file nén, tối đa 10 MB. Không bắt buộc.</span>
+                <span class="hint">Tài liệu, ảnh hoặc file nén, tối đa 10 MB mỗi file (có thể chọn nhiều file). Không bắt buộc.</span>
             </div>
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">Gửi</button>

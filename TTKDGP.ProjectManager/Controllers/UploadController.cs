@@ -9,8 +9,9 @@ using TTKDGP.ProjectManager.Services;
 namespace TTKDGP.ProjectManager.Controllers
 {
     /// <summary>
-    /// Bộ điều khiển tiếp nhận tải lên hình ảnh từ trình soạn thảo mô tả (copy-paste hoặc kéo thả).
-    /// Ảnh được tự động chuyển lên Firebase Storage để tối ưu bộ nhớ máy chủ và cơ sở dữ liệu.
+    /// Bộ điều khiển tiếp nhận tải lên và phục vụ hình ảnh từ trình soạn thảo mô tả (copy-paste hoặc kéo thả).
+    /// Ảnh được lưu vào App_Data/task_images/{taskId}/ được phân quyền an toàn, tự động nén kích thước
+    /// để tối ưu hóa bộ nhớ máy chủ và cơ sở dữ liệu.
     /// </summary>
     public class UploadController : BaseController
     {
@@ -20,7 +21,7 @@ namespace TTKDGP.ProjectManager.Controllers
         };
 
         [HttpPost]
-        public async Task<ActionResult> Image(HttpPostedFileBase file)
+        public async Task<ActionResult> Image(HttpPostedFileBase file, int? taskId)
         {
             if (CurrentUser == null)
             {
@@ -50,13 +51,42 @@ namespace TTKDGP.ProjectManager.Controllers
 
             try
             {
-                var url = await ImageStorageService.SaveAndOptimizeImageAsync(file.InputStream, file.FileName, file.ContentType);
+                var url = await ImageStorageService.SaveAndOptimizeImageAsync(file.InputStream, file.FileName, file.ContentType, taskId);
                 return Json(new { success = true, url = url });
             }
             catch (Exception ex)
             {
                 return Json(new { success = false, message = "Không thể tải ảnh lên hệ thống: " + ex.Message });
             }
+        }
+
+        /// <summary>
+        /// Phục vụ ảnh an toàn từ App_Data/task_images/{taskFolder}/{fileName}.
+        /// Bắt buộc người dùng đã đăng nhập hệ thống để xem ảnh nội bộ.
+        /// </summary>
+        [HttpGet]
+        public ActionResult ViewImage(string taskFolder, string fileName)
+        {
+            if (CurrentUser == null)
+            {
+                return new HttpStatusCodeResult(401, "Chưa đăng nhập.");
+            }
+
+            var physicalPath = ImageStorageService.GetImagePhysicalPath(taskFolder, fileName);
+            if (physicalPath == null || !System.IO.File.Exists(physicalPath))
+            {
+                return HttpNotFound();
+            }
+
+            var ext = Path.GetExtension(fileName)?.ToLowerInvariant();
+            var mime = "image/jpeg";
+            if (ext == ".png") mime = "image/png";
+            else if (ext == ".gif") mime = "image/gif";
+            else if (ext == ".webp") mime = "image/webp";
+
+            Response.Cache.SetCacheability(HttpCacheability.Private);
+            Response.Cache.SetMaxAge(TimeSpan.FromDays(7));
+            return File(physicalPath, mime);
         }
     }
 }

@@ -42,11 +42,28 @@ else
                 }
                 if (c.HasAttachment)
                 {
-                    <a class="chat-file" href="@Url.Action("Attachment", "Checklist", new { commentId = c.Id })">
-                        <span class="chat-file-icon">&#128206;</span>
-                        <span class="chat-file-label">@c.AttachmentName</span>
-                        <span class="muted">(@CommentAttachments.SizeLabel(c.AttachmentSize))</span>
-                    </a>
+                    var attList = c.Attachments;
+                    if (attList != null && attList.Count > 0)
+                    {
+                        <div class="chat-files-list">
+                            @foreach (var att in attList)
+                            {
+                                <a class="chat-file" href="@Url.Action("Attachment", "Checklist", new { commentId = c.Id, fileName = att.StoredName })" target="_blank">
+                                    <span class="chat-file-icon">&#128206;</span>
+                                    <span class="chat-file-label">@att.OriginalName</span>
+                                    <span class="muted">(@CommentAttachments.SizeLabel(att.Size))</span>
+                                </a>
+                            }
+                        </div>
+                    }
+                    else if (!string.IsNullOrEmpty(c.AttachmentFile))
+                    {
+                        <a class="chat-file" href="@Url.Action("Attachment", "Checklist", new { commentId = c.Id })" target="_blank">
+                            <span class="chat-file-icon">&#128206;</span>
+                            <span class="chat-file-label">@c.AttachmentName</span>
+                            <span class="muted">(@CommentAttachments.SizeLabel(c.AttachmentSize))</span>
+                        </a>
+                    }
                 }
             }
         </div>

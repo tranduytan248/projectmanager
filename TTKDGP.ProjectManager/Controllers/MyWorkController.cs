@@ -309,7 +309,7 @@ namespace TTKDGP.ProjectManager.Controllers
             var task = Repository.WorkTasks.Find(id);
             if (task == null || !CanSeeTask(task) || !task.HasAttachment) return HttpNotFound();
 
-            var path = CommentAttachments.FullPath(task.AttachmentFile);
+            var path = CommentAttachments.FullPath(task.AttachmentFile, task.Id);
             if (path == null) return HttpNotFound();
 
             // Luôn trả kiểu tải-về chung chung: trình duyệt tải file chứ không thực thi/nhúng.
@@ -325,17 +325,39 @@ namespace TTKDGP.ProjectManager.Controllers
         // [AllowHtml] không với tới. Lọc bằng HtmlSanitizer.Clean trước khi lưu.
         [ValidateInput(false)]
         [AppAuthorize(Permission = "wtasks.view")]
-        public ActionResult Comment(int id, string content, HttpPostedFileBase file)
+        public ActionResult Comment(int id, string content, IEnumerable<HttpPostedFileBase> files, HttpPostedFileBase file = null)
         {
             var task = Repository.WorkTasks.Find(id);
             if (task == null || !CanSeeTask(task)) return HttpNotFound();
+
+            // Thu thập tất cả các file tải lên từ tham số hoặc Request.Files
+            var uploadedFiles = new List<HttpPostedFileBase>();
+            if (files != null)
+            {
+                uploadedFiles.AddRange(files.Where(f => f != null && f.ContentLength > 0));
+            }
+            if (file != null && file.ContentLength > 0 && !uploadedFiles.Contains(file))
+            {
+                uploadedFiles.Add(file);
+            }
+            if (uploadedFiles.Count == 0 && Request.Files != null && Request.Files.Count > 0)
+            {
+                for (int i = 0; i < Request.Files.Count; i++)
+                {
+                    var f = Request.Files[i];
+                    if (f != null && f.ContentLength > 0 && !uploadedFiles.Contains(f))
+                    {
+                        uploadedFiles.Add(f);
+                    }
+                }
+            }
 
             // Lọc về tập thẻ an toàn TRƯỚC khi lưu, vì chỗ hiển thị dùng Html.Raw. Clean trả null
             // khi chỉ có thẻ rỗng, nên kiểm "có chữ hay không" phải xét SAU khi lọc — cùng khuôn
             // với ChecklistController.Comment.
             var cleaned = HtmlSanitizer.Clean(content);
             var hasText = !string.IsNullOrWhiteSpace(cleaned);
-            var hasFile = file != null && file.ContentLength > 0;
+            var hasFile = uploadedFiles.Count > 0;
 
             if (!hasText && !hasFile)
             {
@@ -353,7 +375,7 @@ namespace TTKDGP.ProjectManager.Controllers
             };
 
             string error;
-            if (!CommentAttachments.TrySave(file, comment, out error))
+            if (!CommentAttachments.TrySave(uploadedFiles, comment, out error))
             {
                 NotifyError(error);
                 return RedirectToAction("Detail", new { id = id });

@@ -33,6 +33,7 @@ TTKDGP.ProjectManager/App_Data/*.json
 TTKDGP.ProjectManager/App_Data/*.tmp
 TTKDGP.ProjectManager/App_Data/*.bak
 TTKDGP.ProjectManager/App_Data/attachments/
+TTKDGP.ProjectManager/App_Data/task_images/
 TTKDGP.ProjectManager/Uploads/
 !TTKDGP.ProjectManager/App_Data/seed/
 

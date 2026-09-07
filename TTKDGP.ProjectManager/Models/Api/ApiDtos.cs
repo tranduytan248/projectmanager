@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Web.Mvc;
 
@@ -210,6 +210,13 @@ namespace TTKDGP.ProjectManager.Models.Api
     /// ve chu thuong nhu truoc — trao doi tren mobile gio cung la rich text giong web. Noi dung da
     /// thu hoi thi Content la null. CanRecall tinh san o server: dung cua chinh minh, hoac la
     /// PM/Quan ly To (CanModerate).</summary>
+    public class CommentAttachmentDto
+    {
+        public string StoredName { get; set; }
+        public string OriginalName { get; set; }
+        public long Size { get; set; }
+    }
+
     public class TaskCommentDto
     {
         public int Id { get; set; }
@@ -220,6 +227,12 @@ namespace TTKDGP.ProjectManager.Models.Api
         public bool HasAttachment { get; set; }
         public string AttachmentName { get; set; }
         public bool CanRecall { get; set; }
+        public List<CommentAttachmentDto> Attachments { get; set; }
+
+        public TaskCommentDto()
+        {
+            Attachments = new List<CommentAttachmentDto>();
+        }
     }
 
     public class CommentsSummaryDto
