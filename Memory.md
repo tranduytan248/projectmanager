@@ -2,6 +2,37 @@
 
 ---
 
+# [2026-09-07] Tính năng Web: Lightbox Modal xem ảnh trực tiếp và hiển thị Thumbnail ảnh trong Trao đổi & Chi tiết công việc
+
+## 1. Vấn đề & Hiện tượng
+- **Hiện tượng**: Khi người dùng click vào tệp ảnh đính kèm (ví dụ `.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`) trong phần Trao đổi của hộp thoại Chi tiết công việc hoặc trang Chi tiết công việc cá nhân, trình duyệt tự động tải tệp về máy tính (`Downloads`) thay vì mở giao diện xem ảnh trực tiếp.
+- **Nguyên nhân**:
+  - `ChecklistController.Attachment` và `MyWorkController.Attachment` luôn trả về header `Content-Disposition: attachment; filename=...` với Content-Type `application/octet-stream`.
+  - Frontend chỉ render liên kết tải văn bản thuần `<a class="chat-file" ...>`, chưa có thumbnail xem trước và chưa có thành phần Lightbox Modal.
+
+## 2. Giải pháp kỹ thuật
+- **Backend**:
+  - `CommentAttachments.cs`: Bổ sung hàm `GetContentType(string fileNameOrExt)` trả về MIME Content-Type chuẩn (`image/png`, `image/jpeg`, `image/gif`, `image/webp`, `image/bmp`, `image/svg+xml`, `application/pdf`, `video/mp4`...).
+  - `ChecklistController.Attachment`, `MyWorkController.Attachment` và `Api/ChecklistApiController.Attachment`:
+    - Thêm tham số `bool download = false`.
+    - Khi `!download && CommentAttachments.IsImage(targetDisplay)`: Trả về `File(path, contentType)` dưới dạng `inline` (không gán `fileDownloadName` để ASP.NET không sinh `attachment` header).
+    - Khi `download == true` hoặc là file tài liệu: Tiếp tục trả về `File(path, "application/octet-stream", targetDisplay)` để tải về.
+- **Frontend & UI/UX**:
+  - `Views/Checklist/_Comments.cshtml`, `Views/Checklist/_Detail.cshtml` và `Views/MyWork/Detail.cshtml`:
+    - Đối với file ảnh: Hiển thị card thumbnail xem trước ảnh trực quan thu nhỏ (bo góc 8px, viền và bóng đổ nhẹ, icon kính lúp khi hover) kèm tên ảnh và nút `⬇️ Tải về`.
+    - Gán class `.js-preview-img` và `data-preview-img="true"` vào cả thumbnail và thẻ tên ảnh.
+  - `Scripts/app.js`:
+    - Xây dựng component `AppLightbox` quản lý hiển thị modal Lightbox xem ảnh toàn màn hình với spinner loading, phím tắt `Esc`, click ra ngoài vùng ảnh để đóng, nút tải ảnh về máy và nút mở tab mới.
+    - Bắt sự kiện click cho `.js-preview-img`, `[data-preview-img="true"]`, `.rich-content img` và `.chat-img-link`/`.chat-msg-img`.
+  - `Content/site.css`:
+    - Styling chuyên nghiệp theo phong cách Dark theme hiện đại: `backdrop-filter: blur(8px)`, `z-index: 105000` (đảm bảo nổi lên trên `AppModal`), responsive tự co giãn hình ảnh vừa màn hình.
+
+## 3. Kiểm thử & Xác minh
+- **MSBuild**: Biên dịch thành công 0 lỗi, tự động thêm BOM UTF-8 cho các view `.cshtml`.
+- **Flutter**: `flutter analyze` 0 issues, `flutter test` 85/85 tests PASS 100%.
+
+---
+
 # [2026-09-04] Bản vá Android Google Play (v1.01.002+8): Đảm bảo kết nối HTTP pmncpt.cenit.vn
 
 ## 1. Vấn đề & Nguyên nhân
