@@ -40,6 +40,7 @@ TTKDGP.ProjectManager/Uploads/
 # Trình duyệt Playwright tải về lúc chạy (~500 MB) và phiên đăng nhập GoConnect —
 # là dữ liệu vận hành sinh ra tại chỗ, không phải mã nguồn.
 TTKDGP.ProjectManager/App_Data/playwright-browsers/
+TTKDGP.ProjectManager/App_Data/obscura/
 TTKDGP.ProjectManager/App_Data/goconnect-debug/
 TTKDGP.ProjectManager/App_Data/goconnect-lastrun.txt
 
