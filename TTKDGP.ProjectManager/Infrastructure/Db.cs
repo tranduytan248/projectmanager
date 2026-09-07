@@ -27,7 +27,7 @@ namespace TTKDGP.ProjectManager.Infrastructure
                     InitialCatalog = AppSettings.Db.Database,
                     // SQL Server 2012 thường dùng chứng chỉ tự ký, không xác thực CA được.
                     TrustServerCertificate = true,
-                    ConnectTimeout = 10,
+                    ConnectTimeout = 30,
                     // Toàn hệ thống dùng tiếng Việt, bật MultipleActiveResultSets cho chắc khi đọc lồng nhau.
                     MultipleActiveResultSets = true
                 };
