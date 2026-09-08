@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -223,6 +223,7 @@ namespace TTKDGP.ProjectManager.Controllers
 
                 WorkService.ApplyState(model, model.State, model.Progress);
                 Repository.WorkTasks.Update(model);
+                NotificationService.TaskStatusChanged(model, current.State, model.State, CurrentUserId, actor, model.Progress);
 
                 // Đổi người thực hiện thì báo cho người MỚI như một lần giao việc.
                 if (model.AssigneeUserId != current.AssigneeUserId && model.AssigneeUserId != CurrentUserId)

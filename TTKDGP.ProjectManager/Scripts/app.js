@@ -500,29 +500,71 @@
             }
             $area.html(value);
 
-            function sync() { ta.value = $area.html(); }
+            function sync() {
+                var $clone = $area.clone();
+                $clone.find('.rich-img-uploading').remove();
+                ta.value = $clone.html();
+            }
 
             // Hàm xử lý upload ảnh lên Firebase Storage và chèn thẻ img vào trình soạn thảo
+            var activeUploads = 0;
             function uploadAndInsert(file) {
                 if (!file || !file.type || file.type.indexOf('image/') !== 0) return;
 
-                // Tạo ID tạm thời cho phần tử đang tải
+                // Tạo phần tử loading trực tiếp trong DOM để giữ tham chiếu chính xác
                 var tempId = 'img_loading_' + Math.random().toString(36).substring(2, 10);
-                var loadingHtml = '<span id="' + tempId + '" class="rich-img-uploading" contenteditable="false">⏳ Đang tải ảnh lên...</span>&nbsp;';
+                var $loading = $('<span id="' + tempId + '" data-temp-id="' + tempId + '" class="rich-img-uploading" contenteditable="false">⏳ Đang tải ảnh lên...</span>');
 
                 $area.trigger('focus');
                 var sel = window.getSelection();
+                var inserted = false;
                 if (sel && sel.rangeCount > 0) {
-                    document.execCommand('insertHTML', false, loadingHtml);
-                } else {
-                    $area.append(loadingHtml);
+                    var r = sel.getRangeAt(0);
+                    // Đảm bảo vị trí con trỏ thực sự nằm bên trong ô soạn thảo $area
+                    if ($.contains($area[0], r.commonAncestorContainer) || $area[0] === r.commonAncestorContainer) {
+                        try {
+                            r.deleteContents();
+                            r.insertNode($loading[0]);
+                            var space = document.createTextNode('\u00A0');
+                            if ($loading[0].nextSibling) {
+                                $loading[0].parentNode.insertBefore(space, $loading[0].nextSibling);
+                            } else {
+                                $loading[0].parentNode.appendChild(space);
+                            }
+                            var newRange = document.createRange();
+                            newRange.setStartAfter(space);
+                            newRange.collapse(true);
+                            sel.removeAllRanges();
+                            sel.addRange(newRange);
+                            inserted = true;
+                        } catch (ex) {
+                            inserted = false;
+                        }
+                    }
+                }
+                if (!inserted) {
+                    $area.append($loading);
+                }
+
+                activeUploads++;
+                var $form = $wrap.closest('form');
+                var $submitBtn = $form.find('[type="submit"]');
+                if ($submitBtn.length) {
+                    $submitBtn.prop('disabled', true).attr('data-uploading', '1');
+                }
+
+                function finishUpload() {
+                    activeUploads = Math.max(0, activeUploads - 1);
+                    if (activeUploads === 0 && $submitBtn.length) {
+                        $submitBtn.prop('disabled', false).removeAttr('data-uploading');
+                    }
                 }
 
                 var fd = new FormData();
                 fd.append('file', file);
 
                 // Tìm taskId từ form cha hoặc context (nếu có) để gom ảnh vào thư mục riêng của task
-                var taskId = $wrap.closest('form').find('input[name="id"], input[name="Id"], input[name="TaskId"], input[name="taskId"]').val()
+                var taskId = $form.find('input[name="id"], input[name="Id"], input[name="TaskId"], input[name="taskId"]').val()
                     || $wrap.closest('[data-task-id]').data('task-id')
                     || '';
                 if (taskId) {
@@ -537,22 +579,39 @@
                     contentType: false,
                     dataType: 'json'
                 }).done(function (res) {
-                    var $temp = $('#' + tempId);
+                    finishUpload();
                     if (res && res.success && res.url) {
                         var imgHtml = '<img src="' + res.url + '" class="rich-img" loading="lazy" /><br />';
-                        if ($temp.length) {
-                            $temp.replaceWith(imgHtml);
-                        } else {
+                        // Ưu tiên 1: Thay thế trực tiếp qua biến tham chiếu DOM $loading
+                        if ($loading[0] && $loading[0].parentNode) {
+                            $loading.replaceWith(imgHtml);
+                        }
+                        // Ưu tiên 2: Tìm theo ID hoặc data-temp-id
+                        else if ($area.find('#' + tempId + ', [data-temp-id="' + tempId + '"]').length) {
+                            $area.find('#' + tempId + ', [data-temp-id="' + tempId + '"]').replaceWith(imgHtml);
+                        }
+                        // Ưu tiên 3: Thay thế phần tử loading đầu tiên còn tồn tại trong ô soạn thảo
+                        else if ($area.find('.rich-img-uploading').length) {
+                            $area.find('.rich-img-uploading').first().replaceWith(imgHtml);
+                        }
+                        // Fallback: Chèn vào cuối
+                        else {
                             $area.append(imgHtml);
                         }
+                        // Dọn dẹp sạch sẽ bất kỳ thẻ loading nào còn sót lại
+                        $area.find('#' + tempId + ', [data-temp-id="' + tempId + '"]').remove();
                         sync();
                     } else {
-                        if ($temp.length) $temp.remove();
+                        $loading.remove();
+                        $area.find('#' + tempId + ', [data-temp-id="' + tempId + '"]').remove();
+                        sync();
                         window.alert((res && res.message) ? res.message : 'Không thể tải ảnh lên.');
                     }
                 }).fail(function () {
-                    var $temp = $('#' + tempId);
-                    if ($temp.length) $temp.remove();
+                    finishUpload();
+                    $loading.remove();
+                    $area.find('#' + tempId + ', [data-temp-id="' + tempId + '"]').remove();
+                    sync();
                     window.alert('Lỗi kết nối máy chủ khi tải ảnh.');
                 });
             }

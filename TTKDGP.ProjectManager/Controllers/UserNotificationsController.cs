@@ -54,15 +54,15 @@ namespace TTKDGP.ProjectManager.Controllers
                 return RedirectToAction("My", "Leaves");
             }
 
-            if (notification.ProjectId > 0)
-            {
-                return RedirectToAction("Index", "Checklist", new { projectId = notification.ProjectId });
-            }
-
-            // Việc ngoài dự án không có checklist — rơi về trang chi tiết của chính đầu việc.
+            // Nếu gắn với đầu việc cụ thể (hoàn thành, đổi trạng thái, trao đổi, việc con...) -> mở thẳng chi tiết công việc.
             if (notification.TaskId > 0)
             {
                 return RedirectToAction("Detail", "MyWork", new { id = notification.TaskId });
+            }
+
+            if (notification.ProjectId > 0)
+            {
+                return RedirectToAction("Index", "Checklist", new { projectId = notification.ProjectId });
             }
 
             return RedirectToAction("Tasks", "MyWork");

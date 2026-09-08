@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -79,6 +79,10 @@ namespace TTKDGP.ProjectManager.Services
                     return "Đơn nghỉ phép mới";
                 case NotificationTypes.LeaveResult:
                     return "Kết quả duyệt nghỉ phép";
+                case NotificationTypes.TaskCompleted:
+                    return "Hoàn thành công việc";
+                case NotificationTypes.TaskStatusChanged:
+                    return "Cập nhật công việc";
                 case "TraoDoiDuAn":
                     return "Trao đổi dự án";
                 default:
@@ -371,6 +375,79 @@ namespace TTKDGP.ProjectManager.Services
                 {
                     { "NoiDung", Infrastructure.HtmlSanitizer.ToDisplay(task.Description) }
                 });
+        }
+
+        /// <summary>
+        /// Báo cho người tạo/giao việc (AssignedByUserId) và người thực hiện (AssigneeUserId) khi
+        /// công việc được hoàn thành hoặc cập nhật trạng thái/tiến độ (web + email + FCM push).
+        /// Không báo cho chính người vừa thực hiện thao tác (actorUserId); người giao trùng người
+        /// nhận thì chỉ báo một lần (hoặc không báo nếu tự làm).
+        /// </summary>
+        public static void TaskStatusChanged(WorkTask task, string oldState, string newState,
+            int actorUserId, string actorName, int? progress = null)
+        {
+            if (task == null) return;
+
+            var stateChanged = !string.Equals(oldState, newState, StringComparison.OrdinalIgnoreCase);
+            var isDone = string.Equals(newState, TaskStates.Done, StringComparison.OrdinalIgnoreCase);
+
+            if (!stateChanged && (!progress.HasValue || progress.Value == task.Progress))
+            {
+                return;
+            }
+
+            var actor = string.IsNullOrWhiteSpace(actorName) ? "Một người" : actorName;
+            var type = isDone ? NotificationTypes.TaskCompleted : NotificationTypes.TaskStatusChanged;
+
+            string message;
+            if (isDone)
+            {
+                message = string.Format("{0} đã hoàn thành công việc \"{1}\".", actor, task.Title);
+            }
+            else if (stateChanged)
+            {
+                var displayState = TaskStates.Display(newState);
+                message = progress.HasValue && progress.Value > 0 && progress.Value < 100
+                    ? string.Format("{0} đã đổi trạng thái công việc \"{1}\" sang \"{2}\" ({3}%).",
+                        actor, task.Title, displayState, progress.Value)
+                    : string.Format("{0} đã đổi trạng thái công việc \"{1}\" sang \"{2}\".",
+                        actor, task.Title, displayState);
+            }
+            else
+            {
+                message = string.Format("{0} đã cập nhật tiến độ công việc \"{1}\" thành {2}%.",
+                    actor, task.Title, progress.Value);
+            }
+
+            // Người nhận: Người giao việc và người thực hiện (nếu khác actor)
+            var assignerId = task.AssignedByUserId;
+            if (assignerId <= 0 && !string.IsNullOrWhiteSpace(task.CreatedBy))
+            {
+                var creator = Repository.Users.All().FirstOrDefault(u =>
+                    string.Equals(u.FullName, task.CreatedBy, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(u.UserName, task.CreatedBy, StringComparison.OrdinalIgnoreCase));
+                if (creator != null) assignerId = creator.Id;
+            }
+
+            var recipients = new[] { assignerId, task.AssigneeUserId }
+                .Where(userId => userId > 0 && userId != actorUserId)
+                .Distinct();
+
+            foreach (var userId in recipients)
+            {
+                var n = Add(userId, type, message, task.ProjectId, task.Id);
+
+                EmailTemplateService.Send(userId, type,
+                    new Dictionary<string, string>
+                    {
+                        { "NguoiThucHien", actor },
+                        { "TenCongViec", task.Title },
+                        { "TenDuAn", string.IsNullOrWhiteSpace(task.ProjectName) ? "(ngoài dự án)" : task.ProjectName },
+                        { "TrangThaiMoi", TaskStates.Display(newState) },
+                        { "TienDo", (progress ?? task.Progress) + "%" },
+                        { "LienKet", OpenLink(n) }
+                    });
+            }
         }
 
         /// <summary>Tên người giao; trống thì gọi chung là Quản lý Tổ.</summary>

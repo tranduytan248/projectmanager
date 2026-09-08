@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -201,6 +201,7 @@ namespace TTKDGP.ProjectManager.Controllers.Api
             var now = DateTime.Now;
             var actor = CurrentUser == null ? null : CurrentUser.FullName;
             var previousAssignee = current.AssigneeUserId;
+            var previousState = current.State;
 
             current.Title = title.Trim();
             current.AssigneeUserId = assigneeUserId;
@@ -229,6 +230,7 @@ namespace TTKDGP.ProjectManager.Controllers.Api
             }
 
             Repository.WorkTasks.Update(current);
+            NotificationService.TaskStatusChanged(current, previousState, current.State, CurrentUserId, actor, current.Progress);
 
             if (assigneeUserId != previousAssignee && assigneeUserId != CurrentUserId)
             {

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -40,6 +40,10 @@ namespace TTKDGP.ProjectManager.Infrastructure
         public static string Clean(string html)
         {
             if (string.IsNullOrWhiteSpace(html)) return null;
+
+            // Loại bỏ hoàn toàn các badge / text tạm thời của trình soạn thảo nếu lỡ bị lưu vào DB
+            html = Regex.Replace(html, @"<span[^>]*class=""[^""]*rich-img-uploading[^""]*""[^>]*>.*?</span>(?:&nbsp;|\s)*", string.Empty, RegexOptions.IgnoreCase);
+            html = Regex.Replace(html, @"(?:[\u23F3\u231B]|&#\d+;)?\s*[\u0110\u0111Dd]ang\s*t[\u1EA3\u00E3aA]i\s*[\u1EA3\u00E3aA]nh(?:\s*l[\u00EA\u00E8\u00E9eE]n)?(?:\.{3}|\u2026|&hellip;)(?:&nbsp;|\s)*", string.Empty, RegexOptions.IgnoreCase);
 
             var sb = new StringBuilder(html.Length);
             var i = 0;

@@ -52,6 +52,18 @@ namespace TTKDGP.ProjectManager.Models
 
         /// <summary>Đơn xin nghỉ của mình đã được duyệt/từ chối — báo cho người xin nghỉ. Bấm vào mở "Nghỉ phép của tôi".</summary>
         public const string LeaveResult = "leave.result";
+
+        /// <summary>
+        /// Công việc đã hoàn thành — báo cho người giao việc / người liên quan (trừ người vừa thao tác).
+        /// Bấm vào mở chi tiết công việc.
+        /// </summary>
+        public const string TaskCompleted = "HoanThanhCongViec";
+
+        /// <summary>
+        /// Trạng thái hoặc tiến độ công việc thay đổi — báo cho người giao việc / người liên quan
+        /// (trừ người vừa thao tác). Bấm vào mở chi tiết công việc.
+        /// </summary>
+        public const string TaskStatusChanged = "TrangThaiViecThayDoi";
     }
 
     /// <summary>

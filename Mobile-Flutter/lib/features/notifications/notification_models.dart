@@ -16,6 +16,8 @@ class NotificationTypes {
   static const todoAdded = 'ViecConMoi';
   static const leaveRequested = 'leave.request';
   static const leaveResult = 'leave.result';
+  static const taskCompleted = 'HoanThanhCongViec';
+  static const taskStatusChanged = 'TrangThaiViecThayDoi';
 }
 
 class NotificationItem {

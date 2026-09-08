@@ -328,17 +328,17 @@ class FcmNotificationService {
       return;
     }
 
-    // 4. Nếu có ProjectId -> Mở Checklist dự án
-    if (projectId > 0) {
-      _navigateSafely(AppRoutes.checklist,
-          arguments: {'projectId': projectId.toString()});
-      return;
-    }
-
-    // 5. Nếu có TaskId (việc ngoài dự án) -> Mở Chi tiết công việc
+    // 4. Nếu có TaskId (công việc cụ thể, bao gồm hoàn thành/cập nhật) -> Mở Chi tiết công việc
     if (taskId > 0) {
       _navigateSafely(AppRoutes.taskDetail,
           arguments: {'taskId': taskId.toString()});
+      return;
+    }
+
+    // 5. Nếu có ProjectId -> Mở Checklist dự án
+    if (projectId > 0) {
+      _navigateSafely(AppRoutes.checklist,
+          arguments: {'projectId': projectId.toString()});
       return;
     }
 

@@ -327,7 +327,11 @@
 
         // Đọc HTML hiện có trong ô soạn thảo và đẩy ngược về textarea trước khi gửi.
         function syncInput() {
-            if ($area.length) $input.val($area.html());
+            if ($area.length) {
+                var $clone = $area.clone();
+                $clone.find('.rich-img-uploading').remove();
+                $input.val($clone.html());
+            }
         }
 
         // Còn chữ thật hay chỉ có thẻ rỗng (<br>, <div></div> do trình duyệt tự sinh).
@@ -497,6 +501,10 @@
             }
 
             if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                if ($area.find('.rich-img-uploading').length > 0) {
+                    alert('Ảnh đang được tải lên, vui lòng đợi trong giây lát...');
+                    return;
+                }
                 e.preventDefault();
                 $form.trigger('submit');
             }
@@ -549,6 +557,11 @@
         $form.on('submit', function (e) {
             e.preventDefault();
             e.stopPropagation();
+
+            if ($area.find('.rich-img-uploading').length > 0) {
+                alert('Ảnh đang được tải lên, vui lòng đợi trong giây lát...');
+                return;
+            }
 
             var hasFile = $file[0].files && $file[0].files.length > 0;
 

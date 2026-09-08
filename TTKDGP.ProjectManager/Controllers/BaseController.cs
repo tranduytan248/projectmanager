@@ -173,6 +173,7 @@ namespace TTKDGP.ProjectManager.Controllers
         {
             if (task == null) return false;
             if (CurrentUserId > 0 && task.AssigneeUserId == CurrentUserId) return true;
+            if (CurrentUserId > 0 && task.AssignedByUserId == CurrentUserId) return true;
             if (task.ProjectId > 0) return CanViewProject(task.ProjectId);
 
             return IsTeamManager;

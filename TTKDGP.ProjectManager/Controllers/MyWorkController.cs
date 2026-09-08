@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
@@ -282,6 +282,8 @@ namespace TTKDGP.ProjectManager.Controllers
             Repository.WorkTasks.Update(task);
             TaskActivityLogService.RecordFieldChanges(before, task, CurrentUserId,
                 CurrentUser == null ? null : CurrentUser.FullName);
+            NotificationService.TaskStatusChanged(task, before.State, task.State, CurrentUserId,
+                CurrentUser == null ? null : CurrentUser.FullName, task.Progress);
 
             // Nói thẳng ảnh hưởng tới điểm để người dùng biết ngay, khỏi chờ tới cuối tháng.
             if (task.State == TaskStates.Done)
