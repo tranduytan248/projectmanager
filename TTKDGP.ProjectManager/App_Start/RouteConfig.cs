@@ -1,4 +1,4 @@
-using System.Web.Mvc;
+﻿using System.Web.Mvc;
 using System.Web.Routing;
 
 namespace TTKDGP.ProjectManager
@@ -77,6 +77,13 @@ namespace TTKDGP.ProjectManager
                 name: "UploadImage",
                 url: "Upload/Image/{taskFolder}/{fileName}",
                 defaults: new { controller = "Upload", action = "ViewImage" }
+            );
+
+            // Phục vụ video mô tả an toàn từ App_Data/task_videos/{taskFolder}/{fileName}
+            routes.MapRoute(
+                name: "UploadVideo",
+                url: "Upload/Video/{taskFolder}/{fileName}",
+                defaults: new { controller = "Upload", action = "ViewVideo" }
             );
 
             routes.MapRoute(

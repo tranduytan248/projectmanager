@@ -211,6 +211,7 @@
     <Compile Include="Services\FcmPushService.cs" />
     <Compile Include="Services\FirebaseStorageService.cs" />
     <Compile Include="Services\ImageStorageService.cs" />
+    <Compile Include="Services\VideoStorageService.cs" />
     <Compile Include="Controllers\UploadController.cs" />
     <Compile Include="Services\EmailTemplateService.cs" />
     <Compile Include="Models\EmailTemplate.cs" />

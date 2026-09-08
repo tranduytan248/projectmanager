@@ -3046,6 +3046,36 @@ table.data tbody tr.row-due-danger > td:first-child::before { background: var(--
     display: none !important;
 }
 
+/* Video chèn trong trình soạn thảo và trang chi tiết */
+.rich-video {
+    max-width: 100%;
+    height: auto;
+    max-height: 480px;
+    border-radius: 8px;
+    margin: 8px 0;
+    display: block;
+    background: #000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* Badge trạng thái đang tải video lên */
+.rich-video-uploading {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: var(--bg-soft);
+    color: var(--text-muted);
+    font-size: 12.5px;
+    border: 1px dashed var(--border);
+    margin: 4px 0;
+    user-select: none;
+}
+.rich-content .rich-video-uploading {
+    display: none !important;
+}
+
 /* Nội dung HTML đã lọc, hiển thị ở trang chi tiết. */
 .rich-content { line-height: 1.6; overflow-wrap: break-word; }
 .rich-content ul, .rich-content ol { margin: 6px 0 6px 22px; }

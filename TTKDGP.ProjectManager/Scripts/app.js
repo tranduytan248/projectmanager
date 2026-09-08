@@ -1,4 +1,4 @@
-// Khởi tạo Select2 cho toàn bộ dropdown trong hệ thống.
+﻿// Khởi tạo Select2 cho toàn bộ dropdown trong hệ thống.
 // Danh sách dài (dự án 51 mục, tuần 53 mục) không thể cuộn tay để tìm, nên cần ô tìm kiếm.
 (function ($) {
     'use strict';
@@ -463,6 +463,7 @@
         { cmd: 'insertOrderedList', html: '1. Danh sách', title: 'Danh sách đánh số' },
         { cmd: 'link', html: '&#128279; Liên kết', title: 'Chèn liên kết' },
         { cmd: 'image', html: '&#128247; Ảnh', title: 'Chèn ảnh (hoặc dán Ctrl+V trực tiếp vào ô)' },
+        { cmd: 'video', html: '&#127916; Video', title: 'Chèn video (tối đa 5MB)' },
         { cmd: 'removeFormat', html: 'X&#818;', title: 'Xoá định dạng' }
     ];
 
@@ -492,6 +493,7 @@
             var $bar = $('<div class="rich-toolbar"></div>').appendTo($wrap);
             var $area = $('<div class="rich-area" contenteditable="true"></div>').appendTo($wrap);
             var $fileInput = $('<input type="file" accept="image/*" style="display:none;" />').appendTo($wrap);
+            var $videoInput = $('<input type="file" accept="video/mp4,video/webm,video/ogg,video/quicktime" style="display:none;" />').appendTo($wrap);
 
             // Dữ liệu cũ là chữ thường: mã hoá rồi đổi xuống dòng thành <br> để không mất dòng.
             var value = ta.value || '';
@@ -502,7 +504,7 @@
 
             function sync() {
                 var $clone = $area.clone();
-                $clone.find('.rich-img-uploading').remove();
+                $clone.find('.rich-img-uploading, .rich-video-uploading').remove();
                 ta.value = $clone.html();
             }
 
@@ -623,6 +625,133 @@
                 }
             });
 
+            // Hàm xử lý upload video lên máy chủ và chèn thẻ video vào trình soạn thảo (tối đa 5MB)
+            function uploadAndInsertVideo(file) {
+                if (!file) return;
+
+                var maxBytes = 5 * 1024 * 1024; // 5MB
+                if (file.size > maxBytes) {
+                    window.alert('Dung lượng video vượt quá 5MB. Vui lòng chọn tệp video nhỏ hơn.');
+                    return;
+                }
+
+                // Kiểm tra đuôi file hợp lệ
+                var ext = (file.name || '').split('.').pop().toLowerCase();
+                var validExts = ['mp4', 'webm', 'mov', 'ogg'];
+                if (validExts.indexOf(ext) === -1 && (!file.type || file.type.indexOf('video/') !== 0)) {
+                    window.alert('Định dạng video không được hỗ trợ. Vui lòng chọn tệp MP4, WebM, MOV hoặc OGG.');
+                    return;
+                }
+
+                // Tạo phần tử loading trực tiếp trong DOM để giữ tham chiếu chính xác
+                var tempId = 'vid_loading_' + Math.random().toString(36).substring(2, 10);
+                var $loading = $('<span id="' + tempId + '" data-temp-id="' + tempId + '" class="rich-video-uploading" contenteditable="false">⏳ Đang tải video lên...</span>');
+
+                $area.trigger('focus');
+                var sel = window.getSelection();
+                var inserted = false;
+                if (sel && sel.rangeCount > 0) {
+                    var r = sel.getRangeAt(0);
+                    if ($.contains($area[0], r.commonAncestorContainer) || $area[0] === r.commonAncestorContainer) {
+                        try {
+                            r.deleteContents();
+                            r.insertNode($loading[0]);
+                            var space = document.createTextNode('\u00A0');
+                            if ($loading[0].nextSibling) {
+                                $loading[0].parentNode.insertBefore(space, $loading[0].nextSibling);
+                            } else {
+                                $loading[0].parentNode.appendChild(space);
+                            }
+                            var newRange = document.createRange();
+                            newRange.setStartAfter(space);
+                            newRange.collapse(true);
+                            sel.removeAllRanges();
+                            sel.addRange(newRange);
+                            inserted = true;
+                        } catch (ex) {
+                            inserted = false;
+                        }
+                    }
+                }
+                if (!inserted) {
+                    $area.append($loading);
+                }
+
+                activeUploads++;
+                var $form = $wrap.closest('form');
+                var $submitBtn = $form.find('[type="submit"]');
+                if ($submitBtn.length) {
+                    $submitBtn.prop('disabled', true).attr('data-uploading', '1');
+                }
+
+                function finishVideoUpload() {
+                    activeUploads = Math.max(0, activeUploads - 1);
+                    if (activeUploads === 0 && $submitBtn.length) {
+                        $submitBtn.prop('disabled', false).removeAttr('data-uploading');
+                    }
+                }
+
+                var fd = new FormData();
+                fd.append('file', file);
+
+                var taskId = $form.find('input[name="id"], input[name="Id"], input[name="TaskId"], input[name="taskId"]').val()
+                    || $wrap.closest('[data-task-id]').data('task-id')
+                    || '';
+                if (taskId) {
+                    fd.append('taskId', taskId);
+                }
+
+                $.ajax({
+                    url: '/Upload/Video',
+                    type: 'POST',
+                    data: fd,
+                    processData: false,
+                    contentType: false,
+                    dataType: 'json'
+                }).done(function (res) {
+                    finishVideoUpload();
+                    if (res && res.success && res.url) {
+                        var videoHtml = '<video src="' + res.url + '" class="rich-video" controls preload="metadata"></video><br />';
+                        // Ưu tiên 1: Thay thế trực tiếp qua biến tham chiếu DOM $loading
+                        if ($loading[0] && $loading[0].parentNode) {
+                            $loading.replaceWith(videoHtml);
+                        }
+                        // Ưu tiên 2: Tìm theo ID hoặc data-temp-id
+                        else if ($area.find('#' + tempId + ', [data-temp-id="' + tempId + '"]').length) {
+                            $area.find('#' + tempId + ', [data-temp-id="' + tempId + '"]').replaceWith(videoHtml);
+                        }
+                        // Ưu tiên 3: Thay thế phần tử loading video đầu tiên
+                        else if ($area.find('.rich-video-uploading').length) {
+                            $area.find('.rich-video-uploading').first().replaceWith(videoHtml);
+                        }
+                        // Fallback: Chèn vào cuối
+                        else {
+                            $area.append(videoHtml);
+                        }
+                        $area.find('#' + tempId + ', [data-temp-id="' + tempId + '"]').remove();
+                        sync();
+                    } else {
+                        $loading.remove();
+                        $area.find('#' + tempId + ', [data-temp-id="' + tempId + '"]').remove();
+                        sync();
+                        window.alert((res && res.message) ? res.message : 'Không thể tải video lên.');
+                    }
+                }).fail(function () {
+                    finishVideoUpload();
+                    $loading.remove();
+                    $area.find('#' + tempId + ', [data-temp-id="' + tempId + '"]').remove();
+                    sync();
+                    window.alert('Lỗi kết nối máy chủ khi tải video.');
+                });
+            }
+
+            $videoInput.on('change', function () {
+                if (this.files && this.files.length) {
+                    uploadAndInsertVideo(this.files[0]);
+                    this.value = '';
+                }
+            });
+
             BUTTONS.forEach(function (b) {
                 $('<button type="button" class="rich-btn"></button>')
                     .attr('title', b.title)
@@ -635,6 +764,8 @@
                             insertLink();
                         } else if (b.cmd === 'image') {
                             $fileInput.trigger('click');
+                        } else if (b.cmd === 'video') {
+                            $videoInput.trigger('click');
                         } else {
                             document.execCommand(b.cmd, false, null);
                         }
@@ -678,6 +809,9 @@
                     if (file.type && file.type.indexOf('image') !== -1) {
                         ev.preventDefault();
                         uploadAndInsert(file);
+                    } else if (file.type && file.type.indexOf('video') !== -1) {
+                        ev.preventDefault();
+                        uploadAndInsertVideo(file);
                     }
                 }
             });

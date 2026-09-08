@@ -22,7 +22,7 @@ namespace TTKDGP.ProjectManager.Infrastructure
         private static readonly HashSet<string> AllowedTags = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "p", "div", "br", "b", "strong", "i", "em", "u", "s", "strike",
-            "ul", "ol", "li", "blockquote", "h3", "h4", "a", "img"
+            "ul", "ol", "li", "blockquote", "h3", "h4", "a", "img", "video", "source"
         };
 
         private static readonly Regex HrefPattern = new Regex(
@@ -42,8 +42,8 @@ namespace TTKDGP.ProjectManager.Infrastructure
             if (string.IsNullOrWhiteSpace(html)) return null;
 
             // Loại bỏ hoàn toàn các badge / text tạm thời của trình soạn thảo nếu lỡ bị lưu vào DB
-            html = Regex.Replace(html, @"<span[^>]*class=""[^""]*rich-img-uploading[^""]*""[^>]*>.*?</span>(?:&nbsp;|\s)*", string.Empty, RegexOptions.IgnoreCase);
-            html = Regex.Replace(html, @"(?:[\u23F3\u231B]|&#\d+;)?\s*[\u0110\u0111Dd]ang\s*t[\u1EA3\u00E3aA]i\s*[\u1EA3\u00E3aA]nh(?:\s*l[\u00EA\u00E8\u00E9eE]n)?(?:\.{3}|\u2026|&hellip;)(?:&nbsp;|\s)*", string.Empty, RegexOptions.IgnoreCase);
+            html = Regex.Replace(html, @"<span[^>]*class=""[^""]*(?:rich-img-uploading|rich-video-uploading)[^""]*""[^>]*>.*?</span>(?:&nbsp;|\s)*", string.Empty, RegexOptions.IgnoreCase);
+            html = Regex.Replace(html, @"(?:[\u23F3\u231B]|&#\d+;)?\s*[\u0110\u0111Dd]ang\s*t[\u1EA3\u00E3aA]i\s*(?:[\u1EA3\u00E3aA]nh|video)(?:\s*l[\u00EA\u00E8\u00E9eE]n)?(?:\.{3}|\u2026|&hellip;)(?:&nbsp;|\s)*", string.Empty, RegexOptions.IgnoreCase);
 
             var sb = new StringBuilder(html.Length);
             var i = 0;
@@ -73,8 +73,9 @@ namespace TTKDGP.ProjectManager.Infrastructure
 
             var result = sb.ToString().Trim();
 
-            // Nếu có chứa ảnh thì giữ nguyên mô tả, không coi là rỗng
-            if (result.IndexOf("<img", StringComparison.OrdinalIgnoreCase) >= 0)
+            // Nếu có chứa ảnh hoặc video thì giữ nguyên mô tả, không coi là rỗng
+            if (result.IndexOf("<img", StringComparison.OrdinalIgnoreCase) >= 0
+                || result.IndexOf("<video", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 return result;
             }
@@ -158,6 +159,15 @@ namespace TTKDGP.ProjectManager.Infrastructure
 
                 return "<img src=\"" + HttpUtility.HtmlAttributeEncode(src)
                      + "\" class=\"rich-img\" style=\"max-width:100%;height:auto;border-radius:6px;margin:6px 0;\" loading=\"lazy\" />";
+            }
+
+            if (name == "video")
+            {
+                var src = SafeImgSrc(body);
+                if (src == null) return string.Empty;
+
+                return "<video src=\"" + HttpUtility.HtmlAttributeEncode(src)
+                     + "\" class=\"rich-video\" controls preload=\"metadata\" style=\"max-width:100%;height:auto;max-height:480px;border-radius:8px;margin:8px 0;display:block;background:#000;\"></video>";
             }
 
             if (name == "a")

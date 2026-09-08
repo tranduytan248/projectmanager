@@ -329,7 +329,7 @@
         function syncInput() {
             if ($area.length) {
                 var $clone = $area.clone();
-                $clone.find('.rich-img-uploading').remove();
+                $clone.find('.rich-img-uploading, .rich-video-uploading').remove();
                 $input.val($clone.html());
             }
         }
@@ -501,8 +501,8 @@
             }
 
             if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                if ($area.find('.rich-img-uploading').length > 0) {
-                    alert('Ảnh đang được tải lên, vui lòng đợi trong giây lát...');
+                if ($area.find('.rich-img-uploading, .rich-video-uploading').length > 0) {
+                    alert('Tệp đa phương tiện đang được tải lên, vui lòng đợi trong giây lát...');
                     return;
                 }
                 e.preventDefault();
@@ -558,8 +558,8 @@
             e.preventDefault();
             e.stopPropagation();
 
-            if ($area.find('.rich-img-uploading').length > 0) {
-                alert('Ảnh đang được tải lên, vui lòng đợi trong giây lát...');
+            if ($area.find('.rich-img-uploading, .rich-video-uploading').length > 0) {
+                alert('Tệp đa phương tiện đang được tải lên, vui lòng đợi trong giây lát...');
                 return;
             }
 

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
@@ -84,6 +84,68 @@ namespace TTKDGP.ProjectManager.Controllers
             else if (ext == ".gif") mime = "image/gif";
             else if (ext == ".webp") mime = "image/webp";
 
+            Response.Cache.SetCacheability(HttpCacheability.Private);
+            Response.Cache.SetMaxAge(TimeSpan.FromDays(7));
+            return File(physicalPath, mime);
+        }
+
+        /// <summary>
+        /// Tiếp nhận tải lên video từ trình soạn thảo mô tả (giới hạn tối đa 5MB).
+        /// </summary>
+        [HttpPost]
+        public async Task<ActionResult> Video(HttpPostedFileBase file, int? taskId)
+        {
+            if (CurrentUser == null)
+            {
+                return Json(new { success = false, message = "Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại." });
+            }
+
+            if (file == null || file.ContentLength <= 0)
+            {
+                return Json(new { success = false, message = "Không tìm thấy dữ liệu tệp video." });
+            }
+
+            if (file.ContentLength > VideoStorageService.MaxVideoBytes)
+            {
+                return Json(new { success = false, message = "Kích thước video không được vượt quá 5MB." });
+            }
+
+            var ext = Path.GetExtension(file.FileName);
+            if (string.IsNullOrEmpty(ext) || !VideoStorageService.AllowedExtensions.Contains(ext))
+            {
+                return Json(new { success = false, message = "Định dạng video không được hỗ trợ. Chỉ chấp nhận các định dạng: MP4, WebM, MOV, OGG." });
+            }
+
+            try
+            {
+                var url = await VideoStorageService.SaveVideoAsync(file.InputStream, file.FileName, taskId);
+                return Json(new { success = true, url = url });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Không thể tải video lên hệ thống: " + ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Phục vụ video an toàn từ App_Data/task_videos/{taskFolder}/{fileName}.
+        /// Bắt buộc người dùng đã đăng nhập hệ thống để xem video nội bộ.
+        /// </summary>
+        [HttpGet]
+        public ActionResult ViewVideo(string taskFolder, string fileName)
+        {
+            if (CurrentUser == null)
+            {
+                return new HttpStatusCodeResult(401, "Chưa đăng nhập.");
+            }
+
+            var physicalPath = VideoStorageService.GetVideoPhysicalPath(taskFolder, fileName);
+            if (physicalPath == null || !System.IO.File.Exists(physicalPath))
+            {
+                return HttpNotFound();
+            }
+
+            var mime = VideoStorageService.GetMimeType(fileName);
             Response.Cache.SetCacheability(HttpCacheability.Private);
             Response.Cache.SetMaxAge(TimeSpan.FromDays(7));
             return File(physicalPath, mime);
