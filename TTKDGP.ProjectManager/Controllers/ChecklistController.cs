@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -249,6 +249,8 @@ namespace TTKDGP.ProjectManager.Controllers
             Repository.WorkTasks.Update(task);
             TaskActivityLogService.RecordFieldChanges(before, task, CurrentUserId,
                 CurrentUser == null ? null : CurrentUser.FullName);
+            NotificationService.TaskStatusChanged(task, before.State, task.State, CurrentUserId,
+                CurrentUser == null ? null : CurrentUser.FullName, task.Progress);
 
             return Json(new
             {
@@ -942,6 +944,7 @@ namespace TTKDGP.ProjectManager.Controllers
                 WorkService.ApplyState(model, model.State, model.Progress);
                 Repository.WorkTasks.Update(model);
                 TaskActivityLogService.RecordFieldChanges(current, model, CurrentUserId, actor);
+                NotificationService.TaskStatusChanged(model, current.State, model.State, CurrentUserId, actor, model.Progress);
 
                 // Chuyển việc sang người khác thì báo cho người MỚI như một lần giao việc.
                 if (model.AssigneeUserId > 0

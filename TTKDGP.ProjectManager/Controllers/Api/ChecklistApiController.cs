@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
@@ -483,6 +483,8 @@ namespace TTKDGP.ProjectManager.Controllers.Api
             Repository.WorkTasks.Update(task);
             TaskActivityLogService.RecordFieldChanges(before, task, CurrentUserId,
                 CurrentUser == null ? null : CurrentUser.FullName);
+            NotificationService.TaskStatusChanged(task, before.State, task.State, CurrentUserId,
+                CurrentUser == null ? null : CurrentUser.FullName, task.Progress);
 
             return Json(BuildFullDetail(task));
         }

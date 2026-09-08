@@ -220,6 +220,47 @@ namespace TTKDGP.ProjectManager.Services
                     + "<p>Công việc <strong>{{TenCongViec}}</strong> (dự án {{TenDuAn}}) "
                     + "<strong>{{TinhTrang}}</strong> — hạn hoàn thành {{HanHoanThanh}}.</p>"
                     + "<p><a href=\"{{LienKet}}\">Mở hệ thống để cập nhật tiến độ</a> (cần đăng nhập).</p>"
+            },
+            new EmailTemplateDefinition
+            {
+                Code = NotificationTypes.TaskCompleted,
+                Name = "Công việc đã hoàn thành",
+                Description = "Gửi cho người giao việc / người liên quan khi công việc được đánh dấu hoàn thành.",
+                Params =
+                {
+                    new EmailTemplateParam("HoTen", "Họ tên người nhận"),
+                    new EmailTemplateParam("NguoiThucHien", "Người vừa hoàn thành công việc"),
+                    new EmailTemplateParam("TenCongViec", "Tên công việc"),
+                    new EmailTemplateParam("TenDuAn", "Tên dự án"),
+                    new EmailTemplateParam("LienKet", "Liên kết mở công việc (cần đăng nhập)")
+                },
+                DefaultSubject = "[BrewTask] {{NguoiThucHien}} đã hoàn thành công việc {{TenCongViec}}",
+                DefaultBody = "<p>Chào {{HoTen}},</p>"
+                    + "<p><strong>{{NguoiThucHien}}</strong> đã hoàn thành công việc "
+                    + "<strong>{{TenCongViec}}</strong> (dự án {{TenDuAn}}).</p>"
+                    + "<p><a href=\"{{LienKet}}\">Mở công việc trong hệ thống</a> (cần đăng nhập).</p>"
+            },
+            new EmailTemplateDefinition
+            {
+                Code = NotificationTypes.TaskStatusChanged,
+                Name = "Cập nhật trạng thái / tiến độ công việc",
+                Description = "Gửi cho người giao việc / người liên quan khi công việc được đổi trạng thái hoặc tiến độ.",
+                Params =
+                {
+                    new EmailTemplateParam("HoTen", "Họ tên người nhận"),
+                    new EmailTemplateParam("NguoiThucHien", "Người vừa cập nhật"),
+                    new EmailTemplateParam("TenCongViec", "Tên công việc"),
+                    new EmailTemplateParam("TenDuAn", "Tên dự án"),
+                    new EmailTemplateParam("TrangThaiMoi", "Trạng thái mới của công việc"),
+                    new EmailTemplateParam("TienDo", "Tiến độ %"),
+                    new EmailTemplateParam("LienKet", "Liên kết mở công việc (cần đăng nhập)")
+                },
+                DefaultSubject = "[BrewTask] {{NguoiThucHien}} cập nhật công việc {{TenCongViec}}",
+                DefaultBody = "<p>Chào {{HoTen}},</p>"
+                    + "<p><strong>{{NguoiThucHien}}</strong> vừa cập nhật công việc "
+                    + "<strong>{{TenCongViec}}</strong> (dự án {{TenDuAn}}) sang trạng thái "
+                    + "<strong>{{TrangThaiMoi}}</strong> (tiến độ {{TienDo}}).</p>"
+                    + "<p><a href=\"{{LienKet}}\">Mở công việc trong hệ thống</a> (cần đăng nhập).</p>"
             }
         };
 

@@ -150,12 +150,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       Nav.toNamed(context, AppRoutes.teamLeaveApprovals);
     } else if (item.type == NotificationTypes.leaveResult) {
       Nav.toNamed(context, AppRoutes.leaves);
-    } else if (item.projectId > 0) {
-      Nav.toNamed(context, AppRoutes.checklist,
-          arguments: {'projectId': item.projectId.toString()});
     } else if (item.taskId > 0) {
       Nav.toNamed(context, AppRoutes.taskDetail,
           arguments: {'taskId': item.taskId.toString()});
+    } else if (item.projectId > 0) {
+      Nav.toNamed(context, AppRoutes.checklist,
+          arguments: {'projectId': item.projectId.toString()});
     } else {
       Nav.toNamed(context, AppRoutes.myWork);
     }
@@ -278,6 +278,10 @@ Color _iconColorOf(String type) {
     case NotificationTypes.taskAssigned:
     case NotificationTypes.projectTaskAssigned:
       return AppTheme.statusWarning;
+    case NotificationTypes.taskCompleted:
+      return AppTheme.statusSuccess;
+    case NotificationTypes.taskStatusChanged:
+      return AppTheme.brandBlue;
     default:
       return AppColors.textSecondary;
   }
@@ -296,6 +300,10 @@ IconData _iconOf(String type) {
     case NotificationTypes.taskAssigned:
     case NotificationTypes.projectTaskAssigned:
       return PhosphorIconsRegular.star;
+    case NotificationTypes.taskCompleted:
+      return PhosphorIconsRegular.checkCircle;
+    case NotificationTypes.taskStatusChanged:
+      return PhosphorIconsRegular.arrowClockwise;
     case NotificationTypes.leaveRequested:
     case NotificationTypes.leaveResult:
       return PhosphorIconsRegular.calendarCheck;

@@ -35,11 +35,15 @@ else
                 : n.Type == NotificationTypes.Mentioned ? "&#64;"
                 : n.Type == NotificationTypes.CommentAdded ? "&#128172;"
                 : n.Type == NotificationTypes.TaskAssigned || n.Type == NotificationTypes.ProjectTaskAssigned ? "&#9733;"
+                : n.Type == NotificationTypes.TaskCompleted ? "&#10004;"
+                : n.Type == NotificationTypes.TaskStatusChanged ? "&#10227;"
                 : "&#9200;";
 
             var iconClass = n.Type == NotificationTypes.DueSoon ? "due"
                 : n.Type == NotificationTypes.Mentioned ? "mention"
                 : n.Type == NotificationTypes.CommentAdded ? "comment"
+                : n.Type == NotificationTypes.TaskCompleted ? "done"
+                : n.Type == NotificationTypes.TaskStatusChanged ? "status"
                 : "project";
 
             <a class="notif-item @(n.IsRead ? "" : "unread")"
