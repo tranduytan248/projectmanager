@@ -1,0 +1,2 @@
+# Giữ nguyên cấu hình Web.config của nhánh hiện tại khi merge từ các nhánh khác
+TTKDGP.ProjectManager/Web.config merge=ours
