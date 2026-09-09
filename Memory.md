@@ -2,6 +2,64 @@
 
 ---
 
+# [2026-09-09] Phân quyền hiển thị Dự án: Chỉ hiển thị dự án tham gia, trừ tài khoản Là Quản lý Tổ
+
+## 1. Mô tả vấn đề
+Người dùng phản ánh:
+> "Phần dự án này chỉ hiển thị những dự án mà cá nhân đó có tham gia. Riêng đối với tài khoản được check Là quản lý Tổ thì được thấy hết. Hiện tôi vào tài khoản thaopv.kha thì lại được thấy tất cả dự án nhưng thực tế chỉ được add vào 1 dự án."
+
+## 2. Phân tích ban đầu
+- **Bối cảnh**:
+  - Hệ thống có 2 màn hình danh sách dự án: "Dự án của tôi" (`/MyWork/Projects`) và "Dự án" thuộc nhóm "Quản lý Tổ" (`/WorkProjects/Index`).
+  - Kiểm tra CSDL thực tế: Tài khoản `thaopv.kha` (UserId = 22) có `IsTeamManager = False` (chưa được tích "Là Quản lý Tổ"), nhưng mang `Role: Manager,Reporter,BA_Tester`.
+  - Trong phân công dự án (`WorkAssignments`), `thaopv.kha` chỉ được phân công vào duy nhất 1 dự án: `[43] Quản lý thi đua khen thưởng` (vai trò BA).
+- **Nguyên nhân gốc rễ**:
+  1. Nhóm quyền "Quản lý" (`Manager`) trong cấu hình mặc định (`Permissions.ManagerDefaults()`) có đầy đủ quyền của module `WorkProjects` (`wprojects.view`, `wprojects.create`, `wprojects.edit`).
+  2. Màn hình "Dự án" (`WorkProjectsController.Index`) lấy toàn bộ dự án (`Repository.WorkProjects.All()`) mà không lọc theo `CurrentUserId` khi người dùng không phải là Quản lý Tổ.
+  3. Hàm kiểm tra quyền xem chi tiết `BaseController.CanViewProject(int projectId)` cho phép bất kỳ ai có quyền `wprojects.view` được xem tất cả dự án, bất kể có được check "Là Quản lý Tổ" hay không.
+- **Mục tiêu**:
+  - Đảm bảo nhân sự chỉ nhìn thấy và truy cập các dự án mà mình có tham gia (làm PM hoặc được phân công làm thành viên).
+  - Chỉ riêng tài khoản được check cờ **"Là Quản lý Tổ"** (`User.IsTeamManager == true`) hoặc Quản trị tối cao (`*`) mới được xem toàn bộ tất cả dự án trong hệ thống.
+- **Phạm vi**:
+  - Danh sách dự án tại `WorkProjectsController.Index` và `MyWorkController.Projects`.
+  - Quyền xem chi tiết / checklist / trao đổi dự án qua `CanViewProject(projectId)`.
+  - Hiển thị menu dọc đối với mục "Dự án" dưới nhóm "Quản lý Tổ".
+- **Ràng buộc & Rủi ro**:
+  - Nhóm quyền `Manager` đang được gán cho nhiều tài khoản; nếu không cẩn thận khi điều chỉnh, có thể ảnh hưởng đến quyền của các PM hoặc Quản lý Tổ thực sự.
+  - Phải phân định rõ giữa "Quyền theo nhóm RoleGroup" và "Cờ đặc thù theo tài khoản IsTeamManager".
+
+## 4. Câu trả lời & Quyết định
+1. **Màn hình danh sách dự án (`/WorkProjects/Index`)**:
+   - Quyết định: Vẫn giữ mục "Dự án" trên menu Quản lý Tổ cho tài khoản có quyền `wprojects.view`, nhưng **tự động lọc dữ liệu**:
+     - Tài khoản **được check "Là Quản lý Tổ"** (`IsTeamManager == true`) hoặc Admin (`*`): Thấy toàn bộ tất cả dự án trong hệ thống.
+     - Tài khoản **KHÔNG được check "Là Quản lý Tổ"** (kể cả có role Manager): Chỉ hiển thị các dự án mà cá nhân có tham gia (làm PM hoặc có trong danh sách phân công `WorkAssignments`).
+2. **Quyền xem chi tiết dự án, Checklist & Trao đổi (`CanViewProject`)**:
+   - Quyết định: Chặn hoàn toàn (trả về 404 HttpNotFound) nếu người dùng không phải Quản lý Tổ và không tham gia dự án đó (kể cả khi gõ trực tiếp URL).
+   - Loại bỏ việc kiểm tra `Can("wprojects.view")` trong `CanViewProject` để tránh việc nhóm `Manager` tự động xem được mọi dự án không tham gia.
+3. **Quyền tạo mới dự án**:
+   - Quyết định: Tài khoản thuộc nhóm quyền "Quản lý" (`wprojects.create`) vẫn được phép tạo dự án mới bình thường.
+
+## 5. Checklist hành động
+### Chuẩn bị
+- [x] Rà soát toàn bộ các điểm kiểm tra quyền `wprojects.view` trong `Controllers` và `Views`.
+- [x] Xác nhận logic phân quyền `IsTeamManager` vs `CanViewProject`.
+
+### Thực hiện
+- [x] **WorkProjectsController.Index**: Bổ sung bộ lọc dự án theo `CurrentUserId` (chỉ áp dụng khi `!IsTeamManager`).
+- [x] **BaseController.CanViewProject**: Bỏ kiểm tra `Can("wprojects.view/create/edit")` để chỉ cho phép `IsTeamManager`, `IsPmOf(projectId)` hoặc thành viên trong `WorkAssignments`.
+- [x] **DiscussionsController & DiscussionsApiController**: Đảm bảo quyền xem/chat trao đổi dự án tuân thủ theo `IsTeamManager` hoặc thành viên dự án, không mở tràn lan qua `Can("wprojects.view")`.
+- [x] **Views (Checklist, WorkProjects/Details, WorkProjects/Members)**: Đảm bảo giao diện hiển thị breadcrumb và nút thao tác nhất quán.
+
+### Kiểm tra / Nghiệm thu
+- [x] Kiểm thử tài khoản `thaopv.kha` (UserId = 22):
+  - Truy cập `/WorkProjects`: Chỉ thấy duy nhất 1 dự án `[43] Quản lý thi đua khen thưởng` (Pass).
+  - Truy cập trực tiếp Checklist/Details dự án khác (ví dụ projectId = 1): Bị chặn (404 HttpNotFound) (Pass).
+  - Truy cập dự án [43]: Xem và thao tác bình thường theo vai trò BA (Pass).
+- [x] Kiểm thử tài khoản "Là Quản lý Tổ" (`tantd.kha`): Vẫn thấy đầy đủ 58/58 dự án của cả tổ (Pass).
+- [x] Biên dịch `MSBuild Release` đảm bảo 0 Errors, 0 Warnings (Pass).
+
+---
+
 # [2026-09-09] Kiến trúc 2 Môi trường độc lập: Nội bộ Trung tâm (pmncpt.cenit.vn) & Viễn thông (brewtask.vnptkhanhhoa.vn)
 
 > [!IMPORTANT]
