@@ -105,3 +105,14 @@ graph TD
 > 3. Checkout `main` → Pull `main` → Merge nhánh hiện tại vào `main` → Push `main`.
 > 4. Checkout `upload-source` → Pull `upload-source` → Merge `main` vào `upload-source` → Push `upload-source`.
 > 5. Checkout về lại nhánh ban đầu.
+
+---
+
+## V. QUY TRÌNH UPCODE PRODUCTION (BREWTASK VIỄN THÔNG)
+
+> [!IMPORTANT]
+> Khi người dùng gõ lệnh **"upcode prod"**, **"up code prod"**, **"đẩy code prod"**, **"deploy prod"**, kích hoạt ngay `.agents/skills/upcode-prod/SKILL.md`:
+>
+> 1. **Kiểm tra & Đồng bộ CSDL**: Tự động so sánh cấu trúc (schema) và dữ liệu chênh lệch giữa CSDL Trung tâm (`10.57.30.10`) và CSDL Production (`10.57.47.2\MSSQL2012`), nạp các bản ghi mới (giữ Identity) và cập nhật dữ liệu mới qua script `build\sync-prod-db.ps1 -Apply`.
+> 2. **Kiểm tra & Đồng bộ Source Code / FTP**: So sánh git giữa `main` và `Prod`, merge `main -> Prod` (bảo vệ cấu hình DB qua `merge=ours`), biên dịch Release và upload file thay đổi lên FTP `10.57.47.3/public_html` qua script `build\sync-prod-ftp.ps1 -Apply`.
+> 3. **Kiểm tra sức khỏe hệ thống (Healthcheck)**: Xác nhận HTTP 200 cho cả 2 website `http://pmncpt.cenit.vn/` và `http://brewtask.vnptkhanhhoa.vn/`.

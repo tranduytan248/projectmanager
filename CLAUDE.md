@@ -34,6 +34,7 @@ Chi tiết đầy đủ nằm trong `.claude/rules/`, phải tuân thủ như qu
 | `test-engineer` | Agent | Viết/chạy/sửa test (xUnit/NUnit cho web, `flutter_test` cho mobile) đến khi xanh |
 | `TesterPro` | Agent | Soi toàn diện sau khi code xong (UI/UX, code ẩu, lỗi font, vi phạm Rules, lệch design) và TỰ SỬA LỖI (Auto-Fix) |
 | `git-push-merge` | Skill | Khi được lệnh đẩy/push code — commit → push nhánh hiện tại → merge `main` → merge `upload-source` → quay lại nhánh ban đầu |
+| `upcode-prod` | Skill | Khi người dùng báo "upcode prod", "up code prod", "đẩy code prod" — kiểm tra & đồng bộ CSDL từ Trung tâm (30.10) sang Production (47.2) và đồng bộ Source Code/FTP sang 10.57.47.3 |
 
 ## Quy trình làm việc bắt buộc
 
@@ -69,6 +70,12 @@ Chi tiết đầy đủ nằm trong `.claude/rules/`, phải tuân thủ như qu
 ### 5. Khi đẩy code lên remote
 - Dùng skill **git-push-merge** khi người dùng ra lệnh đẩy/push/merge code. Không tự ý chạy các
   lệnh git push/merge rời rạc ngoài quy trình của skill này trừ khi người dùng yêu cầu khác.
+
+### 6. Khi upcode Production (Viễn thông)
+- Dùng skill **upcode-prod** khi người dùng ra lệnh "upcode prod", "up code prod", "đẩy code prod":
+  1. Tự động kiểm tra & đồng bộ CSDL từ `10.57.30.10` sang `10.57.47.2\MSSQL2012`.
+  2. Tự động so sánh code git `main -> Prod`, biên dịch Release và upload các file thay đổi lên FTP `10.57.47.3/public_html`.
+  3. Xác nhận HTTP 200 cho cả 2 website.
 
 ## Memory.md
 
