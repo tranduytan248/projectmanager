@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web.Mvc;
@@ -29,7 +29,7 @@ namespace TTKDGP.ProjectManager.Controllers
             try
             {
                 var userId = CurrentUserId;
-                var canViewAll = IsTeamManager || Can("wprojects.view");
+                var canViewAll = IsTeamManager;
 
                 // Lấy danh sách dự án người dùng tham gia hoặc làm PM
                 var userProjectIds = Repository.WorkAssignments.All()
@@ -147,7 +147,7 @@ namespace TTKDGP.ProjectManager.Controllers
             try
             {
                 var userId = CurrentUserId;
-                var canViewAll = IsTeamManager || Can("wprojects.view");
+                var canViewAll = IsTeamManager;
 
                 var userProjectIds = Repository.WorkAssignments.All()
                     .Where(a => a.UserId == userId && a.IsActive)
@@ -203,7 +203,7 @@ namespace TTKDGP.ProjectManager.Controllers
             }
 
             var userId = CurrentUserId;
-            var isMember = IsTeamManager || Can("wprojects.view") || project.PmUserId == userId ||
+            var isMember = IsTeamManager || project.PmUserId == userId ||
                            Repository.WorkAssignments.All().Any(a => a.ProjectId == projectId && a.UserId == userId && a.IsActive);
             if (!isMember)
             {
@@ -278,7 +278,7 @@ namespace TTKDGP.ProjectManager.Controllers
             }
 
             var userId = CurrentUserId;
-            var isMember = IsTeamManager || Can("wprojects.view") || project.PmUserId == userId ||
+            var isMember = IsTeamManager || project.PmUserId == userId ||
                            Repository.WorkAssignments.All().Any(a => a.ProjectId == projectId && a.UserId == userId && a.IsActive);
             if (!isMember)
             {

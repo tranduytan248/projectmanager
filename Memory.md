@@ -2,6 +2,110 @@
 
 ---
 
+# [2026-09-09] Phân quyền hiển thị Dự án: Chỉ hiển thị dự án tham gia, trừ tài khoản Là Quản lý Tổ
+
+## 1. Mô tả vấn đề
+Người dùng phản ánh:
+> "Phần dự án này chỉ hiển thị những dự án mà cá nhân đó có tham gia. Riêng đối với tài khoản được check Là quản lý Tổ thì được thấy hết. Hiện tôi vào tài khoản thaopv.kha thì lại được thấy tất cả dự án nhưng thực tế chỉ được add vào 1 dự án."
+
+## 2. Phân tích ban đầu
+- **Bối cảnh**:
+  - Hệ thống có 2 màn hình danh sách dự án: "Dự án của tôi" (`/MyWork/Projects`) và "Dự án" thuộc nhóm "Quản lý Tổ" (`/WorkProjects/Index`).
+  - Kiểm tra CSDL thực tế: Tài khoản `thaopv.kha` (UserId = 22) có `IsTeamManager = False` (chưa được tích "Là Quản lý Tổ"), nhưng mang `Role: Manager,Reporter,BA_Tester`.
+  - Trong phân công dự án (`WorkAssignments`), `thaopv.kha` chỉ được phân công vào duy nhất 1 dự án: `[43] Quản lý thi đua khen thưởng` (vai trò BA).
+- **Nguyên nhân gốc rễ**:
+  1. Nhóm quyền "Quản lý" (`Manager`) trong cấu hình mặc định (`Permissions.ManagerDefaults()`) có đầy đủ quyền của module `WorkProjects` (`wprojects.view`, `wprojects.create`, `wprojects.edit`).
+  2. Màn hình "Dự án" (`WorkProjectsController.Index`) lấy toàn bộ dự án (`Repository.WorkProjects.All()`) mà không lọc theo `CurrentUserId` khi người dùng không phải là Quản lý Tổ.
+  3. Hàm kiểm tra quyền xem chi tiết `BaseController.CanViewProject(int projectId)` cho phép bất kỳ ai có quyền `wprojects.view` được xem tất cả dự án, bất kể có được check "Là Quản lý Tổ" hay không.
+- **Mục tiêu**:
+  - Đảm bảo nhân sự chỉ nhìn thấy và truy cập các dự án mà mình có tham gia (làm PM hoặc được phân công làm thành viên).
+  - Chỉ riêng tài khoản được check cờ **"Là Quản lý Tổ"** (`User.IsTeamManager == true`) hoặc Quản trị tối cao (`*`) mới được xem toàn bộ tất cả dự án trong hệ thống.
+- **Phạm vi**:
+  - Danh sách dự án tại `WorkProjectsController.Index` và `MyWorkController.Projects`.
+  - Quyền xem chi tiết / checklist / trao đổi dự án qua `CanViewProject(projectId)`.
+  - Hiển thị menu dọc đối với mục "Dự án" dưới nhóm "Quản lý Tổ".
+- **Ràng buộc & Rủi ro**:
+  - Nhóm quyền `Manager` đang được gán cho nhiều tài khoản; nếu không cẩn thận khi điều chỉnh, có thể ảnh hưởng đến quyền của các PM hoặc Quản lý Tổ thực sự.
+  - Phải phân định rõ giữa "Quyền theo nhóm RoleGroup" và "Cờ đặc thù theo tài khoản IsTeamManager".
+
+## 4. Câu trả lời & Quyết định
+1. **Màn hình danh sách dự án (`/WorkProjects/Index`)**:
+   - Quyết định: Vẫn giữ mục "Dự án" trên menu Quản lý Tổ cho tài khoản có quyền `wprojects.view`, nhưng **tự động lọc dữ liệu**:
+     - Tài khoản **được check "Là Quản lý Tổ"** (`IsTeamManager == true`) hoặc Admin (`*`): Thấy toàn bộ tất cả dự án trong hệ thống.
+     - Tài khoản **KHÔNG được check "Là Quản lý Tổ"** (kể cả có role Manager): Chỉ hiển thị các dự án mà cá nhân có tham gia (làm PM hoặc có trong danh sách phân công `WorkAssignments`).
+2. **Quyền xem chi tiết dự án, Checklist & Trao đổi (`CanViewProject`)**:
+   - Quyết định: Chặn hoàn toàn (trả về 404 HttpNotFound) nếu người dùng không phải Quản lý Tổ và không tham gia dự án đó (kể cả khi gõ trực tiếp URL).
+   - Loại bỏ việc kiểm tra `Can("wprojects.view")` trong `CanViewProject` để tránh việc nhóm `Manager` tự động xem được mọi dự án không tham gia.
+3. **Quyền tạo mới dự án**:
+   - Quyết định: Tài khoản thuộc nhóm quyền "Quản lý" (`wprojects.create`) vẫn được phép tạo dự án mới bình thường.
+
+## 5. Checklist hành động
+### Chuẩn bị
+- [x] Rà soát toàn bộ các điểm kiểm tra quyền `wprojects.view` trong `Controllers` và `Views`.
+- [x] Xác nhận logic phân quyền `IsTeamManager` vs `CanViewProject`.
+
+### Thực hiện
+- [x] **WorkProjectsController.Index**: Bổ sung bộ lọc dự án theo `CurrentUserId` (chỉ áp dụng khi `!IsTeamManager`).
+- [x] **BaseController.CanViewProject**: Bỏ kiểm tra `Can("wprojects.view/create/edit")` để chỉ cho phép `IsTeamManager`, `IsPmOf(projectId)` hoặc thành viên trong `WorkAssignments`.
+- [x] **DiscussionsController & DiscussionsApiController**: Đảm bảo quyền xem/chat trao đổi dự án tuân thủ theo `IsTeamManager` hoặc thành viên dự án, không mở tràn lan qua `Can("wprojects.view")`.
+- [x] **Views (Checklist, WorkProjects/Details, WorkProjects/Members)**: Đảm bảo giao diện hiển thị breadcrumb và nút thao tác nhất quán.
+
+### Kiểm tra / Nghiệm thu
+- [x] Kiểm thử tài khoản `thaopv.kha` (UserId = 22):
+  - Truy cập `/WorkProjects`: Chỉ thấy duy nhất 1 dự án `[43] Quản lý thi đua khen thưởng` (Pass).
+  - Truy cập trực tiếp Checklist/Details dự án khác (ví dụ projectId = 1): Bị chặn (404 HttpNotFound) (Pass).
+  - Truy cập dự án [43]: Xem và thao tác bình thường theo vai trò BA (Pass).
+- [x] Kiểm thử tài khoản "Là Quản lý Tổ" (`tantd.kha`): Vẫn thấy đầy đủ 58/58 dự án của cả tổ (Pass).
+- [x] Biên dịch `MSBuild Release` đảm bảo 0 Errors, 0 Warnings (Pass).
+
+---
+
+# [2026-09-09] Kiến trúc 2 Môi trường độc lập: Nội bộ Trung tâm (pmncpt.cenit.vn) & Viễn thông (brewtask.vnptkhanhhoa.vn)
+
+> [!IMPORTANT]
+> **QUY TẮC BẮT BUỘC KHÔNG ĐƯỢC NHẦM LẪN**: Dự án vận hành 2 website hoàn toàn độc lập, khác máy chủ Web, khác máy chủ CSDL, khác FTP và quản lý qua các nhánh Git riêng biệt. Tuyệt đối không tráo đổi cấu hình giữa hai môi trường!
+
+## 1. Bảng đối chiếu chi tiết 2 môi trường
+
+| Mục | 🏢 1. Website Nội bộ Trung tâm | 🌐 2. Website Viễn thông |
+|---|---|---|
+| **Tên miền** | **`http://pmncpt.cenit.vn/`** | **`http://brewtask.vnptkhanhhoa.vn/`** |
+| **Máy chủ Web (IIS)** | `10.57.30.10` (cổng 80) | `10.57.47.3` (cổng 80) |
+| **Máy chủ CSDL (SQL Server)** | `10.57.30.10` | `10.57.47.2\MSSQL2012` |
+| **Tên Database** | `pmncpt.cenit.vn` | `pmncpt.cenit.vn` |
+| **Tài khoản CSDL** | User: `pmncpt.cenit.vn`<br/>Password: `W6!DTCPk@QJ6k3` | User: `tan.td`<br/>Password: `Tdtan@123` |
+| **Thông tin FTP** | Server: `10.57.30.10` (do runner nội bộ nắm giữ qua secrets) | Server: `10.57.47.3`<br/>User: `brewtask`<br/>Password: `Kh@2026`<br/>Thư mục: `/public_html` |
+| **Nhánh Git quản lý** | **`main`** & **`upload-source`** | **`Prod`** |
+| **Quy trình Deploy** | Khi merge code vào nhánh **`upload-source`** và push lên GitHub, GitHub Actions self-hosted runner (`F:\actions-runner`) tự động biên dịch Release và upload FTP lên máy chủ `10.57.30.10`. | Biên dịch cấu hình Release từ nhánh **`Prod`** và tải lên máy chủ FTP `10.57.47.3`. |
+
+## 2. Cơ chế bảo vệ cấu hình Git giữa các nhánh
+- File `.gitattributes` ở thư mục gốc cấu hình quy tắc `merge=ours`:
+  ```gitattributes
+  TTKDGP.ProjectManager/Web.config merge=ours
+  TTKDGP.ProjectManager/Web.Release.config merge=ours
+  ```
+- **Lưu ý sống còn**: Khi phát triển các tính năng mới trên `main` hoặc `mobile` rồi merge vào `Prod`, cơ chế `merge=ours` đảm bảo thông tin CSDL của nhánh `Prod` (`10.57.47.2\MSSQL2012`) không bao giờ bị ghi đè bởi cấu hình của nhánh `main` (`10.57.30.10`).
+- Mật khẩu Release của `pmncpt.cenit.vn` được thiết lập tự động biến đổi qua `Web.Release.config` trên nhánh `main`/`upload-source`:
+  ```xml
+  <add key="Db:Password" value="W6!DTCPk@QJ6k3" xdt:Transform="SetAttributes" xdt:Locator="Match(key)" />
+  ```
+
+## 3. Skill Tự động "upcode-prod" (Đồng bộ CSDL & Source Code FTP)
+- **Tên skill**: `upcode-prod` (khai báo tại `.claude/skills/upcode-prod/SKILL.md` và `.agents/skills/upcode-prod/SKILL.md`).
+- **Kích hoạt khi**: Người dùng gõ "upcode prod", "up code prod", "đẩy code prod", "deploy prod".
+- **Bộ công cụ PowerShell đi kèm** (trong thư mục `build/`):
+  1. `build\sync-prod-db.ps1`:
+     - Tự động so sánh cấu trúc bảng & cột (Schema) giữa CSDL `10.57.30.10` và `10.57.47.2\MSSQL2012`. Tự bổ sung cột thiếu nếu phát hiện thay đổi schema.
+     - So sánh số lượng bản ghi của 44 bảng, phát hiện dòng mới và các dòng có cập nhật (`UpdatedAt` mới hơn ở Source).
+     - Khi chạy với `-Apply`: Tạm tắt khóa ngoại (`NOCHECK CONSTRAINT ALL`), chép dòng mới bằng `SqlBulkCopy` giữ Identity (`KeepIdentity, KeepNulls`), update các dòng mới hơn qua bảng tạm `##Sync_Temp_[Table]`, sau đó kích hoạt và kiểm tra lại khóa ngoại (`WITH CHECK CHECK CONSTRAINT ALL`).
+  2. `build\sync-prod-ftp.ps1`:
+     - So sánh commit git và file thay đổi giữa nhánh `main` và nhánh `Prod`.
+     - Khi chạy với `-Apply`: Checkout `Prod` → pull `origin/Prod` → merge `main` → biên dịch `publish.ps1 -Configuration Release` ra `build\app` → so sánh và upload các file thay đổi (DLLs, Views, Scripts, Content) lên FTP `10.57.47.3/public_html` (bảo vệ tuyệt đối `secrets.config`) → kiểm tra HTTP 200 `http://brewtask.vnptkhanhhoa.vn/` → push `origin/Prod` → checkout quay về nhánh ban đầu.
+  3. `build\upcode-prod.ps1`:
+     - Chạy phối hợp cả 2 tiến trình DB + Code/FTP, hỗ trợ chế độ kiểm tra (`CheckOnly`) và chế độ áp dụng (`-Apply`), đồng thời kiểm tra sức khỏe HTTP 200 cả 2 site: `http://pmncpt.cenit.vn/` và `http://brewtask.vnptkhanhhoa.vn/`.
+
+---
+
 # [2026-09-07] Tính năng Web: Lightbox Modal xem ảnh trực tiếp và hiển thị Thumbnail ảnh trong Trao đổi & Chi tiết công việc
 
 ## 1. Vấn đề & Hiện tượng
