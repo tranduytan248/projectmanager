@@ -54,6 +54,14 @@ graph TD
 
 ---
 
+## 4.1. Quy trình Upcode Production (Viễn thông - brewtask.vnptkhanhhoa.vn)
+- **KHI NÀO** người dùng gõ lệnh "upcode prod", "up code prod", "đẩy code prod": Bắt buộc kích hoạt `.agents/skills/upcode-prod/SKILL.md`:
+  1. Kiểm tra & đồng bộ CSDL từ `10.57.30.10` sang `10.57.47.2\MSSQL2012`.
+  2. So sánh code git `main -> Prod`, build Release và upload file thay đổi lên FTP `10.57.47.3/public_html`.
+  3. Kiểm tra HTTP 200 cho cả 2 hệ thống.
+
+---
+
 ## 5. Điều CẤM TUYỆT ĐỐI
 - Cấm tự ý dùng `CircularProgressIndicator` (phải dùng `AppLoading`).
 - Cấm tự ý sửa đổi code để ép test xanh mà vi phạm nghiệp vụ.

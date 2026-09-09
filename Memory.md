@@ -13,7 +13,7 @@
 |---|---|---|
 | **Tên miền** | **`http://pmncpt.cenit.vn/`** | **`http://brewtask.vnptkhanhhoa.vn/`** |
 | **Máy chủ Web (IIS)** | `10.57.30.10` (cổng 80) | `10.57.47.3` (cổng 80) |
-| **Máy chủ CSDL (SQL Server)** | `10.57.30.10,1433` | `10.57.47.2\MSSQL2012` |
+| **Máy chủ CSDL (SQL Server)** | `10.57.30.10` | `10.57.47.2\MSSQL2012` |
 | **Tên Database** | `pmncpt.cenit.vn` | `pmncpt.cenit.vn` |
 | **Tài khoản CSDL** | User: `pmncpt.cenit.vn`<br/>Password: `W6!DTCPk@QJ6k3` | User: `tan.td`<br/>Password: `Tdtan@123` |
 | **Thông tin FTP** | Server: `10.57.30.10` (do runner nội bộ nắm giữ qua secrets) | Server: `10.57.47.3`<br/>User: `brewtask`<br/>Password: `Kh@2026`<br/>Thư mục: `/public_html` |
@@ -31,6 +31,20 @@
   ```xml
   <add key="Db:Password" value="W6!DTCPk@QJ6k3" xdt:Transform="SetAttributes" xdt:Locator="Match(key)" />
   ```
+
+## 3. Skill Tự động "upcode-prod" (Đồng bộ CSDL & Source Code FTP)
+- **Tên skill**: `upcode-prod` (khai báo tại `.claude/skills/upcode-prod/SKILL.md` và `.agents/skills/upcode-prod/SKILL.md`).
+- **Kích hoạt khi**: Người dùng gõ "upcode prod", "up code prod", "đẩy code prod", "deploy prod".
+- **Bộ công cụ PowerShell đi kèm** (trong thư mục `build/`):
+  1. `build\sync-prod-db.ps1`:
+     - Tự động so sánh cấu trúc bảng & cột (Schema) giữa CSDL `10.57.30.10` và `10.57.47.2\MSSQL2012`. Tự bổ sung cột thiếu nếu phát hiện thay đổi schema.
+     - So sánh số lượng bản ghi của 44 bảng, phát hiện dòng mới và các dòng có cập nhật (`UpdatedAt` mới hơn ở Source).
+     - Khi chạy với `-Apply`: Tạm tắt khóa ngoại (`NOCHECK CONSTRAINT ALL`), chép dòng mới bằng `SqlBulkCopy` giữ Identity (`KeepIdentity, KeepNulls`), update các dòng mới hơn qua bảng tạm `##Sync_Temp_[Table]`, sau đó kích hoạt và kiểm tra lại khóa ngoại (`WITH CHECK CHECK CONSTRAINT ALL`).
+  2. `build\sync-prod-ftp.ps1`:
+     - So sánh commit git và file thay đổi giữa nhánh `main` và nhánh `Prod`.
+     - Khi chạy với `-Apply`: Checkout `Prod` → pull `origin/Prod` → merge `main` → biên dịch `publish.ps1 -Configuration Release` ra `build\app` → so sánh và upload các file thay đổi (DLLs, Views, Scripts, Content) lên FTP `10.57.47.3/public_html` (bảo vệ tuyệt đối `secrets.config`) → kiểm tra HTTP 200 `http://brewtask.vnptkhanhhoa.vn/` → push `origin/Prod` → checkout quay về nhánh ban đầu.
+  3. `build\upcode-prod.ps1`:
+     - Chạy phối hợp cả 2 tiến trình DB + Code/FTP, hỗ trợ chế độ kiểm tra (`CheckOnly`) và chế độ áp dụng (`-Apply`), đồng thời kiểm tra sức khỏe HTTP 200 cả 2 site: `http://pmncpt.cenit.vn/` và `http://brewtask.vnptkhanhhoa.vn/`.
 
 ---
 
