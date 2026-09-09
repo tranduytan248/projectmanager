@@ -17,7 +17,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$root = "d:\SVN\projectmanager"
+$root = if (Test-Path "$PSScriptRoot\..") { (Resolve-Path "$PSScriptRoot\..").Path } else { "d:\MyProject\projectmanager" }
 
 $modeTitle = if ($Apply) { "THUC THI CAP NHAT PROD TOAN DIEN (-Apply)" } else { "KIEM TRA TONG THE (-CheckOnly)" }
 $modeColor = if ($Apply) { "Yellow" } else { "Green" }
