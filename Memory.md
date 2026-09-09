@@ -2,6 +2,38 @@
 
 ---
 
+# [2026-09-09] Kiến trúc 2 Môi trường độc lập: Nội bộ Trung tâm (pmncpt.cenit.vn) & Viễn thông (brewtask.vnptkhanhhoa.vn)
+
+> [!IMPORTANT]
+> **QUY TẮC BẮT BUỘC KHÔNG ĐƯỢC NHẦM LẪN**: Dự án vận hành 2 website hoàn toàn độc lập, khác máy chủ Web, khác máy chủ CSDL, khác FTP và quản lý qua các nhánh Git riêng biệt. Tuyệt đối không tráo đổi cấu hình giữa hai môi trường!
+
+## 1. Bảng đối chiếu chi tiết 2 môi trường
+
+| Mục | 🏢 1. Website Nội bộ Trung tâm | 🌐 2. Website Viễn thông |
+|---|---|---|
+| **Tên miền** | **`http://pmncpt.cenit.vn/`** | **`http://brewtask.vnptkhanhhoa.vn/`** |
+| **Máy chủ Web (IIS)** | `10.57.30.10` (cổng 80) | `10.57.47.3` (cổng 80) |
+| **Máy chủ CSDL (SQL Server)** | `10.57.30.10,1433` | `10.57.47.2\MSSQL2012` |
+| **Tên Database** | `pmncpt.cenit.vn` | `pmncpt.cenit.vn` |
+| **Tài khoản CSDL** | User: `pmncpt.cenit.vn`<br/>Password: `W6!DTCPk@QJ6k3` | User: `tan.td`<br/>Password: `Tdtan@123` |
+| **Thông tin FTP** | Server: `10.57.30.10` (do runner nội bộ nắm giữ qua secrets) | Server: `10.57.47.3`<br/>User: `brewtask`<br/>Password: `Kh@2026`<br/>Thư mục: `/public_html` |
+| **Nhánh Git quản lý** | **`main`** & **`upload-source`** | **`Prod`** |
+| **Quy trình Deploy** | Khi merge code vào nhánh **`upload-source`** và push lên GitHub, GitHub Actions self-hosted runner (`F:\actions-runner`) tự động biên dịch Release và upload FTP lên máy chủ `10.57.30.10`. | Biên dịch cấu hình Release từ nhánh **`Prod`** và tải lên máy chủ FTP `10.57.47.3`. |
+
+## 2. Cơ chế bảo vệ cấu hình Git giữa các nhánh
+- File `.gitattributes` ở thư mục gốc cấu hình quy tắc `merge=ours`:
+  ```gitattributes
+  TTKDGP.ProjectManager/Web.config merge=ours
+  TTKDGP.ProjectManager/Web.Release.config merge=ours
+  ```
+- **Lưu ý sống còn**: Khi phát triển các tính năng mới trên `main` hoặc `mobile` rồi merge vào `Prod`, cơ chế `merge=ours` đảm bảo thông tin CSDL của nhánh `Prod` (`10.57.47.2\MSSQL2012`) không bao giờ bị ghi đè bởi cấu hình của nhánh `main` (`10.57.30.10`).
+- Mật khẩu Release của `pmncpt.cenit.vn` được thiết lập tự động biến đổi qua `Web.Release.config` trên nhánh `main`/`upload-source`:
+  ```xml
+  <add key="Db:Password" value="W6!DTCPk@QJ6k3" xdt:Transform="SetAttributes" xdt:Locator="Match(key)" />
+  ```
+
+---
+
 # [2026-09-07] Tính năng Web: Lightbox Modal xem ảnh trực tiếp và hiển thị Thumbnail ảnh trong Trao đổi & Chi tiết công việc
 
 ## 1. Vấn đề & Hiện tượng
