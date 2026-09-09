@@ -27,6 +27,18 @@ namespace TTKDGP.ProjectManager.Controllers
         {
             var items = Repository.WorkProjects.All();
 
+            // Nếu không phải Quản lý Tổ (hoặc Admin tối cao), chỉ hiển thị các dự án mà người dùng có tham gia (làm PM hoặc được phân công)
+            if (!IsTeamManager)
+            {
+                var userId = CurrentUserId;
+                var myProjectIds = Repository.WorkAssignments.All()
+                    .Where(a => a.UserId == userId)
+                    .Select(a => a.ProjectId)
+                    .ToList();
+
+                items = items.Where(p => p.PmUserId == userId || myProjectIds.Contains(p.Id)).ToList();
+            }
+
             if (!string.IsNullOrWhiteSpace(phase)) items = items.Where(p => p.Phase == phase).ToList();
             if (!string.IsNullOrWhiteSpace(state)) items = items.Where(p => p.State == state).ToList();
             if (!string.IsNullOrWhiteSpace(projectType))

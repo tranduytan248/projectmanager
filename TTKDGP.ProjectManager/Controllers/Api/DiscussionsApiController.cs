@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Web.Mvc;
 using TTKDGP.ProjectManager.Data;
@@ -26,7 +26,7 @@ namespace TTKDGP.ProjectManager.Controllers.Api
             }
 
             var userId = CurrentUserId;
-            var isMember = Can("wprojects.view") || Repository.WorkAssignments.All().Any(a => a.ProjectId == projectId && a.UserId == userId && a.IsActive);
+            var isMember = IsTeamManager || project.PmUserId == userId || Repository.WorkAssignments.All().Any(a => a.ProjectId == projectId && a.UserId == userId && a.IsActive);
             if (!isMember)
             {
                 return Json(new { success = false, error = "Bạn không có quyền gửi tài liệu trong dự án này." });
@@ -81,7 +81,7 @@ namespace TTKDGP.ProjectManager.Controllers.Api
             }
 
             var userId = CurrentUserId;
-            var isMember = Can("wprojects.view") || Repository.WorkAssignments.All().Any(a => a.ProjectId == projectId && a.UserId == userId && a.IsActive);
+            var isMember = IsTeamManager || project.PmUserId == userId || Repository.WorkAssignments.All().Any(a => a.ProjectId == projectId && a.UserId == userId && a.IsActive);
             if (!isMember)
             {
                 return Json(new { success = false, tasks = new object[0] }, JsonRequestBehavior.AllowGet);

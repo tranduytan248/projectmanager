@@ -22,8 +22,7 @@ param(
     [string]$FtpPass = "Kh@2026"
 )
 
-$ErrorActionPreference = "Stop"
-$root = "d:\SVN\projectmanager"
+$root = if (Test-Path "$PSScriptRoot\..") { (Resolve-Path "$PSScriptRoot\..").Path } else { "d:\MyProject\projectmanager" }
 $appDir = Join-Path $root "build\app"
 
 $modeText = if ($Apply) { "THUC THI CAP NHAT FTP (-Apply)" } else { "CHI KIEM TRA (-CheckOnly)" }
