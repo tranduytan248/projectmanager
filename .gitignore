@@ -61,6 +61,9 @@ TTKDGP.ProjectManager/config.json
 .agents/scheduled_tasks.lock
 .agents/*.local.json
 .agents/*.lock
+.claude/scheduled_tasks.lock
+.claude/*.local.json
+.claude/*.lock
 Thumbs.db
 desktop.ini
 *.log
