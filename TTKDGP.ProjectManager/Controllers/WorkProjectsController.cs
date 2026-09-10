@@ -236,6 +236,16 @@ namespace TTKDGP.ProjectManager.Controllers
             if (model.Id == 0)
             {
                 model.CreatedAt = now;
+
+                // Form tạo dự án không có ô chọn PM (PM được phân công ở bước tiếp theo tại màn Members).
+                // Mặc định gán người tạo làm PM phụ trách ban đầu để dự án luôn có người quản lý
+                // và người tạo có quyền truy cập ngay vào dự án do mình tạo.
+                if (model.PmUserId <= 0 && CurrentUserId > 0)
+                {
+                    model.PmUserId = CurrentUserId;
+                    model.PmName = WorkService.UserFullName(CurrentUserId);
+                }
+
                 var saved = Repository.WorkProjects.Insert(model);
                 SaveProjectFiles(saved.Id, files);
 
@@ -257,6 +267,28 @@ namespace TTKDGP.ProjectManager.Controllers
                             CreatedAt = now
                         });
                         WorkService.SyncCurrentPm(saved.Id);
+                    }
+                }
+
+                // Nếu người tạo khác PM (trường hợp chọn người khác), vẫn phân công người tạo tham gia
+                // để luôn xem và quản lý được dự án do chính mình lập ra.
+                if (CurrentUserId > 0 && CurrentUserId != saved.PmUserId)
+                {
+                    var creator = Repository.Users.Find(CurrentUserId);
+                    if (creator != null)
+                    {
+                        Repository.WorkAssignments.Insert(new WorkAssignment
+                        {
+                            ProjectId = saved.Id,
+                            ProjectName = saved.Name,
+                            UserId = creator.Id,
+                            UserFullName = creator.FullName,
+                            Role = "Quản lý",
+                            IsPm = false,
+                            Phase = AssignmentPhases.Both,
+                            JoinedAt = saved.StartDate ?? DateTime.Today,
+                            CreatedAt = now
+                        });
                     }
                 }
 
@@ -675,7 +707,7 @@ namespace TTKDGP.ProjectManager.Controllers
         public ActionResult Members(int id, int page = 1)
         {
             var project = Repository.WorkProjects.Find(id);
-            if (project == null || !CanViewProject(id)) return HttpNotFound();
+            if (project == null || (!CanViewProject(id) && !CanEditProject(id))) return HttpNotFound();
 
             ViewBag.Project = project;
             ViewBag.CanEdit = CanEditProject(id);
