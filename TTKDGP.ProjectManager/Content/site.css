@@ -122,16 +122,31 @@ a:hover { text-decoration: underline; }
    sang phải đúng bằng bề rộng menu. Trang Đăng nhập không có menu nên .shell không lệch. */
 :root { --sidebar-w: 232px; }
 
-.shell { min-height: 100vh; display: flex; flex-direction: column; }
+.shell {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    max-width: 100%;
+}
 body.has-sidebar .shell { margin-left: var(--sidebar-w); }
 
 /* Nội dung đã bị menu chiếm chỗ nên không căn giữa theo cả màn hình nữa */
-body.has-sidebar .main, body.has-sidebar .topbar-inner, body.has-sidebar .footer .container { max-width: none; }
+body.has-sidebar .main, body.has-sidebar .topbar-inner, body.has-sidebar .footer .container {
+    max-width: none;
+    min-width: 0;
+}
 
 /* Đẩy phần chân trang xuống đáy khi nội dung ngắn. Cần width 100%: .main vừa là ô co giãn
    của .shell vừa mang lớp .container có lề auto, mà lề auto trong flexbox sẽ chặn ô giãn hết
    bề ngang — không đặt width thì vùng nội dung co lại vừa bằng chữ và trôi vào giữa. */
-.shell > .main { flex: 1 0 auto; width: 100%; }
+.shell > .main {
+    flex: 1 0 auto;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
 
 .sidebar {
     position: fixed;
@@ -176,20 +191,24 @@ body.has-sidebar .main, body.has-sidebar .topbar-inner, body.has-sidebar .footer
 }
 .sidebar-collapse:hover { background: var(--primary-soft); color: var(--primary); border-color: #bcd5f2; }
 
-/* Nút mở lại menu (☰) trên thanh trên, chỉ hiện khi menu đã thu gọn ở màn hình rộng */
+/* Nút mở lại menu (icon SVG) trên thanh trên, chỉ hiện khi menu đã thu gọn ở màn hình rộng */
 .sidebar-expand {
     display: none;
+    align-items: center;
+    justify-content: center;
     width: 36px;
-    height: 34px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
     border: 1px solid var(--border-strong);
-    border-radius: 6px;
+    border-radius: 8px;
     background: none;
     color: var(--text-muted);
     cursor: pointer;
-    font-size: 16px;
-    line-height: 1;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
 }
-.sidebar-expand:hover { background: var(--primary-soft); color: var(--primary); }
+.sidebar-expand:hover { background: var(--primary-soft); color: var(--primary); border-color: var(--primary); }
 
 /* ===== Menu dọc ===== */
 .sidenav { display: flex; flex-direction: column; gap: 2px; }
@@ -248,27 +267,61 @@ body.has-sidebar .main, body.has-sidebar .topbar-inner, body.has-sidebar .footer
 .sidenav-sub { display: flex; flex-direction: column; gap: 2px; margin: 2px 0 2px 10px; padding-left: 8px; border-left: 2px solid var(--border); }
 .sidenav-sub a { padding: 7px 10px; font-size: 13.5px; }
 
-/* Nút ba gạch, chỉ hiện khi menu dọc bị thu lại trên màn hình hẹp */
+/* Nút ba gạch menu (icon SVG), chỉ hiện khi menu dọc bị thu lại trên màn hình hẹp */
 .menu-toggle {
     display: none;
-    flex-direction: column;
+    align-items: center;
     justify-content: center;
-    /* Trình duyệt tự căn giữa nội dung của thẻ button; không ép stretch thì ba vạch
-       co lại còn 0px vì span rỗng không có bề ngang tự nhiên. */
-    align-items: stretch;
-    gap: 4px;
     width: 36px;
-    height: 34px;
-    padding: 0 8px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    padding: 0;
     background: none;
     border: 1px solid var(--border-strong);
-    border-radius: 6px;
+    border-radius: 8px;
+    color: var(--text-muted);
     cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
 }
 
-.menu-toggle span { display: block; width: 100%; height: 2px; background: var(--text-muted); border-radius: 2px; }
-.menu-toggle:hover { background: var(--primary-soft); }
-.menu-toggle:hover span { background: var(--primary); }
+.menu-toggle:hover {
+    background: var(--primary-soft);
+    color: var(--primary);
+    border-color: var(--primary);
+}
+
+.menu-toggle-icon {
+    width: 20px;
+    height: 20px;
+    display: block;
+    stroke: currentColor;
+    flex-shrink: 0;
+}
+
+/* Nút đóng menu trên mobile */
+.sidebar-close-mobile {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: none;
+    color: var(--text-muted);
+    font-size: 14px;
+    cursor: pointer;
+    line-height: 1;
+    margin-left: auto;
+    transition: all 0.15s ease;
+}
+.sidebar-close-mobile:hover {
+    background: var(--danger-soft);
+    color: var(--danger);
+    border-color: #e6b8b5;
+}
 
 /* Đủ hai lớp để thắng .brand{display:flex} khai báo bên dưới, nếu không sẽ lộ ở màn hình rộng */
 .brand.brand-compact { display: none; }
@@ -474,46 +527,85 @@ body.has-sidebar .main, body.has-sidebar .topbar-inner, body.has-sidebar .footer
 /* Điều hướng đã chuyển hết sang menu dọc, thanh trên chỉ còn khối tài khoản bên phải */
 .user-area { display: flex; align-items: center; gap: 12px; margin-left: auto; }
 
-@media (max-width: 720px) {
-    .topbar-week-range { display: none; }
+/* ===== Thanh trên: Quy tắc Responsive cho Mobile & Tablet ===== */
+@media (max-width: 860px) {
+    .topbar-link { display: none !important; }
+    .topbar-week { display: none !important; }
+    .topbar-inner { gap: 10px; }
+
+    /* Nút tải app trên màn hình tablet/mobile: ẩn nhãn chữ, chuyển thành nút tròn/viên thuốc icon gọn gàng */
+    .app-download-btn span { display: none !important; }
+    .app-download-btn {
+        width: 34px !important;
+        height: 34px !important;
+        min-width: 34px !important;
+        padding: 0 !important;
+        border-radius: 50% !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 0 !important;
+        flex-shrink: 0 !important;
+    }
+    .app-download-btn .app-icon {
+        width: 17px !important;
+        height: 17px !important;
+        margin: 0 !important;
+    }
+    .topbar-app-downloads {
+        gap: 6px !important;
+        flex-shrink: 0 !important;
+    }
 }
 
-/* Thanh trên trên điện thoại: mọi mục đều nowrap nên chỉ cần dư một mục là tràn ngang.
-   Bỏ bớt những thứ có chỗ khác thay thế — điều hướng đã nằm trong menu dọc, tuần thì các
-   màn liên quan đều tự hiện. */
 @media (max-width: 640px) {
-    .topbar-inner { gap: 8px; height: 54px; padding-left: 10px; padding-right: 10px; }
-    .topbar-link { display: none; }
-    .topbar-week { display: none; }
-    .user-area { gap: 6px; }
+    .topbar-inner {
+        gap: 8px;
+        height: 52px;
+        padding-left: 8px;
+        padding-right: 8px;
+        max-width: 100vw;
+        box-sizing: border-box;
+    }
+    .brand-text { display: none !important; }
+    .brand-compact { flex-shrink: 0; }
+    .brand-compact .brand-mark { width: 28px; height: 28px; }
 
-    /* Rút gọn tên trên mobile để không đẩy tràn thanh trên */
-    .brand-text {
-        max-width: 120px;
+    .user-area {
+        gap: 6px;
+        flex-shrink: 1;
+        min-width: 0;
+    }
+
+    /* Rút gọn thông tin người dùng: ẩn vai trò, giới hạn bề rộng tên */
+    .user-chip {
+        max-width: 90px;
+        padding: 3px 6px;
+        font-size: 12px;
+        flex-shrink: 1;
+        min-width: 0;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        font-size: 14px;
     }
-    .topbar-app-downloads { gap: 4px; }
-    .app-download-btn {
+    .user-chip em { display: none !important; }
+
+    /* Nút Đăng xuất nhỏ gọn */
+    .inline-form { flex-shrink: 0; margin: 0; }
+    .inline-form .btn-ghost {
         padding: 4px 8px;
-        font-size: 12px;
-        gap: 4px;
+        font-size: 11.5px;
+        white-space: nowrap;
     }
+
     .user-area .btn-primary {
         padding: 5px 10px;
         font-size: 12.5px;
         white-space: nowrap;
     }
 
-    /* Tên dài đẩy nút Đăng xuất ra ngoài màn hình. */
-    .user-chip { max-width: 38vw; overflow: hidden; }
-    .user-chip, .user-chip em { white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
-
     .notif-panel {
         position: fixed;
-        top: 60px;
+        top: 54px;
         left: 8px;
         right: 8px;
         width: auto;
@@ -521,18 +613,49 @@ body.has-sidebar .main, body.has-sidebar .topbar-inner, body.has-sidebar .footer
     }
 }
 
-@media (max-width: 480px) {
-    .brand-text { display: none; } /* Màn hình hẹp: chỉ hiện logo icon ly cafe */
-    .app-download-btn span { display: none; } /* Ẩn chữ "Tải Android", "Tải iOS", chỉ hiện icon */
-    .app-download-btn {
-        padding: 6px 8px;
-        border-radius: var(--radius-pill);
+@media (max-width: 420px) {
+    .topbar-inner {
+        gap: 5px;
+        padding-left: 6px;
+        padding-right: 6px;
     }
-    .topbar-app-downloads { gap: 4px; }
-    .user-area { gap: 5px; }
-    .user-area .btn-primary {
-        padding: 5px 8px;
-        font-size: 12px;
+    .user-area {
+        gap: 4px;
+    }
+    .topbar-app-downloads {
+        gap: 4px !important;
+    }
+    .app-download-btn {
+        width: 32px !important;
+        height: 32px !important;
+        min-width: 32px !important;
+    }
+    .app-download-btn .app-icon {
+        width: 15px !important;
+        height: 15px !important;
+    }
+    .menu-toggle {
+        width: 34px;
+        height: 34px;
+        min-width: 34px;
+        min-height: 34px;
+    }
+    .brand-compact .brand-mark {
+        width: 26px;
+        height: 26px;
+    }
+    .notif-bell {
+        width: 32px;
+        height: 32px;
+    }
+    .user-chip {
+        max-width: 65px;
+        font-size: 11px;
+        padding: 2px 4px;
+    }
+    .inline-form .btn-ghost {
+        padding: 4px 6px;
+        font-size: 11px;
     }
 }
 
@@ -635,6 +758,9 @@ body.has-sidebar .main, body.has-sidebar .topbar-inner, body.has-sidebar .footer
     border-radius: var(--radius);
     box-shadow: var(--elev-1);
     margin-bottom: 14px;
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .card-head {
@@ -1078,7 +1204,14 @@ textarea { min-height: 84px; resize: vertical; width: 100%; }
 .btn-group .btn:hover, .btn-group .btn:focus { z-index: 1; }
 
 /* ===== Bảng ===== */
-.table-wrap { overflow-x: auto; }
+.table-wrap {
+    overflow-x: auto;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    -webkit-overflow-scrolling: touch;
+    display: block;
+}
 
 /*
   Bảng có menu thao tác thả xuống vẫn cuộn ngang bình thường: khi mở, app.js neo bảng chọn
@@ -1086,7 +1219,13 @@ textarea { min-height: 84px; resize: vertical; width: 100%; }
   Giữ lại tên lớp cho các view đang dùng — trước đây lớp này tắt cuộn ngang, khiến bảng nhiều
   cột đẩy tràn cả trang trên điện thoại.
 */
-.table-wrap.with-menu { overflow-x: auto; }
+.table-wrap.with-menu {
+    overflow-x: auto;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    -webkit-overflow-scrolling: touch;
+}
 
 /* ---- Menu thao tác trên từng dòng ---- */
 .row-menu { position: relative; display: inline-block; }
@@ -1413,7 +1552,9 @@ table.data .cell-sub.muted { font-size: 12.5px; line-height: 1.4; }
     .btn-group .btn { border-radius: var(--radius-sm); }
 
     /* Ô thao tác canh trái cho thẳng hàng với phần còn lại của dòng. */
-    table.data td.actions { text-align: left; }
+    table.data td.actions { text-align: left; white-space: normal; }
+    .leave-approve-form { min-width: 140px; }
+    .leave-approve-form .leave-note { min-width: 130px; font-size: 12px; }
 
     /* Đầu bảng xuống dòng được thì bảng hẹp lại đáng kể, đỡ phải cuộn ngang nhiều. */
     table.data thead th { white-space: normal; }
@@ -2008,7 +2149,8 @@ table.data .cell-sub.muted { font-size: 12.5px; line-height: 1.4; }
     .two-col { grid-template-columns: 1fr; }
 
     /* Màn hình hẹp: menu dọc trượt ra như ngăn kéo, nội dung không bị đẩy sang phải nữa */
-    body.has-sidebar .shell { margin-left: 0; }
+    body.has-sidebar .shell { margin-left: 0; max-width: 100vw; }
+    body.has-sidebar .main { max-width: 100%; min-width: 0; box-sizing: border-box; }
 
     .sidebar {
         transform: translateX(-100%);
@@ -2019,11 +2161,13 @@ table.data .cell-sub.muted { font-size: 12.5px; line-height: 1.4; }
     body.menu-open .sidebar { transform: translateX(0); }
     body.menu-open .sidebar-scrim { display: block; }
 
-    .menu-toggle { display: flex; }
-    .brand.brand-compact { display: flex; }
+    .menu-toggle { display: inline-flex !important; }
+    .sidebar-expand { display: none !important; }
+    .sidebar-close-mobile { display: inline-flex !important; }
+    .brand.brand-compact { display: flex !important; flex-shrink: 0; }
 
     /* Thu gọn là khái niệm của màn hình rộng; màn hình hẹp dùng ngăn kéo nên bỏ qua nút thu gọn */
-    .sidebar-collapse { display: none; }
+    .sidebar-collapse { display: none !important; }
 }
 
 /* ===== Thu gọn menu trên màn hình rộng ===== */
@@ -2041,6 +2185,8 @@ table.data .cell-sub.muted { font-size: 12.5px; line-height: 1.4; }
         align-items: center;
         justify-content: center;
     }
+    .menu-toggle { display: none !important; }
+    .sidebar-close-mobile { display: none !important; }
 }
 
 /* ===== Thông báo ===== */
@@ -3381,10 +3527,15 @@ table.data tfoot td {
 }
 
 /* Ô nhập ý kiến duyệt trên màn Duyệt nghỉ phép: nằm ngay trên cặp nút Duyệt/Từ chối. */
+.leave-approve-form {
+    min-width: 170px;
+    white-space: normal;
+}
 .leave-approve-form .leave-note {
     width: 100%;
-    min-width: 190px;
+    min-width: 150px;
     margin-bottom: 6px;
+    box-sizing: border-box;
 }
 
 /* ==========================================================================

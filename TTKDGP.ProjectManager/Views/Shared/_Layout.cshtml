@@ -101,6 +101,8 @@
                 </a>
                 <button type="button" class="sidebar-collapse" data-sidebar-toggle
                         aria-label="Thu gọn menu" title="Thu gọn menu">«</button>
+                <button type="button" class="sidebar-close-mobile" data-menu-close
+                        aria-label="Đóng menu" title="Đóng menu">✕</button>
             </div>
 
             <nav class="sidenav">
@@ -152,13 +154,23 @@
                 @if (currentUser != null)
                 {
                     <button type="button" class="menu-toggle" data-menu-toggle
-                            aria-label="Mở menu" aria-controls="sidebar" aria-expanded="false">
-                        <span></span><span></span><span></span>
+                            aria-label="Mở menu" aria-controls="sidebar" aria-expanded="false" title="Mở menu">
+                        <svg class="menu-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="4" y1="6" x2="20" y2="6"></line>
+                            <line x1="4" y1="12" x2="20" y2="12"></line>
+                            <line x1="4" y1="18" x2="20" y2="18"></line>
+                        </svg>
                     </button>
 
                     @* Nút mở lại menu khi đã thu gọn (chỉ hiện trên màn hình rộng lúc menu đang đóng) *@
                     <button type="button" class="sidebar-expand" data-sidebar-toggle
-                            aria-label="Mở menu" title="Mở menu">☰</button>
+                            aria-label="Mở menu" title="Mở menu">
+                        <svg class="menu-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="4" y1="6" x2="20" y2="6"></line>
+                            <line x1="4" y1="12" x2="20" y2="12"></line>
+                            <line x1="4" y1="18" x2="20" y2="18"></line>
+                        </svg>
+                    </button>
 
                     @* Trên màn hình hẹp menu dọc bị ẩn nên thanh trên phải tự mang tên hệ thống *@
                     <a class="brand brand-compact" href="@Url.Action("Index", "Home")">

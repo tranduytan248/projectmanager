@@ -111,7 +111,7 @@
                         <th>Thời gian nghỉ</th>
                         <th>Loại</th>
                         <th class="num">Số ngày</th>
-                        <th>Lý do</th>
+                        <th class="wrap-text">Lý do</th>
                         <th>Trạng thái</th>
                         <th></th>
                     </tr>
@@ -137,7 +137,7 @@
                             </td>
                             <td>@LeaveKinds.Display(l.Kind)</td>
                             <td class="num"><strong>@l.Days.ToString("0.#")</strong></td>
-                            <td>
+                            <td class="wrap-text">
                                 @if (string.IsNullOrWhiteSpace(l.Reason))
                                 {
                                     <span class="muted">—</span>
