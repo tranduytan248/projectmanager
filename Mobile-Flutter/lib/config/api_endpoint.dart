@@ -9,12 +9,12 @@ class ApiEndpoint {
 
   // Site IIS local "pm.vn" (127.0.0.1, xem hosts) tro thang vao thu muc source
   // TTKDGP.ProjectManager — build xong (msbuild) la co ngay tren site nay, dung de dev/test tren
-  // may nay. Doi sang https://pmncpt.cenit.vn (server that) khi build ban phat hanh.
+  // may nay. Doi sang http://brewtask.vnptkhanhhoa.vn (server Production) khi build ban phat hanh.
   //
   // Emulator Android khong doc duoc hosts file cua may Windows host nen khong phan giai duoc
   // "pm.vn" — dung dia chi dac biet "10.0.2.2" (alias cua host tu ben trong AVD) qua binding
   // rieng tren port 8080 (khong doi Host header) thay vi ten mien.
-  static String get baseUrl => 'http://pmncpt.cenit.vn';
+  static String get baseUrl => 'http://brewtask.vnptkhanhhoa.vn';
 
   static const login = '/AuthApi/Login';
   static const forgotPasswordRequestOtp = '/AuthApi/RequestPasswordResetOtp';

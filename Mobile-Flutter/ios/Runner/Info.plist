@@ -44,7 +44,7 @@
 			<false/>
 			<key>NSExceptionDomains</key>
 			<dict>
-				<key>pmncpt.cenit.vn</key>
+				<key>brewtask.vnptkhanhhoa.vn</key>
 				<dict>
 					<key>NSIncludesSubdomains</key>
 					<true/>
@@ -53,7 +53,7 @@
 					<key>NSTemporaryExceptionMinimumTLSVersion</key>
 					<string>TLSv1.2</string>
 				</dict>
-				<key>cenit.vn</key>
+				<key>vnptkhanhhoa.vn</key>
 				<dict>
 					<key>NSIncludesSubdomains</key>
 					<true/>
