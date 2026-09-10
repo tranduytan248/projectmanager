@@ -58,7 +58,12 @@ TTKDGP.ProjectManager/App_Config/secrets.config
 TTKDGP.ProjectManager/config.json
 
 # ---- Khác ----
-.agents/
+.agents/scheduled_tasks.lock
+.agents/*.local.json
+.agents/*.lock
+.claude/scheduled_tasks.lock
+.claude/*.local.json
+.claude/*.lock
 Thumbs.db
 desktop.ini
 *.log
