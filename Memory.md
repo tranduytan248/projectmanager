@@ -2,6 +2,28 @@
 
 ---
 
+# [2026-09-10] Sửa lỗi 404 khi tạo mới dự án và phân công nhân sự tại /WorkProjects/Members
+
+## 1. Mô tả vấn đề
+Người dùng phản ánh:
+> "Khi tạo mới dự án thì báo lỗi như này, tài khoản hautm.kha"
+Kèm ảnh lỗi 404: `pmncpt.cenit.vn/WorkProjects/Members/86` — `Server Error 404 - File or directory not found.`
+
+## 2. Phân tích nguyên nhân gốc rễ
+1. **Quy trình tạo dự án**: Màn hình tạo dự án không có trường chọn PM. Khi lưu dự án mới (`model.Id == 0`), dự án được khởi tạo với `PmUserId = 0` và danh sách phân công `WorkAssignments` rỗng.
+2. **Chuyển hướng tự động**: Hệ thống redirect sang `/WorkProjects/Members/{id}` để tiếp tục bước phân công nhân sự.
+3. **Bị chặn 404 do kiểm quyền**: Action `Members` gọi `CanViewProject(id)`. Do dự án mới tạo chưa có PM (`PmUserId = 0`), bảng phân công rỗng, và tài khoản người tạo (`hautm.kha`) có `IsTeamManager = False` (chưa được check "Là Quản lý Tổ" theo phân quyền ngày 2026-09-09), nên hệ thống coi người tạo không tham gia dự án và trả về `HttpNotFound()`.
+
+## 3. Giải pháp thực hiện
+1. **Cập nhật CSDL ngay cho dự án #86**:
+   - Gán `PmUserId = 3`, `PmName = N'Trịnh Minh Hậu'` và tạo bản ghi `WorkAssignments` cho `hautm.kha` làm PM.
+2. **Sửa mã nguồn tại `WorkProjectsController.cs`**:
+   - Trong `Save`: Khi tạo dự án mới (`model.Id == 0`), nếu chưa chọn PM thì tự động gán người tạo (`CurrentUserId`) làm PM ban đầu và tự động thêm vào `WorkAssignments`. Nếu người tạo chọn PM khác, vẫn phân công người tạo tham gia với vai trò Quản lý để luôn theo dõi được dự án do mình lập.
+   - Trong `Members`: Cho phép cả người có quyền quản lý/sửa dự án (`CanEditProject(id)`) hoặc tham gia (`CanViewProject(id)`) đều mở được trang phân công nhân sự.
+3. **Quy trình Git**: Commit thay đổi trên `main` -> Push `origin/main` -> Merge sang `upload-source` -> Push `origin/upload-source` để runner tự động deploy lên web nội bộ.
+
+---
+
 # [2026-09-09] Phân quyền hiển thị Dự án: Chỉ hiển thị dự án tham gia, trừ tài khoản Là Quản lý Tổ
 
 ## 1. Mô tả vấn đề
