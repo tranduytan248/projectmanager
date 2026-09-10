@@ -89,8 +89,10 @@
 
 * { box-sizing: border-box; }
 
-body {
+html, body {
     margin: 0;
+    max-width: 100%;
+    overflow-x: hidden;
     background: var(--bg);
     color: var(--text);
     font-family: Roboto, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
@@ -480,20 +482,35 @@ body.has-sidebar .main, body.has-sidebar .topbar-inner, body.has-sidebar .footer
    Bỏ bớt những thứ có chỗ khác thay thế — điều hướng đã nằm trong menu dọc, tuần thì các
    màn liên quan đều tự hiện. */
 @media (max-width: 640px) {
-    .topbar-inner { gap: 10px; height: 54px; }
+    .topbar-inner { gap: 8px; height: 54px; padding-left: 10px; padding-right: 10px; }
     .topbar-link { display: none; }
     .topbar-week { display: none; }
-    .user-area { gap: 8px; }
+    .user-area { gap: 6px; }
+
+    /* Rút gọn tên trên mobile để không đẩy tràn thanh trên */
+    .brand-text {
+        max-width: 120px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 14px;
+    }
+    .topbar-app-downloads { gap: 4px; }
+    .app-download-btn {
+        padding: 4px 8px;
+        font-size: 12px;
+        gap: 4px;
+    }
+    .user-area .btn-primary {
+        padding: 5px 10px;
+        font-size: 12.5px;
+        white-space: nowrap;
+    }
 
     /* Tên dài đẩy nút Đăng xuất ra ngoài màn hình. */
     .user-chip { max-width: 38vw; overflow: hidden; }
     .user-chip, .user-chip em { white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
 
-    /* Bảng thông báo vốn định vị "right: 0" NEO THEO CHUÔNG — trên điện thoại chuông không nằm
-       sát mép phải màn hình (còn tên người dùng + nút Đăng xuất phía sau), nên hộp 380px kéo dài
-       sang trái sẽ tràn khỏi mép trái, cắt mất nửa nội dung. Chuyển sang "fixed" định vị theo
-       CHÍNH MÀN HÌNH thay vì theo chuông, để hộp luôn nằm gọn trong khung nhìn bất kể chuông ở
-       đâu trên thanh trên. */
     .notif-panel {
         position: fixed;
         top: 60px;
@@ -501,6 +518,21 @@ body.has-sidebar .main, body.has-sidebar .topbar-inner, body.has-sidebar .footer
         right: 8px;
         width: auto;
         max-width: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .brand-text { display: none; } /* Màn hình hẹp: chỉ hiện logo icon ly cafe */
+    .app-download-btn span { display: none; } /* Ẩn chữ "Tải Android", "Tải iOS", chỉ hiện icon */
+    .app-download-btn {
+        padding: 6px 8px;
+        border-radius: var(--radius-pill);
+    }
+    .topbar-app-downloads { gap: 4px; }
+    .user-area { gap: 5px; }
+    .user-area .btn-primary {
+        padding: 5px 8px;
+        font-size: 12px;
     }
 }
 
@@ -869,9 +901,20 @@ textarea { min-height: 84px; resize: vertical; width: 100%; }
 .form-field:focus-within > label { color: var(--primary); }
 
 /* ===== Select2: chỉnh lại cho khớp với các ô nhập khác ===== */
-.select2-container { min-width: 170px; }
-.filter-field .select2-container { min-width: 200px; }
-.form-field .select2-container { width: 100% !important; }
+.select2-container {
+    min-width: 0;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+.filter-field .select2-container {
+    min-width: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+}
+.form-field .select2-container {
+    width: 100% !important;
+    max-width: 100% !important;
+}
 
 .select2-container--default .select2-selection--single {
     height: auto;
@@ -1378,9 +1421,11 @@ table.data .cell-sub.muted { font-size: 12.5px; line-height: 1.4; }
     /* Đường dẫn phân cấp dài hơn cả bề ngang máy. */
     .breadcrumb-current { max-width: 100%; }
 
-    /* Bộ lọc: mỗi ô một dòng, khỏi chen chúc. */
-    .filter-field, .filter-field.grow { min-width: 100%; }
-    .form-control, .filter-field .select2-container { min-width: 0; }
+    /* Bộ lọc: mỗi ô một dòng, khỏi chen chúc, không tràn card */
+    .filters { display: flex; flex-direction: column; width: 100%; gap: 12px; }
+    .filter-field, .filter-field.grow { width: 100% !important; min-width: 0 !important; max-width: 100% !important; }
+    .form-control, .filter-field .select2-container { min-width: 0 !important; width: 100% !important; max-width: 100% !important; }
+    .filter-field input, .filter-field select { width: 100% !important; max-width: 100% !important; box-sizing: border-box; }
 
     /* Ô số liệu 2 cột thay vì 1 cột dài thượt. */
     .tile-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
@@ -2260,10 +2305,10 @@ table.data .cell-sub.muted { font-size: 12.5px; line-height: 1.4; }
 
 /* Banner đỉnh trang khi chưa đăng nhập */
 .demo-global-banner {
-    background: linear-gradient(90deg, #78350f 0%, #92400e 50%, #b45309 100%);
+    background: linear-gradient(135deg, #991b1b 0%, #b45309 45%, #c2410c 100%);
     color: #ffffff;
-    padding: 8px 16px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    padding: 10px 16px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.18);
     position: relative;
     z-index: 99;
 }
@@ -2279,17 +2324,18 @@ table.data .cell-sub.muted { font-size: 12.5px; line-height: 1.4; }
     align-items: center;
     gap: 10px;
     flex-wrap: wrap;
-    font-size: 13px;
+    font-size: 13.5px;
 }
 .demo-global-tag {
     background: #ef4444;
     color: #ffffff;
-    font-size: 10.5px;
+    font-size: 11px;
     font-weight: 800;
     letter-spacing: 0.6px;
-    padding: 3px 8px;
+    padding: 3px 9px;
     border-radius: var(--radius-pill);
     text-transform: uppercase;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 .demo-global-msg {
     font-weight: 700;
@@ -2299,9 +2345,9 @@ table.data .cell-sub.muted { font-size: 12.5px; line-height: 1.4; }
 .btn-demo-global {
     background: #f59e0b;
     color: #78350f !important;
-    font-size: 12.5px;
+    font-size: 13px;
     font-weight: 700;
-    padding: 5px 14px;
+    padding: 6px 16px;
     border-radius: var(--radius-pill);
     text-decoration: none !important;
     transition: all 0.2s ease;
@@ -2309,12 +2355,45 @@ table.data .cell-sub.muted { font-size: 12.5px; line-height: 1.4; }
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
 .btn-demo-global:hover {
     background: #ffffff;
     color: #92400e !important;
     transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+}
+
+@media (max-width: 640px) {
+    .demo-global-banner {
+        padding: 12px 14px;
+        text-align: center;
+    }
+    .demo-global-inner {
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        gap: 10px;
+    }
+    .demo-global-text {
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        gap: 6px;
+    }
+    .demo-global-msg {
+        font-size: 13.5px;
+        line-height: 1.4;
+        text-align: center;
+    }
+    .btn-demo-global {
+        width: auto;
+        padding: 8px 22px;
+        font-size: 13.5px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
 }
 
 /* ===== Bảng Kanban =====
