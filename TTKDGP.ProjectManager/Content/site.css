@@ -122,16 +122,31 @@ a:hover { text-decoration: underline; }
    sang phải đúng bằng bề rộng menu. Trang Đăng nhập không có menu nên .shell không lệch. */
 :root { --sidebar-w: 232px; }
 
-.shell { min-height: 100vh; display: flex; flex-direction: column; }
+.shell {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    max-width: 100%;
+}
 body.has-sidebar .shell { margin-left: var(--sidebar-w); }
 
 /* Nội dung đã bị menu chiếm chỗ nên không căn giữa theo cả màn hình nữa */
-body.has-sidebar .main, body.has-sidebar .topbar-inner, body.has-sidebar .footer .container { max-width: none; }
+body.has-sidebar .main, body.has-sidebar .topbar-inner, body.has-sidebar .footer .container {
+    max-width: none;
+    min-width: 0;
+}
 
 /* Đẩy phần chân trang xuống đáy khi nội dung ngắn. Cần width 100%: .main vừa là ô co giãn
    của .shell vừa mang lớp .container có lề auto, mà lề auto trong flexbox sẽ chặn ô giãn hết
    bề ngang — không đặt width thì vùng nội dung co lại vừa bằng chữ và trôi vào giữa. */
-.shell > .main { flex: 1 0 auto; width: 100%; }
+.shell > .main {
+    flex: 1 0 auto;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
 
 .sidebar {
     position: fixed;
@@ -743,6 +758,9 @@ body.has-sidebar .main, body.has-sidebar .topbar-inner, body.has-sidebar .footer
     border-radius: var(--radius);
     box-shadow: var(--elev-1);
     margin-bottom: 14px;
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .card-head {
@@ -1186,7 +1204,14 @@ textarea { min-height: 84px; resize: vertical; width: 100%; }
 .btn-group .btn:hover, .btn-group .btn:focus { z-index: 1; }
 
 /* ===== Bảng ===== */
-.table-wrap { overflow-x: auto; }
+.table-wrap {
+    overflow-x: auto;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    -webkit-overflow-scrolling: touch;
+    display: block;
+}
 
 /*
   Bảng có menu thao tác thả xuống vẫn cuộn ngang bình thường: khi mở, app.js neo bảng chọn
@@ -1194,7 +1219,13 @@ textarea { min-height: 84px; resize: vertical; width: 100%; }
   Giữ lại tên lớp cho các view đang dùng — trước đây lớp này tắt cuộn ngang, khiến bảng nhiều
   cột đẩy tràn cả trang trên điện thoại.
 */
-.table-wrap.with-menu { overflow-x: auto; }
+.table-wrap.with-menu {
+    overflow-x: auto;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    -webkit-overflow-scrolling: touch;
+}
 
 /* ---- Menu thao tác trên từng dòng ---- */
 .row-menu { position: relative; display: inline-block; }
@@ -1521,7 +1552,9 @@ table.data .cell-sub.muted { font-size: 12.5px; line-height: 1.4; }
     .btn-group .btn { border-radius: var(--radius-sm); }
 
     /* Ô thao tác canh trái cho thẳng hàng với phần còn lại của dòng. */
-    table.data td.actions { text-align: left; }
+    table.data td.actions { text-align: left; white-space: normal; }
+    .leave-approve-form { min-width: 140px; }
+    .leave-approve-form .leave-note { min-width: 130px; font-size: 12px; }
 
     /* Đầu bảng xuống dòng được thì bảng hẹp lại đáng kể, đỡ phải cuộn ngang nhiều. */
     table.data thead th { white-space: normal; }
@@ -2116,7 +2149,8 @@ table.data .cell-sub.muted { font-size: 12.5px; line-height: 1.4; }
     .two-col { grid-template-columns: 1fr; }
 
     /* Màn hình hẹp: menu dọc trượt ra như ngăn kéo, nội dung không bị đẩy sang phải nữa */
-    body.has-sidebar .shell { margin-left: 0; }
+    body.has-sidebar .shell { margin-left: 0; max-width: 100vw; }
+    body.has-sidebar .main { max-width: 100%; min-width: 0; box-sizing: border-box; }
 
     .sidebar {
         transform: translateX(-100%);
@@ -3493,10 +3527,15 @@ table.data tfoot td {
 }
 
 /* Ô nhập ý kiến duyệt trên màn Duyệt nghỉ phép: nằm ngay trên cặp nút Duyệt/Từ chối. */
+.leave-approve-form {
+    min-width: 170px;
+    white-space: normal;
+}
 .leave-approve-form .leave-note {
     width: 100%;
-    min-width: 190px;
+    min-width: 150px;
     margin-bottom: 6px;
+    box-sizing: border-box;
 }
 
 /* ==========================================================================
