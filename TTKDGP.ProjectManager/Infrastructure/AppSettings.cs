@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
+using System.Web;
 
 namespace TTKDGP.ProjectManager.Infrastructure
 {
@@ -130,8 +131,70 @@ namespace TTKDGP.ProjectManager.Infrastructure
             }
         }
 
-        /// <summary>Địa chỉ người dùng truy cập hệ thống, đính kèm cuối mỗi tin nhắc.</summary>
-        public static string PublicUrl { get { return Get("App:PublicUrl", "pmncpt.cenit.vn"); } }
+        /// <summary>
+        /// Địa chỉ đầy đủ có giao thức, dùng làm href trong liên kết/email/thông báo.
+        /// Ưu tiên lấy theo domain thực tế của website đang phục vụ request (nếu có HttpContext),
+        /// giúp liên kết tự động khớp chính xác khi truy cập từ brewtask.vnptkhanhhoa.vn hoặc các domain khác.
+        /// </summary>
+        public static string PublicLink
+        {
+            get
+            {
+                try
+                {
+                    var ctx = HttpContext.Current;
+                    if (ctx != null && ctx.Request != null && ctx.Request.Url != null)
+                    {
+                        var scheme = ctx.Request.Url.Scheme;
+                        var authority = ctx.Request.Url.Authority;
+                        var appPath = ctx.Request.ApplicationPath != null ? ctx.Request.ApplicationPath.TrimEnd('/') : "";
+                        return (scheme + "://" + authority + appPath).TrimEnd('/');
+                    }
+                }
+                catch { }
+
+                var url = Get("App:PublicUrl");
+                if (string.IsNullOrWhiteSpace(url))
+                {
+                    url = "http://brewtask.vnptkhanhhoa.vn";
+                }
+
+                return url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                       url.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+                    ? url.TrimEnd('/')
+                    : "http://" + url.TrimEnd('/');
+            }
+        }
+
+        /// <summary>Địa chỉ người dùng truy cập hệ thống (tên miền/authority không kèm giao thức).</summary>
+        public static string PublicUrl
+        {
+            get
+            {
+                try
+                {
+                    var ctx = HttpContext.Current;
+                    if (ctx != null && ctx.Request != null && ctx.Request.Url != null)
+                    {
+                        return ctx.Request.Url.Authority;
+                    }
+                }
+                catch { }
+
+                var link = PublicLink;
+                if (!string.IsNullOrWhiteSpace(link))
+                {
+                    try
+                    {
+                        var uri = new Uri(link);
+                        return uri.Authority;
+                    }
+                    catch { }
+                }
+
+                return "brewtask.vnptkhanhhoa.vn";
+            }
+        }
 
         /// <summary>
         /// Kết nối SQL Server — nơi lưu toàn bộ dữ liệu nghiệp vụ.
@@ -148,21 +211,6 @@ namespace TTKDGP.ProjectManager.Infrastructure
             public static bool IntegratedSecurity { get { return GetBool("Db:IntegratedSecurity", false); } }
 
             public static bool HasServer { get { return !string.IsNullOrWhiteSpace(Server); } }
-        }
-
-        /// <summary>Địa chỉ đầy đủ có giao thức, dùng làm href trong tin nhắn.</summary>
-        public static string PublicLink
-        {
-            get
-            {
-                var url = PublicUrl;
-                if (string.IsNullOrWhiteSpace(url)) return null;
-
-                return url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
-                       url.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
-                    ? url
-                    : "http://" + url;
-            }
         }
 
         public static class Telegram
