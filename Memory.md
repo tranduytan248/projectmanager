@@ -2,6 +2,19 @@
 
 ---
 
+# [2026-09-10] Thêm thông báo Website Demo và nút chuyển hướng sang brewtask.vnptkhanhhoa.vn
+
+## 1. Yêu cầu người dùng
+> "Trên màn hình trước khi đăng nhập của website http://pmncpt.cenit.vn/ Hãy để 1 nội dung. ĐÂY LÀ WEBSITE DEMO. TRUY CẬP VÀO WEBSITE CHÍNH THỨC. Có 1 button Text -> Di chuyển đến trang -> Sau đó redirect tới trang http://brewtask.vnptkhanhhoa.vn/"
+
+## 2. Triển khai
+1. **Views/Account/Login.cshtml**: Thêm khối thẻ `.demo-site-box` ngay trên khung đăng nhập với tag cảnh báo nhấp nháy `ĐÂY LÀ WEBSITE DEMO.`, tiêu đề `TRUY CẬP VÀO WEBSITE CHÍNH THỨC.` và nút `Di chuyển đến trang ➔` liên kết tới `http://brewtask.vnptkhanhhoa.vn/`.
+2. **Views/Shared/_Layout.cshtml**: Bổ sung dải banner `.demo-global-banner` trên đỉnh trang cho toàn bộ các màn hình trước khi đăng nhập (`currentUser == null`).
+3. **Điều kiện tự động**: Kiểm tra `Request.Url.Host.IndexOf("brewtask.vnptkhanhhoa.vn") < 0` để chỉ hiển thị trên môi trường demo `pmncpt.cenit.vn`, tự động ẩn hoàn toàn trên website chính thức `brewtask.vnptkhanhhoa.vn`.
+4. **Content/site.css**: Thêm style Material Design (gradient cam/hổ phách cảnh báo cao cấp, hiệu ứng nhấp nháy và hover mượt mà).
+
+---
+
 # [2026-09-10] Sửa lỗi 404 khi tạo mới dự án và phân công nhân sự tại /WorkProjects/Members
 
 ## 1. Mô tả vấn đề

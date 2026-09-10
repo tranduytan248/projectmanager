@@ -20,7 +20,7 @@
 
             var options = {
                 language: 'vi',
-                width: 'resolve',
+                width: '100%',
                 minimumResultsForSearch: optionCount >= SEARCH_THRESHOLD ? 0 : Infinity
             };
 
