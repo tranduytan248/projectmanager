@@ -2158,11 +2158,164 @@ table.data .cell-sub.muted { font-size: 12.5px; line-height: 1.4; }
 .key-regen .hint { margin-top: 4px; max-width: 460px; }
 
 /* ===== Trang đăng nhập ===== */
-.login-wrap { max-width: 400px; margin: 56px auto; }
+.login-wrap { max-width: 420px; margin: 40px auto; }
 .login-wrap .card-body { padding: 26px; }
 .login-title { text-align: center; margin: 0 0 22px; font-size: 19px; }
 .login-wrap .form-field { margin-bottom: 15px; }
 .login-wrap .btn { width: 100%; text-align: center; }
+
+/* ===== Khối thông báo Website Demo trước khi đăng nhập ===== */
+.demo-site-box {
+    background: linear-gradient(145deg, #fffbeb 0%, #fef3c7 100%);
+    border: 2px solid #f59e0b;
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 22px;
+    text-align: center;
+    box-shadow: 0 6px 18px rgba(217, 119, 6, 0.16);
+    position: relative;
+    overflow: hidden;
+}
+.demo-site-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #ef4444, #f59e0b, #d97706);
+}
+.demo-site-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: #dc2626;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    padding: 4px 12px;
+    border-radius: var(--radius-pill);
+    text-transform: uppercase;
+    box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3);
+    margin-bottom: 12px;
+}
+.demo-site-pulse {
+    width: 7px;
+    height: 7px;
+    background: #ffffff;
+    border-radius: 50%;
+    display: inline-block;
+    animation: demoPulse 1.6s infinite ease-in-out;
+}
+@keyframes demoPulse {
+    0% { transform: scale(0.85); opacity: 0.6; }
+    50% { transform: scale(1.35); opacity: 1; }
+    100% { transform: scale(0.85); opacity: 0.6; }
+}
+.demo-site-heading {
+    font-size: 16px;
+    font-weight: 800;
+    color: #92400e;
+    margin: 0 0 6px;
+    letter-spacing: 0.3px;
+    line-height: 1.35;
+}
+.demo-site-desc {
+    margin: 0 0 16px;
+    font-size: 13px;
+    color: #78350f;
+    line-height: 1.45;
+}
+.btn-demo-redirect {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%) !important;
+    color: #ffffff !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    padding: 11px 24px !important;
+    border-radius: var(--radius-sm) !important;
+    text-decoration: none !important;
+    border: none !important;
+    box-shadow: 0 4px 14px rgba(180, 83, 9, 0.35) !important;
+    transition: all 0.2s ease !important;
+    cursor: pointer;
+    width: auto !important;
+}
+.btn-demo-redirect:hover {
+    background: linear-gradient(135deg, #b45309 0%, #92400e 100%) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(180, 83, 9, 0.45) !important;
+    color: #ffffff !important;
+}
+.btn-demo-redirect svg {
+    transition: transform 0.2s ease;
+}
+.btn-demo-redirect:hover svg {
+    transform: translateX(4px);
+}
+
+/* Banner đỉnh trang khi chưa đăng nhập */
+.demo-global-banner {
+    background: linear-gradient(90deg, #78350f 0%, #92400e 50%, #b45309 100%);
+    color: #ffffff;
+    padding: 8px 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    position: relative;
+    z-index: 99;
+}
+.demo-global-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+.demo-global-text {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-size: 13px;
+}
+.demo-global-tag {
+    background: #ef4444;
+    color: #ffffff;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.6px;
+    padding: 3px 8px;
+    border-radius: var(--radius-pill);
+    text-transform: uppercase;
+}
+.demo-global-msg {
+    font-weight: 700;
+    color: #fef3c7;
+    letter-spacing: 0.2px;
+}
+.btn-demo-global {
+    background: #f59e0b;
+    color: #78350f !important;
+    font-size: 12.5px;
+    font-weight: 700;
+    padding: 5px 14px;
+    border-radius: var(--radius-pill);
+    text-decoration: none !important;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.btn-demo-global:hover {
+    background: #ffffff;
+    color: #92400e !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
 
 /* ===== Bảng Kanban =====
    Các cột nằm ngang và CUỘN NGANG trong khung riêng, không kéo giãn cả trang: 5 trạng thái với
