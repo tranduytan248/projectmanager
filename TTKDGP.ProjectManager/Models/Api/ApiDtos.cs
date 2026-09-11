@@ -800,6 +800,8 @@ namespace TTKDGP.ProjectManager.Models.Api
         public int TotalMembers { get; set; }
         public int IdleCount { get; set; }
         public int OverdueTodayCount { get; set; }
+        public decimal TotalTodayLoggedHours { get; set; }
+        public int TotalWorkedTodayCount { get; set; }
         public List<TeamMemberRowDto> Members { get; set; }
 
         public TeamDashboardDto()
@@ -815,6 +817,8 @@ namespace TTKDGP.ProjectManager.Models.Api
         public List<TeamTodayTaskDto> TodayTasks { get; set; }
         public int TodayTaskCount { get; set; }
         public int OverdueTodayCount { get; set; }
+        public List<TeamWorkedTodayTaskDto> WorkedTodayTasks { get; set; }
+        public decimal TodayLoggedHours { get; set; }
         public KpiSummaryDto Kpi { get; set; }
         public decimal TotalPenalty { get; set; }
         public int TotalTasks { get; set; }
@@ -824,6 +828,7 @@ namespace TTKDGP.ProjectManager.Models.Api
         public TeamMemberRowDto()
         {
             TodayTasks = new List<TeamTodayTaskDto>();
+            WorkedTodayTasks = new List<TeamWorkedTodayTaskDto>();
             Implement = new TeamProjectCountDto();
             Support = new TeamProjectCountDto();
         }
@@ -838,6 +843,20 @@ namespace TTKDGP.ProjectManager.Models.Api
         public string State { get; set; }
         public int Progress { get; set; }
         public bool IsOverdue { get; set; }
+    }
+
+    public class TeamWorkedTodayTaskDto
+    {
+        public int TaskId { get; set; }
+        public string Title { get; set; }
+        public int ProjectId { get; set; }
+        public string ProjectName { get; set; }
+        public string State { get; set; }
+        public int Progress { get; set; }
+        public bool IsOverdue { get; set; }
+        public bool IsCompletedToday { get; set; }
+        public decimal LoggedHoursToday { get; set; }
+        public string TodayLogNote { get; set; }
     }
 
     public class TeamProjectCountDto
