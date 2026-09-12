@@ -48,14 +48,16 @@
 				<dict>
 					<key>NSIncludesSubdomains</key>
 					<true/>
+					<key>NSExceptionAllowsInsecureHTTPLoads</key>
+					<true/>
 					<key>NSTemporaryExceptionAllowsInsecureHTTPLoads</key>
 					<true/>
-					<key>NSTemporaryExceptionMinimumTLSVersion</key>
-					<string>TLSv1.2</string>
 				</dict>
 				<key>vnptkhanhhoa.vn</key>
 				<dict>
 					<key>NSIncludesSubdomains</key>
+					<true/>
+					<key>NSExceptionAllowsInsecureHTTPLoads</key>
 					<true/>
 					<key>NSTemporaryExceptionAllowsInsecureHTTPLoads</key>
 					<true/>
