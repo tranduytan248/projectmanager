@@ -3681,45 +3681,42 @@ table.data tfoot td {
 
 .segbtn svg { width: 15px; height: 15px; flex: none; }
 
-/* ===== Thanh lọc một hàng =====
-   Bộ lọc dùng chừng một phần mười thời gian nhưng trước đây chiếm chỗ như thứ dùng
-   thường xuyên, đẩy bảng khỏi khung nhìn. Thu lại còn một hàng. */
+/* ===== Thanh lọc một hàng (Checklist Filter Toolbar) =====
+   Bố trí gọn gàng trên một hàng ngang, phân cấp rõ ràng:
+   Ô tìm kiếm -> Các dropdown chọn nhanh -> Nút bỏ lọc -> Badge đếm bản ghi góc phải. */
 .filterbar {
     background: var(--surface);
+    border: 1px solid var(--border-soft);
     border-radius: var(--radius);
     box-shadow: var(--elev-1);
-    padding: 9px 12px;
+    padding: 8px 14px;
     margin-bottom: 14px;
     display: flex;
     align-items: center;
-    gap: 9px;
-    flex-wrap: wrap;
 }
 
-.filterbar form {
+.filterbar form,
+.filterbar .filterbar-form {
     display: flex;
     align-items: center;
-    gap: 9px;
+    gap: 8px 10px;
     flex-wrap: wrap;
     flex: 1;
+    width: 100%;
     margin: 0;
 }
 
-/* Ô tìm kiếm có kính lúp nằm trong ô.
-
-   flex-basis 190px chứ không phải min-width: ô tìm kiếm co lại nhường chỗ cho các ô
-   chọn trước, thay vì giữ khư khư bề rộng rồi đẩy ô cuối xuống dòng dưới. Trang có
-   menu dọc chiếm 232px nên phần còn lại hẹp hơn ta tưởng — thiếu bước này thì ô "Hạn"
-   rơi xuống một mình, đúng cái mà thanh lọc một hàng sinh ra để tránh. */
+/* Ô tìm kiếm có kính lúp */
 .filter-search {
     position: relative;
-    flex: 1 1 190px;
-    min-width: 150px;
+    flex: 1 1 200px;
+    min-width: 160px;
+    max-width: 320px;
 }
 
 .filter-search svg {
     position: absolute;
-    left: 12px;
+    left: 11px;
     top: 50%;
     transform: translateY(-50%);
     width: 15px;
@@ -3728,37 +3725,170 @@ table.data tfoot td {
     pointer-events: none;
 }
 
-.filter-search input {
-    width: 100%;
+.filter-search input,
+.filterbar .filter-search input {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 36px;
     font: inherit;
-    font-size: 13.5px;
-    padding: 9px 12px 9px 35px;
-    border: 1px solid var(--border-strong);
-    border-radius: var(--radius-xs);
-    background: var(--surface);
+    font-size: 13px;
+    padding: 0 12px 0 34px !important;
+    border: 1px solid var(--border-strong) !important;
+    border-radius: var(--radius-sm, 8px) !important;
+    background: #fff !important;
+    color: var(--text) !important;
+    box-sizing: border-box !important;
+    transition: border-color .15s, box-shadow .15s;
+}
+
+.filter-search input::placeholder {
+    color: var(--text-faint);
+}
+
+.filter-search input:hover {
+    border-color: var(--text-muted) !important;
+}
+
+.filter-search input:focus {
+    outline: none !important;
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px var(--primary-soft) !important;
+}
+
+/* Các dropdown chọn nhanh (Người thực hiện, Trạng thái, Loại việc, Hạn) */
+.filter-pick,
+.filterbar select.filter-pick {
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    height: 36px;
+    line-height: 34px;
+    padding: 0 28px 0 12px !important;
+    border: 1px solid var(--border-strong) !important;
+    border-radius: var(--radius-sm, 8px) !important;
+    background-color: #fff !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 9px center !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+    color: var(--text-muted);
+    cursor: pointer;
+    flex: 0 0 auto !important;
+    width: auto !important;
+    min-width: 110px !important;
+    max-width: 175px !important;
+    box-sizing: border-box !important;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: background-color .15s, border-color .15s, color .15s, box-shadow .15s;
+}
+
+.filter-pick:hover,
+.filterbar select.filter-pick:hover {
+    background-color: var(--state-hover) !important;
+    color: var(--text);
+    border-color: var(--text-muted) !important;
+}
+
+.filter-pick:focus,
+.filterbar select.filter-pick:focus {
+    outline: none !important;
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px var(--primary-soft) !important;
     color: var(--text);
 }
 
-.filter-search input::placeholder { color: var(--text-faint); }
-
-/* Viền dày lên khi chọn, bù lại phần đệm để chữ không nhích. */
-.filter-search input:focus {
-    outline: none;
-    border-color: var(--primary);
-    border-width: 2px;
-    padding: 8px 11px 8px 34px;
+/* Khi dropdown đang có giá trị lọc kích hoạt */
+.filter-pick.on,
+.filterbar select.filter-pick.on {
+    background-color: var(--primary-soft) !important;
+    border-color: var(--primary) !important;
+    color: var(--primary) !important;
+    font-weight: 600;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%231a56a8' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
 }
 
-/* Số bản ghi đang hiện, đẩy về cuối hàng. */
+/* Nút xóa lọc (Clear filter) */
+.filter-clear {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 36px;
+    padding: 0 10px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-radius: var(--radius-sm, 8px);
+    transition: background .15s, color .15s;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.filter-clear:hover {
+    background: var(--st-late-soft, #fee2e2);
+    color: var(--st-late, #dc2626);
+    text-decoration: none;
+}
+
+.filter-clear svg {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+}
+
+/* Nút Submit Lọc khi không có JS */
+.filter-go {
+    height: 36px;
+    padding: 0 14px;
+    flex-shrink: 0;
+}
+.js .filter-go { display: none; }
+
+/* Số bản ghi hiển thị (Badge count ở góc phải cùng) */
 .filter-count {
     margin-left: auto;
+    display: inline-flex;
+    align-items: center;
     font-size: 12.5px;
     color: var(--text-muted);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
+    background: rgba(0, 0, 0, 0.03);
+    border: 1px solid var(--border-soft);
+    padding: 4px 11px;
+    border-radius: var(--radius-pill);
+    flex-shrink: 0;
 }
 
-.filter-count b { color: var(--text); font-weight: 650; }
+.filter-count b {
+    color: var(--primary);
+    font-weight: 700;
+    margin-right: 3px;
+}
+
+@media (max-width: 860px) {
+    .filterbar { padding: 9px 10px; }
+    .filter-search { flex: 1 1 100%; max-width: 100%; }
+    .filter-count { margin-left: auto; }
+}
+
+@media (max-width: 640px) {
+    .filter-pick,
+    .filterbar select.filter-pick {
+        flex: 1 1 calc(50% - 6px) !important;
+        max-width: none !important;
+        min-width: 0 !important;
+    }
+    .filter-count {
+        margin-left: 0;
+        width: 100%;
+        justify-content: center;
+        margin-top: 2px;
+    }
+}
 
 /* ===== Khung chứa bảng ===== */
 .panel {
@@ -4064,54 +4194,6 @@ summary.rowbtn::marker { content: ""; }
 /* Menu đang mở thì giữ nút hiện, kể cả khi chuột đã rời khỏi dòng. */
 .row-menu[open] > summary.rowbtn { opacity: 1; background: var(--state-hover); }
 
-/* ===== Ô chọn trên thanh lọc =====
-   Trông như chip: gọn, bo tròn, không có khung ô nhập nặng nề. Đang lọc theo giá trị
-   nào thì tự sáng lên (lớp .on do JS gắn), nhìn thanh là biết ngay. */
-.filter-pick {
-    font: inherit;
-    font-size: 13px;
-    font-weight: 500;
-    padding: 8px 13px;
-    border: 1px solid var(--border-strong);
-    border-radius: var(--radius-pill);
-    background: var(--surface);
-    color: var(--text-muted);
-    cursor: pointer;
-    /* Co giãn trong khoảng hẹp: đủ đọc tên dài như "Người thực hiện" nhưng vẫn nhường
-       chỗ khi khung hẹp, để cả bốn ô nằm chung một dòng với ô tìm kiếm. */
-    flex: 0 1 auto;
-    min-width: 108px;
-    max-width: 168px;
-    text-overflow: ellipsis;
-    transition: background .15s, border-color .15s, color .15s;
-}
-
-.filter-pick:hover { background: var(--state-hover); color: var(--text); }
-
-.filter-pick:focus {
-    outline: none;
-    border-color: var(--primary);
-    color: var(--text);
-}
-
-.filter-pick.on {
-    background: var(--primary-soft);
-    border-color: var(--primary);
-    color: var(--primary);
-    font-weight: 600;
-}
-
-/* Có JavaScript thì các ô chọn tự gửi form, nút Lọc thành thừa nên ẩn đi.
-   Không có JavaScript thì nút vẫn hiện và bộ lọc vẫn dùng được như cũ. */
-.js .filter-go { display: none; }
-
-/* Màn hình hẹp: đầu trang và thanh lọc bỏ bớt đệm, số bản ghi xuống hàng riêng. */
-@media (max-width: 760px) {
-    .pagehead { padding: 15px 16px; }
-    .pagehead h1 { font-size: 20px; }
-    .filterbar { padding: 9px 10px; }
-    .filter-count { margin-left: 0; width: 100%; }
-}
 
 /* ===== Lịch công việc cá nhân (CalendarController) =====
    Lưới lịch tháng riêng, không dùng table.data (bảng dữ liệu hàng-cột thường) vì đây là lưới
