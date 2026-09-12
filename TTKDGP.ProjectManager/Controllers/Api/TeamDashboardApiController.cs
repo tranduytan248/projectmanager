@@ -42,6 +42,10 @@ namespace TTKDGP.ProjectManager.Controllers.Api
             var allTasks = WorkService.AllTasks();
             var projects = Repository.WorkProjects.All();
             var byProject = projects.ToDictionary(p => p.Id, p => p);
+            var taskById = allTasks.ToDictionary(t => t.Id, t => t);
+            var todayLogs = Repository.WorkTimeLogs.All()
+                .Where(l => l.WorkDate.Date == today)
+                .ToList();
 
             var result = new TeamDashboardDto
             {
@@ -57,7 +61,10 @@ namespace TTKDGP.ProjectManager.Controllers.Api
             foreach (var user in users)
             {
                 var mine = allTasks.Where(t => t.AssigneeUserId == user.Id).ToList();
+                var userTodayLogs = todayLogs.Where(l => l.UserId == user.Id).ToList();
                 var todayTasks = BuildToday(mine, today, y, m, byProject);
+                var workedTodayTasks = BuildWorkedToday(user.Id, mine, userTodayLogs, taskById, today, y, m, byProject);
+                var todayLoggedHours = userTodayLogs.Sum(l => l.Hours);
                 var kpi = BuildKpi(user, y, m);
                 var implement = CountProjects(mine, y, m, TaskKinds.Checklist);
                 var support = CountProjects(mine, y, m, TaskKinds.Support);
@@ -72,6 +79,8 @@ namespace TTKDGP.ProjectManager.Controllers.Api
                     TodayTasks = todayTasks,
                     TodayTaskCount = todayTasks.Count,
                     OverdueTodayCount = todayTasks.Count(t => t.IsOverdue),
+                    WorkedTodayTasks = workedTodayTasks,
+                    TodayLoggedHours = todayLoggedHours,
                     Kpi = ApiMappers.ToDto(kpi),
                     TotalPenalty = penalty,
                     TotalTasks = totalTasks,
@@ -88,6 +97,8 @@ namespace TTKDGP.ProjectManager.Controllers.Api
 
             result.IdleCount = result.Members.Count(x => x.TodayTaskCount == 0);
             result.OverdueTodayCount = result.Members.Sum(x => x.OverdueTodayCount);
+            result.TotalTodayLoggedHours = result.Members.Sum(x => x.TodayLoggedHours);
+            result.TotalWorkedTodayCount = result.Members.Sum(x => x.WorkedTodayTasks.Count);
 
             return Json(new { success = true, data = result }, JsonRequestBehavior.AllowGet);
         }
@@ -189,6 +200,128 @@ namespace TTKDGP.ProjectManager.Controllers.Api
             return result
                 .OrderByDescending(t => t.IsOverdue)
                 .ThenBy(t => t.ProjectName, StringComparer.CurrentCulture)
+                .ToList();
+        }
+
+        private static List<TeamWorkedTodayTaskDto> BuildWorkedToday(
+            int userId,
+            List<WorkTask> mine,
+            List<WorkTimeLog> userTodayLogs,
+            Dictionary<int, WorkTask> taskById,
+            DateTime today,
+            int year,
+            int month,
+            Dictionary<int, WorkProject> byProject)
+        {
+            var result = new List<TeamWorkedTodayTaskDto>();
+            var processedTaskIds = new HashSet<int>();
+
+            // Nhóm 1: Các công việc mà người này có ghi giờ (logtime) hôm nay
+            foreach (var logGroup in userTodayLogs.GroupBy(l => l.TaskId))
+            {
+                var taskId = logGroup.Key;
+                WorkTask task;
+                if (!taskById.TryGetValue(taskId, out task))
+                {
+                    task = Repository.WorkTasks.Find(taskId);
+                }
+                if (task == null) continue;
+
+                processedTaskIds.Add(task.Id);
+
+                WorkProject project;
+                byProject.TryGetValue(task.ProjectId, out project);
+
+                var hoursToday = logGroup.Sum(l => l.Hours);
+                var notes = string.Join("; ", logGroup
+                    .Where(l => !string.IsNullOrWhiteSpace(l.Note))
+                    .Select(l => l.Note.Trim())
+                    .Distinct());
+
+                var isCompletedToday = (task.CompletedAt.HasValue && task.CompletedAt.Value.Date == today)
+                    || (task.State == TaskStates.Done && task.UpdatedAt.HasValue && task.UpdatedAt.Value.Date == today);
+
+                result.Add(new TeamWorkedTodayTaskDto
+                {
+                    TaskId = task.Id,
+                    Title = task.Title,
+                    ProjectId = task.ProjectId,
+                    ProjectName = project != null ? project.Name : task.ProjectName,
+                    State = task.State,
+                    Progress = task.Progress,
+                    IsOverdue = task.IsOverdue,
+                    IsCompletedToday = isCompletedToday,
+                    LoggedHoursToday = hoursToday,
+                    TodayLogNote = notes
+                });
+            }
+
+            // Nhóm 2: Các công việc được giao cho người này và đã Hoàn thành trong hôm nay (chưa có logtime ở trên)
+            var doneToday = mine.Where(t => !processedTaskIds.Contains(t.Id) &&
+                ((t.CompletedAt.HasValue && t.CompletedAt.Value.Date == today)
+                 || (t.State == TaskStates.Done && t.UpdatedAt.HasValue && t.UpdatedAt.Value.Date == today)));
+
+            foreach (var task in doneToday)
+            {
+                processedTaskIds.Add(task.Id);
+                WorkProject project;
+                byProject.TryGetValue(task.ProjectId, out project);
+
+                result.Add(new TeamWorkedTodayTaskDto
+                {
+                    TaskId = task.Id,
+                    Title = task.Title,
+                    ProjectId = task.ProjectId,
+                    ProjectName = project != null ? project.Name : task.ProjectName,
+                    State = task.State,
+                    Progress = task.Progress,
+                    IsOverdue = task.IsOverdue,
+                    IsCompletedToday = true,
+                    LoggedHoursToday = 0,
+                    TodayLogNote = null
+                });
+            }
+
+            // Nhóm 3: Các công việc Đang làm (InProgress) trong hạn hôm nay (chưa được thêm ở các nhóm trên)
+            var inProgressToday = mine.Where(t => !processedTaskIds.Contains(t.Id) &&
+                t.State == TaskStates.InProgress &&
+                KpiService.TaskInMonth(t, year, month));
+
+            foreach (var task in inProgressToday)
+            {
+                if (!task.DueDate.HasValue) continue;
+                var from = task.StartDate.HasValue ? task.StartDate.Value.Date : task.CreatedAt.Date;
+                var to = task.DueDate.Value.Date;
+                if (from > to) from = to;
+
+                var covers = from <= today && (today <= to || task.IsOverdue);
+                if (!covers) continue;
+
+                processedTaskIds.Add(task.Id);
+                WorkProject project;
+                byProject.TryGetValue(task.ProjectId, out project);
+
+                result.Add(new TeamWorkedTodayTaskDto
+                {
+                    TaskId = task.Id,
+                    Title = task.Title,
+                    ProjectId = task.ProjectId,
+                    ProjectName = project != null ? project.Name : task.ProjectName,
+                    State = task.State,
+                    Progress = task.Progress,
+                    IsOverdue = task.IsOverdue,
+                    IsCompletedToday = false,
+                    LoggedHoursToday = 0,
+                    TodayLogNote = null
+                });
+            }
+
+            return result
+                .OrderByDescending(t => t.LoggedHoursToday > 0)
+                .ThenByDescending(t => t.IsCompletedToday)
+                .ThenByDescending(t => t.IsOverdue)
+                .ThenBy(t => t.ProjectName, StringComparer.CurrentCulture)
+                .ThenBy(t => t.Title, StringComparer.CurrentCulture)
                 .ToList();
         }
 

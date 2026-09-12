@@ -2,6 +2,55 @@
 
 ---
 
+# [2026-09-11] Bổ sung Tab "Đã hoàn thành / Đang thực hiện" kèm số giờ Logtime trong ngày tại /TeamDashboard
+
+## 1. Mô tả vấn đề
+Người dùng yêu cầu:
+> "Trong bảng điều kiển tổ /TeamDashboard
+> Trong table Công việc hôm nay.
+> Hãy bổ sung thêm 1 tab. Công việc đã Hoàn thành/Đang thực hiện trong hnay. (Có thêm số giờ logtime trong ngày)"
+
+## 2. Phân tích ban đầu
+- **Bối cảnh**: Tại `/TeamDashboard`, khối "Công việc hôm nay" trước đây chỉ hiển thị các việc chưa hoàn thành và đang trong hạn làm (`!IsClosed` & `from <= today <= to`). Khi nhân sự hoàn thành xong việc trong ngày, việc đó biến mất khỏi bảng và người đó bị cảnh báo vàng "Chưa có việc hôm nay".
+- **Mục tiêu**:
+  1. Giúp Quản lý Tổ thấy được bức tranh thực tế: hôm nay ai đã làm gì (hoàn thành việc nào, đang làm việc nào).
+  2. Bổ sung chỉ số **Logtime trong ngày** của từng nhân sự (so sánh với mốc chuẩn 8h/ngày) và chi tiết số giờ log vào từng đầu việc kèm ghi chú công việc.
+- **Phạm vi**:
+  - `TeamDashboardController.cs`: Thêm logic nạp `WorkTimeLogs` ngày hôm nay, tính `TodayLoggedHours`, gom nhóm `WorkedToday` (việc hoàn thành hôm nay + việc đang làm hôm nay).
+  - `Views/TeamDashboard/Index.cshtml`: Tái cấu trúc thành 2 Tab lồng nhau (Tab 1: Kế hoạch hôm nay; Tab 2: Đã hoàn thành / Đang thực hiện kèm Logtime).
+  - `TeamDashboardApiController.cs` & `ApiDtos.cs`: Bổ sung DTO tương ứng để bảo đảm tính nhất quán hệ thống.
+- **Ràng buộc**: Giữ nguyên toàn bộ logic hiện tại của Tab 1, không làm ảnh hưởng đến hiệu năng truy vấn, tuân thủ bảng màu và responsive của hệ thống.
+
+## 3. Kết quả triển khai
+1. **TeamDashboardController.cs**:
+   - Thêm class `TeamWorkedTodayTask` và các trường `WorkedToday`, `TodayLoggedHours`, `CompletedTodayCount`, `InProgressTodayCount` vào `TeamMemberRow`.
+   - Nạp `WorkTimeLogs` trong ngày `today` và xây dựng hàm `BuildWorkedToday` gom 3 nhóm: (1) việc có logtime hôm nay, (2) việc đã hoàn thành hôm nay, (3) việc đang làm trong hạn hôm nay.
+2. **Views/TeamDashboard/Index.cshtml**:
+   - Card "Công việc hôm nay" được cấu trúc 2 Tab với switcher Segmented Pill Buttons (`#tabBtnPlan` và `#tabBtnWorked`).
+   - Tab 1 (`#tab-plan-content`): Giữ nguyên 100% bảng kế hoạch hôm nay.
+   - Tab 2 (`#tab-worked-content`): Bảng mới hiển thị Thành viên, Cột Logtime hôm nay (`X.Xh/8h` với badge Đạt chuẩn/Thiếu/Chưa log) và Cột công việc chi tiết (badge `✓ Hoàn thành` / `⚡ Đang làm`, link modal, `⏱️ Xh hôm nay`, ghi chú logtime).
+   - Tích hợp chuyển tab JavaScript mượt mà và lưu URL Hash (`#tab-worked` / `#tab-plan`).
+3. **ApiDtos.cs & TeamDashboardApiController.cs**:
+   - Bổ sung `TodayLoggedHours` và `WorkedTodayTasks` vào `TeamMemberRowDto`, đồng bộ backend API cho mobile.
+4. **Kiểm thử**:
+   - MSBuild Debug compile: 0 Errors, 0 Warnings, mã hóa UTF-8 có BOM chuẩn xác.
+   - Flutter test: `All tests passed!`.
+
+---
+
+# [2026-09-10] Đóng gói phát hành Android (BrewTask v1.01.003+11)
+
+## 1. Yêu cầu & Phiên bản phát hành
+- Nâng số hiệu phiên bản ứng dụng trong `Mobile-Flutter/pubspec.yaml`:
+  * **Version Name**: `1.01.003` (tăng từ `1.01.002`).
+  * **Build Number / Version Code**: `11` (tăng từ `10`).
+- Biên dịch đầy đủ 2 định dạng phát hành chính thức:
+  1. **APK Release**: `build/app/outputs/flutter-apk/app-release.apk` (61.5 MB) — dùng cài đặt trực tiếp, kiểm thử nội bộ.
+  2. **App Bundle Release**: `build/app/outputs/bundle/release/app-release.aab` (61.5 MB) — dùng tải lên Google Play Console.
+- Ký số tự động với cấu hình `release` keystore trong `key.properties` (`upload-keystore.jks`).
+
+---
+
 # [2026-09-10] Thêm thông báo Website Demo và nút chuyển hướng sang brewtask.vnptkhanhhoa.vn
 
 ## 1. Yêu cầu người dùng
