@@ -1,4 +1,4 @@
-﻿// Khởi tạo Select2 cho toàn bộ dropdown trong hệ thống.
+// Khởi tạo Select2 cho toàn bộ dropdown trong hệ thống.
 // Danh sách dài (dự án 51 mục, tuần 53 mục) không thể cuộn tay để tìm, nên cần ô tìm kiếm.
 (function ($) {
     'use strict';
@@ -10,8 +10,8 @@
         $(context || document).find('select').each(function () {
             var $select = $(this);
 
-            // Cho phép loại trừ từng ô bằng data-no-select2 nếu về sau cần
-            if ($select.is('[data-no-select2]')) return;
+            // Cho phép loại trừ từng ô bằng data-no-select2 nếu về sau cần hoặc các ô trong filterbar
+            if ($select.is('[data-no-select2]') || $select.hasClass('filter-pick') || $select.closest('.filterbar').length) return;
             if ($select.hasClass('select2-hidden-accessible')) return;
 
             var optionCount = $select.find('option').length;
