@@ -363,7 +363,7 @@
     <script src="@Url.Content("~/Scripts/lib/jquery.min.js")"></script>
     <script src="@Url.Content("~/Scripts/lib/select2.min.js")"></script>
     <script src="@Url.Content("~/Scripts/lib/select2.vi.js")"></script>
-    <script src="@Url.Content("~/Scripts/app.js")"></script>
+    <script src="@Url.Content("~/Scripts/app.js")?v=@System.IO.File.GetLastWriteTimeUtc(Server.MapPath("~/Scripts/app.js")).Ticks"></script>
     @RenderSection("Scripts", required: false)
 </body>
 </html>

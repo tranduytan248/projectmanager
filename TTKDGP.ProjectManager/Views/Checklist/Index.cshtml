@@ -140,7 +140,7 @@
                    placeholder="Tìm mã hoặc tên công việc…" aria-label="Tìm công việc" />
         </div>
 
-        <select id="assigneeUserId" name="assigneeUserId" class="filter-pick" aria-label="Người thực hiện">
+        <select id="assigneeUserId" name="assigneeUserId" class="filter-pick" data-no-select2="true" aria-label="Người thực hiện">
             <option value="0">Người thực hiện</option>
             <option value="-1" selected="@(Model.AssigneeUserId < 0)">(chưa giao)</option>
             @foreach (var u in Model.Users)
@@ -149,7 +149,7 @@
             }
         </select>
 
-        <select id="state" name="state" class="filter-pick" aria-label="Trạng thái">
+        <select id="state" name="state" class="filter-pick" data-no-select2="true" aria-label="Trạng thái">
             <option value="">Trạng thái</option>
             @foreach (var s in TaskStates.All)
             {
@@ -157,7 +157,7 @@
             }
         </select>
 
-        <select id="kind" name="kind" class="filter-pick" aria-label="Loại việc">
+        <select id="kind" name="kind" class="filter-pick" data-no-select2="true" aria-label="Loại việc">
             <option value="">Loại việc</option>
             @foreach (var k in TaskKinds.InProject)
             {
@@ -165,7 +165,7 @@
             }
         </select>
 
-        <select id="due" name="due" class="filter-pick" aria-label="Hạn">
+        <select id="due" name="due" class="filter-pick" data-no-select2="true" aria-label="Hạn">
             <option value="">Hạn</option>
             <option value="@ChecklistDueFilters.Overdue" selected="@(Model.Due == ChecklistDueFilters.Overdue)">@ChecklistDueFilters.Display(ChecklistDueFilters.Overdue)</option>
             <option value="@ChecklistDueFilters.Soon" selected="@(Model.Due == ChecklistDueFilters.Soon)">@ChecklistDueFilters.Display(ChecklistDueFilters.Soon)</option>
