@@ -176,21 +176,26 @@
 
         if (Model.HasFilter)
         {
-            <a class="btn btn-ghost btn-sm"
-               href="@Url.Action("Index", "Checklist", new { projectId = Model.Project.Id, view = Model.View })">Bỏ lọc</a>
+            <a class="filter-clear btn btn-ghost btn-sm" title="Xóa toàn bộ điều kiện lọc"
+               href="@Url.Action("Index", "Checklist", new { projectId = Model.Project.Id, view = Model.View })">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                    <path d="M4 4l8 8M12 4l-8 8" stroke-linecap="round"/>
+                </svg>
+                <span>Bỏ lọc</span>
+            </a>
         }
-    }
 
-    <span class="filter-count">
-        @if (Model.HasFilter)
-        {
-            <text><b>@Model.MatchCount</b> / @Model.TotalCount mục</text>
-        }
-        else
-        {
-            <text><b>@Model.TotalCount</b> mục</text>
-        }
-    </span>
+        <span class="filter-count">
+            @if (Model.HasFilter)
+            {
+                <text><b>@Model.MatchCount</b> / @Model.TotalCount mục</text>
+            }
+            else
+            {
+                <text><b>@Model.TotalCount</b> mục</text>
+            }
+        </span>
+    }
 </div>
 
 @if (Model.View == TaskViews.Kanban)
