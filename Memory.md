@@ -2,6 +2,29 @@
 
 ---
 
+# [2026-09-14] Tắt tính năng tự động gửi SMS và thông báo trên site Demo pmncpt.cenit.vn
+
+## 1. Mô tả vấn đề
+Người dùng phản ánh:
+> "Hiện tại việc thông báo SMS đang thực hiện trên cả site demo và prod nên dẫn tới 1 người đang nhận cả 2 tin nhắn. Bạn có thể off trên site pmncpt.cenit.vn được ko?"
+
+## 2. Nguyên nhân gốc rễ
+- Cả 2 máy chủ: Demo (`pmncpt.cenit.vn` / CSDL `10.57.30.10`) và Production (`brewtask.vnptkhanhhoa.vn` / CSDL `10.57.47.2`) đều đang chạy bộ hẹn giờ ngầm `ReminderScheduler.cs` lúc 8h và 17h.
+- File cấu hình biến đổi `Web.Release.config` trên nhánh `main` trước đây thiết lập `Reminder:AutoSend = true`, khiến runner khi publish Release lên `pmncpt.cenit.vn` cũng kích hoạt gửi SMS.
+- Do đó, cùng một thời điểm, nhân sự nhận đồng thời 2 tin nhắn SMS từ 2 hệ thống khác nhau.
+
+## 3. Giải pháp thực hiện (Bảo vệ đa tầng)
+1. **Tầng cấu hình (`Web.Release.config`)**:
+   - Chuyển `Reminder:AutoSend = false` trên cấu hình Release của nhánh `main` (site demo `pmncpt.cenit.vn`).
+   - Tắt rõ ràng `Reminder:TaskSmsEnabled = false` và `Reminder:LogTimeSmsEnabled = false`.
+2. **Tầng mã nguồn C# (`ReminderScheduler.cs`)**:
+   - Thêm hàm `IsDemoEnvironment()` tự động nhận diện nếu máy chủ CSDL là `10.57.30.10` (site demo).
+   - Trong `Start()`, `RunDue()`, `RunTaskDueSms()`, `RunLogTimeDailySms()`: Nếu phát hiện `IsDemoEnvironment() == true`, **lập tức chặn đứng 100% việc hẹn giờ và gửi SMS/Email tự động**.
+   - Đảm bảo môi trường Production `brewtask.vnptkhanhhoa.vn` (CSDL `10.57.47.2`) hoạt động độc lập và tiếp tục gửi SMS bình thường.
+3. **Kiểm thử**: Biên dịch Release qua MSBuild đạt 0 Errors, 0 Warnings. File C# lưu UTF-8 có BOM chuẩn xác.
+
+---
+
 # [2026-09-11] Bổ sung Tab "Đã hoàn thành / Đang thực hiện" kèm số giờ Logtime trong ngày tại /TeamDashboard
 
 ## 1. Mô tả vấn đề

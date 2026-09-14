@@ -24,11 +24,24 @@ namespace TTKDGP.ProjectManager.Infrastructure
         private static readonly object Sync = new object();
         private static readonly TimeSpan Interval = TimeSpan.FromMinutes(5);
 
+        /// <summary>
+        /// Kiểm tra xem ứng dụng có đang chạy trên môi trường Demo (pmncpt.cenit.vn kết nối CSDL 10.57.30.10) hay không.
+        /// Trên môi trường Demo, tuyệt đối không gửi SMS/Email tự động để không gây trùng tin nhắn với môi trường Production chính thức (brewtask.vnptkhanhhoa.vn).
+        /// </summary>
+        public static bool IsDemoEnvironment()
+        {
+            var server = AppSettings.Db.Server ?? string.Empty;
+            return server.IndexOf("10.57.30.10", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
         public static void Start()
         {
             // Máy phát triển để Reminder:AutoSend = false nên không dựng bộ hẹn giờ,
             // tránh việc chạy thử ở local lại bắn mail thật cho anh em.
             if (!AppSettings.Reminder.AutoSend) return;
+
+            // Trên site demo (10.57.30.10), tắt hoàn toàn bộ hẹn giờ chạy ngầm để không bắn trùng tin nhắn với Prod.
+            if (IsDemoEnvironment()) return;
 
             lock (Sync)
             {
@@ -73,6 +86,9 @@ namespace TTKDGP.ProjectManager.Infrastructure
             // cấu hình nhầm không gửi trùng tin của máy chủ thật.
             if (!AppSettings.Reminder.AutoSend) return 0;
 
+            // Chặn tuyệt đối không tự động gửi bất kỳ thông báo nào từ site demo pmncpt.cenit.vn
+            if (IsDemoEnvironment()) return 0;
+
             var sent = 0;
 
             // Sáng thứ Sáu: mail riêng cho từng thành viên.
@@ -96,6 +112,7 @@ namespace TTKDGP.ProjectManager.Infrastructure
         private static int RunLogTimeDailySms(DateTime now)
         {
             if (!AppSettings.Reminder.LogTimeSmsEnabled) return 0;
+            if (IsDemoEnvironment()) return 0;
             if (!DailyLogTimeSmsService.IsWorkingDay(now)) return 0;
 
             var hour = AppSettings.Reminder.LogTimeSmsHour;
@@ -117,6 +134,7 @@ namespace TTKDGP.ProjectManager.Infrastructure
         private static int RunTaskDueSms(DateTime now)
         {
             if (!AppSettings.Reminder.TaskSmsEnabled) return 0;
+            if (IsDemoEnvironment()) return 0;
             if (!TaskDueSmsService.IsWorkingDay(now)) return 0;
 
             var sent = 0;
