@@ -2,6 +2,32 @@
 
 ---
 
+# [2026-09-17] Kích hoạt lại tính năng tự động gửi SMS & Email trên Production (brewtask.vnptkhanhhoa.vn)
+
+## 1. Mô tả vấn đề
+Người dùng phản ánh:
+> "http://brewtask.vnptkhanhhoa.vn/
+> Hình như không còn gửi mail và SMS nữa phải ko?
+> Kiểm tra lại source giúp tôi"
+> Và yêu cầu: "Vậy hãy deloy lên Production để kích hoạt lại hệ thống gửi SMS lun nhé. Lưu ý chỉ mở trên Production thôi nhé."
+
+## 2. Nguyên nhân gốc rễ
+- Ngày 14/09/2026, gói build Release mang `Reminder:AutoSend = false` nhằm tắt gửi trên site demo đã vô tình ghi đè lên file `Web.config` trên FTP máy chủ Production (`10.57.47.3`), khiến bộ hẹn giờ IIS `ReminderScheduler.Start()` bị tắt hoàn toàn.
+- Ngày 15/09/2026 đã có commit `abb9dfd` trên nhánh `Prod` bật lại `Reminder:AutoSend = true`, nhưng commit này chưa được build Release và sync FTP lên máy chủ thật.
+
+## 3. Giải pháp thực hiện
+1. **Bảo vệ chỉ mở trên Production**:
+   - `ReminderScheduler.IsDemoEnvironment()` tự động kiểm tra CSDL `10.57.30.10` để chặn 100% việc gửi trên site Trung tâm (`pmncpt.cenit.vn`), đảm bảo chỉ máy chủ kết nối CSDL `10.57.47.2\MSSQL2012` mới được phép kích hoạt bộ hẹn giờ gửi SMS/Email.
+2. **Thực thi quy trình Upcode Prod (`build\upcode-prod.ps1 -Apply`)**:
+   - Đồng bộ CSDL: Nạp thêm 1 bản ghi mới của bảng `employee_hrm` vào `10.57.47.2`.
+   - Biên dịch Release và upload 455 file cập nhật (bao gồm `Web.config` với `Reminder:AutoSend = true`, `Reminder:TaskSmsEnabled = true`, `Reminder:LogTimeSmsEnabled = true`) lên FTP `10.57.47.3/public_html`.
+   - Đẩy (push) nhánh `Prod` lên remote `origin/Prod`.
+   - Xác minh sức khỏe HTTP 200 cho cả 2 hệ thống: `http://pmncpt.cenit.vn/` (200 OK) và `http://brewtask.vnptkhanhhoa.vn/` (200 OK).
+3. **Xác minh trực tiếp trên FTP server Production**:
+   - Đọc ngược file `Web.config` từ `10.57.47.3`: xác nhận các cờ `Reminder:AutoSend = true`, `Reminder:TaskSmsEnabled = true`, `Reminder:LogTimeSmsEnabled = true`, `Sms:Enabled = true`, `Email:Enabled = true`.
+
+---
+
 # [2026-09-14] Tắt tính năng tự động gửi SMS và thông báo trên site Demo pmncpt.cenit.vn
 
 ## 1. Mô tả vấn đề
