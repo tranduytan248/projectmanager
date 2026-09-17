@@ -2,6 +2,42 @@
 
 ---
 
+# [2026-09-17] Gắn liên kết Apple App Store chính thức cho nút "Tải iOS" trên thanh Topbar & Deploy Production
+
+## 1. Mô tả vấn đề
+Ứng dụng di động **BrewTask** cho nền tảng iOS đã được Apple xét duyệt và chính thức có mặt trên Apple App Store tại địa chỉ:
+`https://apps.apple.com/vn/app/brewtask-qu%E1%BA%A3n-l%C3%BD-c%C3%B4ng-vi%E1%BB%87c/id6806118424?l=vi`
+
+Người dùng yêu cầu:
+- Gắn liên kết trực tiếp này vào nút **Tải iOS** trên thanh điều hướng topbar của website.
+- Bỏ modal thông báo "sắp ra mắt / đang xét duyệt".
+- Deploy ngay lên môi trường Production (`brewtask.vnptkhanhhoa.vn`).
+
+## 2. Giải pháp thực hiện
+1. **Giao diện Web (`Views\Shared\_Layout.cshtml`)**:
+   - Chuyển thẻ `<button>` với sự kiện `showIosComingSoonModal()` thành thẻ liên kết:
+     ```html
+     <a href="https://apps.apple.com/vn/app/brewtask-qu%E1%BA%A3n-l%C3%BD-c%C3%B4ng-vi%E1%BB%87c/id6806118424?l=vi"
+        target="_blank" rel="noopener noreferrer"
+        class="app-download-btn app-download-ios"
+        title="Tải ứng dụng BrewTask trên App Store (iOS)">
+         <svg class="app-icon" viewBox="0 0 24 24" fill="currentColor">
+             <path d="..."/>
+         </svg>
+         <span>Tải iOS</span>
+     </a>
+     ```
+   - Xóa bỏ modal `iosComingSoonModal` và hai hàm JS `showIosComingSoonModal`, `hideIosComingSoonModal` không còn sử dụng.
+   - Đảm bảo mã hóa UTF-8 có BOM theo chuẩn `CODING_RULES.md`.
+2. **Triển khai Production (`build\upcode-prod.ps1 -Apply`)**:
+   - Đồng bộ CSDL và merge code sang nhánh `Prod`.
+   - Biên dịch Release và upload các file cập nhật lên FTP `10.57.47.3/public_html`.
+   - Push nhánh `Prod` lên remote `origin/Prod`.
+   - Xác nhận HTTP 200 cho cả `http://pmncpt.cenit.vn/` và `http://brewtask.vnptkhanhhoa.vn/`.
+   - Kiểm tra trực tiếp HTML trên `http://brewtask.vnptkhanhhoa.vn/`: liên kết Apple App Store đã sẵn sàng hoạt động.
+
+---
+
 # [2026-09-14] Tắt tính năng tự động gửi SMS và thông báo trên site Demo pmncpt.cenit.vn
 
 ## 1. Mô tả vấn đề
