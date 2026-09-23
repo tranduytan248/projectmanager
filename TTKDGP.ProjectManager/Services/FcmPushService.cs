@@ -118,6 +118,22 @@ namespace TTKDGP.ProjectManager.Services
                             icon = "@mipmap/ic_launcher",
                             sound = "default"
                         }
+                    },
+                    apns = new
+                    {
+                        payload = new
+                        {
+                            aps = new
+                            {
+                                alert = new
+                                {
+                                    title = string.IsNullOrWhiteSpace(title) ? "BrewTask" : title,
+                                    body = body
+                                },
+                                sound = "default",
+                                badge = 1
+                            }
+                        }
                     }
                 }
             };
@@ -267,14 +283,23 @@ namespace TTKDGP.ProjectManager.Services
             var payloadBase64 = Base64UrlEncode(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(payload)));
             var unsignedToken = headerBase64 + "." + payloadBase64;
 
-            var rsa = CreateRsaFromPrivateKey(sa.PrivateKey);
-            var signatureBytes = rsa.SignData(Encoding.UTF8.GetBytes(unsignedToken), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-            var signatureBase64 = Base64UrlEncode(signatureBytes);
-
-            return unsignedToken + "." + signatureBase64;
+            using (var rsa = CreateRsaFromPrivateKey(sa.PrivateKey))
+            using (var sha = SHA256.Create())
+            {
+                var hash = sha.ComputeHash(Encoding.UTF8.GetBytes(unsignedToken));
+                var signatureBytes = rsa.SignHash(hash, CryptoConfig.MapNameToOID("SHA256"));
+                var signatureBase64 = Base64UrlEncode(signatureBytes);
+                return unsignedToken + "." + signatureBase64;
+            }
         }
 
-        private static RSA CreateRsaFromPrivateKey(string pemKey)
+        /// <summary>
+        /// Tạo RSACryptoServiceProvider từ chuỗi khóa riêng PEM PKCS#8.
+        /// Sử dụng bộ phân tích cú pháp ASN.1 TLV thuần để giải mã thành RSAParameters độc lập,
+        /// kết hợp CspProviderFlags.UseMachineKeyStore giúp hoạt động hoàn hảo trên IIS Application Pool
+        /// mà không phụ thuộc vào Windows User Profile (tránh lỗi Win32 The system cannot find the file specified).
+        /// </summary>
+        private static RSACryptoServiceProvider CreateRsaFromPrivateKey(string pemKey)
         {
             var keyStr = pemKey
                 .Replace("-----BEGIN PRIVATE KEY-----", "")
@@ -286,8 +311,100 @@ namespace TTKDGP.ProjectManager.Services
                 .Trim();
 
             var keyBytes = Convert.FromBase64String(keyStr);
-            var cngKey = CngKey.Import(keyBytes, CngKeyBlobFormat.Pkcs8PrivateBlob);
-            return new RSACng(cngKey);
+            var rsaParams = DecodePkcs8PrivateKey(keyBytes);
+
+            var csp = new CspParameters
+            {
+                Flags = CspProviderFlags.UseMachineKeyStore
+            };
+            var rsa = new RSACryptoServiceProvider(csp);
+            rsa.ImportParameters(rsaParams);
+            return rsa;
+        }
+
+        private static RSAParameters DecodePkcs8PrivateKey(byte[] pkcs8)
+        {
+            using (var mem = new MemoryStream(pkcs8))
+            using (var bin = new BinaryReader(mem))
+            {
+                // 1. Outer SEQUENCE
+                ReadTag(bin, 0x30);
+                ReadLength(bin);
+
+                // 2. Version (INTEGER 0)
+                ReadTag(bin, 0x02);
+                int verLen = ReadLength(bin);
+                bin.ReadBytes(verLen);
+
+                // 3. AlgorithmIdentifier (SEQUENCE)
+                ReadTag(bin, 0x30);
+                int algLen = ReadLength(bin);
+                bin.ReadBytes(algLen); // Bỏ qua OID và tham số NULL
+
+                // 4. OctetString chứa PKCS#1 RSAPrivateKey
+                ReadTag(bin, 0x04);
+                ReadLength(bin);
+
+                // 5. PKCS#1 RSAPrivateKey SEQUENCE
+                ReadTag(bin, 0x30);
+                ReadLength(bin);
+
+                // 6. Version (INTEGER 0)
+                ReadTag(bin, 0x02);
+                int privVerLen = ReadLength(bin);
+                bin.ReadBytes(privVerLen);
+
+                // 7. Đọc lần lượt các thành phần của RSA: Modulus, Exponent, D, P, Q, DP, DQ, InverseQ
+                return new RSAParameters
+                {
+                    Modulus = ReadInteger(bin),
+                    Exponent = ReadInteger(bin),
+                    D = ReadInteger(bin),
+                    P = ReadInteger(bin),
+                    Q = ReadInteger(bin),
+                    DP = ReadInteger(bin),
+                    DQ = ReadInteger(bin),
+                    InverseQ = ReadInteger(bin)
+                };
+            }
+        }
+
+        private static void ReadTag(BinaryReader bin, byte expectedTag)
+        {
+            byte tag = bin.ReadByte();
+            if (tag != expectedTag)
+            {
+                throw new InvalidDataException(string.Format("ASN.1 sai định dạng: mong đợi thẻ 0x{0:X2}, nhận được 0x{1:X2}", expectedTag, tag));
+            }
+        }
+
+        private static int ReadLength(BinaryReader bin)
+        {
+            byte b = bin.ReadByte();
+            if (b < 0x80) return b;
+            int numBytes = b & 0x7F;
+            int len = 0;
+            for (int i = 0; i < numBytes; i++)
+            {
+                len = (len << 8) | bin.ReadByte();
+            }
+            return len;
+        }
+
+        private static byte[] ReadInteger(BinaryReader bin)
+        {
+            ReadTag(bin, 0x02);
+            int len = ReadLength(bin);
+            byte[] bytes = bin.ReadBytes(len);
+
+            // Bỏ byte 0x00 đầu tiên (nếu có) vốn được ASN.1 dùng để đánh dấu số nguyên dương
+            if (bytes.Length > 1 && bytes[0] == 0x00)
+            {
+                byte[] stripped = new byte[bytes.Length - 1];
+                Buffer.BlockCopy(bytes, 1, stripped, 0, stripped.Length);
+                return stripped;
+            }
+            return bytes;
         }
 
         private static string Base64UrlEncode(byte[] input)

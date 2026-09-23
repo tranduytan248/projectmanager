@@ -1,5 +1,26 @@
 # Memory.md — Nhật ký tri thức của dự án
 
+> [!IMPORTANT]
+> **Quy tắc xưng hô với người dùng**:
+> - Luôn gọi người dùng là **Đại ca**.
+> - Luôn xưng là **Tiểu đệ**.
+
+# [2026-09-23] Khắc phục lỗi 500 TeamDashboard (CS0103 Razor media) & Cập nhật FCM Push APNs
+
+## 1. Mô tả vấn đề
+1. **Lỗi TeamDashboard**: Truy cập `brewtask.vnptkhanhhoa.vn/TeamDashboard` gặp lỗi 500. File log ghi nhận `System.Web.HttpCompileException: Views\TeamDashboard\Index.cshtml(594): error CS0103: The name 'media' does not exist in the current context`.
+2. **Cải tiến FCM Push Service**: Hỗ trợ APNs payload cho iOS và chuyển sang dùng RSACryptoServiceProvider với MachineKeyStore để chạy ổn định trên môi trường IIS Application Pool.
+
+## 2. Giải pháp thực hiện
+1. **Views/TeamDashboard/Index.cshtml**:
+   - Escape `@media (max-width: 768px)` thành `@@media (max-width: 768px)` để Razor parser không biên dịch nhầm thành lời gọi hàm C# `media()`.
+   - Giữ chuẩn file UTF-8 có BOM.
+2. **Services/FcmPushService.cs**:
+   - Thêm cấu hình payload `apns` chuẩn Apple Push Notification Service.
+   - Giải mã PKCS#8 ASN.1 độc lập và khởi tạo `RSACryptoServiceProvider` với `CspProviderFlags.UseMachineKeyStore`.
+3. **Triển khai Production (`build\upcode-prod.ps1 -Apply`)**:
+   - Kiểm tra và đồng bộ CSDL, merge code sang nhánh `Prod`, upload FTP và kiểm tra HTTP 200.
+
 ---
 
 # [2026-09-17] Gắn liên kết Apple App Store chính thức cho nút "Tải iOS" trên thanh Topbar & Deploy Production
