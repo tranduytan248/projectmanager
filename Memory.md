@@ -1,5 +1,62 @@
 # Memory.md — Nhật ký tri thức của dự án
 
+> [!IMPORTANT]
+> **Quy tắc xưng hô với người dùng**:
+> - Luôn gọi người dùng là **Đại ca**.
+> - Luôn xưng là **Tiểu đệ**.
+
+# [2026-09-23] Khắc phục lỗi 500 TeamDashboard (CS0103 Razor media) & Cập nhật FCM Push APNs
+
+## 1. Mô tả vấn đề
+1. **Lỗi TeamDashboard**: Truy cập `brewtask.vnptkhanhhoa.vn/TeamDashboard` gặp lỗi 500. File log ghi nhận `System.Web.HttpCompileException: Views\TeamDashboard\Index.cshtml(594): error CS0103: The name 'media' does not exist in the current context`.
+2. **Cải tiến FCM Push Service**: Hỗ trợ APNs payload cho iOS và chuyển sang dùng RSACryptoServiceProvider với MachineKeyStore để chạy ổn định trên môi trường IIS Application Pool.
+
+## 2. Giải pháp thực hiện
+1. **Views/TeamDashboard/Index.cshtml**:
+   - Escape `@media (max-width: 768px)` thành `@@media (max-width: 768px)` để Razor parser không biên dịch nhầm thành lời gọi hàm C# `media()`.
+   - Giữ chuẩn file UTF-8 có BOM.
+2. **Services/FcmPushService.cs**:
+   - Thêm cấu hình payload `apns` chuẩn Apple Push Notification Service.
+   - Giải mã PKCS#8 ASN.1 độc lập và khởi tạo `RSACryptoServiceProvider` với `CspProviderFlags.UseMachineKeyStore`.
+3. **Triển khai Production (`build\upcode-prod.ps1 -Apply`)**:
+   - Kiểm tra và đồng bộ CSDL, merge code sang nhánh `Prod`, upload FTP và kiểm tra HTTP 200.
+
+---
+
+# [2026-09-17] Gắn liên kết Apple App Store chính thức cho nút "Tải iOS" trên thanh Topbar & Deploy Production
+
+## 1. Mô tả vấn đề
+Ứng dụng di động **BrewTask** cho nền tảng iOS đã được Apple xét duyệt và chính thức có mặt trên Apple App Store tại địa chỉ:
+`https://apps.apple.com/vn/app/brewtask-qu%E1%BA%A3n-l%C3%BD-c%C3%B4ng-vi%E1%BB%87c/id6806118424?l=vi`
+
+Người dùng yêu cầu:
+- Gắn liên kết trực tiếp này vào nút **Tải iOS** trên thanh điều hướng topbar của website.
+- Bỏ modal thông báo "sắp ra mắt / đang xét duyệt".
+- Deploy ngay lên môi trường Production (`brewtask.vnptkhanhhoa.vn`).
+
+## 2. Giải pháp thực hiện
+1. **Giao diện Web (`Views\Shared\_Layout.cshtml`)**:
+   - Chuyển thẻ `<button>` với sự kiện `showIosComingSoonModal()` thành thẻ liên kết:
+     ```html
+     <a href="https://apps.apple.com/vn/app/brewtask-qu%E1%BA%A3n-l%C3%BD-c%C3%B4ng-vi%E1%BB%87c/id6806118424?l=vi"
+        target="_blank" rel="noopener noreferrer"
+        class="app-download-btn app-download-ios"
+        title="Tải ứng dụng BrewTask trên App Store (iOS)">
+         <svg class="app-icon" viewBox="0 0 24 24" fill="currentColor">
+             <path d="..."/>
+         </svg>
+         <span>Tải iOS</span>
+     </a>
+     ```
+   - Xóa bỏ modal `iosComingSoonModal` và hai hàm JS `showIosComingSoonModal`, `hideIosComingSoonModal` không còn sử dụng.
+   - Đảm bảo mã hóa UTF-8 có BOM theo chuẩn `CODING_RULES.md`.
+2. **Triển khai Production (`build\upcode-prod.ps1 -Apply`)**:
+   - Đồng bộ CSDL và merge code sang nhánh `Prod`.
+   - Biên dịch Release và upload các file cập nhật lên FTP `10.57.47.3/public_html`.
+   - Push nhánh `Prod` lên remote `origin/Prod`.
+   - Xác nhận HTTP 200 cho cả `http://pmncpt.cenit.vn/` và `http://brewtask.vnptkhanhhoa.vn/`.
+   - Kiểm tra trực tiếp HTML trên `http://brewtask.vnptkhanhhoa.vn/`: liên kết Apple App Store đã sẵn sàng hoạt động.
+
 ---
 
 # [2026-09-17] Kích hoạt lại tính năng tự động gửi SMS & Email trên Production (brewtask.vnptkhanhhoa.vn)
