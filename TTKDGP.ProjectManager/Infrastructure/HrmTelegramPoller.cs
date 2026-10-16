@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -90,10 +90,27 @@ namespace TTKDGP.ProjectManager.Infrastructure
             var text = (update.Text ?? string.Empty).Trim();
             if (text.Length == 0) return;
 
-            // 1. Khi đang chờ OTP
-            if (HrmCasAutoLogin.IsAwaitingOtp && LooksLikeOtp(text))
+            // 1. Khi nhận được mã OTP (chuỗi toàn số 4-8 ký tự)
+            if (LooksLikeOtp(text))
             {
-                if (HrmCasAutoLogin.SubmitOtp(text)) Reply("Đã nhận OTP, đang xác nhận đăng nhập...");
+                if (HrmCasAutoLogin.IsAwaitingOtp)
+                {
+                    if (HrmCasAutoLogin.SubmitOtp(text))
+                    {
+                        Reply("Đã nhận OTP, đang xác nhận đăng nhập...");
+                    }
+                    else
+                    {
+                        Reply("⚠️ Chưa thể nạp mã OTP vào phiên. Bạn hãy thử gửi lại mã hoặc gõ /signin để đăng nhập lại.");
+                    }
+                    return;
+                }
+
+                // Nếu hệ thống không ở trong trạng thái chờ OTP
+                Reply("⚠️ Hiện tại hệ thống không ở trong phiên chờ OTP nào (phiên đăng nhập có thể đã hoàn tất thành công từ trước hoặc đã hết hạn).\n\n"
+                    + "• Gõ <code>/status</code> : Xem tình trạng phiên hiện tại & số lượng nhân sự\n"
+                    + "• Gõ <code>/sync</code> : Đồng bộ ngay danh bạ nhân sự từ phiên đã lưu\n"
+                    + "• Gõ <code>/signin</code> : Bắt đầu lại phiên đăng nhập mới nếu cần.");
                 return;
             }
 

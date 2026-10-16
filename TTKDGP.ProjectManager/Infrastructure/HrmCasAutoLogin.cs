@@ -42,7 +42,7 @@ namespace TTKDGP.ProjectManager.Infrastructure
     public static class HrmCasAutoLogin
     {
         private static readonly SemaphoreSlim Gate = new SemaphoreSlim(1, 1);
-        private static TaskCompletionSource<string> _otpWaiter;
+        private static volatile TaskCompletionSource<string> _otpWaiter;
         private static CancellationTokenSource _currentCts;
         private static IBrowser _activeBrowser;
         private static ObscuraCdpClient _activeCdpClient;
