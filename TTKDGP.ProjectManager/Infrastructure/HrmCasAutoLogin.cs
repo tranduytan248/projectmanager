@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -820,6 +820,27 @@ namespace TTKDGP.ProjectManager.Infrastructure
             return Path.Combine(MapAppData(""), "hrm_session.json");
         }
 
+        /// <summary>Đường dẫn tới file JSON lưu danh bạ HRM (phục vụ endpoint /cashrm).</summary>
+        public static string CasHrmJsonFilePath()
+        {
+            return Path.Combine(MapAppData(""), "cashrm.json");
+        }
+
+        /// <summary>Lưu danh sách bản ghi nhân sự HRM nhận từ API vào file JSON.</summary>
+        public static void SaveCasHrmJson(JArray records)
+        {
+            if (records == null) return;
+            var path = CasHrmJsonFilePath();
+            var dir = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+
+            var json = records.ToString(Formatting.Indented);
+            File.WriteAllText(path, json, Encoding.UTF8);
+        }
+
         private const int DanhBaPageSize = 80;
         private const int DanhBaMaxPages = 500;
 
@@ -964,6 +985,19 @@ namespace TTKDGP.ProjectManager.Infrastructure
 
                     if (all.Count > 0)
                     {
+                        try
+                        {
+                            SaveCasHrmJson(all);
+                            if (notify != null)
+                            {
+                                notify(string.Format("📁 Đã lưu {0} bản ghi danh bạ vào file cashrm.json.", all.Count));
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            if (notify != null) notify("⚠️ Lưu file JSON danh bạ lỗi: " + ex.Message);
+                        }
+
                         try
                         {
                             HrmDirectorySync.SaveRecords(all, notify);

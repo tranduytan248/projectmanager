@@ -36,6 +36,7 @@ TTKDGP.ProjectManager/App_Data/attachments/
 TTKDGP.ProjectManager/App_Data/task_images/
 TTKDGP.ProjectManager/App_Data/task_videos/
 TTKDGP.ProjectManager/Uploads/
+KPI/
 !TTKDGP.ProjectManager/App_Data/seed/
 
 # Trình duyệt Playwright tải về lúc chạy (~500 MB) và phiên đăng nhập GoConnect —
