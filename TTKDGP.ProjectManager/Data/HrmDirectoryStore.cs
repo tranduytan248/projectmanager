@@ -410,6 +410,39 @@ namespace TTKDGP.ProjectManager.Data
             }
         }
 
+        /// <summary>Lấy toàn bộ nhân sự kèm tên đơn vị và chức danh để xuất file JSON khi chưa có cache.</summary>
+        public static List<EmployeeHrm> GetAllForExport()
+        {
+            var list = new List<EmployeeHrm>();
+            const string sql =
+                "SELECT e.[employee_id], e.[employee_code], e.[full_name], e.[mobile_phone], e.[work_email]," +
+                "       e.[department_id], e.[department_code], e.[job_id], e.[vitri_congviec_id]," +
+                "       e.[vitri_congviec_name], e.[vitri_congviec_code], e.[birthday], e.[gioi_tinh]," +
+                "       e.[is_congtacvien], e.[updated_at]," +
+                "       d.[department_name], j.[job_name], j.[job_code]" +
+                "  FROM [" + Table + "] e" +
+                "  LEFT JOIN [department_hrm] d ON d.[department_id] = e.[department_id]" +
+                "  LEFT JOIN [job_hrm] j ON j.[job_id] = e.[job_id]" +
+                " ORDER BY e.[full_name], e.[employee_id]";
+
+            using (var conn = Db.Open())
+            {
+                EnsureTable(conn);
+                DepartmentHrmStore.EnsureTable(conn);
+                JobHrmStore.EnsureTable(conn);
+
+                using (var cmd = new SqlCommand(sql, conn))
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        list.Add(ReadJoinedRow(reader));
+                    }
+                }
+            }
+            return list;
+        }
+
         /// <summary>Số nhân sự theo từng đơn vị — dùng để hiện cột "Nhân sự" trên bảng Đơn vị.</summary>
         public static Dictionary<int, int> CountsByDepartment()
         {

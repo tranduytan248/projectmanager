@@ -1,4 +1,4 @@
-﻿using System.Web.Mvc;
+using System.Web.Mvc;
 using System.Web.Routing;
 
 namespace TTKDGP.ProjectManager
@@ -23,6 +23,13 @@ namespace TTKDGP.ProjectManager
                 name: "IntegrationApiHrmCas",
                 url: "api/hrmcas",
                 defaults: new { controller = "IntegrationApi", action = "HrmCas" }
+            );
+
+            // Đường dẫn đọc nội dung JSON danh bạ CAS HRM (/cashrm)
+            routes.MapRoute(
+                name: "CasHrmJson",
+                url: "cashrm",
+                defaults: new { controller = "CasHrm", action = "Index" }
             );
 
             // API tiện ích cho đối tác (gửi SMS). Giữ đúng đường dẫn quen thuộc của HRM.
